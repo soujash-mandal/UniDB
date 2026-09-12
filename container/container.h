@@ -2,16 +2,16 @@
 
 #include "../DiskManagerService/actions/ReadPageAction.h"
 #include "../DiskManagerService/actions/WritePageAction.h"
-#include "../DiskManagerService/adapter/FileDiskManagerAdapter.h"
+#include "../DiskManagerService/port/DiskManagerPort.h"
 
 class Container {
 public:
-  explicit Container(const std::string &databaseFile);
+  explicit Container(DiskManagerPort &diskManager);
+
   ReadPageAction &readPageAction();
   WritePageAction &writePageAction();
 
 private:
-  FileDiskManagerAdapter diskManagerAdapter;
   ReadPageAction readPage;
   WritePageAction writePage;
 };

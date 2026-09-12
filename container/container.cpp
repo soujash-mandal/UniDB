@@ -1,8 +1,7 @@
 #include "container.h"
 
-Container::Container(const std::string &databaseFile)
-    : diskManagerAdapter(databaseFile), readPage(diskManagerAdapter),
-      writePage(diskManagerAdapter) {}
+Container::Container(DiskManagerPort &diskManager)
+    : readPage(diskManager), writePage(diskManager) {}
 
 ReadPageAction &Container::readPageAction() { return readPage; }
 WritePageAction &Container::writePageAction() { return writePage; }
