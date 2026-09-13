@@ -1,12 +1,13 @@
 #include "DiskManagerPageAdapter.h"
 
-DiskManagerPageAdapter::DiskManagerPageAdapter(PagePort &pagePort)
-    : pagePort(pagePort) {}
+DiskManagerPageAdapter::DiskManagerPageAdapter(ReadPageAction &readPage,
+                                               WritePageAction &writePage)
+    : readPageAction(readPage), writePageAction(writePage) {}
 
 void DiskManagerPageAdapter::readPage(PageId pageId, Page &page) {
-  pagePort.readPage(pageId, page);
+  readPageAction.execute(pageId, page);
 }
 
 void DiskManagerPageAdapter::writePage(PageId pageId, const Page &page) {
-  pagePort.writePage(pageId, page);
+  writePageAction.execute(pageId, page);
 }
