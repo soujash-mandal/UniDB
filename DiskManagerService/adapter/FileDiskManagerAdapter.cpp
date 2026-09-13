@@ -15,14 +15,16 @@ FileDiskManagerAdapter::FileDiskManagerAdapter(const std::string &fileName) {
 }
 
 void FileDiskManagerAdapter::writePage(PageId pageId, const Page &page) {
-  const std::streamoff offset = static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
+  const std::streamoff offset =
+      static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
   file.seekp(offset);
   file.write(page.data(), Page::PAGE_SIZE);
   file.flush();
 }
 
 void FileDiskManagerAdapter::readPage(PageId pageId, Page &page) {
-  const std::streamoff offset = static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
+  const std::streamoff offset =
+      static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
   file.seekg(offset);
   file.read(page.data(), Page::PAGE_SIZE);
 }

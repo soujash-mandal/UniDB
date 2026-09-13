@@ -6,6 +6,7 @@ class ReadPageAction {
 public:
   explicit ReadPageAction(DiskManagerPort &diskManager);
   void execute(PageId pageId, Page &page);
+
 private:
   DiskManagerPort &diskManager;
 };

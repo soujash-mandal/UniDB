@@ -7,465 +7,276 @@
 
 #include "../../core/Page.h"
 
-#include "../../DiskManagerService/adapter/FileDiskManagerAdapter.h"
 #include "../../DiskManagerService/actions/ReadPageAction.h"
 #include "../../DiskManagerService/actions/WritePageAction.h"
+#include "../../DiskManagerService/adapter/FileDiskManagerAdapter.h"
 
-#include "../adapter/DiskManagerPageAdapter.h"
 #include "../actions/CreateTupleAction.h"
+#include "../actions/DeleteTupleAction.h"
 #include "../actions/ReadTupleAction.h"
 #include "../actions/UpdateTupleAction.h"
-#include "../actions/DeleteTupleAction.h"
-
+#include "../adapter/DiskManagerPageAdapter.h"
 
 class TupleActionsTest : public ::testing::Test {
 
 protected:
+  const std::string databaseFile = "test_database.db";
 
-    const std::string databaseFile = "test_database.db";
+  // --------------------------------
+  // Disk Manager
+  // --------------------------------
 
-    // --------------------------------
-    // Disk Manager
-    // --------------------------------
+  FileDiskManagerAdapter diskManagerAdapter{databaseFile};
 
-    FileDiskManagerAdapter diskManagerAdapter{
-        databaseFile
-    };
+  ReadPageAction readPage{diskManagerAdapter};
 
-    ReadPageAction readPage{
-        diskManagerAdapter
-    };
+  WritePageAction writePage{diskManagerAdapter};
 
-    WritePageAction writePage{
-        diskManagerAdapter
-    };
+  // --------------------------------
+  // Page Service Adapter
+  // --------------------------------
 
+  DiskManagerPageAdapter pageAdapter{readPage, writePage};
 
-    // --------------------------------
-    // Page Service Adapter
-    // --------------------------------
+  // --------------------------------
+  // Page Service Actions
+  // --------------------------------
 
-    DiskManagerPageAdapter pageAdapter{
-        readPage,
-        writePage
-    };
+  CreateTupleAction createTuple{pageAdapter};
 
+  ReadTupleAction readTuple{pageAdapter};
 
-    // --------------------------------
-    // Page Service Actions
-    // --------------------------------
+  UpdateTupleAction updateTuple{pageAdapter};
 
-    CreateTupleAction createTuple{
-        pageAdapter
-    };
+  DeleteTupleAction deleteTuple{pageAdapter};
 
-    ReadTupleAction readTuple{
-        pageAdapter
-    };
+  // --------------------------------
+  // Setup
+  // --------------------------------
 
-    UpdateTupleAction updateTuple{
-        pageAdapter
-    };
+  void SetUp() override {
 
-    DeleteTupleAction deleteTuple{
-        pageAdapter
-    };
+    std::ofstream file(databaseFile, std::ios::binary | std::ios::trunc);
 
+    file.close();
+  }
 
-    // --------------------------------
-    // Setup
-    // --------------------------------
+  // --------------------------------
+  // Cleanup
+  // --------------------------------
 
-    void SetUp() override {
+  void TearDown() override { std::remove(databaseFile.c_str()); }
 
-        std::ofstream file(
-            databaseFile,
-            std::ios::binary |
-            std::ios::trunc
-        );
+  // --------------------------------
+  // Helper: Create Tuple
+  // --------------------------------
 
-        file.close();
+  void createTestTuple(PageId pageId, const std::string &message) {
+
+    char tupleData[Page::PAGE_SIZE]{};
+
+    std::memcpy(tupleData, message.data(), message.size());
+
+    createTuple.execute(pageId, tupleData);
+  }
+
+  // --------------------------------
+  // Helper: Read Tuple
+  // --------------------------------
+
+  std::string readTestTuple(PageId pageId, std::size_t size) {
+
+    Page page;
+
+    readTuple.execute(pageId, page);
+
+    return std::string(page.data(), size);
+  }
+
+  // --------------------------------
+  // Helper: Check Empty Page
+  // --------------------------------
+
+  bool isPageEmpty(const Page &page) {
+
+    for (std::size_t i = 0; i < Page::PAGE_SIZE; ++i) {
+
+      if (page.data()[i] != '\0') {
+        return false;
+      }
     }
 
-
-    // --------------------------------
-    // Cleanup
-    // --------------------------------
-
-    void TearDown() override {
-
-        std::remove(
-            databaseFile.c_str()
-        );
-    }
-
-
-    // --------------------------------
-    // Helper: Create Tuple
-    // --------------------------------
-
-    void createTestTuple(
-        PageId pageId,
-        const std::string& message
-    ) {
-
-        char tupleData[Page::PAGE_SIZE]{};
-
-        std::memcpy(
-            tupleData,
-            message.data(),
-            message.size()
-        );
-
-        createTuple.execute(
-            pageId,
-            tupleData
-        );
-    }
-
-
-    // --------------------------------
-    // Helper: Read Tuple
-    // --------------------------------
-
-    std::string readTestTuple(
-        PageId pageId,
-        std::size_t size
-    ) {
-
-        Page page;
-
-        readTuple.execute(
-            pageId,
-            page
-        );
-
-        return std::string(
-            page.data(),
-            size
-        );
-    }
-
-
-    // --------------------------------
-    // Helper: Check Empty Page
-    // --------------------------------
-
-    bool isPageEmpty(
-        const Page& page
-    ) {
-
-        for (
-            std::size_t i = 0;
-            i < Page::PAGE_SIZE;
-            ++i
-        ) {
-
-            if (page.data()[i] != '\0') {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    return true;
+  }
 };
-
 
 // ==================================================
 // CREATE
 // ==================================================
 
-TEST_F(
-    TupleActionsTest,
-    CreateTuple
-) {
+TEST_F(TupleActionsTest, CreateTuple) {
 
-    const std::string message =
-        "Hello from CREATE";
+  const std::string message = "Hello from CREATE";
 
+  createTestTuple(0, message);
 
-    createTestTuple(
-        0,
-        message
-    );
+  std::string result = readTestTuple(0, message.size());
 
-
-    std::string result =
-        readTestTuple(
-            0,
-            message.size()
-        );
-
-
-    EXPECT_EQ(
-        result,
-        message
-    );
+  EXPECT_EQ(result, message);
 }
-
 
 // ==================================================
 // READ
 // ==================================================
 
-TEST_F(
-    TupleActionsTest,
-    ReadTuple
-) {
+TEST_F(TupleActionsTest, ReadTuple) {
 
-    const std::string message =
-        "Hello from READ";
+  const std::string message = "Hello from READ";
 
+  // Create tuple first
+  createTestTuple(0, message);
 
-    // Create tuple first
-    createTestTuple(
-        0,
-        message
-    );
+  // Read tuple
+  std::string result = readTestTuple(0, message.size());
 
-
-    // Read tuple
-    std::string result =
-        readTestTuple(
-            0,
-            message.size()
-        );
-
-
-    EXPECT_EQ(
-        result,
-        message
-    );
+  EXPECT_EQ(result, message);
 }
-
 
 // ==================================================
 // UPDATE
 // ==================================================
 
-TEST_F(
-    TupleActionsTest,
-    UpdateTuple
-) {
+TEST_F(TupleActionsTest, UpdateTuple) {
 
-    const std::string original =
-        "Hello from CREATE";
+  const std::string original = "Hello from CREATE";
 
-    const std::string updated =
-        "Hello from UPDATE";
+  const std::string updated = "Hello from UPDATE";
 
+  // --------------------------------
+  // Create original tuple
+  // --------------------------------
 
-    // --------------------------------
-    // Create original tuple
-    // --------------------------------
+  createTestTuple(0, original);
 
-    createTestTuple(
-        0,
-        original
-    );
+  // --------------------------------
+  // Update tuple
+  // --------------------------------
 
+  char updateData[Page::PAGE_SIZE]{};
 
-    // --------------------------------
-    // Update tuple
-    // --------------------------------
+  std::memcpy(updateData, updated.data(), updated.size());
 
-    char updateData[Page::PAGE_SIZE]{};
+  updateTuple.execute(0, updateData);
 
-    std::memcpy(
-        updateData,
-        updated.data(),
-        updated.size()
-    );
+  // --------------------------------
+  // Read updated tuple
+  // --------------------------------
 
-    updateTuple.execute(
-        0,
-        updateData
-    );
+  std::string result = readTestTuple(0, updated.size());
 
+  // --------------------------------
+  // Verify
+  // --------------------------------
 
-    // --------------------------------
-    // Read updated tuple
-    // --------------------------------
-
-    std::string result =
-        readTestTuple(
-            0,
-            updated.size()
-        );
-
-
-    // --------------------------------
-    // Verify
-    // --------------------------------
-
-    EXPECT_EQ(
-        result,
-        updated
-    );
+  EXPECT_EQ(result, updated);
 }
-
 
 // ==================================================
 // DELETE
 // ==================================================
 
-TEST_F(
-    TupleActionsTest,
-    DeleteTuple
-) {
+TEST_F(TupleActionsTest, DeleteTuple) {
 
-    const std::string message =
-        "Hello from DELETE";
+  const std::string message = "Hello from DELETE";
 
+  // --------------------------------
+  // Create tuple
+  // --------------------------------
 
-    // --------------------------------
-    // Create tuple
-    // --------------------------------
+  createTestTuple(0, message);
 
-    createTestTuple(
-        0,
-        message
-    );
+  // --------------------------------
+  // Delete tuple
+  // --------------------------------
 
+  deleteTuple.execute(0);
 
-    // --------------------------------
-    // Delete tuple
-    // --------------------------------
+  // --------------------------------
+  // Read page after delete
+  // --------------------------------
 
-    deleteTuple.execute(
-        0
-    );
+  Page page;
 
+  readTuple.execute(0, page);
 
-    // --------------------------------
-    // Read page after delete
-    // --------------------------------
+  // --------------------------------
+  // Verify page is empty
+  // --------------------------------
 
-    Page page;
-
-    readTuple.execute(
-        0,
-        page
-    );
-
-
-    // --------------------------------
-    // Verify page is empty
-    // --------------------------------
-
-    EXPECT_TRUE(
-        isPageEmpty(page)
-    );
+  EXPECT_TRUE(isPageEmpty(page));
 }
-
 
 // ==================================================
 // COMPLETE CRUD FLOW
 // ==================================================
 
-TEST_F(
-    TupleActionsTest,
-    CompleteCrudFlow
-) {
+TEST_F(TupleActionsTest, CompleteCrudFlow) {
 
-    const PageId pageId = 0;
+  const PageId pageId = 0;
 
+  // --------------------------------
+  // CREATE
+  // --------------------------------
 
-    // --------------------------------
-    // CREATE
-    // --------------------------------
+  const std::string created = "Hello from CREATE";
 
-    const std::string created =
-        "Hello from CREATE";
+  createTestTuple(pageId, created);
 
+  // --------------------------------
+  // READ
+  // --------------------------------
 
-    createTestTuple(
-        pageId,
-        created
-    );
+  std::string readResult = readTestTuple(pageId, created.size());
 
+  EXPECT_EQ(readResult, created);
 
-    // --------------------------------
-    // READ
-    // --------------------------------
+  // --------------------------------
+  // UPDATE
+  // --------------------------------
 
-    std::string readResult =
-        readTestTuple(
-            pageId,
-            created.size()
-        );
+  const std::string updated = "Hello from UPDATE";
 
+  char updateData[Page::PAGE_SIZE]{};
 
-    EXPECT_EQ(
-        readResult,
-        created
-    );
+  std::memcpy(updateData, updated.data(), updated.size());
 
+  updateTuple.execute(pageId, updateData);
 
-    // --------------------------------
-    // UPDATE
-    // --------------------------------
+  // --------------------------------
+  // READ AFTER UPDATE
+  // --------------------------------
 
-    const std::string updated =
-        "Hello from UPDATE";
+  std::string updatedResult = readTestTuple(pageId, updated.size());
 
-    char updateData[Page::PAGE_SIZE]{};
+  EXPECT_EQ(updatedResult, updated);
 
-    std::memcpy(
-        updateData,
-        updated.data(),
-        updated.size()
-    );
+  // --------------------------------
+  // DELETE
+  // --------------------------------
 
-    updateTuple.execute(
-        pageId,
-        updateData
-    );
+  deleteTuple.execute(pageId);
 
+  // --------------------------------
+  // READ AFTER DELETE
+  // --------------------------------
 
-    // --------------------------------
-    // READ AFTER UPDATE
-    // --------------------------------
+  Page deletedPage;
 
-    std::string updatedResult =
-        readTestTuple(
-            pageId,
-            updated.size()
-        );
+  readTuple.execute(pageId, deletedPage);
 
+  // --------------------------------
+  // VERIFY DELETE
+  // --------------------------------
 
-    EXPECT_EQ(
-        updatedResult,
-        updated
-    );
-
-
-    // --------------------------------
-    // DELETE
-    // --------------------------------
-
-    deleteTuple.execute(
-        pageId
-    );
-
-
-    // --------------------------------
-    // READ AFTER DELETE
-    // --------------------------------
-
-    Page deletedPage;
-
-    readTuple.execute(
-        pageId,
-        deletedPage
-    );
-
-
-    // --------------------------------
-    // VERIFY DELETE
-    // --------------------------------
-
-    EXPECT_TRUE(
-        isPageEmpty(deletedPage)
-    );
+  EXPECT_TRUE(isPageEmpty(deletedPage));
 }
