@@ -1,0 +1,30 @@
+name: UniDB Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: brew install clang-format
+
+      - name: Check formatting
+        run: |
+          files=$(find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+            -not -path "./build/*")
+
+          for file in $files; do
+            clang-format --dry-run --Werror "$file"
+          done
