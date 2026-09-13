@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../core/PageId.h"
 #include "../port/DiskManagerPort.h"
 
 class WritePageAction {

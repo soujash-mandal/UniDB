@@ -1,5 +1,6 @@
 #pragma once
 #include "../../core/Page.h"
+#include "../../core/PageId.h"
 
 class DiskManagerPort {
 public:
