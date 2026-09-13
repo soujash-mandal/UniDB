@@ -3,7 +3,7 @@
 #include <string>
 
 #include "DiskManagerService/adapter/FileDiskManagerAdapter.h"
-#include "DiskManagerService/domain/Page.h"
+#include "core/Page.h"
 #include "container/container.h"
 
 int main() {

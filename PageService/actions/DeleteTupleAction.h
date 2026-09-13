@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../domain/Page.h"
+#include "../../core/Page.h"
 #include "../port/PagePort.h"
 
 class DeleteTupleAction {
