@@ -1,12 +1,19 @@
 #include "DeleteTupleAction.h"
-
+#include "../../core/PageHeader.h"
+#include "../../core/Slot.h"
 #include <cstring>
 
 DeleteTupleAction::DeleteTupleAction(PagePort &pagePort) : pagePort(pagePort) {}
 
-void DeleteTupleAction::execute(PageId pageId) {
+void DeleteTupleAction::execute(const PageId &pageId, uint16_t slotId) {
   Page page;
   pagePort.readPage(pageId, page);
-  std::memset(page.data(), 0, Page::PAGE_SIZE);
+  PageHeader header;
+  std::memcpy(&header, page.data(), sizeof(PageHeader));
+  const std::size_t slotOffset = sizeof(PageHeader) + slotId * sizeof(Slot);
+  Slot slot;
+  std::memcpy(&slot, page.data() + slotOffset, sizeof(Slot));
+  slot.size = 0;
+  std::memcpy(page.data() + slotOffset, &slot, sizeof(Slot));
   pagePort.writePage(pageId, page);
 }
