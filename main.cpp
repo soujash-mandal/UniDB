@@ -29,16 +29,7 @@ int main() {
 
   std::cout << "[1] CREATE EMPTY PAGE\n";
 
-  Page page;
-
-  PageHeader header{};
-  header.pageId = pageId;
-  header.slotCount = 0;
-  header.freeSpaceOffset = Page::PAGE_SIZE;
-
-  std::memcpy(page.data(), &header, sizeof(PageHeader));
-
-  diskManagerAdapter.writePage(pageId, page);
+  container.createPageAction().execute(0);
 
   std::cout << "Page created: " << pageId << "\n\n";
 

@@ -38,6 +38,7 @@ add_executable(unidb
     PageService/actions/ReadTupleAction.cpp
     PageService/actions/UpdateTupleAction.cpp
     PageService/actions/DeleteTupleAction.cpp
+    PageService/actions/CreatePageAction.cpp
 )
 
 
@@ -61,6 +62,7 @@ add_executable(tuple_tests
     PageService/actions/ReadTupleAction.cpp
     PageService/actions/UpdateTupleAction.cpp
     PageService/actions/DeleteTupleAction.cpp
+    PageService/actions/CreatePageAction.cpp
 )
 
 

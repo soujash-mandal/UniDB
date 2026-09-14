@@ -6,6 +6,7 @@
 
 #include "../PageService/adapter/DiskManagerPageAdapter.h"
 
+#include "../PageService/actions/CreatePageAction.h"
 #include "../PageService/actions/CreateTupleAction.h"
 #include "../PageService/actions/DeleteTupleAction.h"
 #include "../PageService/actions/ReadTupleAction.h"
@@ -23,6 +24,7 @@ public:
   ReadTupleAction &readTupleAction();
   UpdateTupleAction &updateTupleAction();
   DeleteTupleAction &deleteTupleAction();
+  CreatePageAction &createPageAction();
 
 private:
   ReadPageAction readPage;
@@ -34,4 +36,5 @@ private:
   ReadTupleAction readTuple;
   UpdateTupleAction updateTuple;
   DeleteTupleAction deleteTuple;
+  CreatePageAction createPage;
 };
