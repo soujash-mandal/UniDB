@@ -3,13 +3,15 @@
 #include <string>
 
 #include "DiskManagerService/adapter/FileDiskManagerAdapter.h"
+#include "PageService/actions/CreateTupleAction.h"
 #include "container/container.h"
 #include "core/Page.h"
+#include "core/PageHeader.h"
+#include "core/Slot.h"
 
 int main() {
-
   std::cout << "=========================\n";
-  std::cout << "       UniDB CRUD Test\n";
+  std::cout << "   CreateTupleAction Test\n";
   std::cout << "=========================\n\n";
 
   // --------------------------------------------------
@@ -17,140 +19,119 @@ int main() {
   // --------------------------------------------------
 
   FileDiskManagerAdapter diskManagerAdapter("database.db");
-
   Container container(diskManagerAdapter);
 
-  // --------------------------------------------------
-  // 1. CREATE
-  // --------------------------------------------------
-
-  std::cout << "[1] CREATE TUPLE\n";
-
-  char createData[Page::PAGE_SIZE]{};
-
-  std::string createMessage = "Hello from CREATE";
-
-  std::memcpy(createData, createMessage.data(), createMessage.size());
-
-  container.createTupleAction().execute(0, createData);
-
-  std::cout << "Created tuple: ";
-  std::cout.write(createData, createMessage.size());
-  std::cout << "\n\n";
+  const PageId pageId = 0;
 
   // --------------------------------------------------
-  // 2. READ
+  // 1. CREATE EMPTY PAGE
   // --------------------------------------------------
 
-  std::cout << "[2] READ TUPLE\n";
+  std::cout << "[1] CREATE EMPTY PAGE\n";
+
+  Page page;
+
+  PageHeader header{};
+  header.pageId = pageId;
+  header.slotCount = 0;
+  header.freeSpaceOffset = Page::PAGE_SIZE;
+
+  std::memcpy(page.data(), &header, sizeof(PageHeader));
+
+  diskManagerAdapter.writePage(pageId, page);
+
+  std::cout << "Page created: " << pageId << "\n\n";
+
+  // --------------------------------------------------
+  // 2. CREATE TUPLE
+  // --------------------------------------------------
+
+  std::cout << "[2] CREATE TUPLE\n";
+
+  std::string message = "Hello from UniDB";
+
+  uint16_t tupleSize = static_cast<uint16_t>(message.size());
+
+  uint16_t slotId =
+      container.createTupleAction().execute(pageId, message.data(), tupleSize);
+
+  std::cout << "Tuple created successfully.\n";
+  std::cout << "Slot ID: " << slotId << "\n";
+  std::cout << "Tuple: " << message << "\n\n";
+
+  // --------------------------------------------------
+  // 3. READ RAW PAGE FROM DISK
+  // --------------------------------------------------
+
+  std::cout << "[3] READ PAGE FROM DISK\n";
 
   Page readPage;
 
-  container.readTupleAction().execute(0, readPage);
+  diskManagerAdapter.readPage(pageId, readPage);
 
-  std::cout << "Read tuple: ";
-  std::cout.write(readPage.data(), createMessage.size());
-
-  std::cout << "\n\n";
+  std::cout << "Page read successfully.\n\n";
 
   // --------------------------------------------------
-  // VERIFY CREATE + READ
+  // 4. READ PAGE HEADER
   // --------------------------------------------------
 
-  bool createReadSuccess =
-      std::memcmp(readPage.data(), createData, createMessage.size()) == 0;
+  PageHeader readHeader;
 
-  if (createReadSuccess) {
-    std::cout << "CREATE + READ verification: PASS\n\n";
-  } else {
-    std::cout << "CREATE + READ verification: FAIL\n\n";
-  }
+  std::memcpy(&readHeader, readPage.data(), sizeof(PageHeader));
 
-  // --------------------------------------------------
-  // 3. UPDATE
-  // --------------------------------------------------
+  std::cout << "[4] PAGE HEADER\n";
 
-  std::cout << "[3] UPDATE TUPLE\n";
+  std::cout << "Page ID: " << readHeader.pageId << "\n";
 
-  char updateData[Page::PAGE_SIZE]{};
+  std::cout << "Slot count: " << readHeader.slotCount << "\n";
 
-  std::string updateMessage = "Hello from UPDATE";
-
-  std::memcpy(updateData, updateMessage.data(), updateMessage.size());
-
-  container.updateTupleAction().execute(0, updateData);
-
-  std::cout << "Updated tuple: ";
-  std::cout.write(updateData, updateMessage.size());
-
-  std::cout << "\n\n";
+  std::cout << "Free space offset: " << readHeader.freeSpaceOffset << "\n\n";
 
   // --------------------------------------------------
-  // 4. READ AFTER UPDATE
+  // 5. READ SLOT
   // --------------------------------------------------
 
-  std::cout << "[4] READ AFTER UPDATE\n";
+  Slot readSlot;
 
-  Page updatedPage;
+  std::memcpy(&readSlot,
+              readPage.data() + sizeof(PageHeader) + slotId * sizeof(Slot),
+              sizeof(Slot));
 
-  container.readTupleAction().execute(0, updatedPage);
+  std::cout << "[5] SLOT\n";
 
-  std::cout << "Tuple after update: ";
+  std::cout << "Slot ID: " << slotId << "\n";
 
-  std::cout.write(updatedPage.data(), updateMessage.size());
+  std::cout << "Tuple offset: " << readSlot.offset << "\n";
 
-  std::cout << "\n\n";
-
-  // --------------------------------------------------
-  // VERIFY UPDATE
-  // --------------------------------------------------
-
-  bool updateSuccess =
-      std::memcmp(updatedPage.data(), updateData, updateMessage.size()) == 0;
-
-  if (updateSuccess) {
-    std::cout << "UPDATE verification: PASS\n\n";
-  } else {
-    std::cout << "UPDATE verification: FAIL\n\n";
-  }
+  std::cout << "Tuple size: " << readSlot.size << "\n\n";
 
   // --------------------------------------------------
-  // 5. DELETE
+  // 6. READ TUPLE DIRECTLY FROM PAGE
   // --------------------------------------------------
 
-  std::cout << "[5] DELETE TUPLE\n";
+  std::cout << "[6] TUPLE\n";
 
-  container.deleteTupleAction().execute(0);
+  std::string readMessage(readPage.data() + readSlot.offset, readSlot.size);
 
-  std::cout << "Tuple deleted.\n\n";
+  std::cout << "Tuple from disk: " << readMessage << "\n\n";
 
   // --------------------------------------------------
-  // 6. READ AFTER DELETE
+  // 7. VERIFY
   // --------------------------------------------------
 
-  std::cout << "[6] READ AFTER DELETE\n";
+  bool headerSuccess = readHeader.pageId == pageId && readHeader.slotCount == 1;
 
-  Page deletedPage;
+  bool slotSuccess = readSlot.size == tupleSize;
 
-  container.readTupleAction().execute(0, deletedPage);
+  bool tupleSuccess = readMessage == message;
 
-  bool deleteSuccess = true;
+  std::cout << "[7] VERIFICATION\n";
 
-  for (std::size_t i = 0; i < Page::PAGE_SIZE; i++) {
+  std::cout << "Header: " << (headerSuccess ? "PASS" : "FAIL") << "\n";
 
-    if (deletedPage.data()[i] != 0) {
-      deleteSuccess = false;
-      break;
-    }
-  }
+  std::cout << "Slot: " << (slotSuccess ? "PASS" : "FAIL") << "\n";
 
-  if (deleteSuccess) {
-    std::cout << "Page is empty.\n";
-    std::cout << "DELETE verification: PASS\n\n";
-  } else {
-    std::cout << "Page still contains data.\n";
-    std::cout << "DELETE verification: FAIL\n\n";
-  }
+  std::cout << "Tuple: " << (tupleSuccess ? "PASS" : "FAIL") << "\n\n";
 
   // --------------------------------------------------
   // FINAL RESULT
@@ -160,13 +141,13 @@ int main() {
   std::cout << "       FINAL RESULT\n";
   std::cout << "=========================\n";
 
-  if (createReadSuccess && updateSuccess && deleteSuccess) {
+  if (headerSuccess && slotSuccess && tupleSuccess) {
 
-    std::cout << "ALL CRUD TESTS PASSED\n";
+    std::cout << "CREATE TUPLE TEST PASSED\n";
 
   } else {
 
-    std::cout << "SOME CRUD TESTS FAILED\n";
+    std::cout << "CREATE TUPLE TEST FAILED\n";
   }
 
   return 0;
