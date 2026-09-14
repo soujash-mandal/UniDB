@@ -5,7 +5,7 @@
 
 DeleteTupleAction::DeleteTupleAction(PagePort &pagePort) : pagePort(pagePort) {}
 
-void DeleteTupleAction::execute(const PageId &pageId, uint16_t slotId) {
+void DeleteTupleAction::execute(const PageId &pageId, SlotId slotId) {
   Page page;
   pagePort.readPage(pageId, page);
   PageHeader header;

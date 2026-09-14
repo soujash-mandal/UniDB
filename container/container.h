@@ -10,7 +10,6 @@
 #include "../PageService/actions/CreateTupleAction.h"
 #include "../PageService/actions/DeleteTupleAction.h"
 #include "../PageService/actions/GetTupleAction.h"
-#include "../PageService/actions/UpdateTupleAction.h"
 
 class Container {
 
@@ -22,7 +21,6 @@ public:
 
   CreateTupleAction &createTupleAction();
   GetTupleAction &getTupleAction();
-  UpdateTupleAction &updateTupleAction();
   DeleteTupleAction &deleteTupleAction();
   CreatePageAction &createPageAction();
 
@@ -34,7 +32,6 @@ private:
 
   CreateTupleAction createTuple;
   GetTupleAction getTuple;
-  UpdateTupleAction updateTuple;
   DeleteTupleAction deleteTuple;
   CreatePageAction createPage;
 };
