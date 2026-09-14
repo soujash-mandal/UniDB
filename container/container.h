@@ -33,7 +33,7 @@ private:
   DiskManagerPageAdapter pageAdapter;
 
   CreateTupleAction createTuple;
-  GetTupleAction readTuple;
+  GetTupleAction getTuple;
   UpdateTupleAction updateTuple;
   DeleteTupleAction deleteTuple;
   CreatePageAction createPage;
