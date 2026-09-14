@@ -1,4 +1,5 @@
 #include "FileDiskManagerAdapter.h"
+#include "../../core/exceptions/PageNotFoundException.h"
 #include <stdexcept>
 
 FileDiskManagerAdapter::FileDiskManagerAdapter(const std::string &fileName) {
@@ -14,7 +15,7 @@ FileDiskManagerAdapter::FileDiskManagerAdapter(const std::string &fileName) {
   }
 }
 
-void FileDiskManagerAdapter::writePage(PageId pageId, const Page &page) {
+void FileDiskManagerAdapter::writePage(const PageId &pageId, const Page &page) {
   const std::streamoff offset =
       static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
   file.seekp(offset);
@@ -22,9 +23,16 @@ void FileDiskManagerAdapter::writePage(PageId pageId, const Page &page) {
   file.flush();
 }
 
-void FileDiskManagerAdapter::readPage(PageId pageId, Page &page) {
+void FileDiskManagerAdapter::readPage(const PageId &pageId, Page &page) {
+
   const std::streamoff offset =
       static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
   file.seekg(offset);
+  if (!file) {
+    throw PageNotFoundException("Page does not exist");
+  }
   file.read(page.data(), Page::PAGE_SIZE);
+  if (!file) {
+    throw std::runtime_error("Could not read page");
+  }
 }
