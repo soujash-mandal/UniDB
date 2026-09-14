@@ -12,7 +12,7 @@ WritePageAction &Container::writePageAction() { return writePage; }
 
 CreateTupleAction &Container::createTupleAction() { return createTuple; }
 
-ReadTupleAction &Container::readTupleAction() { return readTuple; }
+GetTupleAction &Container::getTupleAction() { return readTuple; }
 
 UpdateTupleAction &Container::updateTupleAction() { return updateTuple; }
 

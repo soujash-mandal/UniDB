@@ -35,7 +35,7 @@ add_executable(unidb
     PageService/adapter/DiskManagerPageAdapter.cpp
 
     PageService/actions/CreateTupleAction.cpp
-    PageService/actions/ReadTupleAction.cpp
+    PageService/actions/GetTupleAction.cpp
     PageService/actions/UpdateTupleAction.cpp
     PageService/actions/DeleteTupleAction.cpp
     PageService/actions/CreatePageAction.cpp
@@ -59,7 +59,7 @@ add_executable(tuple_tests
     # PageService
     PageService/adapter/DiskManagerPageAdapter.cpp
     PageService/actions/CreateTupleAction.cpp
-    PageService/actions/ReadTupleAction.cpp
+    PageService/actions/GetTupleAction.cpp
     PageService/actions/UpdateTupleAction.cpp
     PageService/actions/DeleteTupleAction.cpp
     PageService/actions/CreatePageAction.cpp

@@ -3,7 +3,7 @@
 
 #include "DiskManagerService/adapter/FileDiskManagerAdapter.h"
 #include "PageService/actions/CreateTupleAction.h"
-#include "PageService/actions/ReadTupleAction.h"
+#include "PageService/actions/GetTupleAction.h"
 #include "container/container.h"
 #include "core/Page.h"
 
@@ -57,7 +57,7 @@ int main() {
 
   char tupleData[Page::PAGE_SIZE]{};
 
-  container.readTupleAction().execute(pageId, slotId, tupleData);
+  container.getTupleAction().execute(pageId, slotId, tupleData);
 
   std::string readMessage(tupleData, tupleSize);
 

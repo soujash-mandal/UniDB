@@ -1,14 +1,14 @@
-#include "ReadTupleAction.h"
+#include "GetTupleAction.h"
 
 #include <cstring>
 
 #include "../../core/PageHeader.h"
 #include "../../core/Slot.h"
 
-ReadTupleAction::ReadTupleAction(PagePort &pagePort) : pagePort(pagePort) {}
+GetTupleAction::GetTupleAction(PagePort &pagePort) : pagePort(pagePort) {}
 
-void ReadTupleAction::execute(const PageId &pageId, uint16_t slotId,
-                              char *tupleData) {
+void GetTupleAction::execute(const PageId &pageId, uint16_t slotId,
+                             char *tupleData) {
 
   Page page;
   pagePort.readPage(pageId, page);
