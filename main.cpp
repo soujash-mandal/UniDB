@@ -1,17 +1,16 @@
-#include <cstring>
 #include <iostream>
 #include <string>
 
 #include "DiskManagerService/adapter/FileDiskManagerAdapter.h"
 #include "PageService/actions/CreateTupleAction.h"
+#include "PageService/actions/ReadTupleAction.h"
 #include "container/container.h"
 #include "core/Page.h"
-#include "core/PageHeader.h"
-#include "core/Slot.h"
 
 int main() {
+
   std::cout << "=========================\n";
-  std::cout << "   CreateTupleAction Test\n";
+  std::cout << "   Tuple Action Test\n";
   std::cout << "=========================\n\n";
 
   // --------------------------------------------------
@@ -19,17 +18,18 @@ int main() {
   // --------------------------------------------------
 
   FileDiskManagerAdapter diskManagerAdapter("database.db");
+
   Container container(diskManagerAdapter);
 
   const PageId pageId = 0;
 
   // --------------------------------------------------
-  // 1. CREATE EMPTY PAGE
+  // 1. CREATE PAGE
   // --------------------------------------------------
 
-  std::cout << "[1] CREATE EMPTY PAGE\n";
+  std::cout << "[1] CREATE PAGE\n";
 
-  container.createPageAction().execute(0);
+  container.createPageAction().execute(pageId);
 
   std::cout << "Page created: " << pageId << "\n\n";
 
@@ -39,90 +39,39 @@ int main() {
 
   std::cout << "[2] CREATE TUPLE\n";
 
-  std::string message = "Hello from UniDB";
+  const std::string message = "Hello from UniDB";
 
-  uint16_t tupleSize = static_cast<uint16_t>(message.size());
+  const uint16_t tupleSize = static_cast<uint16_t>(message.size());
 
-  uint16_t slotId =
+  const uint16_t slotId =
       container.createTupleAction().execute(pageId, message.data(), tupleSize);
 
   std::cout << "Tuple created successfully.\n";
-  std::cout << "Slot ID: " << slotId << "\n";
-  std::cout << "Tuple: " << message << "\n\n";
+  std::cout << "Slot ID: " << slotId << "\n\n";
 
   // --------------------------------------------------
-  // 3. READ RAW PAGE FROM DISK
+  // 3. READ TUPLE
   // --------------------------------------------------
 
-  std::cout << "[3] READ PAGE FROM DISK\n";
+  std::cout << "[3] READ TUPLE\n";
 
-  Page readPage;
+  char tupleData[Page::PAGE_SIZE]{};
 
-  diskManagerAdapter.readPage(pageId, readPage);
+  container.readTupleAction().execute(pageId, slotId, tupleData);
 
-  std::cout << "Page read successfully.\n\n";
-
-  // --------------------------------------------------
-  // 4. READ PAGE HEADER
-  // --------------------------------------------------
-
-  PageHeader readHeader;
-
-  std::memcpy(&readHeader, readPage.data(), sizeof(PageHeader));
-
-  std::cout << "[4] PAGE HEADER\n";
-
-  std::cout << "Page ID: " << readHeader.pageId << "\n";
-
-  std::cout << "Slot count: " << readHeader.slotCount << "\n";
-
-  std::cout << "Free space offset: " << readHeader.freeSpaceOffset << "\n\n";
-
-  // --------------------------------------------------
-  // 5. READ SLOT
-  // --------------------------------------------------
-
-  Slot readSlot;
-
-  std::memcpy(&readSlot,
-              readPage.data() + sizeof(PageHeader) + slotId * sizeof(Slot),
-              sizeof(Slot));
-
-  std::cout << "[5] SLOT\n";
-
-  std::cout << "Slot ID: " << slotId << "\n";
-
-  std::cout << "Tuple offset: " << readSlot.offset << "\n";
-
-  std::cout << "Tuple size: " << readSlot.size << "\n\n";
-
-  // --------------------------------------------------
-  // 6. READ TUPLE DIRECTLY FROM PAGE
-  // --------------------------------------------------
-
-  std::cout << "[6] TUPLE\n";
-
-  std::string readMessage(readPage.data() + readSlot.offset, readSlot.size);
+  std::string readMessage(tupleData, tupleSize);
 
   std::cout << "Tuple from disk: " << readMessage << "\n\n";
 
   // --------------------------------------------------
-  // 7. VERIFY
+  // 4. VERIFY
   // --------------------------------------------------
 
-  bool headerSuccess = readHeader.pageId == pageId && readHeader.slotCount == 1;
+  std::cout << "[4] VERIFICATION\n";
 
-  bool slotSuccess = readSlot.size == tupleSize;
+  const bool success = readMessage == message;
 
-  bool tupleSuccess = readMessage == message;
-
-  std::cout << "[7] VERIFICATION\n";
-
-  std::cout << "Header: " << (headerSuccess ? "PASS" : "FAIL") << "\n";
-
-  std::cout << "Slot: " << (slotSuccess ? "PASS" : "FAIL") << "\n";
-
-  std::cout << "Tuple: " << (tupleSuccess ? "PASS" : "FAIL") << "\n\n";
+  std::cout << "Tuple: " << (success ? "PASS" : "FAIL") << "\n\n";
 
   // --------------------------------------------------
   // FINAL RESULT
@@ -132,14 +81,11 @@ int main() {
   std::cout << "       FINAL RESULT\n";
   std::cout << "=========================\n";
 
-  if (headerSuccess && slotSuccess && tupleSuccess) {
-
-    std::cout << "CREATE TUPLE TEST PASSED\n";
-
+  if (success) {
+    std::cout << "CREATE + READ TUPLE TEST PASSED\n";
   } else {
-
-    std::cout << "CREATE TUPLE TEST FAILED\n";
+    std::cout << "CREATE + READ TUPLE TEST FAILED\n";
   }
 
-  return 0;
+  return success ? 0 : 1;
 }
