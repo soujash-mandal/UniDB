@@ -9,8 +9,8 @@ public:
   explicit DiskManagerPageAdapter(ReadPageAction &readPage,
                                   WritePageAction &writePage);
 
-  void readPage(PageId pageId, Page &page) override;
-  void writePage(PageId pageId, const Page &page) override;
+  void readPage(const PageId &pageId, Page &page) override;
+  void writePage(const PageId &pageId, const Page &page) override;
 
 private:
   ReadPageAction &readPageAction;
