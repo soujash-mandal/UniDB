@@ -31,13 +31,13 @@ add_executable(unidb
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
 
-    # PageService
-    PageService/adapter/DiskManagerPageAdapter.cpp
+    # TupleService
+    TupleService/adapter/DiskManagerPageAdapter.cpp
 
-    PageService/actions/CreateTupleAction.cpp
-    PageService/actions/GetTupleAction.cpp
-    PageService/actions/DeleteTupleAction.cpp
-    PageService/actions/CreatePageAction.cpp
+    TupleService/actions/CreateTupleAction.cpp
+    TupleService/actions/GetTupleAction.cpp
+    TupleService/actions/DeleteTupleAction.cpp
+    TupleService/actions/CreatePageAction.cpp
 )
 
 
@@ -46,7 +46,7 @@ add_executable(unidb
 # --------------------------------
 
 add_executable(tuple_tests
-    PageService/test/TupleActionsTest.cpp
+    TupleService/test/TupleActionsTest.cpp
     # Container
     Container/Container.cpp
 
@@ -55,12 +55,12 @@ add_executable(tuple_tests
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
 
-    # PageService
-    PageService/adapter/DiskManagerPageAdapter.cpp
-    PageService/actions/CreateTupleAction.cpp
-    PageService/actions/GetTupleAction.cpp
-    PageService/actions/DeleteTupleAction.cpp
-    PageService/actions/CreatePageAction.cpp
+    # TupleService
+    TupleService/adapter/DiskManagerPageAdapter.cpp
+    TupleService/actions/CreateTupleAction.cpp
+    TupleService/actions/GetTupleAction.cpp
+    TupleService/actions/DeleteTupleAction.cpp
+    TupleService/actions/CreatePageAction.cpp
 )
 
 

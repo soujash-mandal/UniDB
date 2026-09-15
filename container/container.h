@@ -4,12 +4,12 @@
 #include "../DiskManager/actions/WritePageAction.h"
 #include "../DiskManager/port/DiskManagerPort.h"
 
-#include "../PageService/adapter/DiskManagerPageAdapter.h"
+#include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
-#include "../PageService/actions/CreatePageAction.h"
-#include "../PageService/actions/CreateTupleAction.h"
-#include "../PageService/actions/DeleteTupleAction.h"
-#include "../PageService/actions/GetTupleAction.h"
+#include "../TupleService/actions/CreatePageAction.h"
+#include "../TupleService/actions/CreateTupleAction.h"
+#include "../TupleService/actions/DeleteTupleAction.h"
+#include "../TupleService/actions/GetTupleAction.h"
 
 class Container {
 

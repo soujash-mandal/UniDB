@@ -2,9 +2,9 @@
 #include <string>
 
 #include "DiskManager/adapter/FileDiskManagerAdapter.h"
-#include "PageService/actions/CreatePageAction.h"
-#include "PageService/actions/DeleteTupleAction.h"
-#include "PageService/actions/GetTupleAction.h"
+#include "TupleService/actions/CreatePageAction.h"
+#include "TupleService/actions/DeleteTupleAction.h"
+#include "TupleService/actions/GetTupleAction.h"
 #include "container/container.h"
 #include "core/Page.h"
 
