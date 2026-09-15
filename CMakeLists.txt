@@ -25,11 +25,11 @@ add_executable(unidb
     # Container
     Container/Container.cpp
 
-    # DiskManagerService
-    DiskManagerService/adapter/FileDiskManagerAdapter.cpp
+    # DiskManager
+    DiskManager/adapter/FileDiskManagerAdapter.cpp
 
-    DiskManagerService/actions/ReadPageAction.cpp
-    DiskManagerService/actions/WritePageAction.cpp
+    DiskManager/actions/ReadPageAction.cpp
+    DiskManager/actions/WritePageAction.cpp
 
     # PageService
     PageService/adapter/DiskManagerPageAdapter.cpp
@@ -50,10 +50,10 @@ add_executable(tuple_tests
     # Container
     Container/Container.cpp
 
-    # DiskManagerService
-    DiskManagerService/adapter/FileDiskManagerAdapter.cpp
-    DiskManagerService/actions/ReadPageAction.cpp
-    DiskManagerService/actions/WritePageAction.cpp
+    # DiskManager
+    DiskManager/adapter/FileDiskManagerAdapter.cpp
+    DiskManager/actions/ReadPageAction.cpp
+    DiskManager/actions/WritePageAction.cpp
 
     # PageService
     PageService/adapter/DiskManagerPageAdapter.cpp

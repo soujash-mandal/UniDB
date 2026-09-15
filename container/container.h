@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../DiskManagerService/actions/ReadPageAction.h"
-#include "../DiskManagerService/actions/WritePageAction.h"
-#include "../DiskManagerService/port/DiskManagerPort.h"
+#include "../DiskManager/actions/ReadPageAction.h"
+#include "../DiskManager/actions/WritePageAction.h"
+#include "../DiskManager/port/DiskManagerPort.h"
 
 #include "../PageService/adapter/DiskManagerPageAdapter.h"
 

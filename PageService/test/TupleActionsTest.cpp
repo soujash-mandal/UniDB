@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "../../DiskManagerService/adapter/FileDiskManagerAdapter.h"
+#include "../../DiskManager/adapter/FileDiskManagerAdapter.h"
 #include "../../container/container.h"
 #include "../../core/Page.h"
 #include "../actions/CreatePageAction.h"

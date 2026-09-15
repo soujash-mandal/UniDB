@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "DiskManagerService/adapter/FileDiskManagerAdapter.h"
+#include "DiskManager/adapter/FileDiskManagerAdapter.h"
 #include "PageService/actions/CreatePageAction.h"
 #include "PageService/actions/DeleteTupleAction.h"
 #include "PageService/actions/GetTupleAction.h"

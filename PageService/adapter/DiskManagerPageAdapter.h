@@ -1,8 +1,8 @@
 #pragma once
 #include "../port/PagePort.h"
 
-#include "../../DiskManagerService/actions/ReadPageAction.h"
-#include "../../DiskManagerService/actions/WritePageAction.h"
+#include "../../DiskManager/actions/ReadPageAction.h"
+#include "../../DiskManager/actions/WritePageAction.h"
 
 class DiskManagerPageAdapter : public PagePort {
 public:
