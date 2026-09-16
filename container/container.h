@@ -2,7 +2,7 @@
 
 #include "../DiskManager/actions/ReadPageAction.h"
 #include "../DiskManager/actions/WritePageAction.h"
-#include "../DiskManager/port/DiskManagerPort.h"
+#include "../DiskManager/port/DiskPort.h"
 
 #include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
@@ -14,7 +14,7 @@
 class Container {
 
 public:
-  explicit Container(DiskManagerPort &diskManager);
+  explicit Container(DiskPort &diskManager);
 
   ReadPageAction &readPageAction();
   WritePageAction &writePageAction();

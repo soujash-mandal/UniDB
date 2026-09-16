@@ -1,6 +1,6 @@
 #include "container.h"
 
-Container::Container(DiskManagerPort &diskManager)
+Container::Container(DiskPort &diskManager)
     : readPage(diskManager), writePage(diskManager),
       pageAdapter(readPage, writePage), createTuple(pageAdapter),
       getTuple(pageAdapter), deleteTuple(pageAdapter), createPage(pageAdapter) {

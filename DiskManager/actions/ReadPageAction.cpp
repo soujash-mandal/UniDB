@@ -1,6 +1,6 @@
 #include "ReadPageAction.h"
 
-ReadPageAction::ReadPageAction(DiskManagerPort &diskManager)
+ReadPageAction::ReadPageAction(DiskPort &diskManager)
     : diskManager(diskManager) {}
 
 void ReadPageAction::execute(PageId pageId, Page &page) {

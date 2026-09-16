@@ -2,9 +2,9 @@
 #include "../../core/Page.h"
 #include "../../core/PageId.h"
 
-class DiskManagerPort {
+class DiskPort {
 public:
-  virtual ~DiskManagerPort() = default;
+  virtual ~DiskPort() = default;
   virtual void writePage(const PageId &pageId, const Page &page) = 0;
   virtual void readPage(const PageId &pageId, Page &page) = 0;
 };

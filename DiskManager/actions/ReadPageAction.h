@@ -1,13 +1,13 @@
 #pragma once
 
 #include "../../core/PageId.h"
-#include "../port/DiskManagerPort.h"
+#include "../port/DiskPort.h"
 
 class ReadPageAction {
 public:
-  explicit ReadPageAction(DiskManagerPort &diskManager);
+  explicit ReadPageAction(DiskPort &diskManager);
   void execute(PageId pageId, Page &page);
 
 private:
-  DiskManagerPort &diskManager;
+  DiskPort &diskManager;
 };
