@@ -32,7 +32,13 @@ add_executable(unidb
     DiskManager/actions/WritePageAction.cpp
 
     # FreePageManager
+    FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
+    FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
+
     FreePageManager/domain/FreePageMetadata.cpp
+    FreePageManager/actions/AllocatePageAction.cpp
+    FreePageManager/actions/FreePageAction.cpp
+
 
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
@@ -64,9 +70,17 @@ add_executable(tests
     DiskManager/actions/WritePageAction.cpp
 
     # FreePageManager
-    FreePageManager/domain/FreePageMetadata.cpp
-    FreePageManager/test/FreePageMetadataTest.cpp
+    FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
+    FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
 
+    FreePageManager/domain/FreePageMetadata.cpp
+
+    FreePageManager/actions/AllocatePageAction.cpp
+    FreePageManager/actions/FreePageAction.cpp
+
+    FreePageManager/test/FreePageMetadataTest.cpp
+    FreePageManager/test/AllocatePageActionTest.cpp
+    
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp

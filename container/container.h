@@ -4,6 +4,11 @@
 #include "../DiskManager/actions/WritePageAction.h"
 #include "../DiskManager/port/DiskPort.h"
 
+#include "../FreePageManager/actions/AllocatePageAction.h"
+#include "../FreePageManager/actions/FreePageAction.h"
+#include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
+#include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
+
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
@@ -20,6 +25,8 @@ public:
   explicit Container(DiskPort &diskManager);
   ReadPageAction &readPageAction();
   WritePageAction &writePageAction();
+  AllocatePageAction &allocatePageAction();
+  FreePageAction &freePageAction();
   CreateTupleAction &createTupleAction();
   GetTupleAction &getTupleAction();
   DeleteTupleAction &deleteTupleAction();
@@ -30,6 +37,12 @@ private:
   WritePageAction writePage;
   ReadPageAdapter readPageAdapter;
   WritePageAdapter writePageAdapter;
+
+  ReadFreePageMetadataAdapter readFreePageMetadataAdapter;
+  WriteFreePageMetadataAdapter writeFreePageMetadataAdapter;
+  AllocatePageAction allocatePage;
+  FreePageAction freePage;
+
   DiskManagerPageAdapter pageAdapter;
   CreateTupleAction createTuple;
   GetTupleAction getTuple;
