@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -19,8 +20,9 @@ protected:
 
   void SetUp() override {
     diskManagerAdapter = new FileDiskManagerAdapter("tuple_test.db");
+    uint32_t bufferPoolSize = 100;
 
-    container = new Container(*diskManagerAdapter);
+    container = new Container(*diskManagerAdapter, bufferPoolSize);
 
     container->createPageAction().execute(pageId);
   }

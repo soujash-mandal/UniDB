@@ -9,6 +9,12 @@
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
+#include "../BufferPoolManager/actions/FetchPageAction.h"
+#include "../BufferPoolManager/actions/FlushAllPagesAction.h"
+#include "../BufferPoolManager/actions/FlushPageAction.h"
+#include "../BufferPoolManager/actions/NewPageAction.h"
+#include "../BufferPoolManager/actions/UnpinPageAction.h"
+#include "../BufferPoolManager/adapter/AllocatePageAdapter.h"
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
@@ -22,28 +28,56 @@
 class Container {
 
 public:
-  explicit Container(DiskPort &diskManager);
+  explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize);
+
+  // Disk Manager
   ReadPageAction &readPageAction();
   WritePageAction &writePageAction();
+
+  // Free Page Manager
   AllocatePageAction &allocatePageAction();
   FreePageAction &freePageAction();
+
+  // Buffer Pool Manager
+  FetchPageAction &fetchPageAction();
+  UnpinPageAction &unpinPageAction();
+  FlushPageAction &flushPageAction();
+  NewPageAction &newPageAction();
+  FlushAllPagesAction &flushAllPagesAction();
+
+  // Tuple Service
   CreateTupleAction &createTupleAction();
   GetTupleAction &getTupleAction();
   DeleteTupleAction &deleteTupleAction();
   CreatePageAction &createPageAction();
 
 private:
+  // Disk Manager
   ReadPageAction readPage;
   WritePageAction writePage;
-  ReadPageAdapter readPageAdapter;
-  WritePageAdapter writePageAdapter;
 
+  // Free Page Manager
   ReadFreePageMetadataAdapter readFreePageMetadataAdapter;
   WriteFreePageMetadataAdapter writeFreePageMetadataAdapter;
+
   AllocatePageAction allocatePage;
   FreePageAction freePage;
 
+  // Buffer Pool Manager
+  ReadPageAdapter readPageAdapter;
+  WritePageAdapter writePageAdapter;
+  BufferPool bufferPool;
+  AllocatePageAdapter allocatePageAdapter;
+
+  FetchPageAction fetchPage;
+  UnpinPageAction unpinPage;
+  FlushPageAction flushPage;
+  NewPageAction newPage;
+  FlushAllPagesAction flushAllPages;
+
+  // Tuple Service
   DiskManagerPageAdapter pageAdapter;
+
   CreateTupleAction createTuple;
   GetTupleAction getTuple;
   DeleteTupleAction deleteTuple;

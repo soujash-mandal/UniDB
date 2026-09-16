@@ -1,31 +1,33 @@
 #include "container.h"
 
-Container::Container(DiskPort &diskManager)
-    : readPage(diskManager), writePage(diskManager),
+Container::Container(DiskPort &diskManager, uint32_t bufferPoolSize)
+    : // Disk Manager
+      readPage(diskManager), writePage(diskManager),
 
-      // FreePageManager
+      // Free Page Manager
       readFreePageMetadataAdapter(readPage),
       writeFreePageMetadataAdapter(writePage),
-
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
       freePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
 
-      // BufferPoolManager
+      // Buffer Pool Manager
       readPageAdapter(readPage), writePageAdapter(writePage),
+      bufferPool(bufferPoolSize), allocatePageAdapter(allocatePage),
+      fetchPage(bufferPool, readPageAdapter), unpinPage(bufferPool),
+      flushPage(bufferPool, writePageAdapter),
+      newPage(bufferPool, allocatePageAdapter),
+      flushAllPages(bufferPool, writePageAdapter),
 
-      // TupleService
+      // Tuple Service
       pageAdapter(readPage, writePage), createTuple(pageAdapter),
       getTuple(pageAdapter), deleteTuple(pageAdapter), createPage(pageAdapter) {
 }
 
-ReadPageAction &Container::readPageAction() { return readPage; }
-
-WritePageAction &Container::writePageAction() { return writePage; }
-
+// Disk Manager
+// Free Page Manager
+// Buffer Pool Manager
+// Tuple Service
 CreateTupleAction &Container::createTupleAction() { return createTuple; }
-
 GetTupleAction &Container::getTupleAction() { return getTuple; }
-
 DeleteTupleAction &Container::deleteTupleAction() { return deleteTuple; }
-
 CreatePageAction &Container::createPageAction() { return createPage; }

@@ -27,27 +27,30 @@ add_executable(unidb
 
     # DiskManager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
-
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
 
     # FreePageManager
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
-
     FreePageManager/domain/FreePageMetadata.cpp
     FreePageManager/actions/AllocatePageAction.cpp
     FreePageManager/actions/FreePageAction.cpp
 
-
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
+    BufferPoolManager/adapter/AllocatePageAdapter.cpp
+    BufferPoolManager/actions/FetchPageAction.cpp
+    BufferPoolManager/actions/FlushAllPagesAction.cpp
+    BufferPoolManager/actions/FlushPageAction.cpp
+    BufferPoolManager/actions/NewPageAction.cpp
+    BufferPoolManager/actions/UnpinPageAction.cpp
+
     
 
     # TupleService
     TupleService/adapter/DiskManagerPageAdapter.cpp
-
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
@@ -60,7 +63,7 @@ add_executable(unidb
 # --------------------------------
 
 add_executable(tests
-    TupleService/test/TupleActionsTest.cpp
+    
     # Container
     Container/Container.cpp
 
@@ -72,18 +75,21 @@ add_executable(tests
     # FreePageManager
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
-
     FreePageManager/domain/FreePageMetadata.cpp
-
     FreePageManager/actions/AllocatePageAction.cpp
     FreePageManager/actions/FreePageAction.cpp
-
     FreePageManager/test/FreePageMetadataTest.cpp
     FreePageManager/test/AllocatePageActionTest.cpp
     
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
+    BufferPoolManager/adapter/AllocatePageAdapter.cpp
+    BufferPoolManager/actions/FetchPageAction.cpp
+    BufferPoolManager/actions/FlushAllPagesAction.cpp
+    BufferPoolManager/actions/FlushPageAction.cpp
+    BufferPoolManager/actions/NewPageAction.cpp
+    BufferPoolManager/actions/UnpinPageAction.cpp
 
     # TupleService
     TupleService/adapter/DiskManagerPageAdapter.cpp
@@ -91,6 +97,7 @@ add_executable(tests
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
     TupleService/actions/CreatePageAction.cpp
+    TupleService/test/TupleActionsTest.cpp
 )
 
 

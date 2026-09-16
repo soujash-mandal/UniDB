@@ -18,8 +18,9 @@ int main() {
   // --------------------------------------------------
 
   FileDiskManagerAdapter diskManagerAdapter("database.db");
+  uint32_t bufferPoolSize = 100;
 
-  Container container(diskManagerAdapter);
+  Container container(diskManagerAdapter, bufferPoolSize);
 
   const PageId pageId = 0;
 
