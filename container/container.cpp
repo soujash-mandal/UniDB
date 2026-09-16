@@ -1,10 +1,10 @@
 #include "container.h"
 
 Container::Container(DiskPort &diskManager)
-    : readPage(diskManager), writePage(diskManager),
-      pageAdapter(readPage, writePage), createTuple(pageAdapter),
-      getTuple(pageAdapter), deleteTuple(pageAdapter), createPage(pageAdapter) {
-}
+    : readPage(diskManager), writePage(diskManager), readPageAdapter(readPage),
+      writePageAdapter(writePage), pageAdapter(readPage, writePage),
+      createTuple(pageAdapter), getTuple(pageAdapter), deleteTuple(pageAdapter),
+      createPage(pageAdapter) {}
 
 ReadPageAction &Container::readPageAction() { return readPage; }
 

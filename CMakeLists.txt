@@ -31,6 +31,11 @@ add_executable(unidb
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
 
+    #BufferPoolManager
+    BufferPoolManager/adapter/ReadPageAdapter.cpp
+    BufferPoolManager/adapter/WritePageAdapter.cpp
+    
+
     # TupleService
     TupleService/adapter/DiskManagerPageAdapter.cpp
 
@@ -54,6 +59,10 @@ add_executable(tuple_tests
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
+
+    #BufferPoolManager
+    BufferPoolManager/adapter/ReadPageAdapter.cpp
+    BufferPoolManager/adapter/WritePageAdapter.cpp
 
     # TupleService
     TupleService/adapter/DiskManagerPageAdapter.cpp

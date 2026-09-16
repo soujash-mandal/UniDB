@@ -4,6 +4,9 @@
 #include "../DiskManager/actions/WritePageAction.h"
 #include "../DiskManager/port/DiskPort.h"
 
+#include "../BufferPoolManager/adapter/ReadPageAdapter.h"
+#include "../BufferPoolManager/adapter/WritePageAdapter.h"
+
 #include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
 #include "../TupleService/actions/CreatePageAction.h"
@@ -15,10 +18,8 @@ class Container {
 
 public:
   explicit Container(DiskPort &diskManager);
-
   ReadPageAction &readPageAction();
   WritePageAction &writePageAction();
-
   CreateTupleAction &createTupleAction();
   GetTupleAction &getTupleAction();
   DeleteTupleAction &deleteTupleAction();
@@ -27,9 +28,9 @@ public:
 private:
   ReadPageAction readPage;
   WritePageAction writePage;
-
+  ReadPageAdapter readPageAdapter;
+  WritePageAdapter writePageAdapter;
   DiskManagerPageAdapter pageAdapter;
-
   CreateTupleAction createTuple;
   GetTupleAction getTuple;
   DeleteTupleAction deleteTuple;
