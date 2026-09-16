@@ -31,6 +31,9 @@ add_executable(unidb
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
 
+    # FreePageManager
+    FreePageManager/domain/FreePageMetadata.cpp
+
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
@@ -50,7 +53,7 @@ add_executable(unidb
 # Tests
 # --------------------------------
 
-add_executable(tuple_tests
+add_executable(tests
     TupleService/test/TupleActionsTest.cpp
     # Container
     Container/Container.cpp
@@ -59,6 +62,10 @@ add_executable(tuple_tests
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
+
+    # FreePageManager
+    FreePageManager/domain/FreePageMetadata.cpp
+    FreePageManager/test/FreePageMetadataTest.cpp
 
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
@@ -73,7 +80,7 @@ add_executable(tuple_tests
 )
 
 
-target_link_libraries(tuple_tests
+target_link_libraries(tests
 
     GTest::gtest
     GTest::gtest_main
@@ -81,8 +88,6 @@ target_link_libraries(tuple_tests
 
 
 enable_testing()
+include(GoogleTest)
 
-add_test(
-    NAME TupleActionsTest
-    COMMAND tuple_tests
-)
+gtest_discover_tests(tests)
