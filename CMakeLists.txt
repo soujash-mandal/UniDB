@@ -90,6 +90,7 @@ add_executable(tests
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
+    BufferPoolManager/test/FetchPageActionTest.cpp
 
     # TupleService
     TupleService/adapter/DiskManagerPageAdapter.cpp
