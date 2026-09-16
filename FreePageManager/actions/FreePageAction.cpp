@@ -23,7 +23,8 @@ void FreePageAction::execute(PageId pageId) {
     metadata.readFromPage(metadataPage);
 
     PageId firstTrackedPageId = metadata.getFirstTrackedPageId();
-    PageId lastTrackedPageId = firstTrackedPageId + FreePageMetadata::MAX_TRACKED_PAGES;
+    PageId lastTrackedPageId =
+        firstTrackedPageId + FreePageMetadata::MAX_TRACKED_PAGES;
 
     if (pageId >= firstTrackedPageId && pageId < lastTrackedPageId) {
       metadata.setPageOccupied(pageId, false);
