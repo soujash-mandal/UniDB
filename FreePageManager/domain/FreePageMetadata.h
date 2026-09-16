@@ -2,6 +2,7 @@
 
 #include "../../core/Page.h"
 #include "../../core/PageId.h"
+
 #include <cstdint>
 
 class FreePageMetadata {
@@ -23,4 +24,6 @@ public:
   bool isPageOccupied(PageId pageId) const;
   void setPageOccupied(PageId pageId, bool occupied);
   PageId findFirstFreePage() const;
+  void readFromPage(const Page &page);
+  void writeToPage(Page &page) const;
 };
