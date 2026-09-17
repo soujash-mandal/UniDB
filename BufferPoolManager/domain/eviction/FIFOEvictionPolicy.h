@@ -1,14 +1,13 @@
 #pragma once
 
-#include <cstdint>
 #include <list>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
-using PageId = uint32_t;
+#include "EvictionPolicy.h"
 
-class FIFOEvictionPolicy {
+class FIFOEvictionPolicy : public EvictionPolicy {
 public:
   void RecordAccess(PageId pageId);
   void SetEvictable(PageId pageId, bool evictable);
