@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 
+#include "BufferPoolManager/domain/eviction/EvictionPolicyType.h"
 #include "DiskManager/adapter/FileDiskManagerAdapter.h"
 #include "TupleService/actions/CreatePageAction.h"
 #include "TupleService/actions/DeleteTupleAction.h"
@@ -19,8 +20,9 @@ int main() {
 
   FileDiskManagerAdapter diskManagerAdapter("database.db");
   uint32_t bufferPoolSize = 100;
+  EvictionPolicyType evictionPolicyType = EvictionPolicyType::FIFO;
 
-  Container container(diskManagerAdapter, bufferPoolSize);
+  Container container(diskManagerAdapter, bufferPoolSize, evictionPolicyType);
 
   const PageId pageId = 0;
 

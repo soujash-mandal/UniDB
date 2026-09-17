@@ -17,6 +17,7 @@
 #include "../BufferPoolManager/adapter/AllocatePageAdapter.h"
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
+#include "../BufferPoolManager/domain/eviction/EvictionPolicyType.h"
 
 #include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
@@ -28,7 +29,8 @@
 class Container {
 
 public:
-  explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize);
+  explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize,
+                     EvictionPolicyType evictionPolicyType);
 
   // Disk Manager
   ReadPageAction &readPageAction();
