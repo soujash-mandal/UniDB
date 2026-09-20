@@ -1,6 +1,14 @@
 #include "container.h"
+#include "../EvictionPolicy/EvictionPolicyFactory.h"
 
-Container::Container(DiskPort &diskManager, uint32_t bufferPoolSize)
+Container::Container(
+    // IO
+    DiskPort &diskManager,
+    // configuration
+    uint32_t bufferPoolSize,
+    EvictionPolicyType evictionPolicyType
+
+    )
     : // Disk Manager
       readPage(diskManager), writePage(diskManager),
 
@@ -9,6 +17,9 @@ Container::Container(DiskPort &diskManager, uint32_t bufferPoolSize)
       writeFreePageMetadataAdapter(writePage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
       freePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
+
+      // Eviction Policy
+      evictionPolicy(EvictionPolicyFactory::Create(evictionPolicyType)),
 
       // Buffer Pool Manager
       readPageAdapter(readPage), writePageAdapter(writePage),

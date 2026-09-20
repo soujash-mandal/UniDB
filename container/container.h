@@ -1,5 +1,8 @@
 #pragma once
 
+// todo: check once if this is even needed or not while testing
+#include <memory>
+
 #include "../DiskManager/actions/ReadPageAction.h"
 #include "../DiskManager/actions/WritePageAction.h"
 #include "../DiskManager/port/DiskPort.h"
@@ -9,6 +12,9 @@
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
+#include "../EvictionPolicy/EvictionPolicy.h"
+#include "../EvictionPolicy/EvictionPolicyType.h"
+
 #include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/FlushAllPagesAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
@@ -17,7 +23,6 @@
 #include "../BufferPoolManager/adapter/AllocatePageAdapter.h"
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
-#include "../BufferPoolManager/domain/eviction/EvictionPolicyType.h"
 
 #include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
@@ -64,6 +69,9 @@ private:
 
   AllocatePageAction allocatePage;
   FreePageAction freePage;
+
+  // Eviction Policy
+  std::unique_ptr<EvictionPolicy> evictionPolicy;
 
   // Buffer Pool Manager
   ReadPageAdapter readPageAdapter;
