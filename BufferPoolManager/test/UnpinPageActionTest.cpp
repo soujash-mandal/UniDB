@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/UnpinPageAction.h"
 #include "../domain/BufferPool.h"
-#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 
 class UnpinPageActionTest : public ::testing::Test {
 protected:
