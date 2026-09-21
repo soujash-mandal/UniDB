@@ -1,5 +1,4 @@
 #include "EvictionPolicyFactory.h"
-
 #include "FIFOEvictionPolicy.h"
 
 std::unique_ptr<EvictionPolicy>

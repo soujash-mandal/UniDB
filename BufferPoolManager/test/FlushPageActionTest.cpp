@@ -1,3 +1,4 @@
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include <gtest/gtest.h>
 
 #include "../actions/FetchPageAction.h"
@@ -35,8 +36,10 @@ TEST(FlushPageActionTest, FlushesPage) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
@@ -56,8 +59,10 @@ TEST(FlushPageActionTest, MarksPageCleanAfterFlush) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
   UnpinPageAction unpinPage(bufferPool);
 
@@ -80,8 +85,10 @@ TEST(FlushPageActionTest, WritesCorrectPageId) {
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   fetchPage.execute(5);
@@ -98,8 +105,10 @@ TEST(FlushPageActionTest, WritesCurrentPageData) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
@@ -117,8 +126,10 @@ TEST(FlushPageActionTest, FlushesCleanPage) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   fetchPage.execute(5);
@@ -136,8 +147,10 @@ TEST(FlushPageActionTest, DoesNotAffectOtherPages) {
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
   UnpinPageAction unpinPage(bufferPool);
 
@@ -164,8 +177,10 @@ TEST(FlushPageActionTest, FlushesPinnedPage) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
@@ -186,6 +201,7 @@ TEST(FlushPageActionTest, ThrowsWhenPageIsNotFound) {
 
   BufferPool bufferPool(1);
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
   FlushPageAction flushPage(bufferPool, writePagePort);
 
@@ -200,8 +216,10 @@ TEST(FlushPageActionTest, CanFlushSamePageMultipleTimes) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
@@ -228,8 +246,10 @@ TEST(FlushPageActionTest, DoesNotRemovePageFromBufferPool) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);

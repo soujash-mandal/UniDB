@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/FetchPageAction.h"
 #include "../actions/UnpinPageAction.h"
 #include "../domain/BufferPool.h"
@@ -13,13 +14,23 @@ public:
   }
 };
 
+class FakeWritePagePort : public WritePagePort {
+public:
+  void writePage(PageId pageId, const Page &page) override {
+    // Nothing to do for the fake.
+  }
+};
+
 // 1. Unpin a fetched page
 TEST(UnpinPageActionTest, UnpinsPage) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -36,8 +47,11 @@ TEST(UnpinPageActionTest, MarksPageDirtyWhenDirtyIsTrue) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -54,8 +68,11 @@ TEST(UnpinPageActionTest, DoesNotMarkPageDirtyWhenDirtyIsFalse) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -72,8 +89,11 @@ TEST(UnpinPageActionTest, MultipleUnpinsDecreasePinCount) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -100,8 +120,11 @@ TEST(UnpinPageActionTest, PinCountDoesNotGoBelowZero) {
 
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -121,8 +144,11 @@ TEST(UnpinPageActionTest, DoesNotAffectOtherPages) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -142,8 +168,11 @@ TEST(UnpinPageActionTest, DirtyFlagRemainsTrueAfterLaterUnpin) {
 
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -177,8 +206,11 @@ TEST(UnpinPageActionTest, ThrowsWhenRequestedPageIsNotInBufferPool) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
@@ -195,8 +227,11 @@ TEST(UnpinPageActionTest, DirtyPageCanBecomeUnpinned) {
 
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);

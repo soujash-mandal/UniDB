@@ -25,17 +25,21 @@ add_executable(unidb
     # Container
     Container/Container.cpp
 
-    # DiskManager
+    # Disk Manager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadPageAction.cpp
     DiskManager/actions/WritePageAction.cpp
 
-    # FreePageManager
+    # Free Page Manager
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
     FreePageManager/domain/FreePageMetadata.cpp
     FreePageManager/actions/AllocatePageAction.cpp
     FreePageManager/actions/FreePageAction.cpp
+
+    # Eviction Policy
+    EvictionPolicy/EvictionPolicyFactory.cpp
+    EvictionPolicy/FIFOEvictionPolicy.cpp
 
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
@@ -80,6 +84,10 @@ add_executable(tests
     FreePageManager/actions/FreePageAction.cpp
     FreePageManager/test/FreePageMetadataTest.cpp
     FreePageManager/test/AllocatePageActionTest.cpp
+
+    # Eviction Policy
+    EvictionPolicy/EvictionPolicyFactory.cpp
+    EvictionPolicy/FIFOEvictionPolicy.cpp
     
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp

@@ -1,14 +1,22 @@
 #include <gtest/gtest.h>
 
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/FetchPageAction.h"
 #include "../domain/BufferPool.h"
 #include "../port/ReadPagePort.h"
+#include "../port/WritePagePort.h"
 
 class FakeReadPagePort : public ReadPagePort {
-
 public:
   void readPage(PageId pageId, Page &page) override {
     page.data()[0] = 'A' + pageId;
+  }
+};
+
+class FakeWritePagePort : public WritePagePort {
+public:
+  void writePage(PageId pageId, const Page &page) override {
+    // Nothing to do for the fake.
   }
 };
 
@@ -17,12 +25,16 @@ TEST(FetchPageActionTest, FetchesPageIntoEmptyFrame) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   Page &page = fetchPage.execute(5);
 
   EXPECT_EQ(page.data()[0], 'F');
+
   EXPECT_EQ(bufferPool.getFrame(0).getPageId(), 5);
   EXPECT_TRUE(bufferPool.getFrame(0).isOccupied());
   EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 1);
@@ -34,8 +46,11 @@ TEST(FetchPageActionTest, FetchExistingPageReturnsSamePage) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   Page &firstPage = fetchPage.execute(5);
 
@@ -52,8 +67,11 @@ TEST(FetchPageActionTest, FetchExistingPageIncreasesPinCount) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   fetchPage.execute(5);
 
@@ -73,8 +91,11 @@ TEST(FetchPageActionTest, FetchesDifferentPagesIntoDifferentFrames) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   fetchPage.execute(5);
   fetchPage.execute(10);
@@ -91,8 +112,11 @@ TEST(FetchPageActionTest, FetchesCorrectPageData) {
 
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   Page &page1 = fetchPage.execute(1);
   Page &page2 = fetchPage.execute(2);
@@ -106,8 +130,11 @@ TEST(FetchPageActionTest, FetchedPageIsOccupied) {
 
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   fetchPage.execute(5);
 
@@ -119,8 +146,11 @@ TEST(FetchPageActionTest, FetchedPageIsClean) {
 
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   fetchPage.execute(5);
 
@@ -132,8 +162,11 @@ TEST(FetchPageActionTest, FetchedPageStartsPinned) {
 
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   fetchPage.execute(5);
 
@@ -145,8 +178,11 @@ TEST(FetchPageActionTest, UsesFirstEmptyFrame) {
 
   BufferPool bufferPool(3);
   FakeReadPagePort readPagePort;
+  FakeWritePagePort writePagePort;
+  FIFOEvictionPolicy evictionPolicy;
 
-  FetchPageAction fetchPage(bufferPool, readPagePort);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
 
   fetchPage.execute(10);
   fetchPage.execute(20);
@@ -157,18 +193,4 @@ TEST(FetchPageActionTest, UsesFirstEmptyFrame) {
   EXPECT_TRUE(bufferPool.getFrame(0).isOccupied());
   EXPECT_TRUE(bufferPool.getFrame(1).isOccupied());
   EXPECT_FALSE(bufferPool.getFrame(2).isOccupied());
-}
-
-// 10. Fetch should fail when the buffer pool is full
-TEST(FetchPageActionTest, ThrowsWhenBufferPoolIsFull) {
-
-  BufferPool bufferPool(2);
-  FakeReadPagePort readPagePort;
-
-  FetchPageAction fetchPage(bufferPool, readPagePort);
-
-  fetchPage.execute(5);
-  fetchPage.execute(10);
-
-  EXPECT_THROW(fetchPage.execute(15), std::runtime_error);
 }

@@ -24,8 +24,8 @@ Container::Container(
       // Buffer Pool Manager
       readPageAdapter(readPage), writePageAdapter(writePage),
       bufferPool(bufferPoolSize), allocatePageAdapter(allocatePage),
-      fetchPage(bufferPool, readPageAdapter), unpinPage(bufferPool),
-      flushPage(bufferPool, writePageAdapter),
+      fetchPage(bufferPool, readPageAdapter, writePageAdapter, *evictionPolicy),
+      unpinPage(bufferPool), flushPage(bufferPool, writePageAdapter),
       newPage(bufferPool, allocatePageAdapter),
       flushAllPages(bufferPool, writePageAdapter),
 

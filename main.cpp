@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 
-#include "BufferPoolManager/domain/eviction/EvictionPolicyType.h"
 #include "DiskManager/adapter/FileDiskManagerAdapter.h"
+#include "EvictionPolicy/EvictionPolicyType.h"
 #include "TupleService/actions/CreatePageAction.h"
 #include "TupleService/actions/DeleteTupleAction.h"
 #include "TupleService/actions/GetTupleAction.h"
