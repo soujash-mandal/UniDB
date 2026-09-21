@@ -24,10 +24,12 @@ Container::Container(
       // Buffer Pool Manager
       readPageAdapter(readPage), writePageAdapter(writePage),
       bufferPool(bufferPoolSize), allocatePageAdapter(allocatePage),
+
       fetchPage(bufferPool, readPageAdapter, writePageAdapter, *evictionPolicy),
       unpinPage(bufferPool, *evictionPolicy),
       flushPage(bufferPool, writePageAdapter),
-      newPage(bufferPool, allocatePageAdapter, *evictionPolicy),
+      newPage(bufferPool, allocatePageAdapter, writePageAdapter,
+              *evictionPolicy),
       flushAllPages(bufferPool, writePageAdapter),
 
       // Tuple Service
@@ -38,6 +40,8 @@ Container::Container(
 // Disk Manager
 // Free Page Manager
 // Buffer Pool Manager
+NewPageAction &Container::newPageAction() { return newPage; }
+
 // Tuple Service
 CreateTupleAction &Container::createTupleAction() { return createTuple; }
 GetTupleAction &Container::getTupleAction() { return getTuple; }
