@@ -1,13 +1,17 @@
 #pragma once
+
 #include "../../core/PageId.h"
 #include "../../core/SlotId.h"
-#include "../port/PagePort.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
 
 class DeleteTupleAction {
 public:
-  explicit DeleteTupleAction(PagePort &pagePort);
+  DeleteTupleAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort);
+
   void execute(const PageId &pageId, SlotId slotId);
 
 private:
-  PagePort &pagePort;
+  FetchPagePort &fetchPagePort;
+  UnpinPagePort &unpinPagePort;
 };
