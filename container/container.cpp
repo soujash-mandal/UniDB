@@ -22,13 +22,10 @@ Container::Container(
       evictionPolicy(EvictionPolicyFactory::Create(evictionPolicyType)),
 
       // Buffer Pool Manager
-      readPageAdapter(readPage), 
-      writePageAdapter(writePage),
-      bufferPool(bufferPoolSize), 
-      allocatePageAdapter(allocatePage),
+      readPageAdapter(readPage), writePageAdapter(writePage),
+      bufferPool(bufferPoolSize), allocatePageAdapter(allocatePage),
       fetchPage(bufferPool, readPageAdapter, writePageAdapter, *evictionPolicy),
-      unpinPage(bufferPool), 
-      flushPage(bufferPool, writePageAdapter),
+      unpinPage(bufferPool), flushPage(bufferPool, writePageAdapter),
       newPage(bufferPool, allocatePageAdapter, *evictionPolicy),
       flushAllPages(bufferPool, writePageAdapter),
 

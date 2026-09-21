@@ -43,6 +43,6 @@ Page &NewPageAction::execute() {
       return frame.getPage();
     }
   }
-  
+
   throw std::runtime_error("Evicted page frame not found");
 }
