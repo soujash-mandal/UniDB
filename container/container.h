@@ -24,6 +24,8 @@
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
+#include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
 #include "../TupleService/actions/CreatePageAction.h"
@@ -86,6 +88,8 @@ private:
   FlushAllPagesAction flushAllPages;
 
   // Tuple Service
+  BufferPoolFetchPageAdapter fetchPageAdapter;
+  BufferPoolUnpinPageAdapter unpinPageAdapter;
   DiskManagerPageAdapter pageAdapter;
 
   CreateTupleAction createTuple;

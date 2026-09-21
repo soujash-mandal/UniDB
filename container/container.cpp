@@ -33,9 +33,10 @@ Container::Container(
       flushAllPages(bufferPool, writePageAdapter),
 
       // Tuple Service
-      pageAdapter(readPage, writePage), createTuple(pageAdapter),
-      getTuple(pageAdapter), deleteTuple(pageAdapter), createPage(pageAdapter) {
-}
+      fetchPageAdapter(fetchPage), unpinPageAdapter(unpinPage),
+      pageAdapter(readPage, writePage),
+      createTuple(fetchPageAdapter, unpinPageAdapter), getTuple(pageAdapter),
+      deleteTuple(pageAdapter), createPage(pageAdapter) {}
 
 // Disk Manager
 // Free Page Manager
