@@ -1,15 +1,18 @@
 #pragma once
 
 #include "../../core/PageId.h"
-#include "../port/PagePort.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
 #include <cstdint>
 
 class CreateTupleAction {
 public:
-  explicit CreateTupleAction(PagePort &pagePort);
+  CreateTupleAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort);
+
   uint16_t execute(const PageId &pageId, const char *tupleData,
                    uint16_t tupleSize);
 
 private:
-  PagePort &pagePort;
+  FetchPagePort &fetchPagePort;
+  UnpinPagePort &unpinPagePort;
 };
