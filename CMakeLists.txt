@@ -54,6 +54,8 @@ add_executable(unidb
     
 
     # TupleService
+    TupleService/adapter/BufferPoolFetchPageAdapter.cpp
+    TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
     TupleService/adapter/DiskManagerPageAdapter.cpp
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
@@ -107,6 +109,8 @@ add_executable(tests
     BufferPoolManager/test/NewPageActionTest.cpp
 
     # TupleService
+    TupleService/adapter/BufferPoolFetchPageAdapter.cpp
+    TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
     TupleService/adapter/DiskManagerPageAdapter.cpp
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
