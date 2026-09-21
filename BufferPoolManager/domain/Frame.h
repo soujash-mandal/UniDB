@@ -25,6 +25,8 @@ public:
   void setDirty(bool dirty) { this->dirty = dirty; }
   void setOccupied(bool occupied) { this->occupied = occupied; }
   void pin() { ++pinCount; }
+  // todo: Frame::unpin() → decide whether an extra unpin should throw or
+  // silently do nothing.
   void unpin() {
     if (pinCount > 0) {
       --pinCount;

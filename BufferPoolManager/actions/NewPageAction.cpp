@@ -66,3 +66,6 @@ Page &NewPageAction::execute() {
   throw std::runtime_error(
       "Eviction policy returned a page not present in buffer pool");
 }
+
+// todo: NewPageAction → add evictionPolicy.Remove(victimPageId) for
+// consistency. -> need to check first
