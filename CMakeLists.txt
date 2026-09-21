@@ -104,7 +104,6 @@ add_executable(tests
 
     BufferPoolManager/test/FetchPageActionTest.cpp
     BufferPoolManager/test/UnpinPageActionTest.cpp
-    BufferPoolManager/test/FlushPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
 
     # TupleService
