@@ -10,6 +10,7 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
 
 Page &NewPageAction::execute() {
   PageId pageId = allocatePagePort.allocatePage();
+
   // 1. First try to find an unused frame.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);

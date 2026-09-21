@@ -88,17 +88,20 @@ add_executable(tests
     # Eviction Policy
     EvictionPolicy/EvictionPolicyFactory.cpp
     EvictionPolicy/FIFOEvictionPolicy.cpp
-    EvictionPolicy/tests/FIFOEvictionPolicyTest.cpp
+    
+    EvictionPolicy/test/FIFOEvictionPolicyTest.cpp
     
     #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
     BufferPoolManager/adapter/AllocatePageAdapter.cpp
+
     BufferPoolManager/actions/FetchPageAction.cpp
     BufferPoolManager/actions/FlushAllPagesAction.cpp
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
+
     BufferPoolManager/test/FetchPageActionTest.cpp
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
