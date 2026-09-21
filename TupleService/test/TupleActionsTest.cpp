@@ -22,7 +22,8 @@ protected:
     diskManagerAdapter = new FileDiskManagerAdapter("tuple_test.db");
     uint32_t bufferPoolSize = 100;
 
-    container = new Container(*diskManagerAdapter, bufferPoolSize, EvictionPolicyType::FIFO);
+    container = new Container(*diskManagerAdapter, bufferPoolSize,
+                              EvictionPolicyType::FIFO);
 
     container->createPageAction().execute(pageId);
   }

@@ -29,8 +29,8 @@ TEST(UnpinPageActionTest, UnpinsPage) {
   FakeWritePagePort writePagePort;
   FIFOEvictionPolicy evictionPolicy;
 
-
-  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,evictionPolicy);
+  FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
+                            evictionPolicy);
   UnpinPageAction unpinPage(bufferPool);
 
   fetchPage.execute(5);
