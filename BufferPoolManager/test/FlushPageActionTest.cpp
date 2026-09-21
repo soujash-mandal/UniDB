@@ -1,6 +1,6 @@
-#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include <gtest/gtest.h>
 
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/FetchPageAction.h"
 #include "../actions/FlushPageAction.h"
 #include "../actions/UnpinPageAction.h"
@@ -32,7 +32,6 @@ public:
 
 // 1. Flush a page writes it to disk
 TEST(FlushPageActionTest, FlushesPage) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -43,7 +42,6 @@ TEST(FlushPageActionTest, FlushesPage) {
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
-
   page.data()[0] = 'X';
 
   flushPage.execute(5);
@@ -55,7 +53,6 @@ TEST(FlushPageActionTest, FlushesPage) {
 
 // 2. Flush should mark the page as clean
 TEST(FlushPageActionTest, MarksPageCleanAfterFlush) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -64,10 +61,9 @@ TEST(FlushPageActionTest, MarksPageCleanAfterFlush) {
   FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
                             evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
-  UnpinPageAction unpinPage(bufferPool);
+  UnpinPageAction unpinPage(bufferPool, evictionPolicy);
 
   Page &page = fetchPage.execute(5);
-
   page.data()[0] = 'X';
 
   unpinPage.execute(5, true);
@@ -81,7 +77,6 @@ TEST(FlushPageActionTest, MarksPageCleanAfterFlush) {
 
 // 3. Flush should write the correct page ID
 TEST(FlushPageActionTest, WritesCorrectPageId) {
-
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -101,7 +96,6 @@ TEST(FlushPageActionTest, WritesCorrectPageId) {
 
 // 4. Flush should write the current page data
 TEST(FlushPageActionTest, WritesCurrentPageData) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -112,7 +106,6 @@ TEST(FlushPageActionTest, WritesCurrentPageData) {
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
-
   page.data()[0] = 'Z';
 
   flushPage.execute(5);
@@ -122,7 +115,6 @@ TEST(FlushPageActionTest, WritesCurrentPageData) {
 
 // 5. Flushing a clean page should still write it
 TEST(FlushPageActionTest, FlushesCleanPage) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -143,7 +135,6 @@ TEST(FlushPageActionTest, FlushesCleanPage) {
 
 // 6. Flushing should only affect the requested page
 TEST(FlushPageActionTest, DoesNotAffectOtherPages) {
-
   BufferPool bufferPool(2);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -152,7 +143,7 @@ TEST(FlushPageActionTest, DoesNotAffectOtherPages) {
   FetchPageAction fetchPage(bufferPool, readPagePort, writePagePort,
                             evictionPolicy);
   FlushPageAction flushPage(bufferPool, writePagePort);
-  UnpinPageAction unpinPage(bufferPool);
+  UnpinPageAction unpinPage(bufferPool, evictionPolicy);
 
   fetchPage.execute(5);
   fetchPage.execute(10);
@@ -173,7 +164,6 @@ TEST(FlushPageActionTest, DoesNotAffectOtherPages) {
 
 // 7. Flushing should work even when page is pinned
 TEST(FlushPageActionTest, FlushesPinnedPage) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -184,7 +174,6 @@ TEST(FlushPageActionTest, FlushesPinnedPage) {
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
-
   page.data()[0] = 'Q';
 
   EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 1);
@@ -198,21 +187,17 @@ TEST(FlushPageActionTest, FlushesPinnedPage) {
 
 // 8. Flush should throw when page is not in the buffer pool
 TEST(FlushPageActionTest, ThrowsWhenPageIsNotFound) {
-
   BufferPool bufferPool(1);
   FakeWritePagePort writePagePort;
-  FIFOEvictionPolicy evictionPolicy;
 
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   EXPECT_THROW(flushPage.execute(5), std::runtime_error);
-
   EXPECT_EQ(writePagePort.writeCount, 0);
 }
 
 // 9. Flushing the same page twice writes it twice
 TEST(FlushPageActionTest, CanFlushSamePageMultipleTimes) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -242,7 +227,6 @@ TEST(FlushPageActionTest, CanFlushSamePageMultipleTimes) {
 
 // 10. Flush should preserve the page in the buffer pool
 TEST(FlushPageActionTest, DoesNotRemovePageFromBufferPool) {
-
   BufferPool bufferPool(1);
   FakeReadPagePort readPagePort;
   FakeWritePagePort writePagePort;
@@ -253,7 +237,6 @@ TEST(FlushPageActionTest, DoesNotRemovePageFromBufferPool) {
   FlushPageAction flushPage(bufferPool, writePagePort);
 
   Page &page = fetchPage.execute(5);
-
   page.data()[0] = 'X';
 
   flushPage.execute(5);
