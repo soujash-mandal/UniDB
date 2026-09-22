@@ -1,0 +1,11 @@
+├── A  FSM page chaining       ⏭️ later
+├── B  New FSM page creation   ⏭️ later
+├── C  Remove page entry       ⏭️ later
+├── D  Faster search           ⏭️ later
+├── E  Free-space buckets      ⏭️ later
+├── F  Better page selection   ⏭️ later
+├── G  Batch updates           ⏭️ later
+├── H  Concurrency             ⏭️ later
+├── I  Crash recovery          ⏭️ later
+├── J  Consistency/repair      ⏭️ later
+└── K  Benchmarking            ⏭️ later
