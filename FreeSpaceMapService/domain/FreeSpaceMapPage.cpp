@@ -25,6 +25,7 @@ void FreeSpaceMapPage::addEntry(PageId pageId, uint32_t freeSpace) {
 
   entries[entryCount].pageId = pageId;
   entries[entryCount].freeSpace = freeSpace;
+
   ++entryCount;
 }
 
@@ -50,11 +51,24 @@ bool FreeSpaceMapPage::getFreeSpace(PageId pageId, uint32_t &freeSpace) const {
   return false;
 }
 
+PageId FreeSpaceMapPage::findPageWithSpace(uint32_t requiredSpace) const {
+
+  for (uint32_t i = 0; i < entryCount; ++i) {
+    if (entries[i].freeSpace >= requiredSpace) {
+      return entries[i].pageId;
+    }
+  }
+
+  return INVALID_PAGE_ID;
+}
+
 void FreeSpaceMapPage::readFromPage(const Page &page) {
   const char *data = page.data();
 
   std::memcpy(&nextPageId, data, sizeof(nextPageId));
+
   std::memcpy(&tableId, data + sizeof(nextPageId), sizeof(tableId));
+
   std::memcpy(&entryCount, data + sizeof(nextPageId) + sizeof(tableId),
               sizeof(entryCount));
 
@@ -71,7 +85,9 @@ void FreeSpaceMapPage::writeToPage(Page &page) const {
   std::memset(data, 0, Page::PAGE_SIZE);
 
   std::memcpy(data, &nextPageId, sizeof(nextPageId));
+
   std::memcpy(data + sizeof(nextPageId), &tableId, sizeof(tableId));
+
   std::memcpy(data + sizeof(nextPageId) + sizeof(tableId), &entryCount,
               sizeof(entryCount));
 

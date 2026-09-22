@@ -10,8 +10,10 @@
 class FreeSpaceMapPage {
 public:
   static constexpr PageId INVALID_PAGE_ID = UINT32_MAX;
+
   static constexpr uint32_t HEADER_SIZE =
       sizeof(PageId) + sizeof(TableId) + sizeof(uint32_t);
+
   static constexpr uint32_t MAX_ENTRIES =
       (Page::PAGE_SIZE - HEADER_SIZE) / sizeof(PageFreeSpace);
 
@@ -37,6 +39,8 @@ public:
   void updateEntry(PageId pageId, uint32_t freeSpace);
 
   bool getFreeSpace(PageId pageId, uint32_t &freeSpace) const;
+
+  PageId findPageWithSpace(uint32_t requiredSpace) const;
 
   void readFromPage(const Page &page);
   void writeToPage(Page &page) const;
