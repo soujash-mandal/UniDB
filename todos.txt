@@ -1,3 +1,5 @@
+FreeSpaceMapService
+│
 ├── A  FSM page chaining       ⏭️ later
 ├── B  New FSM page creation   ⏭️ later
 ├── C  Remove page entry       ⏭️ later
