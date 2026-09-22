@@ -34,9 +34,10 @@ Container::Container(
 
       // Tuple Service
       fetchPageAdapter(fetchPage), unpinPageAdapter(unpinPage),
-      pageAdapter(readPage, writePage),
-      createTuple(fetchPageAdapter, unpinPageAdapter), getTuple(pageAdapter),
-      deleteTuple(pageAdapter), createPage(pageAdapter) {}
+      newPageAdapter(newPage), createTuple(fetchPageAdapter, unpinPageAdapter),
+      getTuple(fetchPageAdapter, unpinPageAdapter),
+      deleteTuple(fetchPageAdapter, unpinPageAdapter),
+      createPage(newPageAdapter) {}
 
 // Disk Manager
 // Free Page Manager

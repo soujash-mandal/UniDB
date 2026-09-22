@@ -25,8 +25,8 @@
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
 #include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
-#include "../TupleService/adapter/DiskManagerPageAdapter.h"
 
 #include "../TupleService/actions/CreatePageAction.h"
 #include "../TupleService/actions/CreateTupleAction.h"
@@ -90,7 +90,7 @@ private:
   // Tuple Service
   BufferPoolFetchPageAdapter fetchPageAdapter;
   BufferPoolUnpinPageAdapter unpinPageAdapter;
-  DiskManagerPageAdapter pageAdapter;
+  BufferPoolNewPageAdapter newPageAdapter;
 
   CreateTupleAction createTuple;
   GetTupleAction getTuple;
