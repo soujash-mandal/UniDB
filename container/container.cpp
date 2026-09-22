@@ -39,11 +39,6 @@ Container::Container(
       deleteTuple(fetchPageAdapter, unpinPageAdapter),
       createPage(newPageAdapter) {}
 
-// Disk Manager
-// Free Page Manager
-// Buffer Pool Manager
-NewPageAction &Container::newPageAction() { return newPage; }
-
 // Tuple Service
 CreateTupleAction &Container::createTupleAction() { return createTuple; }
 GetTupleAction &Container::getTupleAction() { return getTuple; }

@@ -38,22 +38,6 @@ class Container {
 public:
   explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType);
-
-  // Disk Manager
-  ReadPageAction &readPageAction();
-  WritePageAction &writePageAction();
-
-  // Free Page Manager
-  AllocatePageAction &allocatePageAction();
-  FreePageAction &freePageAction();
-
-  // Buffer Pool Manager
-  FetchPageAction &fetchPageAction();
-  UnpinPageAction &unpinPageAction();
-  FlushPageAction &flushPageAction();
-  NewPageAction &newPageAction();
-  FlushAllPagesAction &flushAllPagesAction();
-
   // Tuple Service
   CreateTupleAction &createTupleAction();
   GetTupleAction &getTupleAction();
@@ -68,7 +52,6 @@ private:
   // Free Page Manager
   ReadFreePageMetadataAdapter readFreePageMetadataAdapter;
   WriteFreePageMetadataAdapter writeFreePageMetadataAdapter;
-
   AllocatePageAction allocatePage;
   FreePageAction freePage;
 
@@ -80,7 +63,6 @@ private:
   WritePageAdapter writePageAdapter;
   BufferPool bufferPool;
   AllocatePageAdapter allocatePageAdapter;
-
   FetchPageAction fetchPage;
   UnpinPageAction unpinPage;
   FlushPageAction flushPage;
@@ -91,7 +73,6 @@ private:
   BufferPoolFetchPageAdapter fetchPageAdapter;
   BufferPoolUnpinPageAdapter unpinPageAdapter;
   BufferPoolNewPageAdapter newPageAdapter;
-
   CreateTupleAction createTuple;
   GetTupleAction getTuple;
   DeleteTupleAction deleteTuple;
