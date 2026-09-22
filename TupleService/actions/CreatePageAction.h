@@ -1,13 +1,13 @@
 #pragma once
+
 #include "../../core/PageId.h"
-#include "../port/PagePort.h"
+#include "../port/NewPagePort.h"
 
 class CreatePageAction {
 public:
-  explicit CreatePageAction(PagePort &pagePort);
-
+  explicit CreatePageAction(NewPagePort &newPagePort);
   void execute(const PageId &pageId);
 
 private:
-  PagePort &pagePort;
+  NewPagePort &newPagePort;
 };
