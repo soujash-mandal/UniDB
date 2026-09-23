@@ -7,7 +7,7 @@ class BufferPoolNewPageAdapter : public NewPagePort {
 public:
   explicit BufferPoolNewPageAdapter(NewPageAction &newPageAction);
 
-  Page &newPage() override;
+  NewPageResult newPage() override;
 
 private:
   NewPageAction &newPageAction;

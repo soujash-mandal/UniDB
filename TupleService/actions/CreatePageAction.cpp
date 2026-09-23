@@ -7,11 +7,11 @@
 CreatePageAction::CreatePageAction(NewPagePort &newPagePort)
     : newPagePort(newPagePort) {}
 
-void CreatePageAction::execute(const PageId &pageId) {
-
-  Page &page = newPagePort.newPage();
+void CreatePageAction::execute() {
+  NewPageResult result = newPagePort.newPage();
+  Page &page = result.page;
   PageHeader header{};
-  header.pageId = pageId;
+  header.pageId = result.pageId;
   header.slotCount = 0;
   header.freeSpaceOffset = Page::PAGE_SIZE;
   std::memcpy(page.data(), &header, sizeof(PageHeader));

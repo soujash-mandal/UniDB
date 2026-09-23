@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../core/Page.h"
+#include "../../core/NewPageResult.h"
 
 class NewPagePort {
 public:
   virtual ~NewPagePort() = default;
 
-  virtual Page &newPage() = 0;
+  virtual NewPageResult newPage() = 0;
 };
