@@ -10,7 +10,7 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
     : bufferPool(bufferPool), allocatePagePort(allocatePagePort),
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
-Page &NewPageAction::execute() {
+NewPageResult NewPageAction::execute() {
   // 1. First try to find an unused frame.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
@@ -20,9 +20,10 @@ Page &NewPageAction::execute() {
       frame.setOccupied(true);
       frame.setDirty(true);
       frame.pin();
+
       evictionPolicy.RecordAccess(pageId);
       evictionPolicy.SetEvictable(pageId, false);
-      return frame.getPage();
+      return {pageId, frame.getPage()};
     }
   }
 
@@ -60,12 +61,9 @@ Page &NewPageAction::execute() {
     evictionPolicy.RecordAccess(pageId);
     evictionPolicy.SetEvictable(pageId, false);
 
-    return frame.getPage();
+    return {pageId, frame.getPage()};
   }
 
   throw std::runtime_error(
       "Eviction policy returned a page not present in buffer pool");
 }
-
-// todo: NewPageAction → add evictionPolicy.Remove(victimPageId) for
-// consistency. -> need to check first
