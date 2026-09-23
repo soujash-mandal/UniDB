@@ -2,12 +2,21 @@
 
 #include "../../core/Page.h"
 #include "../../core/PageId.h"
+#include "../../core/TableId.h"
+#include "Table.h"
 
 #include <cstdint>
+#include <vector>
 
 class CatalogPage {
 public:
   static constexpr PageId INVALID_PAGE_ID = UINT32_MAX;
+
+  static constexpr uint16_t MAX_TABLES_PER_PAGE = 8;
+  static constexpr uint16_t MAX_COLUMNS_PER_TABLE = 16;
+
+  static constexpr uint16_t MAX_TABLE_NAME_LENGTH = 64;
+  static constexpr uint16_t MAX_COLUMN_NAME_LENGTH = 32;
 
   CatalogPage();
 
@@ -16,20 +25,18 @@ public:
 
   uint16_t getTableCount() const;
 
-  bool canFitTable(uint16_t tableSize) const;
+  const std::vector<Table> &getTables() const;
 
-  void writeTable(const char *data, uint16_t size);
+  void addTable(const Table &table);
+  void removeTable(TableId tableId);
 
-  void readTable(uint16_t index, char *data, uint16_t size) const;
+  Table *findTable(TableId tableId);
+  const Table *findTable(TableId tableId) const;
 
   void readFromPage(const Page &page);
   void writeToPage(Page &page) const;
 
 private:
   PageId nextPageId;
-  uint16_t tableCount;
-  uint16_t freeSpaceOffset;
-
-  char data[Page::PAGE_SIZE - sizeof(PageId) - sizeof(uint16_t) -
-            sizeof(uint16_t)]{};
+  std::vector<Table> tables;
 };
