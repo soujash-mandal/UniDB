@@ -2,9 +2,9 @@
 
 #include "../../core/PageId.h"
 
-class UnpinPagePort {
+class FSMUnpinPagePort {
 public:
-  virtual ~UnpinPagePort() = default;
+  virtual ~FSMUnpinPagePort() = default;
 
   virtual void unpinPage(PageId pageId, bool dirty) = 0;
 };

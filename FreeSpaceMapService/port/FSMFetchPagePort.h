@@ -3,9 +3,9 @@
 #include "../../core/Page.h"
 #include "../../core/PageId.h"
 
-class FetchPagePort {
+class FSMFetchPagePort {
 public:
-  virtual ~FetchPagePort() = default;
+  virtual ~FSMFetchPagePort() = default;
 
   virtual Page &fetchPage(PageId pageId) = 0;
 };

@@ -1,11 +1,11 @@
 #pragma once
 
 #include "../../BufferPoolManager/actions/UnpinPageAction.h"
-#include "../port/UnpinPagePort.h"
+#include "../port/FSMUnpinPagePort.h"
 
-class BufferPoolUnpinPageAdapter : public UnpinPagePort {
+class FSMBufferPoolUnpinPageAdapter : public FSMUnpinPagePort {
 public:
-  explicit BufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
+  explicit FSMBufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
 
   void unpinPage(PageId pageId, bool dirty) override;
 

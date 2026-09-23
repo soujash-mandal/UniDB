@@ -2,8 +2,8 @@
 
 #include "../../core/NewPageResult.h"
 
-class NewPagePort {
+class FSMNewPagePort {
 public:
-  virtual ~NewPagePort() = default;
+  virtual ~FSMNewPagePort() = default;
   virtual NewPageResult newPage() = 0;
 };

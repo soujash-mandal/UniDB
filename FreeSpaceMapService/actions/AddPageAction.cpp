@@ -4,9 +4,9 @@
 
 #include "../domain/FreeSpaceMapPage.h"
 
-AddPageAction::AddPageAction(FetchPagePort &fetchPagePort,
-                             UnpinPagePort &unpinPagePort,
-                             NewPagePort &newPagePort)
+AddPageAction::AddPageAction(FSMFetchPagePort &fetchPagePort,
+                             FSMUnpinPagePort &unpinPagePort,
+                             FSMNewPagePort &newPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
       newPagePort(newPagePort) {}
 

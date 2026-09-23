@@ -2,8 +2,8 @@
 
 #include "../domain/FreeSpaceMapPage.h"
 
-FindPageWithSpaceAction::FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
-                                                 UnpinPagePort &unpinPagePort)
+FindPageWithSpaceAction::FindPageWithSpaceAction(
+    FSMFetchPagePort &fetchPagePort, FSMUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
 PageId FindPageWithSpaceAction::execute(TableId tableId,

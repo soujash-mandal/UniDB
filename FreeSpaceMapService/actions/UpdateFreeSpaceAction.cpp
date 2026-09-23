@@ -2,8 +2,8 @@
 
 #include "../domain/FreeSpaceMapPage.h"
 
-UpdateFreeSpaceAction::UpdateFreeSpaceAction(FetchPagePort &fetchPagePort,
-                                             UnpinPagePort &unpinPagePort)
+UpdateFreeSpaceAction::UpdateFreeSpaceAction(FSMFetchPagePort &fetchPagePort,
+                                             FSMUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
 void UpdateFreeSpaceAction::execute(PageId freeSpaceMapPageId,

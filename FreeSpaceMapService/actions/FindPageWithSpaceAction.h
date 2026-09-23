@@ -4,18 +4,18 @@
 
 #include "../../core/PageId.h"
 #include "../../core/TableId.h"
-#include "../port/FetchPagePort.h"
-#include "../port/UnpinPagePort.h"
+#include "../port/FSMFetchPagePort.h"
+#include "../port/FSMUnpinPagePort.h"
 
 class FindPageWithSpaceAction {
 public:
-  FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
-                          UnpinPagePort &unpinPagePort);
+  FindPageWithSpaceAction(FSMFetchPagePort &fetchPagePort,
+                          FSMUnpinPagePort &unpinPagePort);
 
   PageId execute(TableId tableId, PageId firstFreeSpaceMapPageId,
                  uint32_t requiredSpace);
 
 private:
-  FetchPagePort &fetchPagePort;
-  UnpinPagePort &unpinPagePort;
+  FSMFetchPagePort &fetchPagePort;
+  FSMUnpinPagePort &unpinPagePort;
 };
