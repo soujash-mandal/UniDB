@@ -12,33 +12,35 @@ AddPageAction::AddPageAction(FetchPagePort &fetchPagePort,
 
 void AddPageAction::execute(TableId tableId, PageId freeSpaceMapPageId,
                             PageId dataPageId, uint32_t freeSpace) {
-  // 1 :
+
+  // 1. Fetch and read the FSM page.
   Page &page = fetchPagePort.fetchPage(freeSpaceMapPageId);
 
   FreeSpaceMapPage freeSpaceMapPage;
   freeSpaceMapPage.readFromPage(page);
 
-  // 2 :
+  // 2. Validate the table.
   if (freeSpaceMapPage.getTableId() != tableId) {
     unpinPagePort.unpinPage(freeSpaceMapPageId, false);
     throw std::runtime_error(
         "FreeSpaceMapPage does not belong to the specified table");
   }
 
-  // Current FSM page has space.
+  // 3. Add to the current FSM page if it has space.
   if (!freeSpaceMapPage.isFull()) {
     freeSpaceMapPage.addEntry(dataPageId, freeSpace);
     freeSpaceMapPage.writeToPage(page);
+
     unpinPagePort.unpinPage(freeSpaceMapPageId, true);
     return;
   }
 
-  // Current FSM page is full.
+  // 4. Create and initialize a new FSM page.
   NewPageResult result = newPagePort.newPage();
+
   PageId newFreeSpaceMapPageId = result.pageId;
   Page &newPage = result.page;
 
-  // Initialize the new FSM page.
   FreeSpaceMapPage newFreeSpaceMapPage;
   newFreeSpaceMapPage.setTableId(tableId);
   newFreeSpaceMapPage.setNextPageId(FreeSpaceMapPage::INVALID_PAGE_ID);
@@ -46,7 +48,7 @@ void AddPageAction::execute(TableId tableId, PageId freeSpaceMapPageId,
   newFreeSpaceMapPage.addEntry(dataPageId, freeSpace);
   newFreeSpaceMapPage.writeToPage(newPage);
 
-  // Link old FSM page -> new FSM page.
+  // 5. Link the old FSM page to the new one.
   freeSpaceMapPage.setNextPageId(newFreeSpaceMapPageId);
   freeSpaceMapPage.writeToPage(page);
 
