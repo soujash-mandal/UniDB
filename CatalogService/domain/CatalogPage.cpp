@@ -19,7 +19,6 @@ struct SerializedTable {
   char name[CatalogPage::MAX_TABLE_NAME_LENGTH];
   uint16_t columnCount;
   PageId firstFreeSpaceMapPageId;
-
   SerializedColumn columns[CatalogPage::MAX_COLUMNS_PER_TABLE];
 };
 
