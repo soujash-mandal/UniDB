@@ -3,11 +3,13 @@
 #include "../../core/PageId.h"
 #include "../../core/TableId.h"
 #include "../port/FetchPagePort.h"
+#include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
 
 class AddPageAction {
 public:
-  AddPageAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort);
+  AddPageAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort,
+                NewPagePort &newPagePort);
 
   void execute(TableId tableId, PageId freeSpaceMapPageId, PageId dataPageId,
                uint32_t freeSpace);
@@ -15,4 +17,5 @@ public:
 private:
   FetchPagePort &fetchPagePort;
   UnpinPagePort &unpinPagePort;
+  NewPagePort &newPagePort;
 };
