@@ -34,7 +34,9 @@ Container::Container(
 
       // Tuple Service
       fetchPageAdapter(fetchPage), unpinPageAdapter(unpinPage),
-      newPageAdapter(newPage), createTuple(fetchPageAdapter, unpinPageAdapter),
+      newPageAdapter(newPage),
+
+      createTuple(fetchPageAdapter, unpinPageAdapter),
       getTuple(fetchPageAdapter, unpinPageAdapter),
       deleteTuple(fetchPageAdapter, unpinPageAdapter),
       createPage(newPageAdapter) {}
