@@ -39,10 +39,29 @@ Container::Container(
       createTuple(fetchPageAdapter, unpinPageAdapter),
       getTuple(fetchPageAdapter, unpinPageAdapter),
       deleteTuple(fetchPageAdapter, unpinPageAdapter),
-      createPage(newPageAdapter) {}
+      createPage(newPageAdapter),
+
+      // Free Space Map Service
+      fsmFetchPageAdapter(fetchPage), fsmUnpinPageAdapter(unpinPage),
+      fsmNewPageAdapter(newPage),
+
+      addPage(fsmFetchPageAdapter, fsmUnpinPageAdapter, fsmNewPageAdapter),
+      findPageWithSpace(fsmFetchPageAdapter, fsmUnpinPageAdapter),
+      updateFreeSpace(fsmFetchPageAdapter, fsmUnpinPageAdapter) {}
 
 // Tuple Service
 CreateTupleAction &Container::createTupleAction() { return createTuple; }
 GetTupleAction &Container::getTupleAction() { return getTuple; }
 DeleteTupleAction &Container::deleteTupleAction() { return deleteTuple; }
 CreatePageAction &Container::createPageAction() { return createPage; }
+
+// Free Space Map Service
+AddPageAction &Container::addPageAction() { return addPage; }
+
+FindPageWithSpaceAction &Container::findPageWithSpaceAction() {
+  return findPageWithSpace;
+}
+
+UpdateFreeSpaceAction &Container::updateFreeSpaceAction() {
+  return updateFreeSpace;
+}

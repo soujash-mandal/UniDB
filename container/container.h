@@ -33,16 +33,30 @@
 #include "../TupleService/actions/DeleteTupleAction.h"
 #include "../TupleService/actions/GetTupleAction.h"
 
+#include "../FreeSpaceMapService/adapter/FSMBufferPoolFetchPageAdapter.h"
+#include "../FreeSpaceMapService/adapter/FSMBufferPoolNewPageAdapter.h"
+#include "../FreeSpaceMapService/adapter/FSMBufferPoolUnpinPageAdapter.h"
+
+#include "../FreeSpaceMapService/actions/AddPageAction.h"
+#include "../FreeSpaceMapService/actions/FindPageWithSpaceAction.h"
+#include "../FreeSpaceMapService/actions/UpdateFreeSpaceAction.h"
+
 class Container {
 
 public:
   explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType);
+
   // Tuple Service
   CreateTupleAction &createTupleAction();
   GetTupleAction &getTupleAction();
   DeleteTupleAction &deleteTupleAction();
   CreatePageAction &createPageAction();
+
+  // Free Space Map Service
+  AddPageAction &addPageAction();
+  FindPageWithSpaceAction &findPageWithSpaceAction();
+  UpdateFreeSpaceAction &updateFreeSpaceAction();
 
 private:
   // Disk Manager
@@ -77,4 +91,12 @@ private:
   GetTupleAction getTuple;
   DeleteTupleAction deleteTuple;
   CreatePageAction createPage;
+
+  // Free Space Map Service
+  FSMBufferPoolFetchPageAdapter fsmFetchPageAdapter;
+  FSMBufferPoolUnpinPageAdapter fsmUnpinPageAdapter;
+  FSMBufferPoolNewPageAdapter fsmNewPageAdapter;
+  AddPageAction addPage;
+  FindPageWithSpaceAction findPageWithSpace;
+  UpdateFreeSpaceAction updateFreeSpace;
 };
