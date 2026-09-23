@@ -14,26 +14,43 @@ if [ ! -e "$TARGET" ]; then
     exit 1
 fi
 
+FILES=()
+
 if [ -f "$TARGET" ]; then
-    cat "$TARGET" | pbcopy
-    echo "Copied: $TARGET"
+    FILES+=("$TARGET")
+else
+    while IFS= read -r FILE; do
+        FILES+=("$FILE")
+    done < <(find "$TARGET" -type f | sort)
+fi
+
+if [ ${#FILES[@]} -eq 0 ]; then
+    echo "No files found."
     exit 0
 fi
 
-if [ -d "$TARGET" ]; then
-    {
-        find "$TARGET" -type f | sort | while read -r FILE; do
-            echo "================================================================================"
-            echo "FILE: $FILE"
-            echo "================================================================================"
-            cat "$FILE"
-            echo
-        done
-    } | pbcopy
+{
+    echo "================================================================================"
+    echo "FILES COPIED: ${#FILES[@]}"
+    echo "SOURCE: $TARGET"
+    echo "================================================================================"
+    echo
 
-    echo "Copied all files from: $TARGET"
-    exit 0
-fi
+    for FILE in "${FILES[@]}"; do
+        echo "================================================================================"
+        echo "FILE: $FILE"
+        echo "================================================================================"
+        cat "$FILE"
+        echo
+        echo
+    done
+} | pbcopy
 
-echo "Error: '$TARGET' is not a regular file or directory."
-exit 1
+echo "================================================================================"
+echo "Copied ${#FILES[@]} file(s) to clipboard"
+echo "================================================================================"
+echo
+
+for FILE in "${FILES[@]}"; do
+    echo "$FILE"
+done
