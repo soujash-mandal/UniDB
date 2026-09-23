@@ -1,16 +1,10 @@
 #pragma once
 
 #include "../../EvictionPolicy/EvictionPolicy.h"
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../../core/NewPageResult.h"
 #include "../domain/BufferPool.h"
 #include "../port/AllocatePagePort.h"
 #include "../port/WritePagePort.h"
-
-struct NewPageResult {
-  PageId pageId;
-  Page &page;
-};
 
 class NewPageAction {
 public:
