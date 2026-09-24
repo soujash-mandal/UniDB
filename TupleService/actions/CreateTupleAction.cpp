@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <cstring>
 
-#include "../../core/PageHeader.h"
 #include "../../core/Slot.h"
 #include "../domain/PageFullException.h"
+#include "../domain/PageHeader.h"
 
 CreateTupleAction::CreateTupleAction(FetchPagePort &fetchPagePort,
                                      UnpinPagePort &unpinPagePort)

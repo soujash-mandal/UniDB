@@ -2,8 +2,8 @@
 
 #include <cstring>
 
-#include "../../core/PageHeader.h"
 #include "../../core/Slot.h"
+#include "../domain/PageHeader.h"
 #include "../domain/TupleNotFoundException.h"
 
 GetTupleAction::GetTupleAction(FetchPagePort &fetchPagePort,

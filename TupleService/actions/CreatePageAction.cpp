@@ -1,6 +1,6 @@
 #include "CreatePageAction.h"
 
-#include "../../core/PageHeader.h"
+#include "../domain/PageHeader.h"
 
 #include <cstring>
 
