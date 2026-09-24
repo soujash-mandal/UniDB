@@ -1,22 +1,19 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
-#include "../../core/TableId.h"
-#include "Table.h"
-
 #include <cstdint>
 #include <vector>
+
+#include "../../core/Page.h"
+#include "../../core/PageId.h"
 
 class CatalogPage {
 public:
   static constexpr PageId INVALID_PAGE_ID = UINT32_MAX;
 
-  static constexpr uint16_t MAX_TABLES_PER_PAGE = 8;
-  static constexpr uint16_t MAX_COLUMNS_PER_TABLE = 16;
-
-  static constexpr uint16_t MAX_TABLE_NAME_LENGTH = 64;
-  static constexpr uint16_t MAX_COLUMN_NAME_LENGTH = 32;
+  struct Slot {
+    uint16_t offset;
+    uint16_t length;
+  };
 
   CatalogPage();
 
@@ -25,18 +22,29 @@ public:
 
   uint16_t getTableCount() const;
 
-  const std::vector<Table> &getTables() const;
+  bool canFitTable(uint16_t tableSize) const;
 
-  void addTable(const Table &table);
-  void removeTable(TableId tableId);
+  bool addTable(const std::vector<uint8_t> &tableData);
 
-  Table *findTable(TableId tableId);
-  const Table *findTable(TableId tableId) const;
+  bool getTable(uint16_t slotIndex, std::vector<uint8_t> &tableData) const;
+
+  bool deleteTable(uint16_t slotIndex);
 
   void readFromPage(const Page &page);
   void writeToPage(Page &page) const;
 
 private:
+  static constexpr uint16_t HEADER_SIZE =
+      sizeof(PageId) + sizeof(uint16_t) + sizeof(uint16_t);
+
+  static constexpr uint16_t SLOT_SIZE = sizeof(uint16_t) + sizeof(uint16_t);
+
   PageId nextPageId;
-  std::vector<Table> tables;
+  uint16_t tableCount;
+  uint16_t freeSpaceOffset;
+
+  std::vector<Slot> slots;
+  std::vector<uint8_t> data;
+
+  uint16_t getFreeSpace() const;
 };

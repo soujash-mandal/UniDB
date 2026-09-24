@@ -1,242 +1,203 @@
 #include "CatalogPage.h"
 
 #include <cstring>
-#include <stdexcept>
 
-namespace {
-
-#pragma pack(push, 1)
-
-struct SerializedColumn {
-  char name[CatalogPage::MAX_COLUMN_NAME_LENGTH];
-  uint8_t type;
-  uint16_t size;
-  uint8_t nullable;
-};
-
-struct SerializedTable {
-  TableId tableId;
-  char name[CatalogPage::MAX_TABLE_NAME_LENGTH];
-  uint16_t columnCount;
-  PageId firstFreeSpaceMapPageId;
-  SerializedColumn columns[CatalogPage::MAX_COLUMNS_PER_TABLE];
-};
-
-struct SerializedCatalogPageHeader {
-  PageId nextPageId;
-  uint16_t tableCount;
-};
-
-#pragma pack(pop)
-
-constexpr std::size_t SERIALIZED_SIZE =
-    sizeof(SerializedCatalogPageHeader) +
-    sizeof(SerializedTable) * CatalogPage::MAX_TABLES_PER_PAGE;
-
-static_assert(SERIALIZED_SIZE <= Page::PAGE_SIZE,
-              "CatalogPage serialized format does not fit in a page");
-
-void copyStringToBuffer(char *destination, std::size_t destinationSize,
-                        const std::string &source) {
-  if (source.size() >= destinationSize) {
-    throw std::invalid_argument("String is too long for catalog record");
-  }
-
-  std::memset(destination, 0, destinationSize);
-  std::memcpy(destination, source.data(), source.size());
-}
-
-std::string copyBufferToString(const char *source, std::size_t size) {
-  std::size_t length = 0;
-
-  while (length < size && source[length] != '\0') {
-    ++length;
-  }
-
-  return std::string(source, length);
-}
-
-} // namespace
-
-CatalogPage::CatalogPage() : nextPageId(INVALID_PAGE_ID), tables() {}
+CatalogPage::CatalogPage()
+    : nextPageId(INVALID_PAGE_ID), tableCount(0),
+      freeSpaceOffset(Page::PAGE_SIZE), slots(), data(Page::PAGE_SIZE, 0) {}
 
 PageId CatalogPage::getNextPageId() const { return nextPageId; }
 
 void CatalogPage::setNextPageId(PageId pageId) { nextPageId = pageId; }
 
-uint16_t CatalogPage::getTableCount() const {
-  return static_cast<uint16_t>(tables.size());
+uint16_t CatalogPage::getTableCount() const { return tableCount; }
+
+uint16_t CatalogPage::getFreeSpace() const {
+  const uint16_t slotDirectoryEnd =
+      HEADER_SIZE + static_cast<uint16_t>(slots.size() * SLOT_SIZE);
+
+  if (freeSpaceOffset <= slotDirectoryEnd) {
+    return 0;
+  }
+
+  return freeSpaceOffset - slotDirectoryEnd;
 }
 
-const std::vector<Table> &CatalogPage::getTables() const { return tables; }
-
-void CatalogPage::addTable(const Table &table) {
-  if (tables.size() >= MAX_TABLES_PER_PAGE) {
-    throw std::runtime_error("Catalog page is full");
-  }
-
-  if (table.name.size() >= MAX_TABLE_NAME_LENGTH) {
-    throw std::invalid_argument("Table name is too long");
-  }
-
-  if (table.columns.size() > MAX_COLUMNS_PER_TABLE) {
-    throw std::invalid_argument("Too many columns in table");
-  }
-
-  for (const Column &column : table.columns) {
-    if (column.name.size() >= MAX_COLUMN_NAME_LENGTH) {
-      throw std::invalid_argument("Column name is too long");
-    }
-  }
-
-  if (findTable(table.tableId) != nullptr) {
-    throw std::invalid_argument("Table already exists in catalog page");
-  }
-
-  tables.push_back(table);
+bool CatalogPage::canFitTable(uint16_t tableSize) const {
+  return getFreeSpace() >= tableSize + SLOT_SIZE;
 }
 
-void CatalogPage::removeTable(TableId tableId) {
-  for (auto it = tables.begin(); it != tables.end(); ++it) {
-    if (it->tableId == tableId) {
-      tables.erase(it);
-      return;
-    }
+bool CatalogPage::addTable(const std::vector<uint8_t> &tableData) {
+
+  if (tableData.empty()) {
+    return false;
   }
 
-  throw std::invalid_argument("Table not found");
+  if (tableData.size() > UINT16_MAX) {
+    return false;
+  }
+
+  const uint16_t tableSize = static_cast<uint16_t>(tableData.size());
+
+  /*
+   * First try to reuse a deleted slot.
+   *
+   * A deleted slot has length == 0.
+   */
+  for (Slot &slot : slots) {
+    if (slot.length != 0) {
+      continue;
+    }
+
+    if (freeSpaceOffset < tableSize) {
+      return false;
+    }
+
+    const uint16_t newOffset =
+        static_cast<uint16_t>(freeSpaceOffset - tableSize);
+
+    std::memcpy(data.data() + newOffset, tableData.data(), tableSize);
+
+    slot.offset = newOffset;
+    slot.length = tableSize;
+
+    freeSpaceOffset = newOffset;
+
+    return true;
+  }
+
+  /*
+   * No deleted slot exists.
+   * We need space for both the table and a new slot.
+   */
+  if (!canFitTable(tableSize)) {
+    return false;
+  }
+
+  freeSpaceOffset = static_cast<uint16_t>(freeSpaceOffset - tableSize);
+
+  std::memcpy(data.data() + freeSpaceOffset, tableData.data(), tableSize);
+
+  slots.push_back({freeSpaceOffset, tableSize});
+
+  tableCount = static_cast<uint16_t>(slots.size());
+
+  return true;
 }
 
-Table *CatalogPage::findTable(TableId tableId) {
-  for (Table &table : tables) {
-    if (table.tableId == tableId) {
-      return &table;
-    }
+bool CatalogPage::getTable(uint16_t slotIndex,
+                           std::vector<uint8_t> &tableData) const {
+
+  if (slotIndex >= slots.size()) {
+    return false;
   }
 
-  return nullptr;
+  const Slot &slot = slots[slotIndex];
+
+  /*
+   * length == 0 means the slot was deleted.
+   */
+  if (slot.length == 0) {
+    return false;
+  }
+
+  tableData.resize(slot.length);
+
+  std::memcpy(tableData.data(), data.data() + slot.offset, slot.length);
+
+  return true;
 }
 
-const Table *CatalogPage::findTable(TableId tableId) const {
-  for (const Table &table : tables) {
-    if (table.tableId == tableId) {
-      return &table;
-    }
+bool CatalogPage::deleteTable(uint16_t slotIndex) {
+  if (slotIndex >= slots.size()) {
+    return false;
   }
 
-  return nullptr;
+  Slot &slot = slots[slotIndex];
+
+  if (slot.length == 0) {
+    return false;
+  }
+
+  /*
+   * Do not remove the slot.
+   *
+   * Keeping the slot preserves slot indexes.
+   * length == 0 means "deleted".
+   */
+  slot.length = 0;
+
+  return true;
 }
 
 void CatalogPage::readFromPage(const Page &page) {
-  SerializedCatalogPageHeader header;
+  const char *pageData = page.data();
 
-  std::memcpy(&header, page.data(), sizeof(header));
+  std::memcpy(&nextPageId, pageData, sizeof(nextPageId));
 
-  if (header.tableCount > MAX_TABLES_PER_PAGE) {
-    throw std::runtime_error("Invalid catalog page: table count is too large");
+  std::memcpy(&tableCount, pageData + sizeof(nextPageId), sizeof(tableCount));
+
+  std::memcpy(&freeSpaceOffset,
+              pageData + sizeof(nextPageId) + sizeof(tableCount),
+              sizeof(freeSpaceOffset));
+
+  slots.clear();
+
+  uint16_t slotOffset = HEADER_SIZE;
+
+  for (uint16_t i = 0; i < tableCount; ++i) {
+    Slot slot{};
+
+    std::memcpy(&slot.offset, pageData + slotOffset, sizeof(slot.offset));
+
+    slotOffset += sizeof(slot.offset);
+
+    std::memcpy(&slot.length, pageData + slotOffset, sizeof(slot.length));
+
+    slotOffset += sizeof(slot.length);
+
+    slots.push_back(slot);
   }
 
-  nextPageId = header.nextPageId;
-  tables.clear();
+  data.resize(Page::PAGE_SIZE);
 
-  const char *pageData = page.data() + sizeof(header);
-
-  for (uint16_t i = 0; i < header.tableCount; ++i) {
-    SerializedTable serializedTable;
-
-    std::memcpy(&serializedTable, pageData + i * sizeof(SerializedTable),
-                sizeof(SerializedTable));
-
-    Table table;
-
-    table.tableId = serializedTable.tableId;
-
-    table.name =
-        copyBufferToString(serializedTable.name, MAX_TABLE_NAME_LENGTH);
-
-    if (serializedTable.columnCount > MAX_COLUMNS_PER_TABLE) {
-      throw std::runtime_error(
-          "Invalid catalog page: column count is too large");
-    }
-
-    table.firstFreeSpaceMapPageId = serializedTable.firstFreeSpaceMapPageId;
-
-    for (uint16_t j = 0; j < serializedTable.columnCount; ++j) {
-      const SerializedColumn &serializedColumn = serializedTable.columns[j];
-
-      Column column;
-
-      column.name =
-          copyBufferToString(serializedColumn.name, MAX_COLUMN_NAME_LENGTH);
-
-      column.type = static_cast<DataType>(serializedColumn.type);
-
-      column.size = serializedColumn.size;
-      column.nullable = serializedColumn.nullable != 0;
-
-      table.columns.push_back(column);
-    }
-
-    tables.push_back(table);
-  }
+  std::memcpy(data.data(), pageData, Page::PAGE_SIZE);
 }
 
 void CatalogPage::writeToPage(Page &page) const {
-  if (tables.size() > MAX_TABLES_PER_PAGE) {
-    throw std::runtime_error("Too many tables for catalog page");
+  std::memset(page.data(), 0, Page::PAGE_SIZE);
+  char *pageData = page.data();
+
+  /*
+   * Header
+   */
+  std::memcpy(pageData, &nextPageId, sizeof(nextPageId));
+
+  std::memcpy(pageData + sizeof(nextPageId), &tableCount, sizeof(tableCount));
+
+  std::memcpy(pageData + sizeof(nextPageId) + sizeof(tableCount),
+              &freeSpaceOffset, sizeof(freeSpaceOffset));
+
+  /*
+   * Slot directory
+   */
+  uint16_t slotOffset = HEADER_SIZE;
+
+  for (const Slot &slot : slots) {
+    std::memcpy(pageData + slotOffset, &slot.offset, sizeof(slot.offset));
+
+    slotOffset += sizeof(slot.offset);
+
+    std::memcpy(pageData + slotOffset, &slot.length, sizeof(slot.length));
+
+    slotOffset += sizeof(slot.length);
   }
 
-  std::memset(page.data(), 0, Page::PAGE_SIZE);
-
-  SerializedCatalogPageHeader header;
-
-  header.nextPageId = nextPageId;
-  header.tableCount = static_cast<uint16_t>(tables.size());
-
-  std::memcpy(page.data(), &header, sizeof(header));
-
-  char *pageData = page.data() + sizeof(header);
-
-  for (std::size_t i = 0; i < tables.size(); ++i) {
-    const Table &table = tables[i];
-
-    if (table.name.size() >= MAX_TABLE_NAME_LENGTH) {
-      throw std::invalid_argument("Table name is too long");
-    }
-
-    if (table.columns.size() > MAX_COLUMNS_PER_TABLE) {
-      throw std::invalid_argument("Too many columns in table");
-    }
-
-    SerializedTable serializedTable{};
-
-    serializedTable.tableId = table.tableId;
-
-    copyStringToBuffer(serializedTable.name, MAX_TABLE_NAME_LENGTH, table.name);
-
-    serializedTable.columnCount = static_cast<uint16_t>(table.columns.size());
-
-    serializedTable.firstFreeSpaceMapPageId = table.firstFreeSpaceMapPageId;
-
-    for (std::size_t j = 0; j < table.columns.size(); ++j) {
-      const Column &column = table.columns[j];
-
-      if (column.name.size() >= MAX_COLUMN_NAME_LENGTH) {
-        throw std::invalid_argument("Column name is too long");
-      }
-
-      SerializedColumn &serializedColumn = serializedTable.columns[j];
-
-      copyStringToBuffer(serializedColumn.name, MAX_COLUMN_NAME_LENGTH,
-                         column.name);
-
-      serializedColumn.type = static_cast<uint8_t>(column.type);
-
-      serializedColumn.size = column.size;
-      serializedColumn.nullable = column.nullable ? 1 : 0;
-    }
-
-    std::memcpy(pageData + i * sizeof(SerializedTable), &serializedTable,
-                sizeof(SerializedTable));
+  /*
+   * Table records.
+   */
+  if (freeSpaceOffset < Page::PAGE_SIZE) {
+    std::memcpy(pageData + freeSpaceOffset, data.data() + freeSpaceOffset,
+                Page::PAGE_SIZE - freeSpaceOffset);
   }
 }
