@@ -11,6 +11,7 @@ public:
   void setMetadata(const CatalogMetadata &metadata);
 
   void readFromPage(const Page &page);
+
   void writeToPage(Page &page) const;
 
 private:

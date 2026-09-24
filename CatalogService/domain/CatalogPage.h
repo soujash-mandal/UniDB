@@ -1,8 +1,14 @@
 #pragma once
 
 #include "../../core/Page.h"
+#include "../../core/PageId.h"
 #include "../../core/Slot.h"
-#include "CatalogPageHeader.h"
+
+struct CatalogPageHeader {
+  PageId nextPageId;
+  uint16_t slotCount;
+  uint16_t freeSpaceOffset;
+};
 
 class CatalogPage {
 public:
