@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../domain/BufferPoolPage.h"
+#include "../domain/BufferPoolPageId.h"
 
 class ReadPagePort {
 public:
   virtual ~ReadPagePort() = default;
-
-  virtual void readPage(PageId pageId, Page &page) = 0;
+  virtual BufferPoolPage readPage(BufferPoolPageId pageId) = 0;
 };

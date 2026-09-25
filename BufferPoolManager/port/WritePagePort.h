@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../domain/BufferPoolPage.h"
+#include "../domain/BufferPoolPageId.h"
 
 class WritePagePort {
 public:
   virtual ~WritePagePort() = default;
-
-  virtual void writePage(PageId pageId, const Page &page) = 0;
+  virtual void writePage(BufferPoolPageId pageId, BufferPoolPage page) = 0;
 };

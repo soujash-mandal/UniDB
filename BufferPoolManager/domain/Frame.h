@@ -1,13 +1,14 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
 #include <cstdint>
+
+#include "BufferPoolPage.h"
+#include "BufferPoolPageId.h"
 
 class Frame {
 private:
-  Page page;
-  PageId pageId;
+  BufferPoolPage page;
+  BufferPoolPageId pageId;
   uint32_t pinCount;
   bool dirty;
   bool occupied;
@@ -15,13 +16,13 @@ private:
 public:
   Frame() : pageId(0), pinCount(0), dirty(false), occupied(false) {}
 
-  Page &getPage() { return page; }
-  const Page &getPage() const { return page; }
-  PageId getPageId() const { return pageId; }
+  BufferPoolPage &getPage() { return page; }
+  const BufferPoolPage &getPage() const { return page; }
+  BufferPoolPageId getPageId() const { return pageId; }
   uint32_t getPinCount() const { return pinCount; }
   bool isDirty() const { return dirty; }
   bool isOccupied() const { return occupied; }
-  void setPageId(PageId pageId) { this->pageId = pageId; }
+  void setPageId(BufferPoolPageId pageId) { this->pageId = pageId; }
   void setDirty(bool dirty) { this->dirty = dirty; }
   void setOccupied(bool occupied) { this->occupied = occupied; }
   void pin() { ++pinCount; }

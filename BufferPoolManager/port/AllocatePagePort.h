@@ -1,10 +1,9 @@
 #pragma once
 
-#include "../../core/PageId.h"
+#include "../domain/BufferPoolPageId.h"
 
 class AllocatePagePort {
 public:
   virtual ~AllocatePagePort() = default;
-
-  virtual PageId allocatePage() = 0;
+  virtual BufferPoolPageId allocatePage() = 0;
 };
