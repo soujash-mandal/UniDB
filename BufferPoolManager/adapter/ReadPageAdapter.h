@@ -6,8 +6,7 @@
 class ReadPageAdapter : public ReadPagePort {
 public:
   explicit ReadPageAdapter(ReadPageAction &readPageAction);
-
-  void readPage(PageId pageId, Page &page) override;
+  BufferPoolPage readPage(BufferPoolPageId pageId) override;
 
 private:
   ReadPageAction &readPageAction;
