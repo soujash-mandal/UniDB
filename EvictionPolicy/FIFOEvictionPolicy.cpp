@@ -1,6 +1,6 @@
 #include "FIFOEvictionPolicy.h"
 
-void FIFOEvictionPolicy::RecordAccess(PageId pageId) {
+void FIFOEvictionPolicy::RecordAccess(EvictionPageId pageId) {
   if (pagePositions_.contains(pageId)) {
     return;
   }
@@ -8,7 +8,7 @@ void FIFOEvictionPolicy::RecordAccess(PageId pageId) {
   pagePositions_[pageId] = std::prev(pages_.end());
 }
 
-void FIFOEvictionPolicy::SetEvictable(PageId pageId, bool evictable) {
+void FIFOEvictionPolicy::SetEvictable(EvictionPageId pageId, bool evictable) {
   if (!pagePositions_.contains(pageId)) {
     return;
   }
@@ -19,9 +19,9 @@ void FIFOEvictionPolicy::SetEvictable(PageId pageId, bool evictable) {
   }
 }
 
-std::optional<PageId> FIFOEvictionPolicy::Evict() {
+std::optional<EvictionPageId> FIFOEvictionPolicy::Evict() {
   for (auto it = pages_.begin(); it != pages_.end(); ++it) {
-    PageId pageId = *it;
+    EvictionPageId pageId = *it;
     if (evictablePages_.contains(pageId)) {
       evictablePages_.erase(pageId);
       pagePositions_.erase(pageId);
@@ -32,7 +32,7 @@ std::optional<PageId> FIFOEvictionPolicy::Evict() {
   return std::nullopt;
 }
 
-void FIFOEvictionPolicy::Remove(PageId pageId) {
+void FIFOEvictionPolicy::Remove(EvictionPageId pageId) {
   auto it = pagePositions_.find(pageId);
   if (it == pagePositions_.end()) {
     return;
