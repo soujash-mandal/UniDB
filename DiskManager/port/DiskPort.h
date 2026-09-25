@@ -1,10 +1,10 @@
 #pragma once
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+
+#include "../domain/DiskPage.h"
 
 class DiskPort {
 public:
   virtual ~DiskPort() = default;
-  virtual void writePage(const PageId &pageId, const Page &page) = 0;
-  virtual void readPage(const PageId &pageId, Page &page) = 0;
+  virtual DiskPage readPage(DiskPageId pageId) = 0;
+  virtual void writePage(DiskPageId pageId, DiskPage &page) = 0;
 };

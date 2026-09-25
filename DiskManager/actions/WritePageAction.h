@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../../core/PageId.h"
+#include "../domain/DiskPage.h"
 #include "../port/DiskPort.h"
 
 class WritePageAction {
 public:
   explicit WritePageAction(DiskPort &diskManager);
-  void execute(PageId pageId, const Page &page);
+  void execute(DiskPageId pageId, DiskPage page);
 
 private:
   DiskPort &diskManager;

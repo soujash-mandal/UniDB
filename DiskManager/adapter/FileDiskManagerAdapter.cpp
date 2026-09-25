@@ -1,5 +1,5 @@
 #include "FileDiskManagerAdapter.h"
-#include "../../core/exceptions/PageNotFoundException.h"
+
 #include <stdexcept>
 
 FileDiskManagerAdapter::FileDiskManagerAdapter(const std::string &fileName) {
@@ -15,24 +15,31 @@ FileDiskManagerAdapter::FileDiskManagerAdapter(const std::string &fileName) {
   }
 }
 
-void FileDiskManagerAdapter::writePage(const PageId &pageId, const Page &page) {
+DiskPage FileDiskManagerAdapter::readPage(DiskPageId pageId) {
+  DiskPage page;
   const std::streamoff offset =
-      static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
-  file.seekp(offset);
-  file.write(page.data(), Page::PAGE_SIZE);
-  file.flush();
-}
-
-void FileDiskManagerAdapter::readPage(const PageId &pageId, Page &page) {
-
-  const std::streamoff offset =
-      static_cast<std::streamoff>(pageId) * Page::PAGE_SIZE;
+      static_cast<std::streamoff>(pageId) * DiskPage::PAGE_SIZE;
   file.seekg(offset);
   if (!file) {
-    throw PageNotFoundException("Page does not exist");
+    throw std::runtime_error("Page does not exist");
   }
-  file.read(page.data(), Page::PAGE_SIZE);
+  file.read(page.data(), DiskPage::PAGE_SIZE);
   if (!file) {
     throw std::runtime_error("Could not read page");
   }
+  return page;
+}
+
+void FileDiskManagerAdapter::writePage(DiskPageId pageId, DiskPage &page) {
+  const std::streamoff offset =
+      static_cast<std::streamoff>(pageId) * DiskPage::PAGE_SIZE;
+  file.seekp(offset);
+  if (!file) {
+    throw std::runtime_error("Could not seek to page");
+  }
+  file.write(page.data(), DiskPage::PAGE_SIZE);
+  if (!file) {
+    throw std::runtime_error("Could not write page");
+  }
+  file.flush();
 }

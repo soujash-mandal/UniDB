@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../domain/DiskPage.h"
 #include "../port/DiskPort.h"
 
 #include <fstream>
@@ -8,8 +9,8 @@
 class FileDiskManagerAdapter : public DiskPort {
 public:
   explicit FileDiskManagerAdapter(const std::string &fileName);
-  void writePage(const PageId &pageId, const Page &page) override;
-  void readPage(const PageId &pageId, Page &page) override;
+  DiskPage readPage(DiskPageId pageId) override;
+  void writePage(DiskPageId pageId, DiskPage &page) override;
 
 private:
   std::fstream file;
