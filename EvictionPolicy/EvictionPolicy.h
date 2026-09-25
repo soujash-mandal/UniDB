@@ -2,13 +2,13 @@
 
 #include <optional>
 
-#include "EvictionPageId.h"
+#include "EvictionPolicyPageId.h"
 
 class EvictionPolicy {
 public:
   virtual ~EvictionPolicy() = default;
-  virtual void RecordAccess(EvictionPageId pageId) = 0;
-  virtual void SetEvictable(EvictionPageId pageId, bool evictable) = 0;
-  virtual std::optional<EvictionPageId> Evict() = 0;
-  virtual void Remove(EvictionPageId pageId) = 0;
+  virtual void RecordAccess(EvictionPolicyPageId pageId) = 0;
+  virtual void SetEvictable(EvictionPolicyPageId pageId, bool evictable) = 0;
+  virtual std::optional<EvictionPolicyPageId> Evict() = 0;
+  virtual void Remove(EvictionPolicyPageId pageId) = 0;
 };

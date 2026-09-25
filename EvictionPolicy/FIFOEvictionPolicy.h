@@ -9,14 +9,15 @@
 
 class FIFOEvictionPolicy : public EvictionPolicy {
 public:
-  void RecordAccess(EvictionPageId pageId);
-  void SetEvictable(EvictionPageId pageId, bool evictable);
-  std::optional<EvictionPageId> Evict();
-  void Remove(EvictionPageId pageId);
+  void RecordAccess(EvictionPolicyPageId pageId);
+  void SetEvictable(EvictionPolicyPageId pageId, bool evictable);
+  std::optional<EvictionPolicyPageId> Evict();
+  void Remove(EvictionPolicyPageId pageId);
 
 private:
-  std::list<EvictionPageId> pages_;
-  std::unordered_map<EvictionPageId, std::list<EvictionPageId>::iterator>
+  std::list<EvictionPolicyPageId> pages_;
+  std::unordered_map<EvictionPolicyPageId,
+                     std::list<EvictionPolicyPageId>::iterator>
       pagePositions_;
-  std::unordered_set<EvictionPageId> evictablePages_;
+  std::unordered_set<EvictionPolicyPageId> evictablePages_;
 };
