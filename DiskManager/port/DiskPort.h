@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../domain/DiskPage.h"
+#include "../domain/DiskPageId.h"
 
 class DiskPort {
 public:

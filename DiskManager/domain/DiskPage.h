@@ -1,9 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
-
-using DiskPageId = uint32_t;
 
 class DiskPage {
 public:
