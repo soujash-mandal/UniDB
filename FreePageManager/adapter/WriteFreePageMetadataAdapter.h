@@ -7,7 +7,8 @@ class WriteFreePageMetadataAdapter : public WriteFreePageMetadataPort {
 public:
   explicit WriteFreePageMetadataAdapter(WritePageAction &writePageAction);
 
-  void writePage(PageId pageId, const Page &page) override;
+  void writePage(FreePageMetadataPageId pageId,
+                 FreePageMetadataPage page) override;
 
 private:
   WritePageAction &writePageAction;

@@ -6,8 +6,7 @@
 class AllocatePageAdapter : public AllocatePagePort {
 public:
   explicit AllocatePageAdapter(AllocatePageAction &allocatePageAction);
-
-  PageId allocatePage() override;
+  BufferPoolPageId allocatePage() override;
 
 private:
   AllocatePageAction &allocatePageAction;

@@ -3,6 +3,7 @@
 AllocatePageAdapter::AllocatePageAdapter(AllocatePageAction &allocatePageAction)
     : allocatePageAction(allocatePageAction) {}
 
-PageId AllocatePageAdapter::allocatePage() {
-  return allocatePageAction.execute();
+BufferPoolPageId AllocatePageAdapter::allocatePage() {
+  BufferPoolPageId pageId = allocatePageAction.execute();
+  return pageId;
 }

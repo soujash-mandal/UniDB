@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../core/PageId.h"
 #include "../port/ReadFreePageMetadataPort.h"
 #include "../port/WriteFreePageMetadataPort.h"
 
@@ -9,7 +8,7 @@ public:
   AllocatePageAction(ReadFreePageMetadataPort &readMetadataPort,
                      WriteFreePageMetadataPort &writeMetadataPort);
 
-  PageId execute();
+  FreePageMetadataPageId execute();
 
 private:
   ReadFreePageMetadataPort &readMetadataPort;

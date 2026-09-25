@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../domain/FreePageMetadataPage.h"
+#include "../domain/FreePageMetadataPageId.h"
 
 class ReadFreePageMetadataPort {
 public:
   virtual ~ReadFreePageMetadataPort() = default;
-
-  virtual void readPage(PageId pageId, Page &page) = 0;
+  virtual FreePageMetadataPage readPage(FreePageMetadataPageId pageId) = 0;
 };

@@ -1,11 +1,10 @@
 #include "AllocatePageAction.h"
-#include "../../core/Page.h"
-#include "../domain/FreePageMetadata.h"
+#include "../domain/FreePageMetadataPage.h"
 
 #include <stdexcept>
 
 namespace {
-constexpr PageId FIRST_METADATA_PAGE_ID = 0;
+constexpr FreePageMetadataPageId FIRST_METADATA_PAGE_ID = 0;
 }
 
 AllocatePageAction::AllocatePageAction(
@@ -14,23 +13,18 @@ AllocatePageAction::AllocatePageAction(
     : readMetadataPort(readMetadataPort), writeMetadataPort(writeMetadataPort) {
 }
 
-PageId AllocatePageAction::execute() {
-  PageId metadataPageId = FIRST_METADATA_PAGE_ID;
-  while (metadataPageId != FreePageMetadata::INVALID_PAGE_ID) {
-    Page metadataPage;
-    readMetadataPort.readPage(metadataPageId, metadataPage);
-
-    FreePageMetadata metadata;
-    metadata.readFromPage(metadataPage);
-
-    PageId pageId = metadata.findFirstFreePage();
-    if (pageId != FreePageMetadata::INVALID_PAGE_ID) {
-      metadata.setPageOccupied(pageId, true);
-      metadata.writeToPage(metadataPage);
+FreePageMetadataPageId AllocatePageAction::execute() {
+  FreePageMetadataPageId metadataPageId = FIRST_METADATA_PAGE_ID;
+  while (metadataPageId != FreePageMetadataPage::INVALID_PAGE_ID) {
+    FreePageMetadataPage metadataPage =
+        readMetadataPort.readPage(metadataPageId);
+    FreePageMetadataPageId pageId = metadataPage.findFirstFreePage();
+    if (pageId != FreePageMetadataPage::INVALID_PAGE_ID) {
+      metadataPage.setPageOccupied(pageId, true);
       writeMetadataPort.writePage(metadataPageId, metadataPage);
       return pageId;
     }
-    metadataPageId = metadata.getNextMetadataPageId();
+    metadataPageId = metadataPage.getNextMetadataPageId();
   }
 
   throw std::runtime_error("No free pages available");

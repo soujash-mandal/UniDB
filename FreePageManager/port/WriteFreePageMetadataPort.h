@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../domain/FreePageMetadataPage.h"
+#include "../domain/FreePageMetadataPageId.h"
 
 class WriteFreePageMetadataPort {
 public:
   virtual ~WriteFreePageMetadataPort() = default;
-
-  virtual void writePage(PageId pageId, const Page &page) = 0;
+  virtual void writePage(FreePageMetadataPageId pageId,
+                         FreePageMetadataPage page) = 0;
 };

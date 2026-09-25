@@ -2,33 +2,35 @@
 
 #include <cstring>
 
-FreePageMetadata::FreePageMetadata()
+FreePageMetadataPage::FreePageMetadataPage()
     : nextMetadataPageId(INVALID_PAGE_ID), firstTrackedPageId(0), bitmap{} {
   setPageOccupied(0, true);
 }
 
-PageId FreePageMetadata::getNextMetadataPageId() const {
+FreePageMetadataPageId FreePageMetadataPage::getNextMetadataPageId() const {
   return nextMetadataPageId;
 }
 
-void FreePageMetadata::setNextMetadataPageId(PageId pageId) {
+void FreePageMetadataPage::setNextMetadataPageId(
+    FreePageMetadataPageId pageId) {
   nextMetadataPageId = pageId;
 }
 
-PageId FreePageMetadata::getFirstTrackedPageId() const {
+FreePageMetadataPageId FreePageMetadataPage::getFirstTrackedPageId() const {
   return firstTrackedPageId;
 }
 
-void FreePageMetadata::setFirstTrackedPageId(PageId pageId) {
+void FreePageMetadataPage::setFirstTrackedPageId(
+    FreePageMetadataPageId pageId) {
   firstTrackedPageId = pageId;
 }
 
-bool FreePageMetadata::isPageOccupied(PageId pageId) const {
+bool FreePageMetadataPage::isPageOccupied(FreePageMetadataPageId pageId) const {
   if (pageId < firstTrackedPageId) {
     return false;
   }
 
-  PageId relativePageId = pageId - firstTrackedPageId;
+  FreePageMetadataPageId relativePageId = pageId - firstTrackedPageId;
 
   if (relativePageId >= MAX_TRACKED_PAGES) {
     return false;
@@ -42,8 +44,9 @@ bool FreePageMetadata::isPageOccupied(PageId pageId) const {
   return (bitmap[byteIndex] & mask) != 0;
 }
 
-void FreePageMetadata::setPageOccupied(PageId pageId, bool occupied) {
-  PageId relativePageId = pageId - firstTrackedPageId;
+void FreePageMetadataPage::setPageOccupied(FreePageMetadataPageId pageId,
+                                           bool occupied) {
+  FreePageMetadataPageId relativePageId = pageId - firstTrackedPageId;
 
   uint32_t byteIndex = relativePageId / BITS_PER_BYTE;
   uint32_t bitIndex = relativePageId % BITS_PER_BYTE;
@@ -57,7 +60,7 @@ void FreePageMetadata::setPageOccupied(PageId pageId, bool occupied) {
   }
 }
 
-PageId FreePageMetadata::findFirstFreePage() const {
+FreePageMetadataPageId FreePageMetadataPage::findFirstFreePage() const {
   for (uint32_t offset = 0; offset < MAX_TRACKED_PAGES; ++offset) {
     uint32_t byteIndex = offset / BITS_PER_BYTE;
     uint32_t bitIndex = offset % BITS_PER_BYTE;
@@ -70,22 +73,4 @@ PageId FreePageMetadata::findFirstFreePage() const {
   }
 
   return INVALID_PAGE_ID;
-}
-
-void FreePageMetadata::readFromPage(const Page &page) {
-  std::memcpy(&nextMetadataPageId, page.data(), sizeof(PageId));
-
-  std::memcpy(&firstTrackedPageId, page.data() + FIRST_TRACKED_PAGE_ID_OFFSET,
-              sizeof(PageId));
-
-  std::memcpy(bitmap, page.data() + BITMAP_OFFSET, BITMAP_SIZE);
-}
-
-void FreePageMetadata::writeToPage(Page &page) const {
-  std::memcpy(page.data(), &nextMetadataPageId, sizeof(PageId));
-
-  std::memcpy(page.data() + FIRST_TRACKED_PAGE_ID_OFFSET, &firstTrackedPageId,
-              sizeof(PageId));
-
-  std::memcpy(page.data() + BITMAP_OFFSET, bitmap, BITMAP_SIZE);
 }
