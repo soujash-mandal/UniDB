@@ -42,16 +42,16 @@ PageId AllocatePageAction::execute() {
         MetadataPageId newMetadataPageId = metadataPageId + 1;
         newMetadataPage.setFirstTrackedPageId(newMetadataPageId);
         newMetadataPage.setPageOccupied(newMetadataPageId);
+
+        // 6. allocate new page
+        newPageId = newMetadataPageId + 1;
+        newMetadataPage.setPageOccupied(newPageId);
         writeMetadataPort.writePage(newMetadataPageId, newMetadataPage);
 
-        // 6. chain new metadatapage with old one
+        // 7. chain new metadatapage with old one
         metadataPage.setNextMetadataPageId(newMetadataPageId);
         writeMetadataPort.writePage(metadataPageId, metadataPage);
 
-        // 7. allocate new page
-        newPageId = newMetadataPageId + 1;
-        metadataPage.setPageOccupied(newPageId);
-        writeMetadataPort.writePage(metadataPageId, metadataPage);
         return newPageId;
       }
     }
