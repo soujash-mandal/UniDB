@@ -15,12 +15,22 @@ PageId AllocatePageAction::execute() {
     MetadataPage metadataPage = readMetadataPort.readPage(metadataPageId);
     PageId newPageId = metadataPage.findFirstFreePage();
     if (!MetadataPage::isValidPage(newPageId)) {
-      metadataPageId = metadataPage.getNextMetadataPageId();
+      MetadataPageId nextMetadataPageId = metadataPage.getNextMetadataPageId();
+      if (!MetadataPage::isValidPage(nextMetadataPageId)) {
+        MetadataPageId newMetadataPageId = metadataPageId + 1;
+        metadataPage.setNextMetadataPageId(newMetadataPageId);
+        MetadataPage newMetadataPage;
+        newMetadataPage.setFirstTrackedPageId(newMetadataPageId);
+        writeMetadataPort.writePage(metadataPageId, metadataPage);
+        writeMetadataPort.writePage(newMetadataPageId, newMetadataPage);
+        newPageId = newMetadataPageId + 1;
+        return newPageId;
+      }
+      metadataPageId = nextMetadataPageId;
     } else {
       metadataPage.setPageOccupied(newPageId);
       writeMetadataPort.writePage(metadataPageId, metadataPage);
       return newPageId;
     }
   }
-  throw std::runtime_error("No free pages available");
 }
