@@ -10,27 +10,54 @@ AllocatePageAction::AllocatePageAction(
 }
 
 PageId AllocatePageAction::execute() {
+
+  // 1: Find first metadata page
   MetadataPageId metadataPageId = MetadataPage::getFirstMetadataPageId();
+
   while (MetadataPage::isValidPage(metadataPageId)) {
+    // 2. find in this metadata page if a page is available to allocate
     MetadataPage metadataPage = readMetadataPort.readPage(metadataPageId);
     PageId newPageId = metadataPage.findFirstFreePage();
-    if (!MetadataPage::isValidPage(newPageId)) {
-      MetadataPageId nextMetadataPageId = metadataPage.getNextMetadataPageId();
-      if (!MetadataPage::isValidPage(nextMetadataPageId)) {
-        MetadataPageId newMetadataPageId = metadataPageId + 1;
-        metadataPage.setNextMetadataPageId(newMetadataPageId);
-        MetadataPage newMetadataPage;
-        newMetadataPage.setFirstTrackedPageId(newMetadataPageId);
-        writeMetadataPort.writePage(metadataPageId, metadataPage);
-        writeMetadataPort.writePage(newMetadataPageId, newMetadataPage);
-        newPageId = newMetadataPageId + 1;
-        return newPageId;
-      }
-      metadataPageId = nextMetadataPageId;
-    } else {
+
+    if (MetadataPage::isValidPage(newPageId)) {
+      //  3.1 if we find a free page in that metadata page return that
       metadataPage.setPageOccupied(newPageId);
       writeMetadataPort.writePage(metadataPageId, metadataPage);
       return newPageId;
+
+    } else {
+      // 3.2 not found any free page -> go to next
+      MetadataPageId nextMetadataPageId = metadataPage.getNextMetadataPageId();
+
+      if (MetadataPage::isValidPage(nextMetadataPageId)) {
+        // 4.1 have already assigned next metadatapage
+        metadataPageId = nextMetadataPageId;
+        continue;
+
+      } else {
+        // 4.2 dont have next metadatapage
+
+        // 5. create new metadata page
+        MetadataPage newMetadataPage;
+        MetadataPageId newMetadataPageId = metadataPageId + 1;
+        newMetadataPage.setFirstTrackedPageId(newMetadataPageId);
+        newMetadataPage.setPageOccupied(newMetadataPageId);
+        writeMetadataPort.writePage(newMetadataPageId, newMetadataPage);
+
+        // 6. chain new metadatapage with old one
+        metadataPage.setNextMetadataPageId(newMetadataPageId);
+        writeMetadataPort.writePage(metadataPageId, metadataPage);
+
+        // 7. allocate new page
+        newPageId = newMetadataPageId + 1;
+        metadataPage.setPageOccupied(newPageId);
+        writeMetadataPort.writePage(metadataPageId, metadataPage);
+        return newPageId;
+      }
     }
   }
+
+  // ! we are assuming we have infinite storage - this error will appear
+  // ! only when our disk is full
+  throw std::runtime_error("Disk Full");
 }

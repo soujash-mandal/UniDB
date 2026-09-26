@@ -27,7 +27,9 @@ public:
   static MetadataPageId getFirstMetadataPageId() {
     return FIRST_METADATA_PAGE_ID;
   }
+
   uint32_t findFirstFreePage() const;
+
   void setPageOccupied(PageId pageId);
 
   uint32_t getNextMetadataPageId() { return nextMetadataPageId; };
@@ -35,7 +37,6 @@ public:
 
   uint32_t getFirstTrackedPageId() { return firstTrackedPageId; };
   void setFirstTrackedPageId(uint32_t pageId) { firstTrackedPageId = pageId; };
-  bool isPageOccupied(uint32_t pageId) const;
 
 private:
   uint32_t nextMetadataPageId;
