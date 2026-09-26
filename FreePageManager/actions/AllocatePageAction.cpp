@@ -11,7 +11,7 @@ AllocatePageAction::AllocatePageAction(
 
 PageId AllocatePageAction::execute() {
   MetadataPageId metadataPageId = MetadataPage::getFirstMetadataPageId();
-  while (!MetadataPage::isValidPage(metadataPageId)) {
+  while (MetadataPage::isValidPage(metadataPageId)) {
     MetadataPage metadataPage = readMetadataPort.readPage(metadataPageId);
     PageId newPageId = metadataPage.findFirstFreePage();
     if (!MetadataPage::isValidPage(newPageId)) {
