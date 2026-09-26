@@ -6,7 +6,7 @@
 class ReadFreePageMetadataAdapter : public ReadFreePageMetadataPort {
 public:
   explicit ReadFreePageMetadataAdapter(ReadPageAction &readPageAction);
-  FreePageMetadataPage readPage(FreePageMetadataPageId pageId) override;
+  MetadataPage readPage(MetadataPageId pageId) override;
 
 private:
   ReadPageAction &readPageAction;

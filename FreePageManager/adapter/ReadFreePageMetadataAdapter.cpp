@@ -6,11 +6,9 @@ ReadFreePageMetadataAdapter::ReadFreePageMetadataAdapter(
     ReadPageAction &readPageAction)
     : readPageAction(readPageAction) {}
 
-FreePageMetadataPage
-ReadFreePageMetadataAdapter::readPage(FreePageMetadataPageId pageId) {
+MetadataPage ReadFreePageMetadataAdapter::readPage(MetadataPageId pageId) {
   DiskPage diskPage = readPageAction.execute(pageId);
-  FreePageMetadataPage freePageMetadataPage;
-  std::memcpy(freePageMetadataPage.data(), diskPage.data(),
-              FreePageMetadataPage::PAGE_SIZE);
+  MetadataPage freePageMetadataPage;
+  std::memcpy(freePageMetadataPage.data(), diskPage.data(), PAGE_SIZE);
   return freePageMetadataPage;
 }

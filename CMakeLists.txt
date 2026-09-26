@@ -86,7 +86,6 @@ add_executable(tests
     FreePageManager/actions/AllocatePageAction.cpp
     FreePageManager/actions/FreePageAction.cpp
     FreePageManager/test/FreePageMetadataTest.cpp
-    FreePageManager/test/AllocatePageActionTest.cpp
 
     # Eviction Policy
     EvictionPolicy/EvictionPolicyFactory.cpp

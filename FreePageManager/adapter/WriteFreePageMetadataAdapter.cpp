@@ -5,9 +5,9 @@ WriteFreePageMetadataAdapter::WriteFreePageMetadataAdapter(
     WritePageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
-void WriteFreePageMetadataAdapter::writePage(FreePageMetadataPageId pageId,
-                                             FreePageMetadataPage page) {
+void WriteFreePageMetadataAdapter::writePage(MetadataPageId pageId,
+                                             MetadataPage page) {
   DiskPage diskPage;
-  std::memcpy(diskPage.data(), page.data(), FreePageMetadataPage::PAGE_SIZE);
+  std::memcpy(diskPage.data(), page.data(), PAGE_SIZE);
   writePageAction.execute(pageId, diskPage);
 }

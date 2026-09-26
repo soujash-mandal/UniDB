@@ -3,12 +3,18 @@
 #include "../port/ReadFreePageMetadataPort.h"
 #include "../port/WriteFreePageMetadataPort.h"
 
+#include <cstdint>
+
+namespace {
+using PageId = uint32_t;
+}
+
 class AllocatePageAction {
 public:
   AllocatePageAction(ReadFreePageMetadataPort &readMetadataPort,
                      WriteFreePageMetadataPort &writeMetadataPort);
 
-  FreePageMetadataPageId execute();
+  PageId execute();
 
 private:
   ReadFreePageMetadataPort &readMetadataPort;
