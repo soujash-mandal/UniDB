@@ -57,7 +57,5 @@ PageId AllocatePageAction::execute() {
     }
   }
 
-  // ! we are assuming we have infinite storage - this error will appear
-  // ! only when our disk is full
-  throw std::runtime_error("Disk Full");
+  throw std::runtime_error("Failed to allocate page");
 }
