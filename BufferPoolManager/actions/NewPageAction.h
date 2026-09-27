@@ -7,14 +7,10 @@
 
 class NewPageAction {
 public:
-  struct PageResult {
-    BufferPoolPageId pageId;
-    BufferPoolPage page;
-  };
   NewPageAction(BufferPool &bufferPool, AllocatePagePort &allocatePagePort,
                 WritePagePort &writePagePort, EvictionPolicy &evictionPolicy);
 
-  PageResult execute();
+  BufferPoolPageId execute();
 
 private:
   BufferPool &bufferPool;

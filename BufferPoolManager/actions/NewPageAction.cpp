@@ -10,7 +10,7 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
     : bufferPool(bufferPool), allocatePagePort(allocatePagePort),
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
-NewPageAction::PageResult NewPageAction::execute() {
+BufferPoolPageId NewPageAction::execute() {
 
   // 1. First try to find an unused frame.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
@@ -24,7 +24,7 @@ NewPageAction::PageResult NewPageAction::execute() {
 
       evictionPolicy.RecordAccess(pageId);
       evictionPolicy.SetEvictable(pageId, false);
-      return {pageId, frame.getPage()};
+      return pageId;
     }
   }
 
@@ -64,7 +64,7 @@ NewPageAction::PageResult NewPageAction::execute() {
     evictionPolicy.RecordAccess(pageId);
     evictionPolicy.SetEvictable(pageId, false);
 
-    return {pageId, frame.getPage()};
+    return pageId;
   }
 
   throw std::runtime_error(
