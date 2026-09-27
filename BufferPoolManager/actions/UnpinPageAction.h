@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../../EvictionPolicy/EvictionPolicy.h"
-#include "../../core/PageId.h"
 #include "../domain/BufferPool.h"
 
 class UnpinPageAction {
@@ -9,7 +8,7 @@ class UnpinPageAction {
 public:
   UnpinPageAction(BufferPool &bufferPool, EvictionPolicy &evictionPolicy);
 
-  void execute(PageId pageId, bool dirty);
+  void execute(BufferPoolPageId pageId, bool dirty);
 
 private:
   BufferPool &bufferPool;

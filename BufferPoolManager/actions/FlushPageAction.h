@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../core/PageId.h"
 #include "../domain/BufferPool.h"
 #include "../port/WritePagePort.h"
 
@@ -8,7 +7,7 @@ class FlushPageAction {
 
 public:
   FlushPageAction(BufferPool &bufferPool, WritePagePort &writePagePort);
-  void execute(PageId pageId);
+  void execute(BufferPoolPageId pageId);
 
 private:
   BufferPool &bufferPool;

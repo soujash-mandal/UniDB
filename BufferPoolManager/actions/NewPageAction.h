@@ -1,10 +1,16 @@
 #pragma once
 
 #include "../../EvictionPolicy/EvictionPolicy.h"
-#include "../../core/NewPageResult.h"
 #include "../domain/BufferPool.h"
 #include "../port/AllocatePagePort.h"
 #include "../port/WritePagePort.h"
+
+namespace {
+struct NewPageResult {
+  BufferPoolPageId pageId;
+  BufferPoolPage page;
+};
+} // namespace
 
 class NewPageAction {
 public:

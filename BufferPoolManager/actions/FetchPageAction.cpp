@@ -10,7 +10,7 @@ FetchPageAction::FetchPageAction(BufferPool &bufferPool,
     : bufferPool(bufferPool), readPagePort(readPagePort),
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
-Page &FetchPageAction::execute(PageId pageId) {
+BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
 
   // 1. Check whether page is already in the buffer pool
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
@@ -27,11 +27,13 @@ Page &FetchPageAction::execute(PageId pageId) {
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied()) {
-      readPagePort.readPage(pageId, frame.getPage());
+      BufferPoolPage page = readPagePort.readPage(pageId);
       frame.setPageId(pageId);
+      frame.setPage(page);
       frame.setOccupied(true);
       frame.setDirty(false);
       frame.pin();
+      
       evictionPolicy.RecordAccess(pageId);
       evictionPolicy.SetEvictable(pageId, false);
       return frame.getPage();
@@ -40,7 +42,7 @@ Page &FetchPageAction::execute(PageId pageId) {
 
   // 3. Buffer pool is full.
   // Ask the eviction policy which page should be removed.
-  std::optional<PageId> victimPageId = evictionPolicy.Evict();
+  std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
   if (!victimPageId.has_value()) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
   }
@@ -62,7 +64,8 @@ Page &FetchPageAction::execute(PageId pageId) {
     evictionPolicy.Remove(victimPageId.value());
 
     // 7. Load the requested page into the same frame.
-    readPagePort.readPage(pageId, frame.getPage());
+    BufferPoolPage page = readPagePort.readPage(pageId);
+    frame.setPage(page);
     frame.setPageId(pageId);
     frame.setOccupied(true);
     frame.setDirty(false);

@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../../EvictionPolicy/EvictionPolicy.h"
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
 #include "../domain/BufferPool.h"
 #include "../port/ReadPagePort.h"
 #include "../port/WritePagePort.h"
@@ -13,7 +11,7 @@ public:
   FetchPageAction(BufferPool &bufferPool, ReadPagePort &readPagePort,
                   WritePagePort &writePagePort, EvictionPolicy &evictionPolicy);
 
-  Page &execute(PageId pageId);
+  BufferPoolPage execute(BufferPoolPageId pageId);
 
 private:
   BufferPool &bufferPool;

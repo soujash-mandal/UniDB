@@ -6,7 +6,7 @@ UnpinPageAction::UnpinPageAction(BufferPool &bufferPool,
                                  EvictionPolicy &evictionPolicy)
     : bufferPool(bufferPool), evictionPolicy(evictionPolicy) {}
 
-void UnpinPageAction::execute(PageId pageId, bool dirty) {
+void UnpinPageAction::execute(BufferPoolPageId pageId, bool dirty) {
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (frame.isOccupied() && frame.getPageId() == pageId) {

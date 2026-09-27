@@ -11,11 +11,12 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
 NewPageResult NewPageAction::execute() {
+
   // 1. First try to find an unused frame.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied()) {
-      PageId pageId = allocatePagePort.allocatePage();
+      BufferPoolPageId pageId = allocatePagePort.allocatePage();
       frame.setPageId(pageId);
       frame.setOccupied(true);
       frame.setDirty(true);
@@ -29,7 +30,7 @@ NewPageResult NewPageAction::execute() {
 
   // 2. Buffer pool is full.
   // Find a page that can be evicted.
-  std::optional<PageId> victimPageId = evictionPolicy.Evict();
+  std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
   if (!victimPageId.has_value()) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
   }
@@ -47,9 +48,11 @@ NewPageResult NewPageAction::execute() {
       frame.setDirty(false);
     }
 
+    evictionPolicy.Remove(victimPageId.value());
+
     // 5. Allocate the new page only after we know
     //    that the frame can actually be reused.
-    PageId pageId = allocatePagePort.allocatePage();
+    BufferPoolPageId pageId = allocatePagePort.allocatePage();
 
     // 6. Replace the victim with the new page.
     frame.setPageId(pageId);
