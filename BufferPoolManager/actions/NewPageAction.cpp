@@ -10,7 +10,7 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
     : bufferPool(bufferPool), allocatePagePort(allocatePagePort),
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
-NewPageResult NewPageAction::execute() {
+NewPageAction::PageResult NewPageAction::execute() {
 
   // 1. First try to find an unused frame.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {

@@ -5,19 +5,16 @@
 #include "../port/AllocatePagePort.h"
 #include "../port/WritePagePort.h"
 
-namespace {
-struct NewPageResult {
-  BufferPoolPageId pageId;
-  BufferPoolPage page;
-};
-} // namespace
-
 class NewPageAction {
 public:
+  struct PageResult {
+    BufferPoolPageId pageId;
+    BufferPoolPage page;
+  };
   NewPageAction(BufferPool &bufferPool, AllocatePagePort &allocatePagePort,
                 WritePagePort &writePagePort, EvictionPolicy &evictionPolicy);
 
-  NewPageResult execute();
+  PageResult execute();
 
 private:
   BufferPool &bufferPool;

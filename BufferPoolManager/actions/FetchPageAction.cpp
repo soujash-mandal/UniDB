@@ -33,7 +33,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
       frame.setOccupied(true);
       frame.setDirty(false);
       frame.pin();
-      
+
       evictionPolicy.RecordAccess(pageId);
       evictionPolicy.SetEvictable(pageId, false);
       return frame.getPage();
