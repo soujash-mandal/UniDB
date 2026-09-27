@@ -13,6 +13,8 @@ constexpr uint32_t BITMAP_OFFSET =
 constexpr uint32_t BITMAP_SIZE = PAGE_SIZE - BITMAP_OFFSET;
 constexpr uint32_t INVALID_PAGE_ID = UINT32_MAX;
 constexpr MetadataPageId FIRST_METADATA_PAGE_ID = 0;
+uint32_t BITS_PER_BYTE = 8;
+uint32_t MAX_TRACKED_PAGES = BITMAP_SIZE * BITS_PER_BYTE;
 } // namespace
 
 class MetadataPage {

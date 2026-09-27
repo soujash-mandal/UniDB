@@ -39,7 +39,8 @@ PageId AllocatePageAction::execute() {
 
         // 5. create new metadata page
         MetadataPage newMetadataPage;
-        MetadataPageId newMetadataPageId = metadataPageId + 1;
+        MetadataPageId newMetadataPageId = metadataPageId + MAX_TRACKED_PAGES;
+
         newMetadataPage.setFirstTrackedPageId(newMetadataPageId);
         newMetadataPage.setPageOccupied(newMetadataPageId);
 

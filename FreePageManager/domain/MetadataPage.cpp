@@ -2,11 +2,6 @@
 
 #include <cstring>
 
-namespace {
-uint32_t BITS_PER_BYTE = 8;
-uint32_t MAX_TRACKED_PAGES = BITMAP_SIZE * BITS_PER_BYTE;
-} // namespace
-
 MetadataPage::MetadataPage()
     : nextMetadataPageId(INVALID_PAGE_ID), firstTrackedPageId(0), bitmap{} {
   setPageOccupied(0);
