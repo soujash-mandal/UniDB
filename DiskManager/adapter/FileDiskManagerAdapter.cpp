@@ -30,7 +30,7 @@ DiskPage FileDiskManagerAdapter::readPage(DiskPageId pageId) {
   return page;
 }
 
-void FileDiskManagerAdapter::writePage(DiskPageId pageId, DiskPage &page) {
+void FileDiskManagerAdapter::writePage(DiskPageId pageId, DiskPage page) {
   const std::streamoff offset =
       static_cast<std::streamoff>(pageId) * DiskPage::PAGE_SIZE;
   file.seekp(offset);
