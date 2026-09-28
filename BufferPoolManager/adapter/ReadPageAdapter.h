@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../../DiskManager/actions/ReadPageAction.h"
+#include "../../DiskManager/actions/ReadDiskPageAction.h"
 #include "../port/ReadPagePort.h"
 
 class ReadPageAdapter : public ReadPagePort {
 public:
-  explicit ReadPageAdapter(ReadPageAction &readPageAction);
-  BufferPoolPage readPage(BufferPoolPageId pageId) override;
+  explicit ReadPageAdapter(ReadDiskPageAction &readDiskPageAction);
+  BufferPoolPage readDiskPage(BufferPoolPageId pageId) override;
 
 private:
-  ReadPageAction &readPageAction;
+  ReadDiskPageAction &readDiskPageAction;
 };

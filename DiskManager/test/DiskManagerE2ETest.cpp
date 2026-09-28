@@ -22,7 +22,7 @@ TEST(DiskManagerTest, WritesAndReadsPage) {
   {
     FileDiskManagerAdapter disk(testFile);
 
-    DiskPage page = disk.readPage(42);
+    DiskPage page = disk.readDiskPage(42);
 
     EXPECT_EQ(page.data()[0], 'U');
     EXPECT_EQ(page.data()[1], 'D');

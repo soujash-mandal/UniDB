@@ -27,7 +27,7 @@ add_executable(unidb
 
     # Disk Manager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
-    DiskManager/actions/ReadPageAction.cpp
+    DiskManager/actions/ReadDiskPageAction.cpp
     DiskManager/actions/WriteDiskPageAction.cpp
 
     # Free Page Manager
@@ -78,7 +78,7 @@ add_executable(tests
 
     # DiskManager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
-    DiskManager/actions/ReadPageAction.cpp
+    DiskManager/actions/ReadDiskPageAction.cpp
     DiskManager/actions/WriteDiskPageAction.cpp
 
     DiskManager/test/DiskManagerE2ETest.cpp 

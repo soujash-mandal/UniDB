@@ -10,10 +10,10 @@ Container::Container(
 
     )
     : // Disk Manager
-      readPage(diskManager), writeDiskPage(diskManager),
+      readDiskPage(diskManager), writeDiskPage(diskManager),
 
       // Free Page Manager
-      readFreePageMetadataAdapter(readPage),
+      readFreePageMetadataAdapter(readDiskPage),
       writeFreePageMetadataAdapter(writeDiskPage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
       initializeMetadataPage(writeFreePageMetadataAdapter),
@@ -22,7 +22,7 @@ Container::Container(
       evictionPolicy(EvictionPolicyFactory::Create(evictionPolicyType)),
 
       // Buffer Pool Manager
-      readPageAdapter(readPage), writePageAdapter(writeDiskPage),
+      readPageAdapter(readDiskPage), writePageAdapter(writeDiskPage),
       bufferPool(bufferPoolSize), allocatePageAdapter(allocatePage),
 
       fetchPage(bufferPool, readPageAdapter, writePageAdapter, *evictionPolicy),

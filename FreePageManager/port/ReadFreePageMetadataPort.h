@@ -5,5 +5,5 @@
 class ReadFreePageMetadataPort {
 public:
   virtual ~ReadFreePageMetadataPort() = default;
-  virtual MetadataPage readPage(MetadataPageId pageId) = 0;
+  virtual MetadataPage readDiskPage(MetadataPageId pageId) = 0;
 };

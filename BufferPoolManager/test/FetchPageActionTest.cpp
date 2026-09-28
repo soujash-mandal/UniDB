@@ -12,7 +12,7 @@ public:
 
   BufferPoolPage pageToReturn;
 
-  BufferPoolPage readPage(BufferPoolPageId pageId) override {
+  BufferPoolPage readDiskPage(BufferPoolPageId pageId) override {
     ++readCount;
     lastPageId = pageId;
     return pageToReturn;

@@ -2,11 +2,11 @@
 
 #include <cstring>
 
-ReadPageAdapter::ReadPageAdapter(ReadPageAction &readPageAction)
-    : readPageAction(readPageAction) {}
+ReadPageAdapter::ReadPageAdapter(ReadDiskPageAction &readDiskPageAction)
+    : readDiskPageAction(readDiskPageAction) {}
 
-BufferPoolPage ReadPageAdapter::readPage(BufferPoolPageId pageId) {
-  DiskPage diskPage = readPageAction.execute(pageId);
+BufferPoolPage ReadPageAdapter::readDiskPage(BufferPoolPageId pageId) {
+  DiskPage diskPage = readDiskPageAction.execute(pageId);
   BufferPoolPage bufferPoolPage;
   std::memcpy(bufferPoolPage.data(), diskPage.data(),
               BufferPoolPage::PAGE_SIZE);

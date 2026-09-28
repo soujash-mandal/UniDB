@@ -16,7 +16,7 @@ PageId AllocatePageAction::execute() {
 
   while (MetadataPage::isValidPage(metadataPageId)) {
     // 2. find in this metadata page if a page is available to allocate
-    MetadataPage metadataPage = readMetadataPort.readPage(metadataPageId);
+    MetadataPage metadataPage = readMetadataPort.readDiskPage(metadataPageId);
     PageId newPageId = metadataPage.findFirstFreePage();
 
     if (MetadataPage::isValidPage(newPageId)) {

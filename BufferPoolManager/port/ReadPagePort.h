@@ -6,5 +6,5 @@
 class ReadPagePort {
 public:
   virtual ~ReadPagePort() = default;
-  virtual BufferPoolPage readPage(BufferPoolPageId pageId) = 0;
+  virtual BufferPoolPage readDiskPage(BufferPoolPageId pageId) = 0;
 };

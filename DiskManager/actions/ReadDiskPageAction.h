@@ -2,9 +2,9 @@
 
 #include "../port/DiskPort.h"
 
-class ReadPageAction {
+class ReadDiskPageAction {
 public:
-  explicit ReadPageAction(DiskPort &diskManager);
+  explicit ReadDiskPageAction(DiskPort &diskManager);
   DiskPage execute(DiskPageId pageId);
 
 private:

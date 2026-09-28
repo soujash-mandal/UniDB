@@ -3,11 +3,11 @@
 #include <cstring>
 
 ReadFreePageMetadataAdapter::ReadFreePageMetadataAdapter(
-    ReadPageAction &readPageAction)
-    : readPageAction(readPageAction) {}
+    ReadDiskPageAction &readDiskPageAction)
+    : readDiskPageAction(readDiskPageAction) {}
 
-MetadataPage ReadFreePageMetadataAdapter::readPage(MetadataPageId pageId) {
-  DiskPage diskPage = readPageAction.execute(pageId);
+MetadataPage ReadFreePageMetadataAdapter::readDiskPage(MetadataPageId pageId) {
+  DiskPage diskPage = readDiskPageAction.execute(pageId);
   MetadataPage freePageMetadataPage;
   std::memcpy(freePageMetadataPage.data(), diskPage.data(), PAGE_SIZE);
   return freePageMetadataPage;

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../../DiskManager/actions/ReadPageAction.h"
+#include "../../DiskManager/actions/ReadDiskPageAction.h"
 #include "../port/ReadFreePageMetadataPort.h"
 
 class ReadFreePageMetadataAdapter : public ReadFreePageMetadataPort {
 public:
-  explicit ReadFreePageMetadataAdapter(ReadPageAction &readPageAction);
-  MetadataPage readPage(MetadataPageId pageId) override;
+  explicit ReadFreePageMetadataAdapter(ReadDiskPageAction &readDiskPageAction);
+  MetadataPage readDiskPage(MetadataPageId pageId) override;
 
 private:
-  ReadPageAction &readPageAction;
+  ReadDiskPageAction &readDiskPageAction;
 };

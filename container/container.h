@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "../DiskManager/actions/ReadPageAction.h"
+#include "../DiskManager/actions/ReadDiskPageAction.h"
 #include "../DiskManager/actions/WriteDiskPageAction.h"
 #include "../DiskManager/port/DiskPort.h"
 #include "../EvictionPolicy/EvictionPolicy.h"
@@ -72,7 +72,7 @@ public:
 
 private:
   // Disk Manager
-  ReadPageAction readPage;
+  ReadDiskPageAction readDiskPage;
   WriteDiskPageAction writeDiskPage;
 
   // Free Page Manager

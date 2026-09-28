@@ -15,7 +15,7 @@ FileDiskManagerAdapter::FileDiskManagerAdapter(const std::string &fileName) {
   }
 }
 
-DiskPage FileDiskManagerAdapter::readPage(DiskPageId pageId) {
+DiskPage FileDiskManagerAdapter::readDiskPage(DiskPageId pageId) {
   DiskPage page;
   const std::streamoff offset =
       static_cast<std::streamoff>(pageId) * DiskPage::PAGE_SIZE;

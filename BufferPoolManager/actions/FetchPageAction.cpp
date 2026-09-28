@@ -27,7 +27,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied()) {
-      BufferPoolPage page = readPagePort.readPage(pageId);
+      BufferPoolPage page = readPagePort.readDiskPage(pageId);
       frame.setPageId(pageId);
       frame.setPage(page);
       frame.setOccupied(true);
@@ -64,7 +64,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     evictionPolicy.Remove(victimPageId.value());
 
     // 7. Load the requested page into the same frame.
-    BufferPoolPage page = readPagePort.readPage(pageId);
+    BufferPoolPage page = readPagePort.readDiskPage(pageId);
     frame.setPage(page);
     frame.setPageId(pageId);
     frame.setOccupied(true);
