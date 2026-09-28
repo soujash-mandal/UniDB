@@ -28,14 +28,15 @@ add_executable(unidb
     # Disk Manager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadPageAction.cpp
-    DiskManager/actions/WritePageAction.cpp
+    DiskManager/actions/WriteDiskPageAction.cpp
 
     # Free Page Manager
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
-    FreePageManager/domain/FreePageMetadata.cpp
+    FreePageManager/domain/MetadataPage.cpp
+
     FreePageManager/actions/AllocatePageAction.cpp
-    FreePageManager/actions/FreePageAction.cpp
+    FreePageManager/actions/InitializeMetadataPageAction.cpp
 
     # Eviction Policy
     EvictionPolicy/EvictionPolicyFactory.cpp
@@ -45,23 +46,24 @@ add_executable(unidb
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
     BufferPoolManager/adapter/AllocatePageAdapter.cpp
+    
     BufferPoolManager/actions/FetchPageAction.cpp
-    BufferPoolManager/actions/FlushAllPagesAction.cpp
+    BufferPoolManager/actions/WritePageAction.cpp
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
 
     
 
-    # TupleService
-    TupleService/adapter/BufferPoolFetchPageAdapter.cpp
-    TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
-    TupleService/adapter/BufferPoolNewPageAdapter.cpp
+    # # TupleService
+    # TupleService/adapter/BufferPoolFetchPageAdapter.cpp
+    # TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
+    # TupleService/adapter/BufferPoolNewPageAdapter.cpp
 
-    TupleService/actions/CreateTupleAction.cpp
-    TupleService/actions/GetTupleAction.cpp
-    TupleService/actions/DeleteTupleAction.cpp
-    TupleService/actions/CreatePageAction.cpp
+    # TupleService/actions/CreateTupleAction.cpp
+    # TupleService/actions/GetTupleAction.cpp
+    # TupleService/actions/DeleteTupleAction.cpp
+    # TupleService/actions/CreatePageAction.cpp
 )
 
 
@@ -77,15 +79,20 @@ add_executable(tests
     # DiskManager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadPageAction.cpp
-    DiskManager/actions/WritePageAction.cpp
+    DiskManager/actions/WriteDiskPageAction.cpp
+
+    DiskManager/test/DiskManagerE2ETest.cpp 
 
     # FreePageManager
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
-    FreePageManager/domain/FreePageMetadata.cpp
+    
+    FreePageManager/domain/MetadataPage.cpp
+    
     FreePageManager/actions/AllocatePageAction.cpp
-    FreePageManager/actions/FreePageAction.cpp
-    FreePageManager/test/FreePageMetadataTest.cpp
+    FreePageManager/actions/InitializeMetadataPageAction.cpp
+    
+    FreePageManager/test/TestFreePageMetadataPage.cpp
 
     # Eviction Policy
     EvictionPolicy/EvictionPolicyFactory.cpp
@@ -99,26 +106,28 @@ add_executable(tests
     BufferPoolManager/adapter/AllocatePageAdapter.cpp
 
     BufferPoolManager/actions/FetchPageAction.cpp
-    BufferPoolManager/actions/FlushAllPagesAction.cpp
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
+    BufferPoolManager/actions/WritePageAction.cpp
 
     BufferPoolManager/test/FetchPageActionTest.cpp
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
+    BufferPoolManager/test/FlushPageActionTest.cpp
+    
 
-    # TupleService
-    TupleService/adapter/BufferPoolFetchPageAdapter.cpp
-    TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
-    TupleService/adapter/BufferPoolNewPageAdapter.cpp
+    # # TupleService
+    # TupleService/adapter/BufferPoolFetchPageAdapter.cpp
+    # TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
+    # TupleService/adapter/BufferPoolNewPageAdapter.cpp
 
-    TupleService/actions/CreateTupleAction.cpp
-    TupleService/actions/GetTupleAction.cpp
-    TupleService/actions/DeleteTupleAction.cpp
-    TupleService/actions/CreatePageAction.cpp
+    # TupleService/actions/CreateTupleAction.cpp
+    # TupleService/actions/GetTupleAction.cpp
+    # TupleService/actions/DeleteTupleAction.cpp
+    # TupleService/actions/CreatePageAction.cpp
 
-    TupleService/test/TupleActionsTest.cpp
+    # TupleService/test/TupleActionsTest.cpp
 )
 
 

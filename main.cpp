@@ -1,185 +1,137 @@
-#include <iostream>
-#include <string>
 
 #include "DiskManager/adapter/FileDiskManagerAdapter.h"
-#include "EvictionPolicy/EvictionPolicyType.h"
-#include "TupleService/actions/CreatePageAction.h"
-#include "TupleService/actions/DeleteTupleAction.h"
-#include "TupleService/actions/GetTupleAction.h"
 #include "container/container.h"
-#include "core/Page.h"
+
+#include <cstring>
+#include <iostream>
 
 int main() {
-  std::cout << "=========================\n";
-  std::cout << "   Tuple Action Test\n";
-  std::cout << "=========================\n\n";
+
+  const char *databaseFile = "database.db";
+
+  std::cout << "===== UniDB Buffer Pool Manual Test =====\n\n";
+
+  // Real DiskManager adapter.
+  FileDiskManagerAdapter diskManager(databaseFile);
+
+  // Real Container.
+  // Buffer pool = 2 frames.
+  Container container(diskManager, 2, EvictionPolicyType::FIFO);
+
+  // Initialize metadata.
+  container.initializeMetadataPageAction().execute();
 
   // --------------------------------------------------
-  // Dependency Injection
+  // 1. Create a new page
   // --------------------------------------------------
 
-  FileDiskManagerAdapter diskManagerAdapter("database.db");
-  uint32_t bufferPoolSize = 100;
-  EvictionPolicyType evictionPolicyType = EvictionPolicyType::FIFO;
+  std::cout << "Creating new page...\n";
 
-  Container container(diskManagerAdapter, bufferPoolSize, evictionPolicyType);
+  auto pageId1 = container.newPageAction().execute();
 
-  const PageId pageId = 0;
+  std::cout << "Created page ID: " << pageId1 << "\n";
 
   // --------------------------------------------------
-  // 1. CREATE PAGE
+  // 2. Write data into the page
   // --------------------------------------------------
 
-  std::cout << "[1] CREATE PAGE\n";
+  std::cout << "Writing data to page...\n";
 
-  container.createPageAction().execute(pageId);
+  BufferPoolPage page1;
 
-  std::cout << "Page created: " << pageId << "\n\n";
+  const char *message = "Hello UniDB";
 
-  // --------------------------------------------------
-  // 2. CREATE 5 TUPLES
-  // --------------------------------------------------
+  std::memcpy(page1.data(), message, std::strlen(message) + 1);
 
-  std::cout << "[2] CREATE 5 TUPLES\n";
+  container.writePageAction().execute(pageId1, page1);
 
-  const std::string tuple1 = "Tuple One";
-  const std::string tuple2 = "Tuple Two";
-  const std::string tuple3 = "Tuple Three";
-  const std::string tuple4 = "Tuple Four";
-  const std::string tuple5 = "Tuple Five";
-
-  const uint16_t slotId1 = container.createTupleAction().execute(
-      pageId, tuple1.data(), static_cast<uint16_t>(tuple1.size()));
-
-  const uint16_t slotId2 = container.createTupleAction().execute(
-      pageId, tuple2.data(), static_cast<uint16_t>(tuple2.size()));
-
-  const uint16_t slotId3 = container.createTupleAction().execute(
-      pageId, tuple3.data(), static_cast<uint16_t>(tuple3.size()));
-
-  const uint16_t slotId4 = container.createTupleAction().execute(
-      pageId, tuple4.data(), static_cast<uint16_t>(tuple4.size()));
-
-  const uint16_t slotId5 = container.createTupleAction().execute(
-      pageId, tuple5.data(), static_cast<uint16_t>(tuple5.size()));
-
-  std::cout << "Created tuple 1 -> Slot ID: " << slotId1 << "\n";
-  std::cout << "Created tuple 2 -> Slot ID: " << slotId2 << "\n";
-  std::cout << "Created tuple 3 -> Slot ID: " << slotId3 << "\n";
-  std::cout << "Created tuple 4 -> Slot ID: " << slotId4 << "\n";
-  std::cout << "Created tuple 5 -> Slot ID: " << slotId5 << "\n\n";
+  std::cout << "Written: " << page1.data() << "\n";
 
   // --------------------------------------------------
-  // 3. GET TUPLE 2
+  // 3. Unpin page and mark it dirty
   // --------------------------------------------------
 
-  std::cout << "[3] GET TUPLE 2\n";
+  std::cout << "Unpinning page...\n";
 
-  char tupleData2[Page::PAGE_SIZE]{};
-
-  container.getTupleAction().execute(pageId, slotId2, tupleData2);
-
-  std::string result2(tupleData2, tuple2.size());
-
-  std::cout << "Tuple 2: " << result2 << "\n\n";
+  container.unpinPageAction().execute(pageId1, true);
 
   // --------------------------------------------------
-  // 4. GET TUPLE 4
+  // 4. Flush page to real disk
   // --------------------------------------------------
 
-  std::cout << "[4] GET TUPLE 4\n";
+  std::cout << "Flushing page...\n";
 
-  char tupleData4[Page::PAGE_SIZE]{};
+  container.flushPageAction().execute(pageId1);
 
-  container.getTupleAction().execute(pageId, slotId4, tupleData4);
-
-  std::string result4(tupleData4, tuple4.size());
-
-  std::cout << "Tuple 4: " << result4 << "\n\n";
+  std::cout << "Page flushed to disk.\n";
 
   // --------------------------------------------------
-  // 5. DELETE TUPLE 2
+  // 5. Fetch the page again
   // --------------------------------------------------
 
-  std::cout << "[5] DELETE TUPLE 2\n";
+  std::cout << "\nFetching page again...\n";
 
-  container.deleteTupleAction().execute(pageId, slotId2);
+  auto fetchedPage = container.fetchPageAction().execute(pageId1);
 
-  std::cout << "Tuple 2 deleted.\n\n";
-
-  // --------------------------------------------------
-  // 6. TRY TO GET DELETED TUPLE
-  // --------------------------------------------------
-
-  std::cout << "[6] GET DELETED TUPLE 2\n";
-
-  bool deletedTupleBlocked = false;
-
-  try {
-
-    char deletedTupleData[Page::PAGE_SIZE]{};
-
-    container.getTupleAction().execute(pageId, slotId2, deletedTupleData);
-
-    std::cout << "ERROR: Deleted tuple was still readable.\n";
-
-  } catch (const std::exception &e) {
-
-    deletedTupleBlocked = true;
-
-    std::cout << "Correctly failed to get deleted tuple.\n";
-    std::cout << "Reason: " << e.what() << "\n";
-  }
-
-  std::cout << "\n";
+  std::cout << "Fetched page ID: " << pageId1 << "\n";
+  std::cout << "Fetched data: " << fetchedPage.data() << "\n";
 
   // --------------------------------------------------
-  // 7. VERIFY OTHER TUPLES STILL EXIST
+  // 6. Unpin fetched page
   // --------------------------------------------------
 
-  std::cout << "[7] VERIFY OTHER TUPLES\n";
+  container.unpinPageAction().execute(pageId1, false);
 
-  char tupleData1[Page::PAGE_SIZE]{};
-
-  container.getTupleAction().execute(pageId, slotId1, tupleData1);
-
-  std::string result1(tupleData1, tuple1.size());
-
-  std::cout << "Tuple 1: " << result1 << "\n";
-
-  char tupleData3[Page::PAGE_SIZE]{};
-
-  container.getTupleAction().execute(pageId, slotId3, tupleData3);
-
-  std::string result3(tupleData3, tuple3.size());
-
-  std::cout << "Tuple 3: " << result3 << "\n";
-
-  char tupleData5[Page::PAGE_SIZE]{};
-
-  container.getTupleAction().execute(pageId, slotId5, tupleData5);
-
-  std::string result5(tupleData5, tuple5.size());
-
-  std::cout << "Tuple 5: " << result5 << "\n\n";
+  std::cout << "Page unpinned.\n";
 
   // --------------------------------------------------
-  // FINAL RESULT
+  // 7. Create second page
   // --------------------------------------------------
 
-  const bool success = result1 == tuple1 && result2 == tuple2 &&
-                       result3 == tuple3 && result4 == tuple4 &&
-                       result5 == tuple5 && deletedTupleBlocked;
+  std::cout << "\nCreating second page...\n";
 
-  std::cout << "=========================\n";
-  std::cout << "       FINAL RESULT\n";
-  std::cout << "=========================\n";
+  auto pageId2 = container.newPageAction().execute();
 
-  if (success) {
-    std::cout << "ALL TUPLE TESTS PASSED\n";
-  } else {
-    std::cout << "TUPLE TESTS FAILED\n";
-  }
+  std::cout << "Created page ID: " << pageId2 << "\n";
 
-  return success ? 0 : 1;
+  container.unpinPageAction().execute(pageId2, false);
+
+  // --------------------------------------------------
+  // 8. Create third page
+  //
+  // Buffer pool has only 2 frames.
+  //
+  // Page 1 and page 2 are both unpinned,
+  // so FIFO eviction should be possible.
+  // --------------------------------------------------
+
+  std::cout << "\nCreating third page...\n";
+
+  auto pageId3 = container.newPageAction().execute();
+
+  std::cout << "Created page ID: " << pageId3 << "\n";
+
+  container.unpinPageAction().execute(pageId3, false);
+
+  // --------------------------------------------------
+  // 9. Fetch page 1 again
+  //
+  // Page 1 should have been evicted when page 3
+  // was created.
+  //
+  // Fetch should therefore read page 1 from disk.
+  // --------------------------------------------------
+
+  std::cout << "\nFetching page 1 after eviction...\n";
+
+  auto fetchedAgain = container.fetchPageAction().execute(pageId1);
+
+  std::cout << "Fetched page ID: " << pageId1 << "\n";
+  std::cout << "Fetched data: " << fetchedAgain.data() << "\n";
+
+  container.unpinPageAction().execute(pageId1, false);
+
+  std::cout << "\n===== Test Finished =====\n";
+
+  return 0;
 }

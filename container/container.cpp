@@ -10,58 +10,58 @@ Container::Container(
 
     )
     : // Disk Manager
-      readPage(diskManager), writePage(diskManager),
+      readPage(diskManager), writeDiskPage(diskManager),
 
       // Free Page Manager
       readFreePageMetadataAdapter(readPage),
-      writeFreePageMetadataAdapter(writePage),
+      writeFreePageMetadataAdapter(writeDiskPage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
-      freePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
+      initializeMetadataPage(writeFreePageMetadataAdapter),
 
       // Eviction Policy
       evictionPolicy(EvictionPolicyFactory::Create(evictionPolicyType)),
 
       // Buffer Pool Manager
-      readPageAdapter(readPage), writePageAdapter(writePage),
+      readPageAdapter(readPage), writePageAdapter(writeDiskPage),
       bufferPool(bufferPoolSize), allocatePageAdapter(allocatePage),
 
       fetchPage(bufferPool, readPageAdapter, writePageAdapter, *evictionPolicy),
-      unpinPage(bufferPool, *evictionPolicy),
+      writePage(bufferPool), unpinPage(bufferPool, *evictionPolicy),
       flushPage(bufferPool, writePageAdapter),
       newPage(bufferPool, allocatePageAdapter, writePageAdapter,
-              *evictionPolicy),
-      flushAllPages(bufferPool, writePageAdapter),
-
-      // Tuple Service
-      fetchPageAdapter(fetchPage), unpinPageAdapter(unpinPage),
-      newPageAdapter(newPage),
-
-      createTuple(fetchPageAdapter, unpinPageAdapter),
-      getTuple(fetchPageAdapter, unpinPageAdapter),
-      deleteTuple(fetchPageAdapter, unpinPageAdapter),
-      createPage(newPageAdapter),
-
-      // Free Space Map Service
-      fsmFetchPageAdapter(fetchPage), fsmUnpinPageAdapter(unpinPage),
-      fsmNewPageAdapter(newPage),
-
-      addPage(fsmFetchPageAdapter, fsmUnpinPageAdapter, fsmNewPageAdapter),
-      findPageWithSpace(fsmFetchPageAdapter, fsmUnpinPageAdapter),
-      updateFreeSpace(fsmFetchPageAdapter, fsmUnpinPageAdapter) {}
+              *evictionPolicy) {}
 
 // Tuple Service
-CreateTupleAction &Container::createTupleAction() { return createTuple; }
-GetTupleAction &Container::getTupleAction() { return getTuple; }
-DeleteTupleAction &Container::deleteTupleAction() { return deleteTuple; }
-CreatePageAction &Container::createPageAction() { return createPage; }
+// fetchPageAdapter(fetchPage), unpinPageAdapter(unpinPage),
+// newPageAdapter(newPage),
 
-// Free Space Map Service
-AddPageAction &Container::addPageAction() { return addPage; }
+// createTuple(fetchPageAdapter, unpinPageAdapter),
+// getTuple(fetchPageAdapter, unpinPageAdapter),
+// deleteTuple(fetchPageAdapter, unpinPageAdapter),
+// createPage(newPageAdapter),
 
-FindPageWithSpaceAction &Container::findPageWithSpaceAction() {
-  return findPageWithSpace;
-}
+// // Free Space Map Service
+// fsmFetchPageAdapter(fetchPage), fsmUnpinPageAdapter(unpinPage),
+// fsmNewPageAdapter(newPage),
 
-UpdateFreeSpaceAction &Container::updateFreeSpaceAction() {
-  return updateFreeSpace;
-}
+// addPage(fsmFetchPageAdapter, fsmUnpinPageAdapter, fsmNewPageAdapter),
+// findPageWithSpace(fsmFetchPageAdapter, fsmUnpinPageAdapter),
+// updateFreeSpace(fsmFetchPageAdapter, fsmUnpinPageAdapter) {}
+
+// Tuple Service
+// CreateTupleAction &Container::createTupleAction() { return createTuple;
+// } GetTupleAction &Container::getTupleAction() { return getTuple; }
+// DeleteTupleAction &Container::deleteTupleAction() { return deleteTuple;
+// } CreatePageAction &Container::createPageAction() { return createPage;
+// }
+
+// // Free Space Map Service
+// AddPageAction &Container::addPageAction() { return addPage; }
+
+// FindPageWithSpaceAction &Container::findPageWithSpaceAction() {
+//   return findPageWithSpace;
+// }
+
+// UpdateFreeSpaceAction &Container::updateFreeSpaceAction() {
+//   return updateFreeSpace;
+// }
