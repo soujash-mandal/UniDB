@@ -1,22 +1,27 @@
-// todo: remove all core imports
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
-#include "../../core/SlotId.h"
-
+#include <cstddef>
 #include <cstdint>
+#include <vector>
+
+using TuplePageId = uint32_t;
+using TupleSlotId = uint16_t;
 
 class TuplePage {
 public:
-  explicit TuplePage(Page &page);
-  static void initialize(Page &page, PageId pageId);
-
-  SlotId insert(const char *tupleData, uint16_t tupleSize);
-  void get(SlotId slotId, char *tupleData) const;
-  void remove(SlotId slotId);
-  bool getAvailableSpace() const;
+  static constexpr std::size_t PAGE_SIZE = 8192;
+  TuplePage();
+  void initialize(TuplePageId pageId);
+  TupleSlotId insert(const std::vector<char> &tupleData);
+  std::vector<char> get(TupleSlotId slotId) const;
+  void remove(TupleSlotId slotId);
+  bool hasSpace(uint16_t tupleSize) const;
 
 private:
-  Page &page;
+  struct Header {
+    uint16_t slotCount;
+  };
+
+  Header header;
+  std::vector<std::vector<char>> tuples;
 };
