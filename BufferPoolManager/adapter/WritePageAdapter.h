@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../../DiskManager/actions/WritePageAction.h"
+#include "../../DiskManager/actions/WriteDiskPageAction.h"
 #include "../port/WritePagePort.h"
 
 class WritePageAdapter : public WritePagePort {
 public:
-  explicit WritePageAdapter(WritePageAction &writePageAction);
+  explicit WritePageAdapter(WriteDiskPageAction &writePageAction);
   void writePage(BufferPoolPageId pageId, BufferPoolPage page) override;
 
 private:
-  WritePageAction &writePageAction;
+  WriteDiskPageAction &writePageAction;
 };

@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-WritePageAdapter::WritePageAdapter(WritePageAction &writePageAction)
+WritePageAdapter::WritePageAdapter(WriteDiskPageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
 void WritePageAdapter::writePage(BufferPoolPageId pageId, BufferPoolPage page) {

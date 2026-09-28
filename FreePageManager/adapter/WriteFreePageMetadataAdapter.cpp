@@ -2,7 +2,7 @@
 #include <cstring>
 
 WriteFreePageMetadataAdapter::WriteFreePageMetadataAdapter(
-    WritePageAction &writePageAction)
+    WriteDiskPageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
 void WriteFreePageMetadataAdapter::writePage(MetadataPageId pageId,

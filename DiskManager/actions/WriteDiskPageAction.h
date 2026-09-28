@@ -3,9 +3,9 @@
 #include "../domain/DiskPage.h"
 #include "../port/DiskPort.h"
 
-class WritePageAction {
+class WriteDiskPageAction {
 public:
-  explicit WritePageAction(DiskPort &diskManager);
+  explicit WriteDiskPageAction(DiskPort &diskManager);
   void execute(DiskPageId pageId, DiskPage page);
 
 private:

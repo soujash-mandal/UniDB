@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../../DiskManager/actions/WritePageAction.h"
+#include "../../DiskManager/actions/WriteDiskPageAction.h"
 #include "../port/WriteFreePageMetadataPort.h"
 
 class WriteFreePageMetadataAdapter : public WriteFreePageMetadataPort {
 public:
-  explicit WriteFreePageMetadataAdapter(WritePageAction &writePageAction);
+  explicit WriteFreePageMetadataAdapter(WriteDiskPageAction &writePageAction);
   void writePage(MetadataPageId pageId, MetadataPage page) override;
 
 private:
-  WritePageAction &writePageAction;
+  WriteDiskPageAction &writePageAction;
 };
