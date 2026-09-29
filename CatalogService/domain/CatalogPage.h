@@ -7,6 +7,7 @@
 
 using CatalogPageId = uint32_t;
 using CatalogTableId = uint32_t;
+using FSMPageId = uint32_t;
 
 namespace {
 
@@ -25,7 +26,7 @@ struct Table {
   CatalogTableId tableId;
   std::string name;
   std::vector<Column> columns;
-  CatalogPageId firstFreeSpaceMapPageId = INVALID_PAGE_ID;
+  FSMPageId firstFreeSpaceMapPageId = INVALID_PAGE_ID;
 };
 
 struct Header {
@@ -54,8 +55,6 @@ public:
 
   CatalogPageId getNextPageId();
   void setNextPageId(CatalogPageId pageId);
-
-  uint32_t getTableCount();
 
   void insert(Table table);
   Table get(CatalogTableId tableId);
