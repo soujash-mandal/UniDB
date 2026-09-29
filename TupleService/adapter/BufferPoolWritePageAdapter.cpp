@@ -1,9 +1,13 @@
 #include "BufferPoolWritePageAdapter.h"
 
+#include <cstring>
+
 BufferPoolWritePageAdapter::BufferPoolWritePageAdapter(
     WritePageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
-void BufferPoolWritePageAdapter::writePage(PageId pageId, Page page) {
-  writePageAction.execute(pageId, page);
+void BufferPoolWritePageAdapter::writePage(TuplePageId pageId, TuplePage page) {
+  BufferPoolPage bufferPoolPage;
+  std::memcpy(bufferPoolPage.data(), page.data(), TuplePage::PAGE_SIZE);
+  writePageAction.execute(pageId, bufferPoolPage);
 }

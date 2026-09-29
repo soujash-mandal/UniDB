@@ -6,7 +6,7 @@
 class BufferPoolWritePageAdapter : public WritePagePort {
 public:
   explicit BufferPoolWritePageAdapter(WritePageAction &writePageAction);
-  void writePage(PageId pageId, Page page) override;
+  void writePage(TuplePageId pageId, const TuplePage page) override;
 
 private:
   WritePageAction &writePageAction;

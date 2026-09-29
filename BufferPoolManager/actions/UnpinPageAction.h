@@ -8,7 +8,7 @@ class UnpinPageAction {
 public:
   UnpinPageAction(BufferPool &bufferPool, EvictionPolicy &evictionPolicy);
 
-  void execute(BufferPoolPageId pageId, bool dirty);
+  void execute(BufferPoolPageId pageId);
 
 private:
   BufferPool &bufferPool;

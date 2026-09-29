@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../core/NewPageResult.h"
+#include "../domain/TuplePage.h"
 
 class NewPagePort {
 public:
   virtual ~NewPagePort() = default;
 
-  virtual NewPageResult newPage() = 0;
+  virtual TuplePageId newPage() = 0;
 };

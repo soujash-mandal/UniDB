@@ -7,7 +7,7 @@ class BufferPoolUnpinPageAdapter : public UnpinPagePort {
 public:
   explicit BufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
 
-  void unpinPage(PageId pageId, bool dirty) override;
+  void unpinPage(TuplePageId pageId) override;
 
 private:
   UnpinPageAction &unpinPageAction;

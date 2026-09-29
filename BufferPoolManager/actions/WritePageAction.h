@@ -7,7 +7,6 @@
 class WritePageAction {
 public:
   explicit WritePageAction(BufferPool &bufferPool);
-
   void execute(BufferPoolPageId pageId, BufferPoolPage page);
 
 private:

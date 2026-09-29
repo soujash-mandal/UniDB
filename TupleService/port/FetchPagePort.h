@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../domain/TuplePage.h"
 
 class FetchPagePort {
 public:
   virtual ~FetchPagePort() = default;
 
-  virtual Page &fetchPage(PageId pageId) = 0;
+  virtual TuplePage fetchPage(TuplePageId pageId) = 0;
 };

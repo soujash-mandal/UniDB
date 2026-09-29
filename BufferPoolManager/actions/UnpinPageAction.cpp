@@ -6,15 +6,11 @@ UnpinPageAction::UnpinPageAction(BufferPool &bufferPool,
                                  EvictionPolicy &evictionPolicy)
     : bufferPool(bufferPool), evictionPolicy(evictionPolicy) {}
 
-void UnpinPageAction::execute(BufferPoolPageId pageId, bool dirty) {
+void UnpinPageAction::execute(BufferPoolPageId pageId) {
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (frame.isOccupied() && frame.getPageId() == pageId) {
       frame.unpin();
-      if (dirty) {
-        frame.setDirty(true);
-      }
-      // A page can only be evicted when nobody is using it.
       if (frame.getPinCount() == 0) {
         evictionPolicy.SetEvictable(pageId, true);
       }

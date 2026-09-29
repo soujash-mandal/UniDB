@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../core/PageId.h"
+#include "../domain/TuplePage.h"
 
 class UnpinPagePort {
 public:
   virtual ~UnpinPagePort() = default;
 
-  virtual void unpinPage(PageId pageId, bool dirty) = 0;
+  virtual void unpinPage(TuplePageId pageId) = 0;
 };

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
+#include "../domain/TuplePage.h"
 
 class WritePagePort {
 public:
   virtual ~WritePagePort() = default;
-  virtual void writePage(PageId pageId, Page page) = 0;
+
+  virtual void writePage(TuplePageId pageId, TuplePage page) = 0;
 };

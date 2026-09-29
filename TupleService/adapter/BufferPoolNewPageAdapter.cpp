@@ -3,6 +3,6 @@
 BufferPoolNewPageAdapter::BufferPoolNewPageAdapter(NewPageAction &newPageAction)
     : newPageAction(newPageAction) {}
 
-NewPageResult BufferPoolNewPageAdapter::newPage() {
+TuplePageId BufferPoolNewPageAdapter::newPage() {
   return newPageAction.execute();
 }
