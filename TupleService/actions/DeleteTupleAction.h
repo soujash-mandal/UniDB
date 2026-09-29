@@ -2,14 +2,14 @@
 
 #include "../domain/TuplePage.h"
 #include "../port/FetchPagePort.h"
-#include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 class DeleteTupleAction {
 public:
-  DeleteTupleAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort);
+  DeleteTupleAction(FetchPagePort &fetchPagePort, WritePagePort &writePagePort);
   void execute(TuplePageId pageId, TupleSlotId slotId);
 
 private:
   FetchPagePort &fetchPagePort;
-  UnpinPagePort &unpinPagePort;
+  WritePagePort &writePagePort;
 };
