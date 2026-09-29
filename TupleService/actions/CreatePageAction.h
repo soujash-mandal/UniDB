@@ -5,7 +5,7 @@
 class CreatePageAction {
 public:
   explicit CreatePageAction(NewPagePort &newPagePort);
-  void execute();
+  TuplePageId execute();
 
 private:
   NewPagePort &newPagePort;

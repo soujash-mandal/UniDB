@@ -1,16 +1,15 @@
 #pragma once
 
-#include "../../core/PageId.h"
+#include "../domain/TuplePage.h"
 #include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
 
-#include <cstdint>
+#include <vector>
 
 class GetTupleAction {
 public:
   GetTupleAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort);
-
-  void execute(const PageId &pageId, uint16_t slotId, char *tupleData);
+  std::vector<char> execute(TuplePageId pageId, TupleSlotId slotId);
 
 private:
   FetchPagePort &fetchPagePort;
