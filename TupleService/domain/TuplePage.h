@@ -5,23 +5,33 @@
 #include <vector>
 
 using TuplePageId = uint32_t;
-using TupleSlotId = uint16_t;
+using TupleSlotId = uint32_t;
+
+namespace {
+struct Header {
+  uint32_t slotCount;
+  uint32_t freeSpaceOffset;
+};
+
+struct Slot {
+  uint32_t offset;
+  uint32_t size;
+};
+} // namespace
 
 class TuplePage {
 public:
   static constexpr std::size_t PAGE_SIZE = 8192;
+
   TuplePage();
-  void initialize(TuplePageId pageId);
-  TupleSlotId insert(const std::vector<char> &tupleData);
-  std::vector<char> get(TupleSlotId slotId) const;
+  char *data() { return bytes; }
+  const char *data() const { return bytes; }
+
+  TupleSlotId insert(const std::vector<char> tupleData);
+  std::vector<char> get(TupleSlotId slotId);
   void remove(TupleSlotId slotId);
-  bool hasSpace(uint16_t tupleSize) const;
+  bool hasSpace(uint32_t tupleSize);
 
 private:
-  struct Header {
-    uint16_t slotCount;
-  };
-
-  Header header;
-  std::vector<std::vector<char>> tuples;
+  char bytes[PAGE_SIZE]{};
 };
