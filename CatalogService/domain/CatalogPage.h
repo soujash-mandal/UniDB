@@ -1,16 +1,67 @@
 #pragma once
 
-#include "../../core/Page.h"
-#include "../../core/Slot.h"
-#include "CatalogPageHeader.h"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+using CatalogPageId = uint32_t;
+using CatalogTableId = uint32_t;
+
+namespace {
+
+static constexpr uint32_t INVALID_PAGE_ID = UINT32_MAX;
+
+enum class DataType { INT, BIGINT, FLOAT, DOUBLE, BOOLEAN, VARCHAR };
+
+struct Column {
+  std::string name;
+  DataType type;
+  uint16_t size = 0;
+  bool nullable = false;
+};
+
+struct Table {
+  CatalogTableId tableId;
+  std::string name;
+  std::vector<Column> columns;
+  CatalogPageId firstFreeSpaceMapPageId = INVALID_PAGE_ID;
+};
+
+struct Header {
+  CatalogPageId nextPageId;
+  uint32_t tableCount;
+};
+
+struct Entry {
+  CatalogTableId tableId;
+  uint32_t offset;
+  uint32_t size;
+};
+
+static constexpr uint32_t HEADER_SIZE = sizeof(Header);
+static constexpr uint32_t ENTRY_SIZE = sizeof(Entry);
+
+} // namespace
 
 class CatalogPage {
 public:
-  static void Initialize(Page &page, PageId nextPageId);
+  static constexpr std::size_t PAGE_SIZE = 8192;
 
-  static CatalogPageHeader *GetHeader(Page &page);
+  CatalogPage();
+  char *data() { return bytes; }
+  const char *data() const { return bytes; }
 
-  static Slot *GetSlot(Page &page, uint16_t slotId);
+  CatalogPageId getNextPageId();
+  void setNextPageId(CatalogPageId pageId);
 
-  static uint16_t GetFreeSpace(Page &page);
+  uint32_t getTableCount();
+
+  void insert(Table table);
+  Table get(CatalogTableId tableId);
+  void remove(CatalogTableId tableId);
+  bool hasSpace(Table table);
+
+private:
+  char bytes[PAGE_SIZE]{};
 };
