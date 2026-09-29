@@ -1,17 +1,17 @@
 #pragma once
 
+#include <vector>
+
 #include "../domain/TuplePage.h"
 #include "../port/FetchPagePort.h"
-#include "../port/UnpinPagePort.h"
-
-#include <vector>
+#include "../port/WritePagePort.h"
 
 class CreateTupleAction {
 public:
-  CreateTupleAction(FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort);
+  CreateTupleAction(FetchPagePort &fetchPagePort, WritePagePort &writePagePort);
   TupleSlotId execute(TuplePageId pageId, std::vector<char> tupleData);
 
 private:
   FetchPagePort &fetchPagePort;
-  UnpinPagePort &unpinPagePort;
+  WritePagePort &writePagePort;
 };
