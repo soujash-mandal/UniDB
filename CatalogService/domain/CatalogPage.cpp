@@ -111,14 +111,11 @@ void CatalogPage::insert(Table table) {
       throw std::runtime_error("Table already exists");
     }
   }
-
   if (!hasSpace(table)) {
     throw std::runtime_error("Not enough space in CatalogPage");
   }
-
   uint32_t newOffset =
       header.freeSpaceOffset - static_cast<uint32_t>(tableData.size());
-
   uint32_t entryOffset = sizeof(Header) + header.tableCount * sizeof(Entry);
   Entry entry;
   entry.tableId = table.tableId;
