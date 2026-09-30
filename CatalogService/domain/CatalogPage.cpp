@@ -75,27 +75,6 @@ Table deserializeTable(std::vector<char> data) {
   return table;
 }
 
-uint32_t getDataStart(const char *bytes, uint32_t tableCount) {
-  if (tableCount == 0) {
-    return CatalogPage::PAGE_SIZE;
-  }
-
-  uint32_t dataStart = CatalogPage::PAGE_SIZE;
-
-  for (uint32_t i = 0; i < tableCount; ++i) {
-    Entry entry;
-
-    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
-                sizeof(Entry));
-
-    if (entry.tableId != INVALID_PAGE_ID && entry.offset < dataStart) {
-      dataStart = entry.offset;
-    }
-  }
-
-  return dataStart;
-}
-
 } // namespace
 
 CatalogPage::CatalogPage() {
@@ -103,6 +82,7 @@ CatalogPage::CatalogPage() {
   Header header;
   header.nextPageId = INVALID_PAGE_ID;
   header.tableCount = 0;
+  header.freeSpaceOffset = PAGE_SIZE;
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
@@ -121,16 +101,12 @@ void CatalogPage::setNextPageId(CatalogPageId pageId) {
 
 void CatalogPage::insert(Table table) {
   std::vector<char> tableData = serializeTable(table);
-
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
-
   for (uint32_t i = 0; i < header.tableCount; ++i) {
     Entry entry;
-
     std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
                 sizeof(Entry));
-
     if (entry.tableId == table.tableId) {
       throw std::runtime_error("Table already exists");
     }
@@ -140,23 +116,18 @@ void CatalogPage::insert(Table table) {
     throw std::runtime_error("Not enough space in CatalogPage");
   }
 
-  uint32_t dataStart = getDataStart(bytes, header.tableCount);
-
-  uint32_t newOffset = dataStart - static_cast<uint32_t>(tableData.size());
+  uint32_t newOffset =
+      header.freeSpaceOffset - static_cast<uint32_t>(tableData.size());
 
   uint32_t entryOffset = sizeof(Header) + header.tableCount * sizeof(Entry);
-
   Entry entry;
   entry.tableId = table.tableId;
   entry.offset = newOffset;
   entry.size = static_cast<uint32_t>(tableData.size());
-
   std::memcpy(bytes + newOffset, tableData.data(), tableData.size());
-
   std::memcpy(bytes + entryOffset, &entry, sizeof(Entry));
-
   ++header.tableCount;
-
+  header.freeSpaceOffset = newOffset;
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
@@ -167,49 +138,38 @@ Table CatalogPage::get(CatalogTableId tableId) {
     Entry entry;
     std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
                 sizeof(Entry));
-
     if (entry.tableId == tableId) {
-      return deserializeTable(bytes + entry.offset, entry.size);
+      std::vector<char> tableData(bytes + entry.offset,
+                                  bytes + entry.offset + entry.size);
+      return deserializeTable(tableData);
     }
   }
-
   throw std::runtime_error("Table not found");
 }
 
 void CatalogPage::remove(CatalogTableId tableId) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
-
   for (uint32_t i = 0; i < header.tableCount; ++i) {
     Entry entry;
-
     std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
                 sizeof(Entry));
-
     if (entry.tableId != tableId) {
       continue;
     }
-
     for (uint32_t j = i + 1; j < header.tableCount; ++j) {
       Entry nextEntry;
-
       std::memcpy(&nextEntry, bytes + sizeof(Header) + j * sizeof(Entry),
                   sizeof(Entry));
-
       std::memcpy(bytes + sizeof(Header) + (j - 1) * sizeof(Entry), &nextEntry,
                   sizeof(Entry));
     }
-
     --header.tableCount;
-
     std::memset(bytes + sizeof(Header) + header.tableCount * sizeof(Entry), 0,
                 sizeof(Entry));
-
     std::memcpy(bytes, &header, sizeof(Header));
-
     return;
   }
-
   throw std::runtime_error("Table not found");
 }
 
@@ -217,11 +177,11 @@ bool CatalogPage::hasSpace(Table table) {
   std::vector<char> tableData = serializeTable(table);
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
-  uint32_t dataStart = getDataStart(bytes, header.tableCount);
   uint32_t entryEnd = sizeof(Header) + (header.tableCount + 1) * sizeof(Entry);
-  if (dataStart < tableData.size()) {
+  if (header.freeSpaceOffset < tableData.size()) {
     return false;
   }
-  uint32_t newDataStart = dataStart - static_cast<uint32_t>(tableData.size());
+  uint32_t newDataStart =
+      header.freeSpaceOffset - static_cast<uint32_t>(tableData.size());
   return newDataStart >= entryEnd;
 }
