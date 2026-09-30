@@ -1,11 +1,7 @@
 #pragma once
-
-#include "../../core/Page.h"
-#include "../../core/PageId.h"
-
+#include "../domain/CatalogPage.h"
 class FetchPagePort {
 public:
   virtual ~FetchPagePort() = default;
-
-  virtual Page &fetchPage(PageId pageId) = 0;
+  virtual CatalogPage fetchPage(CatalogPageId pageId) = 0;
 };

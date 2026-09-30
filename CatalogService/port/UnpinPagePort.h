@@ -1,10 +1,7 @@
 #pragma once
-
-#include "../../core/PageId.h"
-
+#include "../domain/CatalogPage.h"
 class UnpinPagePort {
 public:
   virtual ~UnpinPagePort() = default;
-
-  virtual void unpinPage(PageId pageId, bool dirty) = 0;
+  virtual void unpinPage(CatalogPageId pageId) = 0;
 };

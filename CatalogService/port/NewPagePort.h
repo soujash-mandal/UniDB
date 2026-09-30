@@ -1,10 +1,7 @@
 #pragma once
-
-#include "../../core/NewPageResult.h"
-
+#include "../domain/CatalogPage.h"
 class NewPagePort {
 public:
   virtual ~NewPagePort() = default;
-
-  virtual NewPageResult newPage() = 0;
+  virtual CatalogPageId newPage() = 0;
 };

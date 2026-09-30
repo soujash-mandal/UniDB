@@ -3,6 +3,6 @@
 BufferPoolNewPageAdapter::BufferPoolNewPageAdapter(NewPageAction &newPageAction)
     : newPageAction(newPageAction) {}
 
-NewPageResult BufferPoolNewPageAdapter::newPage() {
+CatalogPageId BufferPoolNewPageAdapter::newPage() {
   return newPageAction.execute();
 }
