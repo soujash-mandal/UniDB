@@ -1,5 +1,5 @@
 #include "InitializeMetadataPageAction.h"
-
+#include "../../core/SystemPageIds.h"
 #include "../domain/MetadataPage.h"
 
 InitializeMetadataPageAction::InitializeMetadataPageAction(
@@ -8,7 +8,5 @@ InitializeMetadataPageAction::InitializeMetadataPageAction(
 
 void InitializeMetadataPageAction::execute() {
   MetadataPage metadataPage;
-  metadataPage.setFirstTrackedPageId(0);
-  metadataPage.setPageOccupied(0);
-  writeMetadataPort.writePage(0, metadataPage);
+  writeMetadataPort.writePage(METADATA_ROOT_PAGE_ID, metadataPage);
 }
