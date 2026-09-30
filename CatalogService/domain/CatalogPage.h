@@ -29,6 +29,7 @@ namespace {
 struct Header {
   CatalogPageId nextPageId;
   uint32_t tableCount;
+  uint32_t freeSpaceOffset;
 };
 
 struct Entry {
