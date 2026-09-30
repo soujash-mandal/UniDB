@@ -144,6 +144,23 @@ Table CatalogPage::get(CatalogTableId tableId) {
   throw std::runtime_error("Table not found");
 }
 
+bool CatalogPage::containsTableName(std::string name) {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  for (uint32_t i = 0; i < header.tableCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
+                sizeof(Entry));
+    std::vector<char> tableData(bytes + entry.offset,
+                                bytes + entry.offset + entry.size);
+    Table table = deserializeTable(tableData);
+    if (table.name == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void CatalogPage::remove(CatalogTableId tableId) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));

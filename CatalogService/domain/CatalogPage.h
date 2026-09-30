@@ -56,6 +56,7 @@ public:
 
   void insert(Table table);
   Table get(CatalogTableId tableId);
+  bool containsTableName(std::string name);
   void remove(CatalogTableId tableId);
   bool hasSpace(Table table);
 
