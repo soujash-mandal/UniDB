@@ -1,17 +1,49 @@
 #include "CreateTableAction.h"
-
+#include "../../core/SystemPageIds.h"
 #include <stdexcept>
 
-Table CreateTableAction::execute(const CreateTableRequest &request) {
-  if (request.name.empty()) {
+CreateTableAction::CreateTableAction(FetchPagePort &fetchPagePort,
+                                     NewPagePort &newPagePort,
+                                     WritePagePort &writePagePort,
+                                     UnpinPagePort &unpinPagePort)
+    : fetchPagePort(fetchPagePort), newPagePort(newPagePort),
+      writePagePort(writePagePort), unpinPagePort(unpinPagePort) {}
+
+void CreateTableAction::execute(CatalogTableId tableId, std::string name,
+                                std::vector<Column> columns) {
+  // 1 : name must be non empty
+  if (name.empty()) {
     throw std::invalid_argument("Table name cannot be empty");
   }
 
+  // 2 : Create Table Object which we will gonna insert a table
   Table table;
+  table.tableId = tableId;
+  table.name = name;
+  table.columns = columns;
+  table.firstFreeSpaceMapPageId = INVALID_PAGE_ID;
 
-  table.name = request.name;
-  table.columns = request.columns;
-  table.firstFreeSpaceMapPageId = UINT32_MAX;
+  // 3 : starting Catalog Page
+  CatalogPageId pageId = CATALOG_ROOT_PAGE_ID;
+  CatalogPage page = fetchPagePort.fetchPage(pageId);
 
-  return table;
+  // 4 : Loop Untill we find a suitable catalogpage to store new Table
+  while (!page.hasSpace(table)) {
+    CatalogPageId nextPageId = page.getNextPageId();
+    if (nextPageId == INVALID_PAGE_ID) {
+      CatalogPageId newPageId = newPagePort.newPage();
+      page.setNextPageId(newPageId);
+      nextPageId = newPageId;
+      writePagePort.writePage(pageId, page);
+    } else {
+      unpinPagePort.unpinPage(pageId);
+    }
+    page = fetchPagePort.fetchPage(nextPageId);
+    pageId = nextPageId;
+  }
+
+  // 5: Found a CatalogPage with Enough space create Table here
+  page.insert(table);
+  writePagePort.writePage(pageId, page);
+  unpinPagePort.unpinPage(pageId);
 }
