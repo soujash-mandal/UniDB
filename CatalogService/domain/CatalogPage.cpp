@@ -6,95 +6,69 @@
 
 namespace {
 
-std::vector<char> serializeTable(const Table &table) {
+std::vector<char> serializeTable(Table table) {
   std::vector<char> data;
   auto append = [&data](const void *value, std::size_t size) {
     const char *bytes = static_cast<const char *>(value);
     data.insert(data.end(), bytes, bytes + size);
   };
-
   uint32_t nameSize = static_cast<uint32_t>(table.name.size());
   append(&table.tableId, sizeof(table.tableId));
   append(&nameSize, sizeof(nameSize));
   append(table.name.data(), nameSize);
-
   uint32_t columnCount = static_cast<uint32_t>(table.columns.size());
   append(&columnCount, sizeof(columnCount));
-
   for (const Column &column : table.columns) {
     uint32_t columnNameSize = static_cast<uint32_t>(column.name.size());
-
     append(&columnNameSize, sizeof(columnNameSize));
     append(column.name.data(), columnNameSize);
-
     uint8_t type = static_cast<uint8_t>(column.type);
     append(&type, sizeof(type));
-
     append(&column.size, sizeof(column.size));
-
     uint8_t nullable = column.nullable ? 1 : 0;
     append(&nullable, sizeof(nullable));
   }
-
   append(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
-
   return data;
 }
 
 Table deserializeTable(const char *data, uint32_t size) {
   Table table;
   std::size_t offset = 0;
-
   auto read = [&](void *destination, std::size_t readSize) {
     if (offset + readSize > size) {
       throw std::runtime_error("Invalid catalog table data");
     }
-
     std::memcpy(destination, data + offset, readSize);
     offset += readSize;
   };
-
   uint32_t nameSize;
   uint32_t columnCount;
-
   read(&table.tableId, sizeof(table.tableId));
   read(&nameSize, sizeof(nameSize));
-
   if (offset + nameSize > size) {
     throw std::runtime_error("Invalid catalog table name");
   }
-
   table.name.assign(data + offset, nameSize);
   offset += nameSize;
-
   read(&columnCount, sizeof(columnCount));
-
   table.columns.reserve(columnCount);
-
   for (uint32_t i = 0; i < columnCount; ++i) {
     Column column;
-
     uint32_t columnNameSize;
     uint8_t type;
     uint8_t nullable;
-
     read(&columnNameSize, sizeof(columnNameSize));
-
     if (offset + columnNameSize > size) {
       throw std::runtime_error("Invalid catalog column name");
     }
-
     column.name.assign(data + offset, columnNameSize);
     offset += columnNameSize;
-
     read(&type, sizeof(type));
     column.type = static_cast<DataType>(type);
-
     read(&column.size, sizeof(column.size));
-
     read(&nullable, sizeof(nullable));
     column.nullable = nullable != 0;
-
     table.columns.push_back(column);
   }
 
@@ -243,19 +217,13 @@ void CatalogPage::remove(CatalogTableId tableId) {
 
 bool CatalogPage::hasSpace(Table table) {
   std::vector<char> tableData = serializeTable(table);
-
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
-
   uint32_t dataStart = getDataStart(bytes, header.tableCount);
-
   uint32_t entryEnd = sizeof(Header) + (header.tableCount + 1) * sizeof(Entry);
-
   if (dataStart < tableData.size()) {
     return false;
   }
-
   uint32_t newDataStart = dataStart - static_cast<uint32_t>(tableData.size());
-
   return newDataStart >= entryEnd;
 }

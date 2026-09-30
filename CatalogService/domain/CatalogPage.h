@@ -8,11 +8,7 @@
 using CatalogPageId = uint32_t;
 using CatalogTableId = uint32_t;
 using FSMPageId = uint32_t;
-
-namespace {
-
 static constexpr uint32_t INVALID_PAGE_ID = UINT32_MAX;
-
 enum class DataType { INT, BIGINT, FLOAT, DOUBLE, BOOLEAN, VARCHAR };
 
 struct Column {
@@ -29,6 +25,7 @@ struct Table {
   FSMPageId firstFreeSpaceMapPageId = INVALID_PAGE_ID;
 };
 
+namespace {
 struct Header {
   CatalogPageId nextPageId;
   uint32_t tableCount;
