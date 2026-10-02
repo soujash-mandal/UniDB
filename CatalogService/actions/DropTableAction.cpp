@@ -10,21 +10,21 @@ DropTableAction::DropTableAction(FetchPagePort &fetchPagePort,
 
 void DropTableAction::execute(CatalogPageId rootPageId,
                               CatalogTableId tableId) {
-
   CatalogPageId pageId = rootPageId;
+
   while (pageId != INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(pageId);
-    try {
-      page.get(tableId);
+    if (page.containsTableId(tableId)) {
       page.remove(tableId);
       writePagePort.writePage(pageId, page);
       unpinPagePort.unpinPage(pageId);
       return;
-    } catch (const std::runtime_error &) {
+    } else {
       CatalogPageId nextPageId = page.getNextPageId();
       unpinPagePort.unpinPage(pageId);
       pageId = nextPageId;
     }
   }
+
   throw std::runtime_error("Table not found");
 }
