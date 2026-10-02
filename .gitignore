@@ -2,3 +2,4 @@ database.db
 build/
 .cache
 .DS_Store
+visualisation/
