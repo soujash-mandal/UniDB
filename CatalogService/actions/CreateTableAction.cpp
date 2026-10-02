@@ -65,4 +65,7 @@ CatalogTableId CreateTableAction::execute(std::string name,
   page.insert(table);
   writePagePort.writePage(pageId, page);
   unpinPagePort.unpinPage(pageId);
+
+  // 9: return
+  return tableId;
 }
