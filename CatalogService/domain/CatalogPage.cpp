@@ -161,6 +161,20 @@ bool CatalogPage::containsTableName(std::string name) {
   return false;
 }
 
+bool CatalogPage::containsTableId(CatalogTableId tableId) {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  for (uint32_t i = 0; i < header.tableCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
+                sizeof(Entry));
+    if (entry.tableId == tableId) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void CatalogPage::remove(CatalogTableId tableId) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
