@@ -23,6 +23,7 @@ CatalogTableId CreateTableAction::execute(std::string name,
 
   // 3 : starting Catalog Page
   CatalogPageId pageId = rootPageId;
+
   // 4: name must not exist in any catalog page
   while (pageId != INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(pageId);
