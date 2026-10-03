@@ -4,6 +4,7 @@
 #include <cstdint>
 
 using FSMPageId = uint32_t;
+using TuplePageId = uint32_t;
 using TableId = uint32_t;
 
 namespace {

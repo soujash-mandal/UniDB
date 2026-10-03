@@ -1,18 +1,19 @@
 #pragma once
 
-#include "../../core/PageId.h"
-#include "../port/FSMFetchPagePort.h"
-#include "../port/FSMUnpinPagePort.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 class UpdateFreeSpaceAction {
 public:
-  UpdateFreeSpaceAction(FSMFetchPagePort &fetchPagePort,
-                        FSMUnpinPagePort &unpinPagePort);
+  UpdateFreeSpaceAction(FetchPagePort &fetchPagePort,
+                        WritePagePort &writePagePort,
+                        UnpinPagePort &unpinPagePort);
 
-  void execute(PageId freeSpaceMapPageId, PageId dataPageId,
-               uint32_t freeSpace);
+  void execute(FSMPageId rootPageId, TuplePageId pageId, uint32_t freeSpace);
 
 private:
-  FSMFetchPagePort &fetchPagePort;
-  FSMUnpinPagePort &unpinPagePort;
+  FetchPagePort &fetchPagePort;
+  WritePagePort &writePagePort;
+  UnpinPagePort &unpinPagePort;
 };
