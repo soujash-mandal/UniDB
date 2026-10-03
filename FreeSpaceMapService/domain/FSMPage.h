@@ -28,6 +28,10 @@ public:
   char *data() { return bytes; }
   const char *data() const { return bytes; }
 
+  static bool isValidPage(uint32_t pageId) {
+    return !(pageId == INVALID_PAGE_ID);
+  }
+
   FSMPageId getNextPageId();
   void setNextPageId(FSMPageId pageId);
 

@@ -3,44 +3,62 @@
 FindPageWithSpaceAction::FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
                                                  UnpinPagePort &unpinPagePort,
                                                  WritePagePort &writePagePort,
-                                                 NewPagePort &newPagePort)
+                                                 NewPagePort &newPagePort,
+                                                 uint32_t newTuplePageFreeSpace)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
-      writePagePort(writePagePort), newPagePort(newPagePort) {}
+      writePagePort(writePagePort), newPagePort(newPagePort),
+      newTuplePageFreeSpace(newTuplePageFreeSpace) {}
 
 TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
                                              uint32_t requiredSpace) {
 
   FSMPageId fsmPageId = rootFsmPageId;
-
-  while (fsmPageId != INVALID_PAGE_ID) {
-
+  while (FSMPage::isValidPage(fsmPageId)) {
     FSMPage fsmPage = fetchPagePort.fetchPage(fsmPageId);
     TuplePageId tuplePageId = fsmPage.findPageWithSpace(requiredSpace);
 
-    if (tuplePageId == INVALID_PAGE_ID) {
-      if (fsmPage.isFull()) {
-        FSMPageId nextFsmPageId = fsmPage.getNextPageId();
-        if (nextFsmPageId == INVALID_PAGE_ID) {
-          nextFsmPageId = newPagePort.newPage();
-          fsmPage.setNextPageId(nextFsmPageId);
+    // CASE 1: tuple with required space found
+    if (FSMPage::isValidPage(tuplePageId)) {
+      unpinPagePort.unpinPage(fsmPageId);
+      return tuplePageId;
+    }
+
+    // CASE 2 : Not found
+    else {
+      FSMPageId nextFsmPageId = fsmPage.getNextPageId();
+
+      // CASE 2.1 : valid next page go to next page
+      if (FSMPage::isValidPage(nextFsmPageId)) {
+        unpinPagePort.unpinPage(fsmPageId);
+        fsmPageId = nextFsmPageId;
+      }
+
+      // CASE 2.2 : Next page not exist
+      else {
+
+        // CASE  2.2.1 : Current FSM page have space to create tuple page
+        if (!fsmPage.isFull()) {
           TuplePageId tuplePageId = newPagePort.newPage();
-          fsmPage.insert(tuplePageId, freeSpace);
+
+          fsmPage.insert(tuplePageId, newTuplePageFreeSpace);
           writePagePort.writePage(fsmPageId, fsmPage);
           unpinPagePort.unpinPage(fsmPageId);
           return tuplePageId;
-        } else {
+        }
+        // CASE  2.2.2 : Current FSM page is Full
+        else {
+          nextFsmPageId = newPagePort.newPage();
+
+          FSMPage newFsmPage;
+          writePagePort.writePage(nextFsmPageId, newFsmPage);
+
+          fsmPage.setNextPageId(nextFsmPageId);
+          writePagePort.writePage(fsmPageId, fsmPage);
           unpinPagePort.unpinPage(fsmPageId);
+
           fsmPageId = nextFsmPageId;
         }
-      } else {
-        TuplePageId tuplePageId = newPagePort.newPage();
-        fsmPage.insert(tuplePageId, freeSpace);
-        unpinPagePort.unpinPage(fsmPageId);
-        return tuplePageId;
       }
-    } else {
-      unpinPagePort.unpinPage(fsmPageId);
-      return tuplePageId;
     }
   }
   throw "error";
