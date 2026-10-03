@@ -5,7 +5,6 @@
 
 using FSMPageId = uint32_t;
 using TuplePageId = uint32_t;
-using TableId = uint32_t;
 
 namespace {
 static constexpr std::size_t PAGE_SIZE = 8192;

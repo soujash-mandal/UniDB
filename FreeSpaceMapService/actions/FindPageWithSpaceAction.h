@@ -8,7 +8,7 @@ public:
   FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
                           UnpinPagePort &unpinPagePort);
 
-  TuplePageId execute(FSMPageId fsmPageId, uint32_t requiredSpace);
+  TuplePageId execute(FSMPageId rootFsmPageId, uint32_t requiredSpace);
 
 private:
   FetchPagePort &fetchPagePort;
