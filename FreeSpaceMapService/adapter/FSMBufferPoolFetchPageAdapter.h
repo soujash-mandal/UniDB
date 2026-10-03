@@ -1,13 +1,12 @@
 #pragma once
 
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
-#include "../port/FSMFetchPagePort.h"
+#include "../port/FetchPagePort.h"
 
-class FSMBufferPoolFetchPageAdapter : public FSMFetchPagePort {
+class FSMBufferPoolFetchPageAdapter : public FetchPagePort {
 public:
   explicit FSMBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
-
-  Page &fetchPage(PageId pageId) override;
+  FSMPage fetchPage(FSMPageId pageId) override;
 
 private:
   FetchPageAction &fetchPageAction;

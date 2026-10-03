@@ -1,13 +1,12 @@
 #pragma once
 
 #include "../../BufferPoolManager/actions/NewPageAction.h"
-#include "../port/FSMNewPagePort.h"
+#include "../port/NewPagePort.h"
 
-class FSMBufferPoolNewPageAdapter : public FSMNewPagePort {
+class FSMBufferPoolNewPageAdapter : public NewPagePort {
 public:
   explicit FSMBufferPoolNewPageAdapter(NewPageAction &newPageAction);
-
-  NewPageResult newPage() override;
+  FSMPageId newPage() override;
 
 private:
   NewPageAction &newPageAction;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../domain/TuplePage.h"
+#include "../domain/FSMPage.h"
 
 class NewPagePort {
 public:
   virtual ~NewPagePort() = default;
 
-  virtual TuplePageId newPage() = 0;
+  virtual FSMPageId newPage() = 0;
 };

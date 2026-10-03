@@ -4,6 +4,6 @@ FSMBufferPoolNewPageAdapter::FSMBufferPoolNewPageAdapter(
     NewPageAction &newPageAction)
     : newPageAction(newPageAction) {}
 
-NewPageResult FSMBufferPoolNewPageAdapter::newPage() {
+FSMPageId FSMBufferPoolNewPageAdapter::newPage() {
   return newPageAction.execute();
 }

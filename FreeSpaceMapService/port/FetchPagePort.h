@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../domain/TuplePage.h"
+#include "../domain/FSMPage.h"
 
 class FetchPagePort {
 public:
   virtual ~FetchPagePort() = default;
 
-  virtual TuplePage fetchPage(TuplePageId pageId) = 0;
+  virtual FSMPage fetchPage(FSMPageId pageId) = 0;
 };
