@@ -1,4 +1,5 @@
 #include "FindPageWithSpaceAction.h"
+#include <stdexcept>
 
 FindPageWithSpaceAction::FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
                                                  UnpinPagePort &unpinPagePort,
@@ -61,5 +62,5 @@ TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
       }
     }
   }
-  throw "error";
+  throw std::runtime_error("No valid FSM page found");
 }
