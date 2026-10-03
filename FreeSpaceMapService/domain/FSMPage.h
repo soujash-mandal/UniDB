@@ -11,7 +11,6 @@ static constexpr std::size_t PAGE_SIZE = 8192;
 static constexpr FSMPageId INVALID_PAGE_ID = UINT32_MAX;
 struct Header {
   FSMPageId nextPageId;
-  TableId tableId;
   uint32_t entryCount;
 };
 struct Entry {
@@ -27,25 +26,19 @@ class FSMPage {
 public:
   FSMPage();
 
-  FSMPageId getNextPageId() const;
+  FSMPageId getNextPageId();
   void setNextPageId(FSMPageId pageId);
 
-  TableId getTableId() const;
-  void setTableId(TableId tableId);
-
-  uint32_t getEntryCount() const;
-  bool isFull() const;
+  bool isFull();
 
   void addEntry(FSMPageId pageId, uint32_t freeSpace);
   void updateEntry(FSMPageId pageId, uint32_t freeSpace);
-
-  bool getFreeSpace(FSMPageId pageId, uint32_t &freeSpace) const;
-
-  FSMPageId findPageWithSpace(uint32_t requiredSpace) const;
+  FSMPageId findPageWithSpace(uint32_t requiredSpace);
 
   char *data();
   const char *data() const;
 
 private:
   char bytes[PAGE_SIZE]{};
+  uint32_t getEntryCount();
 };
