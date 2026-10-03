@@ -1,14 +1,14 @@
 #include "FindPageWithSpaceAction.h"
 #include <stdexcept>
 
-FindPageWithSpaceAction::FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
-                                                 UnpinPagePort &unpinPagePort,
-                                                 WritePagePort &writePagePort,
-                                                 NewPagePort &newPagePort,
-                                                 uint32_t newTuplePageFreeSpace)
+FindPageWithSpaceAction::FindPageWithSpaceAction(
+    FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort,
+    WritePagePort &writePagePort, NewPagePort &newPagePort,
+    CreateTuplePagePort &createTuplePagePort, uint32_t newTuplePageFreeSpace)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
       writePagePort(writePagePort), newPagePort(newPagePort),
-      newTuplePageFreeSpace(newTuplePageFreeSpace) {}
+      newTuplePageFreeSpace(newTuplePageFreeSpace),
+      createTuplePagePort(createTuplePagePort) {}
 
 TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
                                              uint32_t requiredSpace) {
@@ -39,8 +39,7 @@ TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
 
         // CASE  2.2.1 : Current FSM page have space to create tuple page
         if (!fsmPage.isFull()) {
-          TuplePageId tuplePageId = newPagePort.newPage();
-
+          TuplePageId tuplePageId = createTuplePagePort.createTuplePage();
           fsmPage.insert(tuplePageId, newTuplePageFreeSpace);
           writePagePort.writePage(fsmPageId, fsmPage);
           unpinPagePort.unpinPage(fsmPageId);
