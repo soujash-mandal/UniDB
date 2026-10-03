@@ -1,21 +1,16 @@
 #pragma once
 
-#include <cstdint>
-
-#include "../../core/PageId.h"
-#include "../../core/TableId.h"
-#include "../port/FSMFetchPagePort.h"
-#include "../port/FSMUnpinPagePort.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
 
 class FindPageWithSpaceAction {
 public:
-  FindPageWithSpaceAction(FSMFetchPagePort &fetchPagePort,
-                          FSMUnpinPagePort &unpinPagePort);
+  FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
+                          UnpinPagePort &unpinPagePort);
 
-  PageId execute(TableId tableId, PageId firstFreeSpaceMapPageId,
-                 uint32_t requiredSpace);
+  TuplePageId execute(FSMPageId fsmPageId, uint32_t requiredSpace);
 
 private:
-  FSMFetchPagePort &fetchPagePort;
-  FSMUnpinPagePort &unpinPagePort;
+  FetchPagePort &fetchPagePort;
+  UnpinPagePort &unpinPagePort;
 };
