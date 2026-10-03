@@ -1,12 +1,18 @@
 #pragma once
 
 #include "../port/NewPagePort.h"
+#include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 class CreatePageAction {
 public:
-  explicit CreatePageAction(NewPagePort &newPagePort);
+  explicit CreatePageAction(NewPagePort &newPagePort,
+                            WritePagePort &writePagePort,
+                            UnpinPagePort &unpinPagePort);
   TuplePageId execute();
 
 private:
   NewPagePort &newPagePort;
+  WritePagePort &writePagePort;
+  UnpinPagePort &unpinPagePort;
 };
