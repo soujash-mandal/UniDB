@@ -25,20 +25,17 @@ static constexpr uint32_t MAX_ENTRIES =
 class FSMPage {
 public:
   FSMPage();
+  char *data() { return bytes; }
+  const char *data() const { return bytes; }
 
   FSMPageId getNextPageId();
   void setNextPageId(FSMPageId pageId);
 
-  bool isFull();
-
-  void addEntry(FSMPageId pageId, uint32_t freeSpace);
-  void updateEntry(FSMPageId pageId, uint32_t freeSpace);
   FSMPageId findPageWithSpace(uint32_t requiredSpace);
-
-  char *data();
-  const char *data() const;
+  void insert(FSMPageId pageId, uint32_t freeSpace);
+  void update(FSMPageId pageId, uint32_t freeSpace);
+  bool isFull();
 
 private:
   char bytes[PAGE_SIZE]{};
-  uint32_t getEntryCount();
 };

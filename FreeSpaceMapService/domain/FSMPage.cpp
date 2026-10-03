@@ -5,45 +5,56 @@
 
 FSMPage::FSMPage() {
   std::memset(bytes, 0, PAGE_SIZE);
-  auto *header = reinterpret_cast<Header *>(bytes);
-  header->nextPageId = INVALID_PAGE_ID;
-  header->entryCount = 0;
+  Header header;
+  header.nextPageId = INVALID_PAGE_ID;
+  header.entryCount = 0;
+  std::memcpy(bytes, &header, sizeof(Header));
 }
 
 FSMPageId FSMPage::getNextPageId() {
-  auto *header = reinterpret_cast<Header *>(bytes);
-  return header->nextPageId;
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  return header.nextPageId;
 }
 
 void FSMPage::setNextPageId(FSMPageId pageId) {
-  auto *header = reinterpret_cast<Header *>(bytes);
-  header->nextPageId = pageId;
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  header.nextPageId = pageId;
+  std::memcpy(bytes, &header, sizeof(Header));
 }
 
-uint32_t FSMPage::getEntryCount() {
-  auto *header = reinterpret_cast<Header *>(bytes);
-  return header->entryCount;
+bool FSMPage::isFull() {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  return header.entryCount >= MAX_ENTRIES;
 }
 
-bool FSMPage::isFull() { return getEntryCount() >= MAX_ENTRIES; }
-
-void FSMPage::addEntry(FSMPageId pageId, uint32_t freeSpace) {
-  auto *header = reinterpret_cast<Header *>(bytes);
-  if (isFull()) {
+void FSMPage::insert(FSMPageId pageId, uint32_t freeSpace) {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  if (header.entryCount >= MAX_ENTRIES) {
     throw std::runtime_error("FSMPage is full");
   }
-  auto *entries = reinterpret_cast<Entry *>(bytes + HEADER_SIZE);
-  entries[header->entryCount].pageId = pageId;
-  entries[header->entryCount].freeSpace = freeSpace;
-  ++header->entryCount;
+  Entry entry;
+  entry.pageId = pageId;
+  entry.freeSpace = freeSpace;
+  std::memcpy(bytes + HEADER_SIZE + header.entryCount * sizeof(Entry), &entry,
+              sizeof(Entry));
+  ++header.entryCount;
+  std::memcpy(bytes, &header, sizeof(Header));
 }
 
-void FSMPage::updateEntry(FSMPageId pageId, uint32_t freeSpace) {
-  uint32_t entryCount = getEntryCount();
-  auto *entries = reinterpret_cast<Entry *>(bytes + HEADER_SIZE);
-  for (uint32_t i = 0; i < entryCount; ++i) {
-    if (entries[i].pageId == pageId) {
-      entries[i].freeSpace = freeSpace;
+void FSMPage::update(FSMPageId pageId, uint32_t freeSpace) {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  for (uint32_t i = 0; i < header.entryCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + HEADER_SIZE + i * sizeof(Entry), sizeof(Entry));
+    if (entry.pageId == pageId) {
+      entry.freeSpace = freeSpace;
+      std::memcpy(bytes + HEADER_SIZE + i * sizeof(Entry), &entry,
+                  sizeof(Entry));
       return;
     }
   }
@@ -51,16 +62,14 @@ void FSMPage::updateEntry(FSMPageId pageId, uint32_t freeSpace) {
 }
 
 FSMPageId FSMPage::findPageWithSpace(uint32_t requiredSpace) {
-  uint32_t entryCount = getEntryCount();
-  auto *entries = reinterpret_cast<Entry *>(bytes + HEADER_SIZE);
-  for (uint32_t i = 0; i < entryCount; ++i) {
-    if (entries[i].freeSpace >= requiredSpace) {
-      return entries[i].pageId;
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  for (uint32_t i = 0; i < header.entryCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + HEADER_SIZE + i * sizeof(Entry), sizeof(Entry));
+    if (entry.freeSpace >= requiredSpace) {
+      return entry.pageId;
     }
   }
   return INVALID_PAGE_ID;
 }
-
-char *FSMPage::data() { return bytes; }
-
-const char *FSMPage::data() const { return bytes; }
