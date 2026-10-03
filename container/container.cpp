@@ -52,7 +52,8 @@ Container::Container(
 // CreateTupleAction &Container::createTupleAction() { return createTuple;
 // } GetTupleAction &Container::getTupleAction() { return getTuple; }
 // DeleteTupleAction &Container::deleteTupleAction() { return deleteTuple;
-// } CreatePageAction &Container::createPageAction() { return createPage;
+// } CreateTuplePageAction &Container::CreateTuplePageAction() { return
+// createPage;
 // }
 
 // // Free Space Map Service

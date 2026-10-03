@@ -27,7 +27,7 @@
 // #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
 // #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
 
-// #include "../TupleService/actions/CreatePageAction.h"
+// #include "../TupleService/actions/CreateTuplePageAction.h"
 // #include "../TupleService/actions/CreateTupleAction.h"
 // #include "../TupleService/actions/DeleteTupleAction.h"
 // #include "../TupleService/actions/GetTupleAction.h"
@@ -63,7 +63,7 @@ public:
   // CreateTupleAction &createTupleAction();
   // GetTupleAction &getTupleAction();
   // DeleteTupleAction &deleteTupleAction();
-  // CreatePageAction &createPageAction();
+  // CreateTuplePageAction &CreateTuplePageAction();
 
   // // Free Space Map Service
   // AddPageAction &addPageAction();
@@ -104,7 +104,7 @@ private:
   //   CreateTupleAction createTuple;
   //   GetTupleAction getTuple;
   //   DeleteTupleAction deleteTuple;
-  //   CreatePageAction createPage;
+  //   CreateTuplePageAction createPage;
 
   //   // Free Space Map Service
   //   FSMBufferPoolFetchPageAdapter fsmFetchPageAdapter;

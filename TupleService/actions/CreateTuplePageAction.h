@@ -4,11 +4,11 @@
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
 
-class CreatePageAction {
+class CreateTuplePageAction {
 public:
-  explicit CreatePageAction(NewPagePort &newPagePort,
-                            WritePagePort &writePagePort,
-                            UnpinPagePort &unpinPagePort);
+  explicit CreateTuplePageAction(NewPagePort &newPagePort,
+                                 WritePagePort &writePagePort,
+                                 UnpinPagePort &unpinPagePort);
   TuplePageId execute();
 
 private:

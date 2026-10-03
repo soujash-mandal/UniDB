@@ -63,7 +63,7 @@ add_executable(unidb
     # TupleService/actions/CreateTupleAction.cpp
     # TupleService/actions/GetTupleAction.cpp
     # TupleService/actions/DeleteTupleAction.cpp
-    # TupleService/actions/CreatePageAction.cpp
+    # TupleService/actions/CreateTuplePageAction.cpp
 )
 
 
@@ -125,7 +125,7 @@ add_executable(tests
     # TupleService/actions/CreateTupleAction.cpp
     # TupleService/actions/GetTupleAction.cpp
     # TupleService/actions/DeleteTupleAction.cpp
-    # TupleService/actions/CreatePageAction.cpp
+    # TupleService/actions/CreateTuplePageAction.cpp
 
     # TupleService/test/TupleActionsTest.cpp
 )
