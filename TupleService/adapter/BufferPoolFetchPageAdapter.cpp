@@ -9,7 +9,6 @@ BufferPoolFetchPageAdapter::BufferPoolFetchPageAdapter(
 TuplePage BufferPoolFetchPageAdapter::fetchPage(TuplePageId pageId) {
   BufferPoolPage bufferPage = fetchPageAction.execute(pageId);
   TuplePage tuplePage;
-  std::memcpy(tuplePage.data(), bufferPage.data(), TuplePage::PAGE_SIZE);
-
+  std::memcpy(tuplePage.data(), bufferPage.data(), PAGE_SIZE);
   return tuplePage;
 }

@@ -8,6 +8,7 @@ using TuplePageId = uint32_t;
 using TupleSlotId = uint32_t;
 
 namespace {
+static constexpr std::size_t PAGE_SIZE = 8192;
 struct Header {
   uint32_t slotCount;
   uint32_t freeSpaceOffset;
@@ -21,8 +22,6 @@ struct Slot {
 
 class TuplePage {
 public:
-  static constexpr std::size_t PAGE_SIZE = 8192;
-
   TuplePage();
   char *data() { return bytes; }
   const char *data() const { return bytes; }

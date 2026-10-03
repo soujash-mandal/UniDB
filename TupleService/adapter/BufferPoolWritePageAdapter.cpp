@@ -8,6 +8,6 @@ BufferPoolWritePageAdapter::BufferPoolWritePageAdapter(
 
 void BufferPoolWritePageAdapter::writePage(TuplePageId pageId, TuplePage page) {
   BufferPoolPage bufferPoolPage;
-  std::memcpy(bufferPoolPage.data(), page.data(), TuplePage::PAGE_SIZE);
+  std::memcpy(bufferPoolPage.data(), page.data(), PAGE_SIZE);
   writePageAction.execute(pageId, bufferPoolPage);
 }
