@@ -4,11 +4,10 @@
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
 
-class InitializeFSMPageAction {
+class CreateFSMPageAction {
 public:
-  InitializeFSMPageAction(NewPagePort &newPagePort,
-                          WritePagePort &writePagePort,
-                          UnpinPagePort &unpinPagePort);
+  CreateFSMPageAction(NewPagePort &newPagePort, WritePagePort &writePagePort,
+                      UnpinPagePort &unpinPagePort);
 
   FSMPageId execute();
 
