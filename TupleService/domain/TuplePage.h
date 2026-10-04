@@ -30,6 +30,7 @@ public:
   std::vector<char> get(TupleSlotId slotId);
   void remove(TupleSlotId slotId);
   bool hasSpace(uint32_t tupleSize);
+  uint32_t getFreeSpace();
 
 private:
   char bytes[PAGE_SIZE]{};

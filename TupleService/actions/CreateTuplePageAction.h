@@ -4,12 +4,17 @@
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
 
+struct CreateTuplePageResult {
+  TuplePageId pageId;
+  uint32_t freeSpace;
+};
+
 class CreateTuplePageAction {
 public:
   explicit CreateTuplePageAction(NewPagePort &newPagePort,
                                  WritePagePort &writePagePort,
                                  UnpinPagePort &unpinPagePort);
-  TuplePageId execute();
+  CreateTuplePageResult execute();
 
 private:
   NewPagePort &newPagePort;

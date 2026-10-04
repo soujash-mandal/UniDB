@@ -55,3 +55,10 @@ bool TuplePage::hasSpace(uint32_t tupleSize) {
       sizeof(Header) + header->slotCount * sizeof(Slot);
   return nextSlotOffset + sizeof(Slot) + tupleSize <= header->freeSpaceOffset;
 }
+
+uint32_t TuplePage::getFreeSpace() {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  uint32_t slotEnd = sizeof(Header) + header.slotCount * sizeof(Slot);
+  return header.freeSpaceOffset - slotEnd;
+}
