@@ -12,8 +12,7 @@ public:
                           UnpinPagePort &unpinPagePort,
                           WritePagePort &writePagePort,
                           NewPagePort &newPagePort,
-                          CreateTuplePagePort &createTuplePagePort,
-                          uint32_t newTuplePageFreeSpace);
+                          CreateTuplePagePort &createTuplePagePort);
 
   TuplePageId execute(FSMPageId rootFsmPageId, uint32_t requiredSpace);
 
@@ -23,5 +22,4 @@ private:
   WritePagePort &writePagePort;
   NewPagePort &newPagePort;
   CreateTuplePagePort &createTuplePagePort;
-  uint32_t newTuplePageFreeSpace;
 };

@@ -6,7 +6,7 @@ CreateTuplePageAction::CreateTuplePageAction(NewPagePort &newPagePort,
     : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
-CreateTuplePageResult CreateTuplePageAction::execute() {
+CreateTuplePageActionResult CreateTuplePageAction::execute() {
   TuplePageId tuplePageId = newPagePort.newPage();
   TuplePage page;
   writePagePort.writePage(tuplePageId, page);

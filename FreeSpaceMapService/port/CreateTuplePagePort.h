@@ -2,9 +2,14 @@
 
 #include <cstdint>
 
+struct CreateTuplePageResult {
+  uint32_t pageId;
+  uint32_t freeSpace;
+};
+
 class CreateTuplePagePort {
 public:
   virtual ~CreateTuplePagePort() = default;
 
-  virtual uint32_t createTuplePage() = 0;
+  virtual CreateTuplePageResult createTuplePage() = 0;
 };

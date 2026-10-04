@@ -4,10 +4,9 @@
 FindPageWithSpaceAction::FindPageWithSpaceAction(
     FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort,
     WritePagePort &writePagePort, NewPagePort &newPagePort,
-    CreateTuplePagePort &createTuplePagePort, uint32_t newTuplePageFreeSpace)
+    CreateTuplePagePort &createTuplePagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
       writePagePort(writePagePort), newPagePort(newPagePort),
-      newTuplePageFreeSpace(newTuplePageFreeSpace),
       createTuplePagePort(createTuplePagePort) {}
 
 TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
@@ -39,11 +38,11 @@ TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
 
         // CASE  2.2.1 : Current FSM page have space to create tuple page
         if (!fsmPage.isFull()) {
-          TuplePageId tuplePageId = createTuplePagePort.createTuplePage();
-          fsmPage.insert(tuplePageId, newTuplePageFreeSpace);
+          CreateTuplePageResult result = createTuplePagePort.createTuplePage();
+          fsmPage.insert(result.pageId, result.freeSpace);
           writePagePort.writePage(fsmPageId, fsmPage);
           unpinPagePort.unpinPage(fsmPageId);
-          return tuplePageId;
+          return result.pageId;
         }
         // CASE  2.2.2 : Current FSM page is Full
         else {
