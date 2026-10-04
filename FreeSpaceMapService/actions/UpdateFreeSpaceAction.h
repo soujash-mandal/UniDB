@@ -10,7 +10,8 @@ public:
                         WritePagePort &writePagePort,
                         UnpinPagePort &unpinPagePort);
 
-  void execute(FSMPageId rootPageId, TuplePageId pageId, uint32_t freeSpace);
+  void execute(FSMPageId fsmPageId, TuplePageId pageId,
+               uint32_t updatedfFreeSpace);
 
 private:
   FetchPagePort &fetchPagePort;
