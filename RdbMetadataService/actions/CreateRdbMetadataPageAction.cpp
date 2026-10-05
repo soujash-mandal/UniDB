@@ -1,11 +1,9 @@
 #include "CreateRdbMetadataPageAction.h"
 
 CreateRdbMetadataPageAction::CreateRdbMetadataPageAction(
-    NewPagePort &newPagePort,
-    WritePagePort &writePagePort,
+    NewPagePort &newPagePort, WritePagePort &writePagePort,
     UnpinPagePort &unpinPagePort)
-    : newPagePort(newPagePort),
-      writePagePort(writePagePort),
+    : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
 CatalogPageId CreateRdbMetadataPageAction::execute() {

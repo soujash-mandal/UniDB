@@ -1,19 +1,20 @@
 #pragma once
 
-#include "../port/NewPagePort.h"
+#include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
 
-class CreateRdbMetadataPageAction {
+class UpdateRdbMetadataPageAction {
 public:
-  CreateRdbMetadataPageAction(NewPagePort &newPagePort,
+  UpdateRdbMetadataPageAction(FetchPagePort &fetchPagePort,
                               WritePagePort &writePagePort,
                               UnpinPagePort &unpinPagePort);
 
-  CatalogPageId execute();
+  void execute(CatalogPageId pageId, CatalogTableId nextTableId,
+               CatalogPageId catalogRootPageId);
 
 private:
-  NewPagePort &newPagePort;
+  FetchPagePort &readPagePort;
   WritePagePort &writePagePort;
   UnpinPagePort &unpinPagePort;
 };
