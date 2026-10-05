@@ -2,9 +2,8 @@
 
 #include "../domain/RdbMetadataPage.h"
 
-class WriteRdbMetadataPagePort {
+class WritePagePort {
 public:
-  virtual ~WriteRdbMetadataPagePort() = default;
-
+  virtual ~WritePagePort() = default;
   virtual void writePage(CatalogPageId pageId, RdbMetadataPage page) = 0;
 };
