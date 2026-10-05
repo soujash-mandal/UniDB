@@ -7,7 +7,6 @@ UpdateRdbMetadataPageAction::UpdateRdbMetadataPageAction(
       unpinPagePort(unpinPagePort) {}
 
 void UpdateRdbMetadataPageAction::execute(CatalogPageId pageId,
-                                          CatalogTableId nextTableId,
                                           CatalogPageId catalogRootPageId) {
   RdbMetadataPage page = readPagePort.fetchPage(pageId);
   page.setCatalogRootPageId(catalogRootPageId);

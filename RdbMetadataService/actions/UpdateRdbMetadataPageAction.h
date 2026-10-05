@@ -10,8 +10,7 @@ public:
                               WritePagePort &writePagePort,
                               UnpinPagePort &unpinPagePort);
 
-  void execute(CatalogPageId pageId, CatalogTableId nextTableId,
-               CatalogPageId catalogRootPageId);
+  void execute(CatalogPageId pageId, CatalogPageId catalogRootPageId);
 
 private:
   FetchPagePort &readPagePort;
