@@ -1,15 +1,16 @@
 #include "AllocateNextTableIdAction.h"
 
 AllocateNextTableIdAction::AllocateNextTableIdAction(
-    ReadRdbMetadataPagePort &readMetadataPagePort,
-    WriteRdbMetadataPagePort &writeMetadataPagePort)
-    : readMetadataPagePort(readMetadataPagePort),
-      writeMetadataPagePort(writeMetadataPagePort) {}
+    FetchPagePort &fetchPagePort, WritePagePort &writePagePort,
+    UnpinPagePort &unpinPagePort)
+    : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
+      unpinPagePort(unpinPagePort) {}
 
 CatalogTableId AllocateNextTableIdAction::execute(CatalogPageId pageId) {
-  RdbMetadataPage metadataPage = readMetadataPagePort.readPage(pageId);
-  CatalogTableId tableId = metadataPage.getNextTableId();
-  metadataPage.setNextTableId(tableId + 1);
-  writeMetadataPagePort.writePage(pageId, metadataPage);
+  RdbMetadataPage page = fetchPagePort.fetchPage(pageId);
+  CatalogTableId tableId = page.getNextTableId();
+  page.setNextTableId(tableId + 1);
+  writePagePort.writePage(pageId, page);
+  unpinPagePort.unpinPage(pageId);
   return tableId;
 }

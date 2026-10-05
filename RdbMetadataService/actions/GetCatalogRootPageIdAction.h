@@ -1,14 +1,16 @@
 #pragma once
 
-#include "../domain/RdbMetadataPage.h"
-#include "../port/ReadRdbMetadataPagePort.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
 
 class GetCatalogRootPageIdAction {
 public:
-  explicit GetCatalogRootPageIdAction(
-      ReadRdbMetadataPagePort &readMetadataPagePort);
+  GetCatalogRootPageIdAction(FetchPagePort &fetchPagePort,
+                             UnpinPagePort &unpinPagePort);
+
   CatalogPageId execute(CatalogPageId pageId);
 
 private:
-  ReadRdbMetadataPagePort &readMetadataPagePort;
+  FetchPagePort &fetchPagePort;
+  UnpinPagePort &unpinPagePort;
 };

@@ -1,17 +1,20 @@
 #pragma once
 
 #include "../domain/RdbMetadataPage.h"
-#include "../port/ReadRdbMetadataPagePort.h"
-#include "../port/WriteRdbMetadataPagePort.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 class AllocateNextTableIdAction {
 public:
-  AllocateNextTableIdAction(ReadRdbMetadataPagePort &readMetadataPagePort,
-                            WriteRdbMetadataPagePort &writeMetadataPagePort);
+  AllocateNextTableIdAction(FetchPagePort &fetchPagePort,
+                            WritePagePort &writePagePort,
+                            UnpinPagePort &unpinPagePort);
 
   CatalogTableId execute(CatalogPageId pageId);
 
 private:
-  ReadRdbMetadataPagePort &readMetadataPagePort;
-  WriteRdbMetadataPagePort &writeMetadataPagePort;
+  FetchPagePort &fetchPagePort;
+  WritePagePort &writePagePort;
+  UnpinPagePort &unpinPagePort;
 };
