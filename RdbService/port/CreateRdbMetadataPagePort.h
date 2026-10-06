@@ -1,10 +1,8 @@
 #pragma once
-
-#include "../../RdbMetadataService/domain/RdbMetadataPage.h"
+#include "../domain/type.h"
 
 class CreateRdbMetadataPagePort {
 public:
   virtual ~CreateRdbMetadataPagePort() = default;
-
-  virtual CatalogPageId createRdbMetadataPage() = 0;
+  virtual MetadataPageId createRdbMetadataPage() = 0;
 };
