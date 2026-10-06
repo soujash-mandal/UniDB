@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="utf-8">
+
+<title>UniDB Service Graph</title>
+
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+
+<style>
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    font-family: system-ui, sans-serif;
+}
+
+#network {
+    width: 100%;
+    height: 100vh;
+}
+
+#panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+
+    background: white;
+
+    padding: 12px 16px;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    font-size: 13px;
+}
+
+button {
+    margin-top: 8px;
+    padding: 5px 10px;
+    font: inherit;
+    cursor: pointer;
+}
+
+#focus {
+    margin-top: 7px;
+    color: #555;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="panel">
+
+<strong>UniDB Service Graph</strong>
+
+<div>
+    7 nodes,
+    9 edges
+</div>
+
+<button id="reset">
+    Show all
+</button>
+
+<div id="focus"></div>
+
+</div>
+
+<div id="network"></div>
+
+<script>
+
+const nodes = new vis.DataSet(
+    [{"id":"BufferPoolManager","label":"BufferPoolManager","x":520,"y":0},{"id":"CatalogService","label":"CatalogService","x":780,"y":-90},{"id":"DiskManager","label":"DiskManager","x":0,"y":0},{"id":"FreePageManager","label":"FreePageManager","x":260,"y":0},{"id":"FreeSpaceMapService","label":"FreeSpaceMapService","x":780,"y":0},{"id":"RdbService","label":"RdbService","x":1040,"y":0},{"id":"TupleService","label":"TupleService","x":780,"y":90}]
+);
+
+const edges = new vis.DataSet(
+    [{"id":0,"from":"FreePageManager","to":"DiskManager"},{"id":1,"from":"BufferPoolManager","to":"FreePageManager"},{"id":2,"from":"BufferPoolManager","to":"DiskManager"},{"id":3,"from":"FreeSpaceMapService","to":"BufferPoolManager"},{"id":4,"from":"TupleService","to":"BufferPoolManager"},{"id":5,"from":"CatalogService","to":"BufferPoolManager"},{"id":6,"from":"RdbService","to":"CatalogService"},{"id":7,"from":"RdbService","to":"TupleService"},{"id":8,"from":"RdbService","to":"FreeSpaceMapService"}]
+);
+
+const network = new vis.Network(
+    document.getElementById("network"),
+
+    {
+        nodes: nodes,
+        edges: edges
+    },
+
+    {
+        nodes: {
+            shape: "box",
+            margin: 10,
+
+            font: {
+                size: 14,
+                color: "#ffffff",
+                face: "system-ui"
+            },
+
+            color: {
+                background: "#4a90d9",
+                border: "#4a90d9",
+
+                highlight: {
+                    background: "#4a90d9",
+                    border: "#4a90d9"
+                }
+            },
+
+            borderWidth: 0,
+
+            shapeProperties: {
+                borderRadius: 5
+            }
+        },
+
+        edges: {
+            arrows: {
+                to: {
+                    enabled: true,
+                    scaleFactor: 0.8
+                }
+            },
+
+            color: {
+                color: "#b8bec5"
+            },
+
+            smooth: false
+        },
+
+        physics: false,
+
+        interaction: {
+            dragNodes: true,
+            hover: true
+        },
+
+        layout: {
+            hierarchical: false
+        }
+    }
+);
+
+network.fit();
+
+const dependencies = {};
+
+edges.get().forEach(function(edge) {
+
+    if (!dependencies[edge.from]) {
+        dependencies[edge.from] = [];
+    }
+
+    dependencies[edge.from].push(edge.to);
+
+});
+
+function dependencyClosure(start) {
+
+    const keep = new Set();
+    const stack = [start];
+
+    while (stack.length > 0) {
+
+        const current = stack.pop();
+
+        if (keep.has(current)) {
+            continue;
+        }
+
+        keep.add(current);
+
+        const next =
+            dependencies[current] || [];
+
+        next.forEach(function(dependency) {
+            stack.push(dependency);
+        });
+    }
+
+    return keep;
+}
+
+function showDependencies(start) {
+
+    const keep =
+        dependencyClosure(start);
+
+    nodes.update(
+        nodes.get().map(function(node) {
+            return {
+                id: node.id,
+                hidden: !keep.has(node.id)
+            };
+        })
+    );
+
+    edges.update(
+        edges.get().map(function(edge) {
+            return {
+                id: edge.id,
+                hidden:
+                    !keep.has(edge.from) ||
+                    !keep.has(edge.to)
+            };
+        })
+    );
+
+    document.getElementById("focus").textContent =
+        start +
+        " + " +
+        (keep.size - 1) +
+        " dependencies";
+
+    network.fit();
+}
+
+function showAll() {
+
+    nodes.update(
+        nodes.get().map(function(node) {
+            return {
+                id: node.id,
+                hidden: false
+            };
+        })
+    );
+
+    edges.update(
+        edges.get().map(function(edge) {
+            return {
+                id: edge.id,
+                hidden: false
+            };
+        })
+    );
+
+    document.getElementById("focus").textContent = "";
+
+    network.fit();
+}
+
+network.on("click", function(event) {
+
+    if (event.nodes.length === 0) {
+        return;
+    }
+
+    showDependencies(event.nodes[0]);
+
+});
+
+document
+    .getElementById("reset")
+    .addEventListener("click", showAll);
+
+</script>
+
+</body>
+
+</html>
