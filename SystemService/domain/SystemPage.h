@@ -1,10 +1,9 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <string>
 
-using SystemPageId = uint32_t;
+#include "../domain/type.h"
 
 class SystemPage {
 public:
