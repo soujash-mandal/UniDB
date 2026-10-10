@@ -6,8 +6,8 @@
 
 Container::Container(std::string fileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType)
-    : databaseFileName(std::move(fileName)), readDiskPage(diskManager),
-      writeDiskPage(diskManager),
+    : databaseFileName(std::move(fileName)),
+      readDiskPage(diskManager), writeDiskPage(diskManager),
       readFreePageMetadataAdapter(readDiskPage),
       writeFreePageMetadataAdapter(writeDiskPage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
