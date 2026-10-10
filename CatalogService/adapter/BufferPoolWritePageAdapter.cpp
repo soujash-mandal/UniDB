@@ -1,4 +1,4 @@
-#include "CatalogBufferPoolWritePageAdapter.h"
+#include "BufferPoolWritePageAdapter.h"
 #include <cstring>
 
 CatalogBufferPoolWritePageAdapter::CatalogBufferPoolWritePageAdapter(
@@ -6,8 +6,7 @@ CatalogBufferPoolWritePageAdapter::CatalogBufferPoolWritePageAdapter(
     : writePageAction(writePageAction) {}
 
 void CatalogBufferPoolWritePageAdapter::writePage(CatalogPageId pageId,
-                                           CatalogPage page) {
-
+                                                  CatalogPage page) {
   BufferPoolPage bufferPage;
 
   std::memcpy(bufferPage.data(), page.data(), CatalogPage::PAGE_SIZE);
