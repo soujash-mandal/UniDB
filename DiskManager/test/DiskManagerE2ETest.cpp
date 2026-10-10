@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <stdexcept>
 
 TEST(DiskManagerTest, WritesAndReadsPage) {
   const char *testFile = "test_database.db";
