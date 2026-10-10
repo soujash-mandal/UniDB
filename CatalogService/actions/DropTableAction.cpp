@@ -12,7 +12,7 @@ void DropTableAction::execute(CatalogPageId rootPageId,
                               CatalogTableId tableId) {
   CatalogPageId pageId = rootPageId;
 
-  while (pageId != INVALID_PAGE_ID) {
+  while (pageId != CATALOG_INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(pageId);
     if (page.containsTableId(tableId)) {
       page.remove(tableId);
