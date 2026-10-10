@@ -47,8 +47,8 @@ TEST(SqlParserTest, ParsesSelectAllAndOptionalEqualityPredicate) {
   EXPECT_TRUE(select.selectAll);
   EXPECT_EQ(select.tableName, "users");
   ASSERT_TRUE(std::holds_alternative<WhereEquals>(select.where));
-  EXPECT_EQ(
-      std::get<std::int64_t>(std::get<WhereEquals>(select.where).value), 7);
+  const auto &where = std::get<WhereEquals>(select.where);
+  EXPECT_EQ(std::get<std::int64_t>(where.value), 7);
 }
 
 TEST(SqlParserTest, ParsesSelectedColumns) {
