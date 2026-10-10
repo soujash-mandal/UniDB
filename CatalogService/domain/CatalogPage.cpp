@@ -80,7 +80,7 @@ Table deserializeTable(std::vector<char> data) {
 CatalogPage::CatalogPage() {
   std::memset(bytes, 0, PAGE_SIZE);
   Header header;
-  header.nextPageId = INVALID_PAGE_ID;
+  header.nextPageId = CATALOG_INVALID_PAGE_ID;
   header.tableCount = 0;
   header.freeSpaceOffset = PAGE_SIZE;
   std::memcpy(bytes, &header, sizeof(Header));
