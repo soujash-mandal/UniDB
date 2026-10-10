@@ -1,8 +1,8 @@
 #include "CreateRdbMetadataPageAction.h"
 
 CreateRdbMetadataPageAction::CreateRdbMetadataPageAction(
-    NewPagePort &newPagePort, WritePagePort &writePagePort,
-    UnpinPagePort &unpinPagePort)
+    RdbMetadataNewPagePort &newPagePort, RdbMetadataWritePagePort &writePagePort,
+    RdbMetadataUnpinPagePort &unpinPagePort)
     : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
