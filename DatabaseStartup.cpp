@@ -1,8 +1,7 @@
 #include "DatabaseStartup.h"
 
-DatabaseStartup::DatabaseStartup(
-    CreateFpmPageAction &createFpmPageAction,
-    InitializeRdbAction &initializeRdbAction)
+DatabaseStartup::DatabaseStartup(CreateFpmPageAction &createFpmPageAction,
+                                 InitializeRdbAction &initializeRdbAction)
     : createFpmPageAction(createFpmPageAction),
       initializeRdbAction(initializeRdbAction) {}
 
