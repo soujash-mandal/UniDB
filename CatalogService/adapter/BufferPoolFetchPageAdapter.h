@@ -1,6 +1,6 @@
 #pragma once
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
-#include "../port/CatalogFetchPagePort.h"
+#include "../port/FetchPagePort.h"
 
 class CatalogBufferPoolFetchPageAdapter : public CatalogCatalogFetchPagePort {
 public:
