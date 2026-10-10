@@ -7,13 +7,18 @@
 
 using MetadataPageId = uint32_t;
 
+struct InitializeRdbResult {
+  MetadataPageId metadataPageId;
+  uint32_t catalogRootPageId;
+};
+
 class InitializeRdbAction {
 public:
   InitializeRdbAction(CreateRdbMetadataPagePort &createRdbMetadataPagePort,
                       CreateRootCatalogPagePort &createRootCatalogPagePort,
                       UpdateRdbMetadataPagePort &updateRdbMetadataPagePort);
 
-  MetadataPageId execute();
+  InitializeRdbResult execute();
 
 private:
   CreateRdbMetadataPagePort &createRdbMetadataPagePort;
