@@ -1,6 +1,11 @@
 #include "DatabaseStartup.h"
 
+#include <filesystem>
 #include <stdexcept>
+
+bool DatabaseStartup::databaseExists(const std::string &databaseFile) {
+  return std::filesystem::exists(databaseFile);
+}
 
 DatabaseStartup::DatabaseStartup(CreateFpmPageAction &createFpmPageAction,
                                  InitializeRdbAction &initializeRdbAction)
