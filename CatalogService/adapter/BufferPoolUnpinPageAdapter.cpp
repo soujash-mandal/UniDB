@@ -1,4 +1,4 @@
-#include "CatalogBufferPoolUnpinPageAdapter.h"
+#include "BufferPoolUnpinPageAdapter.h"
 
 CatalogBufferPoolUnpinPageAdapter::CatalogBufferPoolUnpinPageAdapter(
     UnpinPageAction &unpinPageAction)
