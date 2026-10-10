@@ -6,7 +6,8 @@ class DatabaseStartup {
 public:
   explicit DatabaseStartup(Container &container);
 
-  // Returns true when a new database was initialized, false for an existing one.
+  // Returns true if a new database was initialized.
+  // Returns false if the database already existed.
   bool execute();
 
 private:
