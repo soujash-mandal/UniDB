@@ -16,18 +16,17 @@
 #include "RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
 #include "container/container.h"
 
-#include <filesystem>
+#include <exception>
 #include <iostream>
 #include <string>
 
 int main() {
   const std::string databaseFile = "database.db";
 
-  // Check before constructing FileDiskManagerAdapter: its constructor creates
-  // the file when it does not already exist.
-  const bool databaseAlreadyExists = std::filesystem::exists(databaseFile);
-
   try {
+    // Check before FileDiskManagerAdapter creates a missing database file.
+    const bool databaseAlreadyExists =
+        DatabaseStartup::databaseExists(databaseFile);
     FileDiskManagerAdapter diskManager(databaseFile);
     Container container(diskManager, 2, EvictionPolicyType::FIFO);
 
