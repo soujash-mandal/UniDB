@@ -3,7 +3,7 @@
 #include "../../BufferPoolManager/actions/UnpinPageAction.h"
 #include "../port/UnpinPagePort.h"
 
-class BufferPoolUnpinPageAdapter : public UnpinPagePort {
+class BufferPoolUnpinPageAdapter : public RdbMetadataUnpinPagePort {
 public:
   explicit BufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
 
