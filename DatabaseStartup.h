@@ -11,10 +11,7 @@ public:
   bool execute();
 
 private:
-  static constexpr char DATABASE_FILE[] = "database.db";
   static constexpr MetadataPageId RDB_METADATA_PAGE_ID = 1;
-
-  void validateExistingDatabase();
 
   Container &container;
 };
