@@ -1,10 +1,10 @@
 #include "CreateTableAction.h"
 #include <stdexcept>
 
-CreateTableAction::CreateTableAction(FetchPagePort &fetchPagePort,
-                                     NewPagePort &newPagePort,
-                                     WritePagePort &writePagePort,
-                                     UnpinPagePort &unpinPagePort)
+CreateTableAction::CreateTableAction(CatalogFetchPagePort &fetchPagePort,
+                                     CatalogNewPagePort &newPagePort,
+                                     CatalogWritePagePort &writePagePort,
+                                     CatalogUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), newPagePort(newPagePort),
       writePagePort(writePagePort), unpinPagePort(unpinPagePort) {}
 
