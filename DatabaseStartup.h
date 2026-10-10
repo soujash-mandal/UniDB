@@ -1,27 +1,19 @@
 #pragma once
 
-#include "BufferPoolManager/actions/FlushPageAction.h"
-#include "FreePageManager/actions/CreateFpmPageAction.h"
-#include "RdbService/actions/InitializeRdbAction.h"
-
-#include <string>
+#include "container/container.h"
 
 class DatabaseStartup {
 public:
-  DatabaseStartup(CreateFpmPageAction &createFpmPageAction,
-                  InitializeRdbAction &initializeRdbAction,
-                  FlushPageAction &flushPageAction);
+  explicit DatabaseStartup(Container &container);
 
-  // Check before FileDiskManagerAdapter is constructed because it creates a
-  // missing database file.
-  static bool databaseExists(const std::string &databaseFile);
-
-  void execute(bool databaseAlreadyExists);
+  // Returns true when a new database was initialized, false for an existing one.
+  bool execute();
 
 private:
+  static constexpr char DATABASE_FILE[] = "database.db";
   static constexpr MetadataPageId RDB_METADATA_PAGE_ID = 1;
 
-  CreateFpmPageAction &createFpmPageAction;
-  InitializeRdbAction &initializeRdbAction;
-  FlushPageAction &flushPageAction;
+  void validateExistingDatabase();
+
+  Container &container;
 };
