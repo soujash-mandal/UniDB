@@ -20,7 +20,6 @@ public:
 
 private:
   static constexpr MetadataPageId RDB_METADATA_PAGE_ID = 1;
-  static constexpr MetadataPageId RDB_CATALOG_ROOT_PAGE_ID = 2;
 
   CreateFpmPageAction &createFpmPageAction;
   InitializeRdbAction &initializeRdbAction;
