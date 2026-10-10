@@ -2,8 +2,8 @@
 
 #include <stdexcept>
 
-GetTableAction::GetTableAction(FetchPagePort &fetchPagePort,
-                               UnpinPagePort &unpinPagePort)
+GetTableAction::GetTableAction(CatalogFetchPagePort &fetchPagePort,
+                               CatalogUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
 Table GetTableAction::execute(CatalogPageId rootPageId,
