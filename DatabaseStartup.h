@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../FreePageManager/actions/CreateFpmPageAction.h"
-#include "../RdbService/actions/InitializeRdbAction.h"
+#include "FreePageManager/actions/CreateFpmPageAction.h"
+#include "RdbService/actions/InitializeRdbAction.h"
 
 class DatabaseStartup {
 public:
