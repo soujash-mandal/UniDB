@@ -8,12 +8,13 @@ InitializeRdbAction::InitializeRdbAction(
       createRootCatalogPagePort(createRootCatalogPagePort),
       updateRdbMetadataPagePort(updateRdbMetadataPagePort) {}
 
-InitializeRdbResult InitializeRdbAction::execute() {
-  MetadataPageId metadataPageId =
+MetadataPageId InitializeRdbAction::execute() {
+  const MetadataPageId metadataPageId =
       createRdbMetadataPagePort.createRdbMetadataPage();
-  CatalogPageId catalogRootPageId =
+  const CatalogPageId catalogRootPageId =
       createRootCatalogPagePort.createRootCatalogPage();
+
   updateRdbMetadataPagePort.updateRdbMetadataPage(metadataPageId,
-                                                  catalogRootPageId);
-  return {metadataPageId, catalogRootPageId};
+                                                   catalogRootPageId);
+  return metadataPageId;
 }
