@@ -6,7 +6,8 @@
 
 class GetTableAction {
 public:
-  GetTableAction(CatalogFetchPagePort &fetchPagePort, CatalogUnpinPagePort &unpinPagePort);
+  GetTableAction(CatalogFetchPagePort &fetchPagePort,
+                 CatalogUnpinPagePort &unpinPagePort);
 
   Table execute(CatalogPageId rootPageId, CatalogTableId tableId);
 
