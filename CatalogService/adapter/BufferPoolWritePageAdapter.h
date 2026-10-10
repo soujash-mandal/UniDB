@@ -4,8 +4,7 @@
 
 class CatalogBufferPoolWritePageAdapter : public CatalogWritePagePort {
 public:
-  explicit CatalogBufferPoolWritePageAdapter(
-      WritePageAction &writePageAction);
+  explicit CatalogBufferPoolWritePageAdapter(WritePageAction &writePageAction);
   void writePage(CatalogPageId pageId, CatalogPage page) override;
 
 private:
