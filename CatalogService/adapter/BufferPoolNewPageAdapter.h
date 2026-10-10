@@ -2,9 +2,9 @@
 #include "../../BufferPoolManager/actions/NewPageAction.h"
 #include "../port/NewPagePort.h"
 
-class BufferPoolNewPageAdapter : public NewPagePort {
+class CatalogBufferPoolNewPageAdapter : public NewPagePort {
 public:
-  explicit BufferPoolNewPageAdapter(NewPageAction &newPageAction);
+  explicit CatalogBufferPoolNewPageAdapter(NewPageAction &newPageAction);
   CatalogPageId newPage() override;
 
 private:
