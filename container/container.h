@@ -9,12 +9,12 @@
 #include "../EvictionPolicy/EvictionPolicy.h"
 #include "../EvictionPolicy/EvictionPolicyType.h"
 
-#include "../BufferPoolManager/domain/BufferPool.h"
 #include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
 #include "../BufferPoolManager/actions/NewPageAction.h"
 #include "../BufferPoolManager/actions/UnpinPageAction.h"
 #include "../BufferPoolManager/actions/WritePageAction.h"
+#include "../BufferPoolManager/domain/BufferPool.h"
 
 #include "../BufferPoolManager/adapter/AllocatePageAdapter.h"
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
