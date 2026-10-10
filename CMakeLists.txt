@@ -34,8 +34,10 @@ set(UNIDB_SOURCES
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
 
+    RdbMetadataService/domain/RdbMetadataPage.cpp
     RdbMetadataService/actions/CreateRdbMetadataPageAction.cpp
     RdbMetadataService/actions/UpdateRdbMetadataPageAction.cpp
+    CatalogService/domain/CatalogPage.cpp
     CatalogService/actions/CreateRootCatalogPageAction.cpp
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
