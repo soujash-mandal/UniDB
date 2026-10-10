@@ -32,8 +32,7 @@ int main() {
 
     BufferPoolFetchPageAdapter metadataFetchPageAdapter(
         container.fetchPageAction());
-    BufferPoolNewPageAdapter metadataNewPageAdapter(
-        container.newPageAction());
+    BufferPoolNewPageAdapter metadataNewPageAdapter(container.newPageAction());
     BufferPoolUnpinPageAdapter metadataUnpinPageAdapter(
         container.unpinPageAction());
     BufferPoolWritePageAdapter metadataWritePageAdapter(
@@ -63,9 +62,9 @@ int main() {
     UpdateRdbMetadataPageAdapter updateRdbMetadataPageAdapter(
         updateRdbMetadataPageAction);
 
-    InitializeRdbAction initializeRdbAction(
-        createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
-        updateRdbMetadataPageAdapter);
+    InitializeRdbAction initializeRdbAction(createRdbMetadataPageAdapter,
+                                             createRootCatalogPageAdapter,
+                                             updateRdbMetadataPageAdapter);
     DatabaseStartup databaseStartup(container.createFpmPageAction(),
                                     initializeRdbAction,
                                     container.flushPageAction());
