@@ -1,7 +1,7 @@
 #include "SqlParserImpl.h"
 
-#include <charconv>
 #include <cctype>
+#include <charconv>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -89,9 +89,7 @@ private:
     return true;
   }
 
-  bool expectKeyword(std::string_view keyword) {
-    return matchKeyword(keyword);
-  }
+  bool expectKeyword(std::string_view keyword) { return matchKeyword(keyword); }
 
   bool expect(TokenKind kind) { return match(kind); }
 
