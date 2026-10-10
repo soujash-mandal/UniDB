@@ -25,6 +25,25 @@
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
+#include "../RdbMetadataService/actions/CreateRdbMetadataPageAction.h"
+#include "../RdbMetadataService/actions/GetCatalogRootPageIdAction.h"
+#include "../RdbMetadataService/actions/UpdateRdbMetadataPageAction.h"
+#include "../RdbMetadataService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../RdbMetadataService/adapter/BufferPoolNewPageAdapter.h"
+#include "../RdbMetadataService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../RdbMetadataService/adapter/BufferPoolWritePageAdapter.h"
+
+#include "../CatalogService/actions/CreateRootCatalogPageAction.h"
+#include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
+#include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
+
+#include "../RdbService/actions/InitializeRdbAction.h"
+#include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
+#include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
+
 class Container {
 public:
   explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize,
@@ -36,6 +55,10 @@ public:
   NewPageAction &newPageAction() { return newPage; }
   WritePageAction &writePageAction() { return writePage; }
   CreateFpmPageAction &createFpmPageAction() { return createFpmPage; }
+  InitializeRdbAction &initializeRdbAction() { return initializeRdb; }
+  GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
+    return getCatalogRootPageId;
+  }
 
 private:
   ReadDiskPageAction readDiskPage;
@@ -59,4 +82,25 @@ private:
   FlushPageAction flushPage;
   NewPageAction newPage;
   WritePageAction writePage;
+
+  BufferPoolFetchPageAdapter metadataFetchPageAdapter;
+  BufferPoolNewPageAdapter metadataNewPageAdapter;
+  BufferPoolUnpinPageAdapter metadataUnpinPageAdapter;
+  BufferPoolWritePageAdapter metadataWritePageAdapter;
+
+  CatalogBufferPoolFetchPageAdapter catalogFetchPageAdapter;
+  CatalogBufferPoolNewPageAdapter catalogNewPageAdapter;
+  CatalogBufferPoolUnpinPageAdapter catalogUnpinPageAdapter;
+  CatalogBufferPoolWritePageAdapter catalogWritePageAdapter;
+
+  CreateRdbMetadataPageAction createRdbMetadataPage;
+  UpdateRdbMetadataPageAction updateRdbMetadataPage;
+  CreateRootCatalogPageAction createRootCatalogPage;
+
+  CreateRdbMetadataPageAdapter createRdbMetadataPageAdapter;
+  CreateRootCatalogPageAdapter createRootCatalogPageAdapter;
+  UpdateRdbMetadataPageAdapter updateRdbMetadataPageAdapter;
+
+  InitializeRdbAction initializeRdb;
+  GetCatalogRootPageIdAction getCatalogRootPageId;
 };
