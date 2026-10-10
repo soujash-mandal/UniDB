@@ -17,7 +17,7 @@ TEST(DiskManagerTest, WritesAndReadsPage) {
 
   {
     FileDiskManagerAdapter disk;
-    disk.setFileName(testFile);
+    disk.fileName = testFile;
 
     DiskPage page;
     page.data()[0] = 'U';
@@ -29,7 +29,7 @@ TEST(DiskManagerTest, WritesAndReadsPage) {
 
   {
     FileDiskManagerAdapter disk;
-    disk.setFileName(testFile);
+    disk.fileName = testFile;
 
     DiskPage page = disk.readDiskPage(42);
 
@@ -46,7 +46,7 @@ TEST(DiskManagerTest, DoesNotCreateMissingDatabaseFile) {
   std::remove(missingFile);
 
   FileDiskManagerAdapter disk;
-  disk.setFileName(missingFile);
+  disk.fileName = missingFile;
 
   EXPECT_THROW(disk.readDiskPage(0), std::runtime_error);
   EXPECT_FALSE(std::ifstream(missingFile).good());
