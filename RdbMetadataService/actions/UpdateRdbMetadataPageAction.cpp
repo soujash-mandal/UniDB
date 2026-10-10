@@ -1,8 +1,8 @@
 #include "UpdateRdbMetadataPageAction.h"
 
 UpdateRdbMetadataPageAction::UpdateRdbMetadataPageAction(
-    FetchPagePort &fetchPagePort, WritePagePort &writePagePort,
-    UnpinPagePort &unpinPagePort)
+    RdbMetadataFetchPagePort &fetchPagePort, RdbMetadataWritePagePort &writePagePort,
+    RdbMetadataUnpinPagePort &unpinPagePort)
     : readPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
