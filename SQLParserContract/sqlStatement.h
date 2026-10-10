@@ -44,4 +44,4 @@ struct SelectStatement {
 using SqlStatement =
     std::variant<CreateTableStatement, InsertStatement, SelectStatement>;
 
-}  // namespace unidb::sql
+} // namespace unidb::sql
