@@ -1,8 +1,8 @@
 #pragma once
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
-#include "../port/FetchPagePort.h"
+#include "../port/CatalogFetchPagePort.h"
 
-class CatalogBufferPoolFetchPageAdapter : public CatalogFetchPagePort {
+class CatalogBufferPoolFetchPageAdapter : public CatalogCatalogFetchPagePort {
 public:
   explicit CatalogBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
   CatalogPage fetchPage(CatalogPageId pageId) override;
