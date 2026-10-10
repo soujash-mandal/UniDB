@@ -2,9 +2,9 @@
 #include "../../BufferPoolManager/actions/WritePageAction.h"
 #include "../port/WritePagePort.h"
 
-class BufferPoolWritePageAdapter : public WritePagePort {
+class CatalogBufferPoolWritePageAdapter : public CatalogWritePagePort {
 public:
-  explicit BufferPoolWritePageAdapter(WritePageAction &writePageAction);
+  explicit CatalogBufferPoolWritePageAdapter(WritePageAction &writePageAction);
   void writePage(CatalogPageId pageId, CatalogPage page) override;
 
 private:

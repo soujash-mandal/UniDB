@@ -7,13 +7,14 @@
 
 class DropTableAction {
 public:
-  DropTableAction(FetchPagePort &fetchPagePort, WritePagePort &writePagePort,
-                  UnpinPagePort &unpinPagePort);
+  DropTableAction(CatalogFetchPagePort &fetchPagePort,
+                  CatalogWritePagePort &writePagePort,
+                  CatalogUnpinPagePort &unpinPagePort);
 
   void execute(CatalogPageId rootPageId, CatalogTableId tableId);
 
 private:
-  FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  CatalogFetchPagePort &fetchPagePort;
+  CatalogWritePagePort &writePagePort;
+  CatalogUnpinPagePort &unpinPagePort;
 };

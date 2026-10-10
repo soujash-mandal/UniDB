@@ -2,9 +2,9 @@
 #include "../../BufferPoolManager/actions/UnpinPageAction.h"
 #include "../port/UnpinPagePort.h"
 
-class BufferPoolUnpinPageAdapter : public UnpinPagePort {
+class CatalogBufferPoolUnpinPageAdapter : public CatalogUnpinPagePort {
 public:
-  explicit BufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
+  explicit CatalogBufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
   void unpinPage(CatalogPageId pageId) override;
 
 private:

@@ -2,8 +2,8 @@
 
 #include "../domain/RdbMetadataPage.h"
 
-class UnpinPagePort {
+class RdbMetadataUnpinPagePort {
 public:
-  virtual ~UnpinPagePort() = default;
+  virtual ~RdbMetadataUnpinPagePort() = default;
   virtual void unpinPage(CatalogPageId pageId) = 0;
 };
