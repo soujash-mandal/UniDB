@@ -4,7 +4,8 @@
 
 class CatalogBufferPoolNewPageAdapter : public CatalogNewPagePort {
 public:
-  explicit CatalogBufferPoolNewPageAdapter(NewPageAction &newPageAction);
+  explicit CatalogBufferPoolNewPageAdapter(
+      NewPageAction &newPageAction);
   CatalogPageId newPage() override;
 
 private:
