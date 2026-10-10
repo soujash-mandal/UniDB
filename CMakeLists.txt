@@ -19,7 +19,6 @@ set(UNIDB_SOURCES
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
     FreePageManager/domain/MetadataPage.cpp
     FreePageManager/actions/AllocatePageAction.cpp
-    FreePageManager/actions/InitializeMetadataPageAction.cpp
     FreePageManager/actions/CreateFpmPageAction.cpp
 
     EvictionPolicy/EvictionPolicyFactory.cpp
