@@ -6,13 +6,13 @@
 
 class CreateRootCatalogPageAction {
 public:
-  CreateRootCatalogPageAction(NewPagePort &newPagePort,
-                              WritePagePort &writePagePort,
-                              UnpinPagePort &unpinPagePort);
+  CreateRootCatalogPageAction(CatalogNewPagePort &newPagePort,
+                              CatalogWritePagePort &writePagePort,
+                              CatalogUnpinPagePort &unpinPagePort);
   CatalogPageId execute();
 
 private:
-  NewPagePort &newPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  CatalogNewPagePort &newPagePort;
+  CatalogWritePagePort &writePagePort;
+  CatalogUnpinPagePort &unpinPagePort;
 };

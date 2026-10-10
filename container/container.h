@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string>
 
 #include "../DiskManager/actions/ReadDiskPageAction.h"
 #include "../DiskManager/actions/WriteDiskPageAction.h"
+#include "../DiskManager/adapter/FileDiskManagerAdapter.h"
 #include "../DiskManager/port/DiskPort.h"
 #include "../EvictionPolicy/EvictionPolicy.h"
 #include "../EvictionPolicy/EvictionPolicyType.h"
@@ -13,79 +16,69 @@
 #include "../BufferPoolManager/actions/NewPageAction.h"
 #include "../BufferPoolManager/actions/UnpinPageAction.h"
 #include "../BufferPoolManager/actions/WritePageAction.h"
+#include "../BufferPoolManager/domain/BufferPool.h"
 
 #include "../BufferPoolManager/adapter/AllocatePageAdapter.h"
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
 #include "../FreePageManager/actions/AllocatePageAction.h"
-#include "../FreePageManager/actions/InitializeMetadataPageAction.h"
+#include "../FreePageManager/actions/CreateFpmPageAction.h"
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
-// #include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
-// #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
-// #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../RdbMetadataService/actions/CreateRdbMetadataPageAction.h"
+#include "../RdbMetadataService/actions/GetCatalogRootPageIdAction.h"
+#include "../RdbMetadataService/actions/UpdateRdbMetadataPageAction.h"
+#include "../RdbMetadataService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../RdbMetadataService/adapter/BufferPoolNewPageAdapter.h"
+#include "../RdbMetadataService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../RdbMetadataService/adapter/BufferPoolWritePageAdapter.h"
 
-// #include "../TupleService/actions/CreateTuplePageAction.h"
-// #include "../TupleService/actions/CreateTupleAction.h"
-// #include "../TupleService/actions/DeleteTupleAction.h"
-// #include "../TupleService/actions/GetTupleAction.h"
+#include "../CatalogService/actions/CreateRootCatalogPageAction.h"
+#include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
+#include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
 
-// #include "../FreeSpaceMapService/adapter/FSMBufferPoolFetchPageAdapter.h"
-// #include "../FreeSpaceMapService/adapter/FSMBufferPoolNewPageAdapter.h"
-// #include "../FreeSpaceMapService/adapter/FSMBufferPoolUnpinPageAdapter.h"
-
-// #include "../FreeSpaceMapService/actions/AddPageAction.h"
-// #include "../FreeSpaceMapService/actions/FindPageWithSpaceAction.h"
-// #include "../FreeSpaceMapService/actions/UpdateFreeSpaceAction.h"
+#include "../RdbService/actions/InitializeRdbAction.h"
+#include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
+#include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
 
 class Container {
-
 public:
-  explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize,
+  explicit Container(std::string databaseFileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType);
 
+  const std::string &getDatabaseFileName() const { return databaseFileName; }
+
   FetchPageAction &fetchPageAction() { return fetchPage; }
-
   UnpinPageAction &unpinPageAction() { return unpinPage; }
-
   FlushPageAction &flushPageAction() { return flushPage; }
-
   NewPageAction &newPageAction() { return newPage; }
-  InitializeMetadataPageAction &initializeMetadataPageAction() {
-    return initializeMetadataPage;
+  WritePageAction &writePageAction() { return writePage; }
+  CreateFpmPageAction &createFpmPageAction() { return createFpmPage; }
+  InitializeRdbAction &initializeRdbAction() { return initializeRdb; }
+  GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
+    return getCatalogRootId;
   }
 
-  WritePageAction &writePageAction() { return writePage; }
-
-  // Tuple Service
-  // CreateTupleAction &createTupleAction();
-  // GetTupleAction &getTupleAction();
-  // DeleteTupleAction &deleteTupleAction();
-  // CreateTuplePageAction &CreateTuplePageAction();
-
-  // // Free Space Map Service
-  // AddPageAction &addPageAction();
-  // FindPageWithSpaceAction &findPageWithSpaceAction();
-  // UpdateFreeSpaceAction &updateFreeSpaceAction();
-
 private:
-  // Disk Manager
+  std::string databaseFileName;
+  FileDiskManagerAdapter diskManager;
+
   ReadDiskPageAction readDiskPage;
   WriteDiskPageAction writeDiskPage;
 
-  // Free Page Manager
   ReadFreePageMetadataAdapter readFreePageMetadataAdapter;
   WriteFreePageMetadataAdapter writeFreePageMetadataAdapter;
 
   AllocatePageAction allocatePage;
-  InitializeMetadataPageAction initializeMetadataPage;
+  CreateFpmPageAction createFpmPage;
 
-  // Eviction Policy
   std::unique_ptr<EvictionPolicy> evictionPolicy;
 
-  // Buffer Pool Manager
   ReadPageAdapter readPageAdapter;
   WritePageAdapter writePageAdapter;
   BufferPool bufferPool;
@@ -97,20 +90,24 @@ private:
   NewPageAction newPage;
   WritePageAction writePage;
 
-  // Tuple Service
-  //   BufferPoolFetchPageAdapter fetchPageAdapter;
-  //   BufferPoolUnpinPageAdapter unpinPageAdapter;
-  //   BufferPoolNewPageAdapter newPageAdapter;
-  //   CreateTupleAction createTuple;
-  //   GetTupleAction getTuple;
-  //   DeleteTupleAction deleteTuple;
-  //   CreateTuplePageAction createPage;
+  BufferPoolFetchPageAdapter metadataFetchPageAdapter;
+  BufferPoolNewPageAdapter metadataNewPageAdapter;
+  BufferPoolUnpinPageAdapter metadataUnpinPageAdapter;
+  BufferPoolWritePageAdapter metadataWritePageAdapter;
 
-  //   // Free Space Map Service
-  //   FSMBufferPoolFetchPageAdapter fsmFetchPageAdapter;
-  //   FSMBufferPoolUnpinPageAdapter fsmUnpinPageAdapter;
-  //   FSMBufferPoolNewPageAdapter fsmNewPageAdapter;
-  //   AddPageAction addPage;
-  //   FindPageWithSpaceAction findPageWithSpace;
-  //   UpdateFreeSpaceAction updateFreeSpace;
+  CatalogBufferPoolFetchPageAdapter catalogFetchPageAdapter;
+  CatalogBufferPoolNewPageAdapter catalogNewPageAdapter;
+  CatalogBufferPoolUnpinPageAdapter catalogUnpinPageAdapter;
+  CatalogBufferPoolWritePageAdapter catalogWritePageAdapter;
+
+  CreateRdbMetadataPageAction createRdbMetadataPage;
+  UpdateRdbMetadataPageAction updateRdbMetadataPage;
+  CreateRootCatalogPageAction createRootCatalogPage;
+
+  CreateRdbMetadataPageAdapter createRdbMetadataPageAdapter;
+  CreateRootCatalogPageAdapter createRootCatalogPageAdapter;
+  UpdateRdbMetadataPageAdapter updateRdbMetadataPageAdapter;
+
+  InitializeRdbAction initializeRdb;
+  GetCatalogRootPageIdAction getCatalogRootId;
 };

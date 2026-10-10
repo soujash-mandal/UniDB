@@ -2,8 +2,8 @@
 
 #include <stdexcept>
 
-GetTableAction::GetTableAction(FetchPagePort &fetchPagePort,
-                               UnpinPagePort &unpinPagePort)
+GetTableAction::GetTableAction(CatalogFetchPagePort &fetchPagePort,
+                               CatalogUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
 Table GetTableAction::execute(CatalogPageId rootPageId,
@@ -11,7 +11,7 @@ Table GetTableAction::execute(CatalogPageId rootPageId,
 
   CatalogPageId currentPageId = rootPageId;
 
-  while (currentPageId != INVALID_PAGE_ID) {
+  while (currentPageId != CATALOG_INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(currentPageId);
     if (page.containsTableId(tableId)) {
       Table table = page.get(tableId);

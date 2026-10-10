@@ -2,8 +2,8 @@
 
 #include "../domain/RdbMetadataPage.h"
 
-class NewPagePort {
+class RdbMetadataNewPagePort {
 public:
-  virtual ~NewPagePort() = default;
+  virtual ~RdbMetadataNewPagePort() = default;
   virtual CatalogPageId newPage() = 0;
 };

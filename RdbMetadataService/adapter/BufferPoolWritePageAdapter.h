@@ -3,7 +3,7 @@
 #include "../../BufferPoolManager/actions/WritePageAction.h"
 #include "../port/WritePagePort.h"
 
-class BufferPoolWritePageAdapter : public WritePagePort {
+class BufferPoolWritePageAdapter : public RdbMetadataWritePagePort {
 public:
   explicit BufferPoolWritePageAdapter(WritePageAction &writePageAction);
 

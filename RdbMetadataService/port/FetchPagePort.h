@@ -2,8 +2,8 @@
 
 #include "../domain/RdbMetadataPage.h"
 
-class FetchPagePort {
+class RdbMetadataFetchPagePort {
 public:
-  virtual ~FetchPagePort() = default;
+  virtual ~RdbMetadataFetchPagePort() = default;
   virtual RdbMetadataPage fetchPage(CatalogPageId pageId) = 0;
 };

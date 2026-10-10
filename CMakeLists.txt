@@ -6,138 +6,76 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
-# --------------------------------
-# GoogleTest
-# --------------------------------
-
 find_package(GTest REQUIRED)
 
+set(UNIDB_SOURCES
+    container/container.cpp
 
-# --------------------------------
-# UniDB application
-# --------------------------------
-
-add_executable(unidb
-
-    main.cpp
-
-    # Container
-    Container/Container.cpp
-
-    # Disk Manager
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadDiskPageAction.cpp
     DiskManager/actions/WriteDiskPageAction.cpp
 
-    # Free Page Manager
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
     FreePageManager/domain/MetadataPage.cpp
-
     FreePageManager/actions/AllocatePageAction.cpp
-    FreePageManager/actions/InitializeMetadataPageAction.cpp
+    FreePageManager/actions/CreateFpmPageAction.cpp
 
-    # Eviction Policy
     EvictionPolicy/EvictionPolicyFactory.cpp
     EvictionPolicy/FIFOEvictionPolicy.cpp
 
-    #BufferPoolManager
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
     BufferPoolManager/adapter/AllocatePageAdapter.cpp
-    
     BufferPoolManager/actions/FetchPageAction.cpp
     BufferPoolManager/actions/WritePageAction.cpp
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
 
-    
-
-    # # TupleService
-    # TupleService/adapter/BufferPoolFetchPageAdapter.cpp
-    # TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
-    # TupleService/adapter/BufferPoolNewPageAdapter.cpp
-
-    # TupleService/actions/CreateTupleAction.cpp
-    # TupleService/actions/GetTupleAction.cpp
-    # TupleService/actions/DeleteTupleAction.cpp
-    # TupleService/actions/CreateTuplePageAction.cpp
+    RdbMetadataService/domain/RdbMetadataPage.cpp
+    RdbMetadataService/adapter/BufferPoolFetchPageAdapter.cpp
+    RdbMetadataService/adapter/BufferPoolNewPageAdapter.cpp
+    RdbMetadataService/adapter/BufferPoolUnpinPageAdapter.cpp
+    RdbMetadataService/adapter/BufferPoolWritePageAdapter.cpp
+    CatalogService/adapter/BufferPoolFetchPageAdapter.cpp
+    CatalogService/adapter/BufferPoolNewPageAdapter.cpp
+    CatalogService/adapter/BufferPoolUnpinPageAdapter.cpp
+    CatalogService/adapter/BufferPoolWritePageAdapter.cpp
+    RdbMetadataService/actions/CreateRdbMetadataPageAction.cpp
+    RdbMetadataService/actions/UpdateRdbMetadataPageAction.cpp
+    RdbMetadataService/actions/GetCatalogRootPageIdAction.cpp
+    CatalogService/domain/CatalogPage.cpp
+    CatalogService/actions/CreateRootCatalogPageAction.cpp
+    RdbService/actions/InitializeRdbAction.cpp
+    RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
+    RdbService/adapter/CreateRootCatalogPageAdapter.cpp
+    RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
 )
 
-
-# --------------------------------
-# Tests
-# --------------------------------
+add_executable(unidb
+    main.cpp
+    DatabaseStartup.cpp
+    ${UNIDB_SOURCES}
+)
 
 add_executable(tests
-    
-    # Container
-    Container/Container.cpp
+    ${UNIDB_SOURCES}
 
-    # DiskManager
-    DiskManager/adapter/FileDiskManagerAdapter.cpp
-    DiskManager/actions/ReadDiskPageAction.cpp
-    DiskManager/actions/WriteDiskPageAction.cpp
-
-    DiskManager/test/DiskManagerE2ETest.cpp 
-
-    # FreePageManager
-    FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
-    FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
-    
-    FreePageManager/domain/MetadataPage.cpp
-    
-    FreePageManager/actions/AllocatePageAction.cpp
-    FreePageManager/actions/InitializeMetadataPageAction.cpp
-    
+    DiskManager/test/DiskManagerE2ETest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
-
-    # Eviction Policy
-    EvictionPolicy/EvictionPolicyFactory.cpp
-    EvictionPolicy/FIFOEvictionPolicy.cpp
-    
     EvictionPolicy/test/FIFOEvictionPolicyTest.cpp
-    
-    #BufferPoolManager
-    BufferPoolManager/adapter/ReadPageAdapter.cpp
-    BufferPoolManager/adapter/WritePageAdapter.cpp
-    BufferPoolManager/adapter/AllocatePageAdapter.cpp
-
-    BufferPoolManager/actions/FetchPageAction.cpp
-    BufferPoolManager/actions/FlushPageAction.cpp
-    BufferPoolManager/actions/NewPageAction.cpp
-    BufferPoolManager/actions/UnpinPageAction.cpp
-    BufferPoolManager/actions/WritePageAction.cpp
-
     BufferPoolManager/test/FetchPageActionTest.cpp
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
-    
-
-    # # TupleService
-    # TupleService/adapter/BufferPoolFetchPageAdapter.cpp
-    # TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
-    # TupleService/adapter/BufferPoolNewPageAdapter.cpp
-
-    # TupleService/actions/CreateTupleAction.cpp
-    # TupleService/actions/GetTupleAction.cpp
-    # TupleService/actions/DeleteTupleAction.cpp
-    # TupleService/actions/CreateTuplePageAction.cpp
-
-    # TupleService/test/TupleActionsTest.cpp
 )
-
 
 target_link_libraries(tests
     GTest::gtest
     GTest::gtest_main
 )
 
-
 enable_testing()
 include(GoogleTest)
-
 gtest_discover_tests(tests)

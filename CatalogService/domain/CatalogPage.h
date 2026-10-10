@@ -8,7 +8,7 @@
 using CatalogPageId = uint32_t;
 using CatalogTableId = uint32_t;
 using FSMPageId = uint32_t;
-static constexpr uint32_t INVALID_PAGE_ID = UINT32_MAX;
+static constexpr uint32_t CATALOG_INVALID_PAGE_ID = UINT32_MAX;
 enum class DataType { INT, BIGINT, FLOAT, DOUBLE, BOOLEAN, VARCHAR };
 
 struct Column {
@@ -22,7 +22,7 @@ struct Table {
   CatalogTableId tableId;
   std::string name;
   std::vector<Column> columns;
-  FSMPageId firstFreeSpaceMapPageId = INVALID_PAGE_ID;
+  FSMPageId firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
 };
 
 namespace {

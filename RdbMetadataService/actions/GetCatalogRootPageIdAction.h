@@ -5,12 +5,12 @@
 
 class GetCatalogRootPageIdAction {
 public:
-  GetCatalogRootPageIdAction(FetchPagePort &fetchPagePort,
-                             UnpinPagePort &unpinPagePort);
+  GetCatalogRootPageIdAction(RdbMetadataFetchPagePort &fetchPagePort,
+                             RdbMetadataUnpinPagePort &unpinPagePort);
 
-  CatalogPageId execute(CatalogPageId pageId);
+  CatalogPageId execute(CatalogPageId metadataPageId);
 
 private:
-  FetchPagePort &fetchPagePort;
-  UnpinPagePort &unpinPagePort;
+  RdbMetadataFetchPagePort &fetchPagePort;
+  RdbMetadataUnpinPagePort &unpinPagePort;
 };

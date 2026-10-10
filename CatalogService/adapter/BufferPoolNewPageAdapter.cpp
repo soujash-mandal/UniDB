@@ -1,8 +1,9 @@
 #include "BufferPoolNewPageAdapter.h"
 
-BufferPoolNewPageAdapter::BufferPoolNewPageAdapter(NewPageAction &newPageAction)
+CatalogBufferPoolNewPageAdapter::CatalogBufferPoolNewPageAdapter(
+    NewPageAction &newPageAction)
     : newPageAction(newPageAction) {}
 
-CatalogPageId BufferPoolNewPageAdapter::newPage() {
+CatalogPageId CatalogBufferPoolNewPageAdapter::newPage() {
   return newPageAction.execute();
 }

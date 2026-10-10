@@ -9,10 +9,11 @@ InitializeRdbAction::InitializeRdbAction(
       updateRdbMetadataPagePort(updateRdbMetadataPagePort) {}
 
 MetadataPageId InitializeRdbAction::execute() {
-  MetadataPageId metadataPageId =
+  const MetadataPageId metadataPageId =
       createRdbMetadataPagePort.createRdbMetadataPage();
-  CatalogPageId catalogRootPageId =
+  const CatalogPageId catalogRootPageId =
       createRootCatalogPagePort.createRootCatalogPage();
+
   updateRdbMetadataPagePort.updateRdbMetadataPage(metadataPageId,
                                                   catalogRootPageId);
   return metadataPageId;

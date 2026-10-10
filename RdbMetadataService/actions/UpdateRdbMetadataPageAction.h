@@ -6,14 +6,14 @@
 
 class UpdateRdbMetadataPageAction {
 public:
-  UpdateRdbMetadataPageAction(FetchPagePort &fetchPagePort,
-                              WritePagePort &writePagePort,
-                              UnpinPagePort &unpinPagePort);
+  UpdateRdbMetadataPageAction(RdbMetadataFetchPagePort &fetchPagePort,
+                              RdbMetadataWritePagePort &writePagePort,
+                              RdbMetadataUnpinPagePort &unpinPagePort);
 
   void execute(CatalogPageId pageId, CatalogPageId catalogRootPageId);
 
 private:
-  FetchPagePort &readPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  RdbMetadataFetchPagePort &readPagePort;
+  RdbMetadataWritePagePort &writePagePort;
+  RdbMetadataUnpinPagePort &unpinPagePort;
 };

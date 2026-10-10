@@ -3,15 +3,23 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <fstream>
+#include <stdexcept>
 
 TEST(DiskManagerTest, WritesAndReadsPage) {
   const char *testFile = "test_database.db";
+  std::remove(testFile);
 
   {
-    FileDiskManagerAdapter disk(testFile);
+    std::ofstream file(testFile, std::ios::binary);
+    ASSERT_TRUE(file.is_open());
+  }
+
+  {
+    FileDiskManagerAdapter disk;
+    disk.fileName = testFile;
 
     DiskPage page;
-
     page.data()[0] = 'U';
     page.data()[1] = 'D';
     page.data()[2] = 'B';
@@ -20,7 +28,8 @@ TEST(DiskManagerTest, WritesAndReadsPage) {
   }
 
   {
-    FileDiskManagerAdapter disk(testFile);
+    FileDiskManagerAdapter disk;
+    disk.fileName = testFile;
 
     DiskPage page = disk.readDiskPage(42);
 
@@ -30,4 +39,15 @@ TEST(DiskManagerTest, WritesAndReadsPage) {
   }
 
   std::remove(testFile);
+}
+
+TEST(DiskManagerTest, DoesNotCreateMissingDatabaseFile) {
+  const char *missingFile = "missing_test_database.db";
+  std::remove(missingFile);
+
+  FileDiskManagerAdapter disk;
+  disk.fileName = missingFile;
+
+  EXPECT_THROW(disk.readDiskPage(0), std::runtime_error);
+  EXPECT_FALSE(std::ifstream(missingFile).good());
 }

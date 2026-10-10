@@ -1,8 +1,8 @@
 #include "CreateRootCatalogPageAction.h"
 
 CreateRootCatalogPageAction::CreateRootCatalogPageAction(
-    NewPagePort &newPagePort, WritePagePort &writePagePort,
-    UnpinPagePort &unpinPagePort)
+    CatalogNewPagePort &newPagePort, CatalogWritePagePort &writePagePort,
+    CatalogUnpinPagePort &unpinPagePort)
     : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
