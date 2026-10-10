@@ -57,7 +57,7 @@ public:
   CreateFpmPageAction &createFpmPageAction() { return createFpmPage; }
   InitializeRdbAction &initializeRdbAction() { return initializeRdb; }
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
-    return getCatalogRootPageId;
+    return getCatalogRootId;
   }
 
 private:
@@ -102,5 +102,5 @@ private:
   UpdateRdbMetadataPageAdapter updateRdbMetadataPageAdapter;
 
   InitializeRdbAction initializeRdb;
-  GetCatalogRootPageIdAction getCatalogRootPageId;
+  GetCatalogRootPageIdAction getCatalogRootId;
 };
