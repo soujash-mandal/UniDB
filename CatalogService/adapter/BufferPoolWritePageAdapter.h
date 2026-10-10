@@ -1,6 +1,6 @@
 #pragma once
 #include "../../BufferPoolManager/actions/WritePageAction.h"
-#include "../port/CatalogWritePagePort.h"
+#include "../port/WritePagePort.h"
 
 class CatalogBufferPoolWritePageAdapter : public CatalogWritePagePort {
 public:
