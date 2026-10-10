@@ -3,7 +3,7 @@
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
 #include "../port/FetchPagePort.h"
 
-class BufferPoolFetchPageAdapter : public FetchPagePort {
+class BufferPoolFetchPageAdapter : public RdbMetadataFetchPagePort {
 public:
   explicit BufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
 
