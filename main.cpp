@@ -7,9 +7,8 @@
 int main() {
   try {
     Container container("database.db", 2, EvictionPolicyType::FIFO);
-    DatabaseStartup databaseStartup(container);
 
-    const bool initializedNewDatabase = databaseStartup.execute();
+    const bool initializedNewDatabase = DatabaseStartup::execute(container);
     if (initializedNewDatabase) {
       std::cout << "Initialized new UniDB database.\n";
     } else {
