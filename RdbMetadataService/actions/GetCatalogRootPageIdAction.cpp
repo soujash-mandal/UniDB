@@ -7,7 +7,7 @@ GetCatalogRootPageIdAction::GetCatalogRootPageIdAction(
 
 CatalogPageId
 GetCatalogRootPageIdAction::execute(CatalogPageId metadataPageId) {
-  const RdbMetadataPage page = fetchPagePort.fetchPage(metadataPageId);
+  RdbMetadataPage page = fetchPagePort.fetchPage(metadataPageId);
   const CatalogPageId catalogRootPageId = page.getCatalogRootPageId();
   unpinPagePort.unpinPage(metadataPageId);
   return catalogRootPageId;
