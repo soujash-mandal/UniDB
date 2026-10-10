@@ -7,7 +7,8 @@
 
 class DropTableAction {
 public:
-  DropTableAction(CatalogFetchPagePort &fetchPagePort, CatalogWritePagePort &writePagePort,
+  DropTableAction(CatalogFetchPagePort &fetchPagePort,
+                  CatalogWritePagePort &writePagePort,
                   CatalogUnpinPagePort &unpinPagePort);
 
   void execute(CatalogPageId rootPageId, CatalogTableId tableId);
