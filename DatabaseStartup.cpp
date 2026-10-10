@@ -7,10 +7,11 @@
 DatabaseStartup::DatabaseStartup(Container &container) : container(container) {}
 
 bool DatabaseStartup::execute() {
-  const bool databaseAlreadyExists = std::filesystem::exists(DATABASE_FILE);
+  const std::string &databaseFileName = container.getDatabaseFileName();
+  const bool databaseAlreadyExists = std::filesystem::exists(databaseFileName);
 
   if (!databaseAlreadyExists) {
-    std::ofstream databaseFile(DATABASE_FILE, std::ios::binary);
+    std::ofstream databaseFile(databaseFileName, std::ios::binary);
     if (!databaseFile.is_open()) {
       throw std::runtime_error("Could not create database file");
     }
@@ -35,11 +36,6 @@ bool DatabaseStartup::execute() {
     return true;
   }
 
-  validateExistingDatabase();
-  return false;
-}
-
-void DatabaseStartup::validateExistingDatabase() {
   // Validate that the FPM root page can be read.
   container.fetchPageAction().execute(0);
   container.unpinPageAction().execute(0);
@@ -54,4 +50,5 @@ void DatabaseStartup::validateExistingDatabase() {
   // A successful read confirms that the referenced catalog page exists.
   container.fetchPageAction().execute(catalogRootPageId);
   container.unpinPageAction().execute(catalogRootPageId);
+  return false;
 }
