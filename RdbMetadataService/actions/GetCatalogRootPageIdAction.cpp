@@ -1,12 +1,14 @@
 #include "GetCatalogRootPageIdAction.h"
 
 GetCatalogRootPageIdAction::GetCatalogRootPageIdAction(
-    FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort)
+    RdbMetadataFetchPagePort &fetchPagePort,
+    RdbMetadataUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
-CatalogPageId GetCatalogRootPageIdAction::execute(CatalogPageId pageId) {
-  RdbMetadataPage page = fetchPagePort.fetchPage(pageId);
-  CatalogPageId catalogRootPageId = page.getCatalogRootPageId();
-  unpinPagePort.unpinPage(pageId);
+CatalogPageId
+GetCatalogRootPageIdAction::execute(CatalogPageId metadataPageId) {
+  const RdbMetadataPage page = fetchPagePort.fetchPage(metadataPageId);
+  const CatalogPageId catalogRootPageId = page.getCatalogRootPageId();
+  unpinPagePort.unpinPage(metadataPageId);
   return catalogRootPageId;
 }
