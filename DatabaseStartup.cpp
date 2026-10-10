@@ -4,9 +4,7 @@
 #include <fstream>
 #include <stdexcept>
 
-DatabaseStartup::DatabaseStartup(Container &container) : container(container) {}
-
-bool DatabaseStartup::execute() {
+bool DatabaseStartup::execute(Container &container) {
   const std::string &databaseFileName = container.getDatabaseFileName();
   const bool databaseAlreadyExists = std::filesystem::exists(databaseFileName);
 
