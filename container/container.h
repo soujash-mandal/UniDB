@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 
+#include "../DiskManager/adapter/FileDiskManagerAdapter.h"
 #include "../DiskManager/actions/ReadDiskPageAction.h"
 #include "../DiskManager/actions/WriteDiskPageAction.h"
 #include "../DiskManager/port/DiskPort.h"
@@ -46,8 +48,10 @@
 
 class Container {
 public:
-  explicit Container(DiskPort &diskManager, uint32_t bufferPoolSize,
+  explicit Container(std::string databaseFileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType);
+
+  const std::string &getDatabaseFileName() const { return databaseFileName; }
 
   FetchPageAction &fetchPageAction() { return fetchPage; }
   UnpinPageAction &unpinPageAction() { return unpinPage; }
@@ -61,6 +65,9 @@ public:
   }
 
 private:
+  std::string databaseFileName;
+  FileDiskManagerAdapter diskManager;
+
   ReadDiskPageAction readDiskPage;
   WriteDiskPageAction writeDiskPage;
 
