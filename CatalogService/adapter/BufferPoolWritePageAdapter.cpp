@@ -1,11 +1,11 @@
-#include "BufferPoolWritePageAdapter.h"
+#include "CatalogBufferPoolWritePageAdapter.h"
 #include <cstring>
 
-BufferPoolWritePageAdapter::BufferPoolWritePageAdapter(
+CatalogBufferPoolWritePageAdapter::CatalogBufferPoolWritePageAdapter(
     WritePageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
-void BufferPoolWritePageAdapter::writePage(CatalogPageId pageId,
+void CatalogBufferPoolWritePageAdapter::writePage(CatalogPageId pageId,
                                            CatalogPage page) {
 
   BufferPoolPage bufferPage;
