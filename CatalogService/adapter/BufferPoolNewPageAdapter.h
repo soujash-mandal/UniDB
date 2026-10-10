@@ -1,6 +1,6 @@
 #pragma once
 #include "../../BufferPoolManager/actions/NewPageAction.h"
-#include "../port/CatalogNewPagePort.h"
+#include "../port/NewPagePort.h"
 
 class CatalogBufferPoolNewPageAdapter : public CatalogNewPagePort {
 public:
