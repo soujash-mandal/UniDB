@@ -11,8 +11,10 @@
 
 class CreateTableAction {
 public:
-  CreateTableAction(CatalogFetchPagePort &fetchPagePort, CatalogNewPagePort &newPagePort,
-                    CatalogWritePagePort &writePagePort, CatalogUnpinPagePort &unpinPagePort);
+  CreateTableAction(CatalogFetchPagePort &fetchPagePort,
+                    CatalogNewPagePort &newPagePort,
+                    CatalogWritePagePort &writePagePort,
+                    CatalogUnpinPagePort &unpinPagePort);
 
   CatalogTableId execute(CatalogPageId rootPageId, CatalogTableId tableId,
                          std::string name, std::vector<Column> columns);
