@@ -6,8 +6,7 @@
 
 Container::Container(std::string fileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType)
-    : databaseFileName(std::move(fileName)),
-      readDiskPage(diskManager), writeDiskPage(diskManager),
+    : readDiskPage(diskManager), writeDiskPage(diskManager),
       readFreePageMetadataAdapter(readDiskPage),
       writeFreePageMetadataAdapter(writeDiskPage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
@@ -37,5 +36,6 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       initializeRdb(createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
                     updateRdbMetadataPageAdapter),
       getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter) {
+  databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
