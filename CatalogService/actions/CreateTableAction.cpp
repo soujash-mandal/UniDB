@@ -18,7 +18,7 @@ CatalogTableId CreateTableAction::execute(CatalogPageId rootPageId,
 
   CatalogPageId pageId = rootPageId;
 
-  while (pageId != INVALID_PAGE_ID) {
+  while (pageId != CATALOG_INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(pageId);
     unpinPagePort.unpinPage(pageId);
     if (page.containsTableName(name)) {
@@ -35,11 +35,11 @@ CatalogTableId CreateTableAction::execute(CatalogPageId rootPageId,
   table.tableId = tableId;
   table.name = name;
   table.columns = columns;
-  table.firstFreeSpaceMapPageId = INVALID_PAGE_ID;
+  table.firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
 
   while (!page.hasSpace(table)) {
     CatalogPageId nextPageId = page.getNextPageId();
-    if (nextPageId == INVALID_PAGE_ID) {
+    if (nextPageId == CATALOG_INVALID_PAGE_ID) {
       CatalogPageId newPageId = newPagePort.newPage();
       page.setNextPageId(newPageId);
       nextPageId = newPageId;
