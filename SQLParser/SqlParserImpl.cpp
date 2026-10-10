@@ -1,7 +1,7 @@
 #include "SqlParserImpl.h"
 
 #include <charconv>
-#include <limits>
+#include <cctype>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -23,8 +23,7 @@ SqlParseResult unsupported(std::string message) {
 
 std::string upper(std::string value) {
   for (char &ch : value) {
-    ch = static_cast<char>(
-        std::toupper(static_cast<unsigned char>(ch)));
+    ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
   }
   return value;
 }
@@ -223,7 +222,7 @@ private:
       }
     }
     if (!expectKeyword("FROM")) {
-      return unsupported("Only SELECT ... FROM ... is supported in V1");
+      return syntaxError("Expected FROM after SELECT list");
     }
     if (current().kind != TokenKind::Identifier) {
       return syntaxError("Expected table name after FROM");
