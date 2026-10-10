@@ -31,13 +31,13 @@ int main() {
     FileDiskManagerAdapter diskManager(databaseFile);
     Container container(diskManager, 2, EvictionPolicyType::FIFO);
 
-    RdbMetadataService::BufferPoolFetchPageAdapter metadataFetchPageAdapter(
+    BufferPoolFetchPageAdapter metadataFetchPageAdapter(
         container.fetchPageAction());
-    RdbMetadataService::BufferPoolNewPageAdapter metadataNewPageAdapter(
+    BufferPoolNewPageAdapter metadataNewPageAdapter(
         container.newPageAction());
-    RdbMetadataService::BufferPoolUnpinPageAdapter metadataUnpinPageAdapter(
+    BufferPoolUnpinPageAdapter metadataUnpinPageAdapter(
         container.unpinPageAction());
-    RdbMetadataService::BufferPoolWritePageAdapter metadataWritePageAdapter(
+    BufferPoolWritePageAdapter metadataWritePageAdapter(
         container.writePageAction());
 
     CatalogBufferPoolNewPageAdapter catalogNewPageAdapter(
