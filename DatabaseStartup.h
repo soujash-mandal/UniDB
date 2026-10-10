@@ -13,6 +13,9 @@ public:
   void execute(bool databaseAlreadyExists);
 
 private:
+  static constexpr MetadataPageId RDB_METADATA_PAGE_ID = 1;
+
+
   CreateFpmPageAction &createFpmPageAction;
   InitializeRdbAction &initializeRdbAction;
 };
