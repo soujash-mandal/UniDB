@@ -18,7 +18,7 @@ struct SqlParseError {
 using SqlParseResult = std::variant<SqlStatement, SqlParseError>;
 
 class SqlParser {
- public:
+public:
   virtual ~SqlParser() = default;
 
   // Parses SQL into a typed statement or returns a syntax/unsupported error.
