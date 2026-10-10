@@ -8,9 +8,11 @@ bool DatabaseStartup::databaseExists(const std::string &databaseFile) {
 }
 
 DatabaseStartup::DatabaseStartup(CreateFpmPageAction &createFpmPageAction,
-                                 InitializeRdbAction &initializeRdbAction)
+                                 InitializeRdbAction &initializeRdbAction,
+                                 FlushPageAction &flushPageAction)
     : createFpmPageAction(createFpmPageAction),
-      initializeRdbAction(initializeRdbAction) {}
+      initializeRdbAction(initializeRdbAction),
+      flushPageAction(flushPageAction) {}
 
 void DatabaseStartup::execute(bool databaseAlreadyExists) {
   if (databaseAlreadyExists) {
@@ -24,4 +26,8 @@ void DatabaseStartup::execute(bool databaseAlreadyExists) {
   if (metadataPageId != RDB_METADATA_PAGE_ID) {
     throw std::runtime_error("RDB metadata page must be allocated at page 1");
   }
+
+  // Persist both initialized pages before the process exits.
+  flushPageAction.execute(RDB_METADATA_PAGE_ID);
+  flushPageAction.execute(RDB_CATALOG_ROOT_PAGE_ID);
 }
