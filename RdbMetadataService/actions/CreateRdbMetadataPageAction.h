@@ -6,14 +6,14 @@
 
 class CreateRdbMetadataPageAction {
 public:
-  CreateRdbMetadataPageAction(NewPagePort &newPagePort,
-                              WritePagePort &writePagePort,
-                              UnpinPagePort &unpinPagePort);
+  CreateRdbMetadataPageAction(RdbMetadataNewPagePort &newPagePort,
+                              RdbMetadataWritePagePort &writePagePort,
+                              RdbMetadataUnpinPagePort &unpinPagePort);
 
   CatalogPageId execute();
 
 private:
-  NewPagePort &newPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  RdbMetadataNewPagePort &newPagePort;
+  RdbMetadataWritePagePort &writePagePort;
+  RdbMetadataUnpinPagePort &unpinPagePort;
 };
