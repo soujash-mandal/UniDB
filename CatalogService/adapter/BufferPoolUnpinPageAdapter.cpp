@@ -1,9 +1,9 @@
-#include "BufferPoolUnpinPageAdapter.h"
+#include "CatalogBufferPoolUnpinPageAdapter.h"
 
-BufferPoolUnpinPageAdapter::BufferPoolUnpinPageAdapter(
+CatalogBufferPoolUnpinPageAdapter::CatalogBufferPoolUnpinPageAdapter(
     UnpinPageAction &unpinPageAction)
     : unpinPageAction(unpinPageAction) {}
 
-void BufferPoolUnpinPageAdapter::unpinPage(CatalogPageId pageId) {
+void CatalogBufferPoolUnpinPageAdapter::unpinPage(CatalogPageId pageId) {
   unpinPageAction.execute(pageId);
 }
