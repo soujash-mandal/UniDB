@@ -2,9 +2,9 @@
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
 #include "../port/FetchPagePort.h"
 
-class BufferPoolFetchPageAdapter : public FetchPagePort {
+class CatalogBufferPoolFetchPageAdapter : public FetchPagePort {
 public:
-  explicit BufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
+  explicit CatalogBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
   CatalogPage fetchPage(CatalogPageId pageId) override;
 
 private:
