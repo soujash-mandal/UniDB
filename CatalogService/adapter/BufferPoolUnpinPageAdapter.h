@@ -1,6 +1,6 @@
 #pragma once
 #include "../../BufferPoolManager/actions/UnpinPageAction.h"
-#include "../port/CatalogUnpinPagePort.h"
+#include "../port/UnpinPagePort.h"
 
 class CatalogBufferPoolUnpinPageAdapter : public CatalogUnpinPagePort {
 public:
