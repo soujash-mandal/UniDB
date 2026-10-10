@@ -26,4 +26,4 @@ class SqlParser {
   virtual SqlParseResult parse(std::string_view sql) const = 0;
 };
 
-}  // namespace unidb::sql
+} // namespace unidb::sql
