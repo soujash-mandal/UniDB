@@ -63,8 +63,8 @@ int main() {
         updateRdbMetadataPageAction);
 
     InitializeRdbAction initializeRdbAction(createRdbMetadataPageAdapter,
-                                             createRootCatalogPageAdapter,
-                                             updateRdbMetadataPageAdapter);
+                                            createRootCatalogPageAdapter,
+                                            updateRdbMetadataPageAdapter);
     DatabaseStartup databaseStartup(container.createFpmPageAction(),
                                     initializeRdbAction,
                                     container.flushPageAction());
