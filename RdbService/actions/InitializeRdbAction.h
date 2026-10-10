@@ -1,16 +1,9 @@
 #pragma once
 
+#include "../domain/type.h"
 #include "../port/CreateRdbMetadataPagePort.h"
 #include "../port/CreateRootCatalogPagePort.h"
 #include "../port/UpdateRdbMetadataPagePort.h"
-#include <cstdint>
-
-using MetadataPageId = uint32_t;
-
-struct InitializeRdbResult {
-  MetadataPageId metadataPageId;
-  uint32_t catalogRootPageId;
-};
 
 class InitializeRdbAction {
 public:
@@ -18,7 +11,7 @@ public:
                       CreateRootCatalogPagePort &createRootCatalogPagePort,
                       UpdateRdbMetadataPagePort &updateRdbMetadataPagePort);
 
-  InitializeRdbResult execute();
+  MetadataPageId execute();
 
 private:
   CreateRdbMetadataPagePort &createRdbMetadataPagePort;
