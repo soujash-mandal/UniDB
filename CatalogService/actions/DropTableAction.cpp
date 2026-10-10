@@ -2,9 +2,9 @@
 
 #include <stdexcept>
 
-DropTableAction::DropTableAction(FetchPagePort &fetchPagePort,
-                                 WritePagePort &writePagePort,
-                                 UnpinPagePort &unpinPagePort)
+DropTableAction::DropTableAction(CatalogFetchPagePort &fetchPagePort,
+                                 CatalogWritePagePort &writePagePort,
+                                 CatalogUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
