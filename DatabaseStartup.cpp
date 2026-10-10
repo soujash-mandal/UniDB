@@ -25,8 +25,7 @@ bool DatabaseStartup::execute() {
     const MetadataPageId metadataPageId =
         container.initializeRdbAction().execute();
     if (metadataPageId != RDB_METADATA_PAGE_ID) {
-      throw std::runtime_error(
-          "RDB metadata page must be allocated at page 1");
+      throw std::runtime_error("RDB metadata page must be allocated at page 1");
     }
 
     container.flushPageAction().execute(metadataPageId);
@@ -48,8 +47,7 @@ void DatabaseStartup::validateExistingDatabase() {
   const CatalogPageId catalogRootPageId =
       container.getCatalogRootPageIdAction().execute(RDB_METADATA_PAGE_ID);
   if (catalogRootPageId == RdbMetadataPage::INVALID_PAGE_ID ||
-      catalogRootPageId == 0 ||
-      catalogRootPageId == RDB_METADATA_PAGE_ID) {
+      catalogRootPageId == 0 || catalogRootPageId == RDB_METADATA_PAGE_ID) {
     throw std::runtime_error("Database has an invalid catalog root page ID");
   }
 
