@@ -1,5 +1,4 @@
 #include "DatabaseStartup.h"
-#include "DiskManager/adapter/FileDiskManagerAdapter.h"
 #include "container/container.h"
 
 #include <exception>
@@ -7,10 +6,7 @@
 
 int main() {
   try {
-    FileDiskManagerAdapter diskManager;
-    diskManager.setFileName("database.db");
-
-    Container container(diskManager, 2, EvictionPolicyType::FIFO);
+    Container container("database.db", 2, EvictionPolicyType::FIFO);
     DatabaseStartup databaseStartup(container);
 
     const bool initializedNewDatabase = databaseStartup.execute();
