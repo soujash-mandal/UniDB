@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 #include "../DiskManager/actions/ReadDiskPageAction.h"
@@ -8,6 +9,7 @@
 #include "../EvictionPolicy/EvictionPolicy.h"
 #include "../EvictionPolicy/EvictionPolicyType.h"
 
+#include "../BufferPoolManager/domain/BufferPool.h"
 #include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
 #include "../BufferPoolManager/actions/NewPageAction.h"
