@@ -8,10 +8,15 @@
 
 class FileDiskManagerAdapter : public DiskPort {
 public:
-  explicit FileDiskManagerAdapter(const std::string &fileName);
+  FileDiskManagerAdapter() = default;
+
+  void setFileName(const std::string &fileName);
   DiskPage readDiskPage(DiskPageId pageId) override;
   void writePage(DiskPageId pageId, DiskPage page) override;
 
 private:
+  void openExistingFile();
+
+  std::string fileName;
   std::fstream file;
 };
