@@ -33,5 +33,4 @@ Container::Container(DiskPort &diskManager, uint32_t bufferPoolSize,
       updateRdbMetadataPageAdapter(updateRdbMetadataPage),
       initializeRdb(createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
                     updateRdbMetadataPageAdapter),
-      getCatalogRootPageId(
-          metadataFetchPageAdapter, metadataUnpinPageAdapter) {}
+      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter) {}
