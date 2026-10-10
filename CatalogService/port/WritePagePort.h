@@ -1,7 +1,7 @@
 #pragma once
 #include "../domain/CatalogPage.h"
-class WritePagePort {
+class CatalogWritePagePort {
 public:
-  virtual ~WritePagePort() = default;
+  virtual ~CatalogWritePagePort() = default;
   virtual void writePage(CatalogPageId pageId, CatalogPage page) = 0;
 };
