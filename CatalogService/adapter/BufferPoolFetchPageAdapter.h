@@ -4,8 +4,7 @@
 
 class CatalogBufferPoolFetchPageAdapter : public CatalogFetchPagePort {
 public:
-  explicit CatalogBufferPoolFetchPageAdapter(
-      FetchPageAction &fetchPageAction);
+  explicit CatalogBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
   CatalogPage fetchPage(CatalogPageId pageId) override;
 
 private:
