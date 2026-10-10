@@ -4,8 +4,7 @@
 
 class CatalogBufferPoolUnpinPageAdapter : public CatalogUnpinPagePort {
 public:
-  explicit CatalogBufferPoolUnpinPageAdapter(
-      UnpinPageAction &unpinPageAction);
+  explicit CatalogBufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
   void unpinPage(CatalogPageId pageId) override;
 
 private:
