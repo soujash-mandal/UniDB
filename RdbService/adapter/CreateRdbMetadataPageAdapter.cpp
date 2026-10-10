@@ -4,6 +4,6 @@ CreateRdbMetadataPageAdapter::CreateRdbMetadataPageAdapter(
     CreateRdbMetadataPageAction &createRdbMetadataPageAction)
     : createRdbMetadataPageAction(createRdbMetadataPageAction) {}
 
-CatalogPageId CreateRdbMetadataPageAdapter::createRdbMetadataPage() {
+    MetadataPageId CreateRdbMetadataPageAdapter::createRdbMetadataPage() {
   return createRdbMetadataPageAction.execute();
 }

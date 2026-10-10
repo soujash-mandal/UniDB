@@ -8,7 +8,7 @@ public:
   explicit CreateRdbMetadataPageAdapter(
       CreateRdbMetadataPageAction &createRdbMetadataPageAction);
 
-  CatalogPageId createRdbMetadataPage() override;
+      MetadataPageId createRdbMetadataPage() override;
 
 private:
   CreateRdbMetadataPageAction &createRdbMetadataPageAction;
