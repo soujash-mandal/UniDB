@@ -67,7 +67,8 @@ int main() {
         createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
         updateRdbMetadataPageAdapter);
     DatabaseStartup databaseStartup(container.createFpmPageAction(),
-                                    initializeRdbAction);
+                                    initializeRdbAction,
+                                    container.flushPageAction());
     databaseStartup.execute(databaseAlreadyExists);
 
     if (databaseAlreadyExists) {
