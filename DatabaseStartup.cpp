@@ -22,12 +22,12 @@ void DatabaseStartup::execute(bool databaseAlreadyExists) {
   // Page 0 stores Free Page Manager metadata. Page 1 is the fixed RDB
   // metadata root, which stores the catalog root page ID.
   createFpmPageAction.execute(0);
-  const MetadataPageId metadataPageId = initializeRdbAction.execute();
-  if (metadataPageId != RDB_METADATA_PAGE_ID) {
+  const InitializeRdbResult result = initializeRdbAction.execute();
+  if (result.metadataPageId != RDB_METADATA_PAGE_ID) {
     throw std::runtime_error("RDB metadata page must be allocated at page 1");
   }
 
   // Persist both initialized pages before the process exits.
-  flushPageAction.execute(RDB_METADATA_PAGE_ID);
-  flushPageAction.execute(RDB_CATALOG_ROOT_PAGE_ID);
+  flushPageAction.execute(result.metadataPageId);
+  flushPageAction.execute(result.catalogRootPageId);
 }
