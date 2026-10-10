@@ -115,8 +115,7 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
       kind = TokenKind::Unsupported;
       break;
     default:
-      result.error = "Unexpected character at position " +
-                     std::to_string(index);
+      result.error = "Unexpected character at position " + std::to_string(index);
       return result;
     }
 
