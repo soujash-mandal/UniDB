@@ -2,9 +2,12 @@
 
 #include "../EvictionPolicy/EvictionPolicyFactory.h"
 
-Container::Container(DiskPort &diskManager, uint32_t bufferPoolSize,
+#include <utility>
+
+Container::Container(std::string fileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType)
-    : readDiskPage(diskManager), writeDiskPage(diskManager),
+    : databaseFileName(std::move(fileName)), readDiskPage(diskManager),
+      writeDiskPage(diskManager),
       readFreePageMetadataAdapter(readDiskPage),
       writeFreePageMetadataAdapter(writeDiskPage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
@@ -33,4 +36,6 @@ Container::Container(DiskPort &diskManager, uint32_t bufferPoolSize,
       updateRdbMetadataPageAdapter(updateRdbMetadataPage),
       initializeRdb(createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
                     updateRdbMetadataPageAdapter),
-      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter) {}
+      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter) {
+  diskManager.fileName = databaseFileName;
+}
