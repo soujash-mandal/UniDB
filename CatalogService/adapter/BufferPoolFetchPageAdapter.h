@@ -2,7 +2,7 @@
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
 #include "../port/FetchPagePort.h"
 
-class CatalogBufferPoolFetchPageAdapter : public CatalogCatalogFetchPagePort {
+class CatalogBufferPoolFetchPageAdapter : public CatalogFetchPagePort {
 public:
   explicit CatalogBufferPoolFetchPageAdapter(
       FetchPageAction &fetchPageAction);
