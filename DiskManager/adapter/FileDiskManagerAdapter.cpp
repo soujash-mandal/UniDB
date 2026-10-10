@@ -1,31 +1,13 @@
 #include "FileDiskManagerAdapter.h"
 
+#include <fstream>
 #include <stdexcept>
 
-void FileDiskManagerAdapter::setFileName(const std::string &name) {
-  if (file.is_open()) {
-    file.close();
-  }
-  fileName = name;
-}
-
-void FileDiskManagerAdapter::openExistingFile() {
-  if (file.is_open()) {
-    return;
-  }
-  if (fileName.empty()) {
-    throw std::runtime_error("Database file name has not been configured");
-  }
-
-  file.open(fileName, std::ios::in | std::ios::out | std::ios::binary);
+DiskPage FileDiskManagerAdapter::readDiskPage(DiskPageId pageId) {
+  std::fstream file(fileName, std::ios::in | std::ios::out | std::ios::binary);
   if (!file.is_open()) {
     throw std::runtime_error("Could not open existing database file");
   }
-}
-
-DiskPage FileDiskManagerAdapter::readDiskPage(DiskPageId pageId) {
-  openExistingFile();
-  file.clear();
 
   DiskPage page;
   const std::streamoff offset =
@@ -42,8 +24,10 @@ DiskPage FileDiskManagerAdapter::readDiskPage(DiskPageId pageId) {
 }
 
 void FileDiskManagerAdapter::writePage(DiskPageId pageId, DiskPage page) {
-  openExistingFile();
-  file.clear();
+  std::fstream file(fileName, std::ios::in | std::ios::out | std::ios::binary);
+  if (!file.is_open()) {
+    throw std::runtime_error("Could not open existing database file");
+  }
 
   const std::streamoff offset =
       static_cast<std::streamoff>(pageId) * DiskPage::PAGE_SIZE;
