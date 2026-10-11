@@ -27,6 +27,7 @@
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
+#include "../RdbMetadataService/actions/AllocateNextTableIdAction.h"
 #include "../RdbMetadataService/actions/CreateRdbMetadataPageAction.h"
 #include "../RdbMetadataService/actions/GetCatalogRootPageIdAction.h"
 #include "../RdbMetadataService/actions/UpdateRdbMetadataPageAction.h"
@@ -36,6 +37,8 @@
 #include "../RdbMetadataService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../CatalogService/actions/CreateRootCatalogPageAction.h"
+#include "../CatalogService/actions/CreateTableAction.h"
+#include "../CatalogService/actions/GetTableByNameAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
@@ -63,6 +66,11 @@ public:
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
     return getCatalogRootId;
   }
+  AllocateNextTableIdAction &allocateNextTableIdAction() {
+    return allocateNextTableId;
+  }
+  CreateTableAction &createTableAction() { return createTable; }
+  GetTableByNameAction &getTableByNameAction() { return getTableByName; }
 
 private:
   std::string databaseFileName;
@@ -94,11 +102,15 @@ private:
   BufferPoolNewPageAdapter metadataNewPageAdapter;
   BufferPoolUnpinPageAdapter metadataUnpinPageAdapter;
   BufferPoolWritePageAdapter metadataWritePageAdapter;
+  AllocateNextTableIdAction allocateNextTableId;
 
   CatalogBufferPoolFetchPageAdapter catalogFetchPageAdapter;
   CatalogBufferPoolNewPageAdapter catalogNewPageAdapter;
   CatalogBufferPoolUnpinPageAdapter catalogUnpinPageAdapter;
   CatalogBufferPoolWritePageAdapter catalogWritePageAdapter;
+
+  CreateTableAction createTable;
+  GetTableByNameAction getTableByName;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
   UpdateRdbMetadataPageAction updateRdbMetadataPage;

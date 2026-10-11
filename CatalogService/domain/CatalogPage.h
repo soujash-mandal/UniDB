@@ -56,6 +56,7 @@ public:
 
   void insert(Table table);
   Table get(CatalogTableId tableId);
+  Table getByName(const std::string &name);
   bool containsTableName(std::string name);
   bool containsTableId(CatalogTableId tableId);
   void remove(CatalogTableId tableId);

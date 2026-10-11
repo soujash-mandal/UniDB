@@ -51,6 +51,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/CreateRootCatalogPageAction.cpp
     CatalogService/actions/CreateTableAction.cpp
     CatalogService/actions/GetTableAction.cpp
+    CatalogService/actions/GetTableByNameAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
     TupleService/domain/TuplePage.cpp
