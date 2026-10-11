@@ -1,32 +1,36 @@
 # UniDB V1 Architecture
 
+## Architecture overview
+
 ```mermaid
 flowchart TD
-    SQL["SQL / UQL Interface"]
+    SQL["SQL Interface"]
     Query["Parser + Query Execution"]
 
     subgraph RDB_LAYER["Relational Database Layer"]
         RDB["RdbService"]
-        Catalog["CatalogService<br/>Table and schema metadata"]
-        Tuple["TupleService<br/>Tuple operations"]
-        FSM["FreeSpaceMapService<br/>Find pages with free space"]
+        Metadata["RdbMetadataService"]
+        Catalog["CatalogService"]
+        Tuple["TupleService"]
+        FSM["FreeSpaceMapService (deferred from V1)"]
         RDB --> Catalog
         RDB --> Tuple
         RDB --> FSM
+        RDB --> Metadata
     end
 
-    BPM["BufferPoolManager<br/>Fetch · New · Pin/Unpin · Eviction · Flush"]
-    FPM["FreePageManager<br/>Physical page allocation"]
-    Disk["DiskManager<br/>Page disk I/O"]
+    BPM["BufferPoolManager"]
+    FPM["FreePageManager"]
+    Disk["DiskManager"]
     Container["Container / Dependency Injection"]
 
     SQL --> Query
     Query --> RDB
 
-    Catalog -->|"Actions / Ports / Adapters"| BPM
-    Tuple -->|"Actions / Ports / Adapters"| BPM
-    FSM -->|"Actions / Ports / Adapters"| BPM
-
+    Catalog --> BPM
+    Tuple --> BPM
+    FSM --> BPM
+    Metadata --> BPM
     BPM --> FPM
     BPM --> Disk
     FPM --> Disk
@@ -35,5 +39,36 @@ flowchart TD
     Container -. "wires Actions and concrete Adapters" .-> Catalog
     Container -. "wires Actions and concrete Adapters" .-> Tuple
     Container -. "wires Actions and concrete Adapters" .-> FSM
+    Container -. "wires Actions and concrete Adapters" .-> Metadata
     Container -. "wires storage dependencies" .-> BPM
 ```
+
+## Declared service dependency graph
+
+This diagram mirrors the nodes and directed edges declared in
+[`architecture/serviceGraph.h`](architecture/serviceGraph.h). An arrow
+`A --> B` means service `A` depends on or uses service `B`.
+
+```mermaid
+flowchart TD
+    RDB["RdbService"] --> Catalog["CatalogService"]
+    RDB --> Tuple["TupleService"]
+    RDB --> FSM["FreeSpaceMapService"]
+    RDB --> Metadata["RdbMetadataService"]
+
+    Catalog --> BPM["BufferPoolManager"]
+    Tuple --> BPM
+    FSM --> BPM
+    FSM --> Tuple
+    Metadata --> BPM
+
+    BPM --> FPM["FreePageManager"]
+    BPM --> Disk["DiskManager"]
+    FPM --> Disk
+```
+
+**V1 scope note:** `FreeSpaceMapService` is currently represented in the repository's
+service graph, but remains deferred from V1 acceptance criteria unless a concrete V1
+operation requires it. The `FreeSpaceMapService --> TupleService` edge reflects the
+current implementation's tuple-page creation port; it should be revisited when FSM's
+page-selection and page-creation responsibilities are refactored.
