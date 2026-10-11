@@ -51,6 +51,9 @@ set(UNIDB_SOURCES
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
+
+    SQLParser/SqlLexer.cpp
+    SQLParser/SqlParserImpl.cpp
 )
 
 add_executable(unidb
@@ -69,6 +72,7 @@ add_executable(tests
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
+    SQLParser/test/SqlParserTest.cpp
 )
 
 target_link_libraries(tests
