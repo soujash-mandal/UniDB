@@ -123,6 +123,10 @@ class ServiceGraphValidationTest(unittest.TestCase):
         self.assertNotIn(actual_dependency, set(edges))
         self.assertIn(actual_dependency, declared_edges)
 
+    def test_intentional_ci_failure_probe(self):
+        """Temporary probe: this test must fail to verify branch-protection checks."""
+        self.fail("Intentional CI failure probe; remove this test after verification.")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
