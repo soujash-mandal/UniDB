@@ -11,13 +11,12 @@ struct CreateTuplePageActionResult {
 
 class CreateTuplePageAction {
 public:
-  explicit CreateTuplePageAction(NewPagePort &newPagePort,
-                                 WritePagePort &writePagePort,
-                                 UnpinPagePort &unpinPagePort);
+  explicit CreateTuplePageAction(TupleNewPagePort &newPagePort,
+                                 TupleWritePagePort &writePagePort,
+                                 TupleUnpinPagePort &unpinPagePort);
   CreateTuplePageActionResult execute();
-
 private:
-  NewPagePort &newPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  TupleNewPagePort &newPagePort;
+  TupleWritePagePort &writePagePort;
+  TupleUnpinPagePort &unpinPagePort;
 };

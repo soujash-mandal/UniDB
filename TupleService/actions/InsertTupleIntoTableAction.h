@@ -4,7 +4,6 @@
 #include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
-
 #include <vector>
 
 struct TableTupleInsertResult {
@@ -15,17 +14,15 @@ struct TableTupleInsertResult {
 
 class InsertTupleIntoTableAction {
 public:
-  InsertTupleIntoTableAction(FetchPagePort &fetchPagePort,
-                             NewPagePort &newPagePort,
-                             WritePagePort &writePagePort,
-                             UnpinPagePort &unpinPagePort);
-
+  InsertTupleIntoTableAction(TupleFetchPagePort &fetchPagePort,
+                             TupleNewPagePort &newPagePort,
+                             TupleWritePagePort &writePagePort,
+                             TupleUnpinPagePort &unpinPagePort);
   TableTupleInsertResult execute(TuplePageId firstPageId,
                                  const std::vector<char> &tupleData);
-
 private:
-  FetchPagePort &fetchPagePort;
-  NewPagePort &newPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  TupleFetchPagePort &fetchPagePort;
+  TupleNewPagePort &newPagePort;
+  TupleWritePagePort &writePagePort;
+  TupleUnpinPagePort &unpinPagePort;
 };

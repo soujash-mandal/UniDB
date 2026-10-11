@@ -2,9 +2,8 @@
 
 #include "../domain/TuplePage.h"
 
-class NewPagePort {
+class TupleNewPagePort {
 public:
-  virtual ~NewPagePort() = default;
-
+  virtual ~TupleNewPagePort() = default;
   virtual TuplePageId newPage() = 0;
 };

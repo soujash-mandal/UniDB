@@ -1,10 +1,9 @@
 #include "ScanTupleTableAction.h"
 
 #include <limits>
-#include <stdexcept>
 
-ScanTupleTableAction::ScanTupleTableAction(FetchPagePort &fetchPagePort,
-                                           UnpinPagePort &unpinPagePort)
+ScanTupleTableAction::ScanTupleTableAction(TupleFetchPagePort &fetchPagePort,
+                                           TupleUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
 std::vector<std::vector<char>>

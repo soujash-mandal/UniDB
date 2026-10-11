@@ -1,7 +1,7 @@
 #include "DeleteTupleAction.h"
 
-DeleteTupleAction::DeleteTupleAction(FetchPagePort &fetchPagePort,
-                                     WritePagePort &writePagePort)
+DeleteTupleAction::DeleteTupleAction(TupleFetchPagePort &fetchPagePort,
+                                     TupleWritePagePort &writePagePort)
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort) {}
 
 void DeleteTupleAction::execute(TuplePageId pageId, TupleSlotId slotId) {

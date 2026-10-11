@@ -8,13 +8,13 @@ using TuplePageId = uint32_t;
 using TupleSlotId = uint32_t;
 
 namespace {
-static constexpr std::size_t PAGE_SIZE = 8192;
-struct Header {
+static constexpr std::size_t TUPLE_PAGE_SIZE = 8192;
+struct TuplePageHeader {
   uint32_t slotCount;
   uint32_t freeSpaceOffset;
   TuplePageId nextPageId;
 };
-struct Slot {
+struct TupleSlotEntry {
   uint32_t offset;
   uint32_t size;
 };
@@ -35,5 +35,5 @@ public:
   uint32_t getSlotCount() const;
   std::vector<std::vector<char>> getAllTuples() const;
 private:
-  char bytes[PAGE_SIZE]{};
+  char bytes[TUPLE_PAGE_SIZE]{};
 };

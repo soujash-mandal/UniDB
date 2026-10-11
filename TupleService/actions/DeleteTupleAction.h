@@ -1,15 +1,13 @@
 #pragma once
 
-#include "../domain/TuplePage.h"
 #include "../port/FetchPagePort.h"
 #include "../port/WritePagePort.h"
 
 class DeleteTupleAction {
 public:
-  DeleteTupleAction(FetchPagePort &fetchPagePort, WritePagePort &writePagePort);
+  DeleteTupleAction(TupleFetchPagePort &fetchPagePort, TupleWritePagePort &writePagePort);
   void execute(TuplePageId pageId, TupleSlotId slotId);
-
 private:
-  FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
+  TupleFetchPagePort &fetchPagePort;
+  TupleWritePagePort &writePagePort;
 };

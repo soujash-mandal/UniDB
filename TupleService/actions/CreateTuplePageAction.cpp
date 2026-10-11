@@ -1,8 +1,8 @@
 #include "CreateTuplePageAction.h"
 
-CreateTuplePageAction::CreateTuplePageAction(NewPagePort &newPagePort,
-                                             WritePagePort &writePagePort,
-                                             UnpinPagePort &unpinPagePort)
+CreateTuplePageAction::CreateTuplePageAction(TupleNewPagePort &newPagePort,
+                                             TupleWritePagePort &writePagePort,
+                                             TupleUnpinPagePort &unpinPagePort)
     : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
