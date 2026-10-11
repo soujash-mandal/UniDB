@@ -7,14 +7,14 @@
 
 class AllocateNextTableIdAction {
 public:
-  AllocateNextTableIdAction(FetchPagePort &fetchPagePort,
-                            WritePagePort &writePagePort,
-                            UnpinPagePort &unpinPagePort);
+  AllocateNextTableIdAction(RdbMetadataFetchPagePort &fetchPagePort,
+                            RdbMetadataWritePagePort &writePagePort,
+                            RdbMetadataUnpinPagePort &unpinPagePort);
 
   CatalogTableId execute(CatalogPageId pageId);
 
 private:
-  FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  RdbMetadataFetchPagePort &fetchPagePort;
+  RdbMetadataWritePagePort &writePagePort;
+  RdbMetadataUnpinPagePort &unpinPagePort;
 };
