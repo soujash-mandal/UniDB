@@ -1,8 +1,9 @@
 #include "BufferPoolNewPageAdapter.h"
 
-BufferPoolNewPageAdapter::BufferPoolNewPageAdapter(NewPageAction &newPageAction)
+TupleBufferPoolNewPageAdapter::TupleBufferPoolNewPageAdapter(
+    NewPageAction &newPageAction)
     : newPageAction(newPageAction) {}
 
-TuplePageId BufferPoolNewPageAdapter::newPage() {
+TuplePageId TupleBufferPoolNewPageAdapter::newPage() {
   return newPageAction.execute();
 }
