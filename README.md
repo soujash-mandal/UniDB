@@ -4,6 +4,7 @@
 flowchart TD
     SQL["SQL / UQL Interface"]
     Query["Parser + Query Execution"]
+    RDB["RdbService<br/>Relational database orchestration"]
 
     Catalog["CatalogService<br/>Table and schema metadata"]
     Tuple["TupleService<br/>Tuple operations"]
@@ -14,9 +15,10 @@ flowchart TD
     Disk["DiskManager<br/>Page disk I/O"]
 
     SQL --> Query
-    Query --> Catalog
-    Query --> Tuple
-    Query --> FSM
+    Query --> RDB
+    RDB --> Catalog
+    RDB --> Tuple
+    RDB --> FSM
 
     Catalog -->|"Actions / Ports / Adapters"| BPM
     Tuple -->|"Actions / Ports / Adapters"| BPM
@@ -27,6 +29,7 @@ flowchart TD
     FPM --> Disk
 
     Container["Container / Dependency Injection"]
+    Container -. "wires Actions and concrete Adapters" .-> RDB
     Container -. "wires Actions and concrete Adapters" .-> Catalog
     Container -. "wires Actions and concrete Adapters" .-> Tuple
     Container -. "wires Actions and concrete Adapters" .-> FSM
