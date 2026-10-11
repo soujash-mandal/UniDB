@@ -30,3 +30,6 @@ jobs:
 
       - name: Check service boundaries
         run: python3 architecture/serviceBoundaryTest.py
+
+      - name: Check service graph consistency
+        run: python3 architecture/serviceGraphValidationTest.py
