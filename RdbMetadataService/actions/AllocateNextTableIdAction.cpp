@@ -1,8 +1,9 @@
 #include "AllocateNextTableIdAction.h"
 
 AllocateNextTableIdAction::AllocateNextTableIdAction(
-    FetchPagePort &fetchPagePort, WritePagePort &writePagePort,
-    UnpinPagePort &unpinPagePort)
+    RdbMetadataFetchPagePort &fetchPagePort,
+    RdbMetadataWritePagePort &writePagePort,
+    RdbMetadataUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
