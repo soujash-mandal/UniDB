@@ -3,9 +3,9 @@
 #include "../../BufferPoolManager/actions/WritePageAction.h"
 #include "../port/WritePagePort.h"
 
-class BufferPoolWritePageAdapter : public WritePagePort {
+class TupleBufferPoolWritePageAdapter : public WritePagePort {
 public:
-  explicit BufferPoolWritePageAdapter(WritePageAction &writePageAction);
+  explicit TupleBufferPoolWritePageAdapter(WritePageAction &writePageAction);
   void writePage(TuplePageId pageId, const TuplePage page) override;
 
 private:
