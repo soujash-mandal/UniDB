@@ -194,8 +194,8 @@ void CatalogPage::remove(CatalogTableId tableId) {
         continue;
       }
       Entry liveEntry;
-      std::memcpy(&liveEntry,
-                  bytes + sizeof(Header) + j * sizeof(Entry), sizeof(Entry));
+      std::memcpy(&liveEntry, bytes + sizeof(Header) + j * sizeof(Entry),
+                  sizeof(Entry));
       liveTables.emplace_back(
           liveEntry,
           std::vector<char>(bytes + liveEntry.offset,
