@@ -39,8 +39,8 @@ TEST(TableTupleActionsTest, InsertsAcrossPagesAndScansRowsInOrder) {
 
   const std::vector<char> firstRow(6000, 'a');
   const std::vector<char> secondRow(2500, 'b');
-  const auto first = insert.execute(std::numeric_limits<TuplePageId>::max(),
-                                    firstRow);
+  const auto first =
+      insert.execute(std::numeric_limits<TuplePageId>::max(), firstRow);
   const auto second = insert.execute(first.firstPageId, secondRow);
 
   EXPECT_EQ(first.firstPageId, first.pageId);
