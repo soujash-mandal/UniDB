@@ -7,6 +7,7 @@ class TupleBufferPoolUnpinPageAdapter : public TupleUnpinPagePort {
 public:
   explicit TupleBufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
   void unpinPage(TuplePageId pageId) override;
+
 private:
   UnpinPageAction &unpinPageAction;
 };

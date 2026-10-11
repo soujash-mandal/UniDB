@@ -18,7 +18,7 @@ struct TupleSlotEntry {
   uint32_t offset;
   uint32_t size;
 };
-}
+} // namespace
 
 class TuplePage {
 public:
@@ -34,6 +34,7 @@ public:
   void setNextPageId(TuplePageId pageId);
   uint32_t getSlotCount() const;
   std::vector<std::vector<char>> getAllTuples() const;
+
 private:
   char bytes[TUPLE_PAGE_SIZE]{};
 };

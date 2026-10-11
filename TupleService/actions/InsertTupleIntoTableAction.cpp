@@ -12,7 +12,8 @@ InsertTupleIntoTableAction::InsertTupleIntoTableAction(
 TableTupleInsertResult
 InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
                                     const std::vector<char> &tupleData) {
-  if (tupleData.empty()) throw std::invalid_argument("Tuple data cannot be empty");
+  if (tupleData.empty())
+    throw std::invalid_argument("Tuple data cannot be empty");
   if (firstPageId == std::numeric_limits<TuplePageId>::max()) {
     const TuplePageId pageId = newPagePort.newPage();
     TuplePage page;

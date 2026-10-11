@@ -73,8 +73,10 @@ Table deserializeTable(std::vector<char> data) {
     table.columns.push_back(column);
   }
   read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
-  if (offset < data.size()) read(&table.firstTuplePageId, sizeof(table.firstTuplePageId));
-  else table.firstTuplePageId = CATALOG_INVALID_PAGE_ID;
+  if (offset < data.size())
+    read(&table.firstTuplePageId, sizeof(table.firstTuplePageId));
+  else
+    table.firstTuplePageId = CATALOG_INVALID_PAGE_ID;
   return table;
 }
 
@@ -172,12 +174,17 @@ void CatalogPage::update(Table table) {
     Entry entry;
     const uint32_t entryOffset = sizeof(Header) + i * sizeof(Entry);
     std::memcpy(&entry, bytes + entryOffset, sizeof(Entry));
-    if (entry.tableId != table.tableId) continue;
+    if (entry.tableId != table.tableId)
+      continue;
     if (tableData.size() > entry.size) {
-      const uint32_t entryEnd = sizeof(Header) + header.tableCount * sizeof(Entry);
-      if (header.freeSpaceOffset < tableData.size()) throw std::runtime_error("Not enough space to update catalog table");
-      const uint32_t newOffset = header.freeSpaceOffset - static_cast<uint32_t>(tableData.size());
-      if (newOffset < entryEnd) throw std::runtime_error("Not enough space to update catalog table");
+      const uint32_t entryEnd =
+          sizeof(Header) + header.tableCount * sizeof(Entry);
+      if (header.freeSpaceOffset < tableData.size())
+        throw std::runtime_error("Not enough space to update catalog table");
+      const uint32_t newOffset =
+          header.freeSpaceOffset - static_cast<uint32_t>(tableData.size());
+      if (newOffset < entryEnd)
+        throw std::runtime_error("Not enough space to update catalog table");
       std::memcpy(bytes + newOffset, tableData.data(), tableData.size());
       header.freeSpaceOffset = newOffset;
       entry.offset = newOffset;
@@ -185,7 +192,9 @@ void CatalogPage::update(Table table) {
       std::memcpy(bytes, &header, sizeof(Header));
     } else {
       std::memcpy(bytes + entry.offset, tableData.data(), tableData.size());
-      if (tableData.size() < entry.size) std::memset(bytes + entry.offset + tableData.size(), 0, entry.size - tableData.size());
+      if (tableData.size() < entry.size)
+        std::memset(bytes + entry.offset + tableData.size(), 0,
+                    entry.size - tableData.size());
       entry.size = static_cast<uint32_t>(tableData.size());
     }
     std::memcpy(bytes + entryOffset, &entry, sizeof(Entry));

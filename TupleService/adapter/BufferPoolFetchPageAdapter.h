@@ -7,6 +7,7 @@ class TupleBufferPoolFetchPageAdapter : public TupleFetchPagePort {
 public:
   explicit TupleBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
   TuplePage fetchPage(TuplePageId pageId) override;
+
 private:
   FetchPageAction &fetchPageAction;
 };

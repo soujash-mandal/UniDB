@@ -15,6 +15,7 @@ public:
                                  TupleWritePagePort &writePagePort,
                                  TupleUnpinPagePort &unpinPagePort);
   CreateTuplePageActionResult execute();
+
 private:
   TupleNewPagePort &newPagePort;
   TupleWritePagePort &writePagePort;

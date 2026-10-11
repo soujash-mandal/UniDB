@@ -5,8 +5,7 @@
 #include <type_traits>
 
 namespace {
-template <typename T>
-void append(std::vector<char> &out, const T &value) {
+template <typename T> void append(std::vector<char> &out, const T &value) {
   const auto *begin = reinterpret_cast<const char *>(&value);
   out.insert(out.end(), begin, begin + sizeof(T));
 }
@@ -20,13 +19,14 @@ T read(const std::vector<char> &bytes, std::size_t &offset) {
   offset += sizeof(T);
   return value;
 }
-}
+} // namespace
 
-std::vector<char> SqlTupleCodec::encode(
-    const std::vector<Column> &schema,
-    const std::vector<unidb::sql::SqlValue> &values) {
+std::vector<char>
+SqlTupleCodec::encode(const std::vector<Column> &schema,
+                      const std::vector<unidb::sql::SqlValue> &values) {
   if (schema.size() != values.size()) {
-    throw std::invalid_argument("Tuple value count does not match table schema");
+    throw std::invalid_argument(
+        "Tuple value count does not match table schema");
   }
   std::vector<char> out;
   for (std::size_t i = 0; i < schema.size(); ++i) {
@@ -44,7 +44,8 @@ std::vector<char> SqlTupleCodec::encode(
       append(out, length);
       out.insert(out.end(), value.begin(), value.end());
     } else {
-      throw std::invalid_argument("V1 tuple codec supports only INT and VARCHAR/TEXT");
+      throw std::invalid_argument(
+          "V1 tuple codec supports only INT and VARCHAR/TEXT");
     }
   }
   return out;
@@ -67,7 +68,8 @@ SqlTupleCodec::decode(const std::vector<Column> &schema,
       values.emplace_back(std::string(bytes.data() + offset, length));
       offset += length;
     } else {
-      throw std::invalid_argument("V1 tuple codec supports only INT and VARCHAR/TEXT");
+      throw std::invalid_argument(
+          "V1 tuple codec supports only INT and VARCHAR/TEXT");
     }
   }
   if (offset != bytes.size()) {

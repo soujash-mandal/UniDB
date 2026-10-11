@@ -9,6 +9,7 @@ public:
   ScanTupleTableAction(TupleFetchPagePort &fetchPagePort,
                        TupleUnpinPagePort &unpinPagePort);
   std::vector<std::vector<char>> execute(TuplePageId firstPageId);
+
 private:
   TupleFetchPagePort &fetchPagePort;
   TupleUnpinPagePort &unpinPagePort;

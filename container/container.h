@@ -80,7 +80,9 @@ public:
   CreateTableAction &createTableAction() { return createTable; }
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
   UpdateTableAction &updateTableAction() { return updateTable; }
-  InsertTupleIntoTableAction &insertTupleIntoTableAction() { return insertTupleIntoTable; }
+  InsertTupleIntoTableAction &insertTupleIntoTableAction() {
+    return insertTupleIntoTable;
+  }
   ScanTupleTableAction &scanTupleTableAction() { return scanTupleTable; }
 
 private:

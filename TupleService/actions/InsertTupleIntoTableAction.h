@@ -20,6 +20,7 @@ public:
                              TupleUnpinPagePort &unpinPagePort);
   TableTupleInsertResult execute(TuplePageId firstPageId,
                                  const std::vector<char> &tupleData);
+
 private:
   TupleFetchPagePort &fetchPagePort;
   TupleNewPagePort &newPagePort;

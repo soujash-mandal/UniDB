@@ -39,7 +39,7 @@ struct Entry {
 };
 static constexpr uint32_t HEADER_SIZE = sizeof(Header);
 static constexpr uint32_t ENTRY_SIZE = sizeof(Entry);
-}
+} // namespace
 
 class CatalogPage {
 public:
@@ -57,6 +57,7 @@ public:
   bool containsTableId(CatalogTableId tableId);
   void remove(CatalogTableId tableId);
   bool hasSpace(Table table);
+
 private:
   char bytes[PAGE_SIZE]{};
 };
