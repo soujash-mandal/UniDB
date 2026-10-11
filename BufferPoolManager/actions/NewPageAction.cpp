@@ -11,12 +11,11 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
 BufferPoolPageId NewPageAction::execute() {
-
-  // 1. First try to find an unused frame.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied()) {
       BufferPoolPageId pageId = allocatePagePort.allocatePage();
+      frame.setPage(BufferPoolPage{});
       frame.setPageId(pageId);
       frame.setOccupied(true);
       frame.setDirty(true);
@@ -28,42 +27,35 @@ BufferPoolPageId NewPageAction::execute() {
     }
   }
 
-  // 2. Buffer pool is full.
-  // Find a page that can be evicted.
   std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
   if (!victimPageId.has_value()) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
   }
 
-  // 3. Find the frame containing the victim.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied() || frame.getPageId() != victimPageId.value()) {
       continue;
     }
 
-    // 4. Persist the victim if it is dirty.
     if (frame.isDirty()) {
       writePagePort.writePage(frame.getPageId(), frame.getPage());
       frame.setDirty(false);
     }
 
+    // Keep the victim registered if allocating its replacement fails.
+    BufferPoolPageId pageId = allocatePagePort.allocatePage();
     evictionPolicy.Remove(victimPageId.value());
 
-    // 5. Allocate the new page only after we know
-    //    that the frame can actually be reused.
-    BufferPoolPageId pageId = allocatePagePort.allocatePage();
-
-    // 6. Replace the victim with the new page.
+    // A new logical page must never inherit the evicted page's bytes.
+    frame.setPage(BufferPoolPage{});
     frame.setPageId(pageId);
     frame.setOccupied(true);
     frame.setDirty(true);
     frame.pin();
 
-    // 7. Register the new page.
     evictionPolicy.RecordAccess(pageId);
     evictionPolicy.SetEvictable(pageId, false);
-
     return pageId;
   }
 

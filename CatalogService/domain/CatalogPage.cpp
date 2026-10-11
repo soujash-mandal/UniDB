@@ -2,10 +2,10 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace {
-
 std::vector<char> serializeTable(Table table) {
   std::vector<char> data;
   auto append = [&data](const void *value, std::size_t size) {
@@ -74,7 +74,6 @@ Table deserializeTable(std::vector<char> data) {
   read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
   return table;
 }
-
 } // namespace
 
 CatalogPage::CatalogPage() {
@@ -185,16 +184,43 @@ void CatalogPage::remove(CatalogTableId tableId) {
     if (entry.tableId != tableId) {
       continue;
     }
-    for (uint32_t j = i + 1; j < header.tableCount; ++j) {
-      Entry nextEntry;
-      std::memcpy(&nextEntry, bytes + sizeof(Header) + j * sizeof(Entry),
-                  sizeof(Entry));
-      std::memcpy(bytes + sizeof(Header) + (j - 1) * sizeof(Entry), &nextEntry,
-                  sizeof(Entry));
+
+    // Snapshot live payloads before compaction because destination bytes can
+    // overlap the old serialized bytes of entries that have not been copied.
+    std::vector<std::pair<Entry, std::vector<char>>> liveTables;
+    liveTables.reserve(header.tableCount - 1);
+    for (uint32_t j = 0; j < header.tableCount; ++j) {
+      if (j == i) {
+        continue;
+      }
+      Entry liveEntry;
+      std::memcpy(&liveEntry,
+                  bytes + sizeof(Header) + j * sizeof(Entry), sizeof(Entry));
+      liveTables.emplace_back(
+          liveEntry,
+          std::vector<char>(bytes + liveEntry.offset,
+                            bytes + liveEntry.offset + liveEntry.size));
     }
-    --header.tableCount;
-    std::memset(bytes + sizeof(Header) + header.tableCount * sizeof(Entry), 0,
-                sizeof(Entry));
+
+    uint32_t newTableCount = 0;
+    uint32_t newFreeSpaceOffset = PAGE_SIZE;
+    for (auto &liveTable : liveTables) {
+      Entry liveEntry = liveTable.first;
+      const std::vector<char> &payload = liveTable.second;
+      newFreeSpaceOffset -= static_cast<uint32_t>(payload.size());
+      std::memcpy(bytes + newFreeSpaceOffset, payload.data(), payload.size());
+      liveEntry.offset = newFreeSpaceOffset;
+      std::memcpy(bytes + sizeof(Header) + newTableCount * sizeof(Entry),
+                  &liveEntry, sizeof(Entry));
+      ++newTableCount;
+    }
+
+    if (newTableCount < header.tableCount) {
+      std::memset(bytes + sizeof(Header) + newTableCount * sizeof(Entry), 0,
+                  (header.tableCount - newTableCount) * sizeof(Entry));
+    }
+    header.tableCount = newTableCount;
+    header.freeSpaceOffset = newFreeSpaceOffset;
     std::memcpy(bytes, &header, sizeof(Header));
     return;
   }
