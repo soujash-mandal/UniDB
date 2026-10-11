@@ -1,9 +1,9 @@
 #include "BufferPoolUnpinPageAdapter.h"
 
-BufferPoolUnpinPageAdapter::BufferPoolUnpinPageAdapter(
+TupleBufferPoolUnpinPageAdapter::TupleBufferPoolUnpinPageAdapter(
     UnpinPageAction &unpinPageAction)
     : unpinPageAction(unpinPageAction) {}
 
-void BufferPoolUnpinPageAdapter::unpinPage(TuplePageId pageId) {
+void TupleBufferPoolUnpinPageAdapter::unpinPage(TuplePageId pageId) {
   unpinPageAction.execute(pageId);
 }
