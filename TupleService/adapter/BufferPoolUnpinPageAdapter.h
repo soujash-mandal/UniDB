@@ -3,9 +3,9 @@
 #include "../../BufferPoolManager/actions/UnpinPageAction.h"
 #include "../port/UnpinPagePort.h"
 
-class BufferPoolUnpinPageAdapter : public UnpinPagePort {
+class TupleBufferPoolUnpinPageAdapter : public UnpinPagePort {
 public:
-  explicit BufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
+  explicit TupleBufferPoolUnpinPageAdapter(UnpinPageAction &unpinPageAction);
 
   void unpinPage(TuplePageId pageId) override;
 

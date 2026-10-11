@@ -2,11 +2,12 @@
 
 #include <cstring>
 
-BufferPoolWritePageAdapter::BufferPoolWritePageAdapter(
+TupleBufferPoolWritePageAdapter::TupleBufferPoolWritePageAdapter(
     WritePageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
-void BufferPoolWritePageAdapter::writePage(TuplePageId pageId, TuplePage page) {
+void TupleBufferPoolWritePageAdapter::writePage(TuplePageId pageId,
+                                                TuplePage page) {
   BufferPoolPage bufferPoolPage;
   std::memcpy(bufferPoolPage.data(), page.data(), PAGE_SIZE);
   writePageAction.execute(pageId, bufferPoolPage);

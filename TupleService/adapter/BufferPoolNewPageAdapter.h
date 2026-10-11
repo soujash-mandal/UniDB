@@ -3,9 +3,9 @@
 #include "../../BufferPoolManager/actions/NewPageAction.h"
 #include "../port/NewPagePort.h"
 
-class BufferPoolNewPageAdapter : public NewPagePort {
+class TupleBufferPoolNewPageAdapter : public NewPagePort {
 public:
-  explicit BufferPoolNewPageAdapter(NewPageAction &newPageAction);
+  explicit TupleBufferPoolNewPageAdapter(NewPageAction &newPageAction);
   TuplePageId newPage() override;
 
 private:

@@ -3,9 +3,9 @@
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
 #include "../port/FetchPagePort.h"
 
-class BufferPoolFetchPageAdapter : public FetchPagePort {
+class TupleBufferPoolFetchPageAdapter : public FetchPagePort {
 public:
-  explicit BufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
+  explicit TupleBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
   TuplePage fetchPage(TuplePageId pageId) override;
 
 private:

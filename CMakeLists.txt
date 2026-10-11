@@ -38,15 +38,31 @@ set(UNIDB_SOURCES
     RdbMetadataService/adapter/BufferPoolNewPageAdapter.cpp
     RdbMetadataService/adapter/BufferPoolUnpinPageAdapter.cpp
     RdbMetadataService/adapter/BufferPoolWritePageAdapter.cpp
+    RdbMetadataService/actions/CreateRdbMetadataPageAction.cpp
+    RdbMetadataService/actions/UpdateRdbMetadataPageAction.cpp
+    RdbMetadataService/actions/GetCatalogRootPageIdAction.cpp
+    RdbMetadataService/actions/AllocateNextTableIdAction.cpp
+
     CatalogService/adapter/BufferPoolFetchPageAdapter.cpp
     CatalogService/adapter/BufferPoolNewPageAdapter.cpp
     CatalogService/adapter/BufferPoolUnpinPageAdapter.cpp
     CatalogService/adapter/BufferPoolWritePageAdapter.cpp
-    RdbMetadataService/actions/CreateRdbMetadataPageAction.cpp
-    RdbMetadataService/actions/UpdateRdbMetadataPageAction.cpp
-    RdbMetadataService/actions/GetCatalogRootPageIdAction.cpp
     CatalogService/domain/CatalogPage.cpp
     CatalogService/actions/CreateRootCatalogPageAction.cpp
+    CatalogService/actions/CreateTableAction.cpp
+    CatalogService/actions/GetTableAction.cpp
+    CatalogService/actions/DropTableAction.cpp
+
+    TupleService/domain/TuplePage.cpp
+    TupleService/adapter/BufferPoolFetchPageAdapter.cpp
+    TupleService/adapter/BufferPoolNewPageAdapter.cpp
+    TupleService/adapter/BufferPoolUnpinPageAdapter.cpp
+    TupleService/adapter/BufferPoolWritePageAdapter.cpp
+    TupleService/actions/CreateTuplePageAction.cpp
+    TupleService/actions/CreateTupleAction.cpp
+    TupleService/actions/GetTupleAction.cpp
+    TupleService/actions/DeleteTupleAction.cpp
+
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
@@ -72,6 +88,7 @@ add_executable(tests
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
+    TupleService/test/TupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
 
