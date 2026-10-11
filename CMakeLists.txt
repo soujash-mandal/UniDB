@@ -52,6 +52,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/CreateTableAction.cpp
     CatalogService/actions/GetTableAction.cpp
     CatalogService/actions/GetTableByNameAction.cpp
+    CatalogService/actions/UpdateTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
     TupleService/domain/TuplePage.cpp
@@ -63,6 +64,9 @@ set(UNIDB_SOURCES
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
+    TupleService/actions/InsertTupleIntoTableAction.cpp
+    TupleService/actions/ScanTupleTableAction.cpp
+    QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
@@ -90,6 +94,7 @@ add_executable(tests
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
     TupleService/test/TupleActionsTest.cpp
+    QueryExecutionService/test/SqlTupleCodecTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
 

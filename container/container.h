@@ -39,10 +39,18 @@
 #include "../CatalogService/actions/CreateRootCatalogPageAction.h"
 #include "../CatalogService/actions/CreateTableAction.h"
 #include "../CatalogService/actions/GetTableByNameAction.h"
+#include "../CatalogService/actions/UpdateTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
+
+#include "../TupleService/actions/InsertTupleIntoTableAction.h"
+#include "../TupleService/actions/ScanTupleTableAction.h"
+#include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../RdbService/actions/InitializeRdbAction.h"
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
@@ -71,6 +79,9 @@ public:
   }
   CreateTableAction &createTableAction() { return createTable; }
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
+  UpdateTableAction &updateTableAction() { return updateTable; }
+  InsertTupleIntoTableAction &insertTupleIntoTableAction() { return insertTupleIntoTable; }
+  ScanTupleTableAction &scanTupleTableAction() { return scanTupleTable; }
 
 private:
   std::string databaseFileName;
@@ -111,6 +122,14 @@ private:
 
   CreateTableAction createTable;
   GetTableByNameAction getTableByName;
+  UpdateTableAction updateTable;
+
+  TupleBufferPoolFetchPageAdapter tupleFetchPageAdapter;
+  TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
+  TupleBufferPoolUnpinPageAdapter tupleUnpinPageAdapter;
+  TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
+  InsertTupleIntoTableAction insertTupleIntoTable;
+  ScanTupleTableAction scanTupleTable;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
   UpdateRdbMetadataPageAction updateRdbMetadataPage;
