@@ -1,10 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include "../domain/TuplePage.h"
 #include "../port/FetchPagePort.h"
-#include "../port/WritePagePort.h"
 #include "../port/UnpinPagePort.h"
-#include <vector>
+#include "../port/WritePagePort.h"
 
 class CreateTupleAction {
 public:
