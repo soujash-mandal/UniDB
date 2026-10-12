@@ -213,9 +213,8 @@ void CatalogPage::remove(CatalogTableId tableId) {
     std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
                 sizeof(Entry));
 
-    std::vector<char> payload(
-        bytes + entry.offset,
-        bytes + entry.offset + entry.size);
+    std::vector<char> payload(bytes + entry.offset,
+                              bytes + entry.offset + entry.size);
 
     remainingTables.emplace_back(entry, std::move(payload));
   }
@@ -225,9 +224,9 @@ void CatalogPage::remove(CatalogTableId tableId) {
   uint32_t newFreeSpaceOffset = PAGE_SIZE;
   uint32_t newTableCount = 0;
 
-  for (auto& table : remainingTables) {
+  for (auto &table : remainingTables) {
     Entry entry = table.first;
-    const std::vector<char>& payload = table.second;
+    const std::vector<char> &payload = table.second;
 
     newFreeSpaceOffset -= entry.size;
     std::memcpy(bytes + newFreeSpaceOffset, payload.data(), payload.size());
@@ -236,8 +235,9 @@ void CatalogPage::remove(CatalogTableId tableId) {
     entry.offset = newFreeSpaceOffset;
 
     // Keep the entry array compact, with no gap for the deleted table.
-    std::memcpy(bytes + sizeof(Header) + newTableCount * sizeof(Entry),
-                &entry, sizeof(Entry));
+    std::memcpy(
+        bytes + sizeof(Header) + newTableCount * sizeof(Entry), &entry,
+        sizeof(Entry));
     ++newTableCount;
   }
 
