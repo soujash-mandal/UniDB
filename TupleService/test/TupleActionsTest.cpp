@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
-class TupleTestFetchPort : public FetchPagePort {
+class TupleTestFetchPort : public TupleFetchPagePort {
 public:
   TuplePage page;
   int fetchCount = 0;
@@ -18,13 +18,14 @@ public:
   }
 };
 
-class TupleTestWritePort : public WritePagePort {
+class TupleTestWritePort : public TupleWritePagePort {
 public:
   int writeCount = 0;
+
   void writePage(TuplePageId, TuplePage) override { ++writeCount; }
 };
 
-class TupleTestUnpinPort : public UnpinPagePort {
+class TupleTestUnpinPort : public TupleUnpinPagePort {
 public:
   int unpinCount = 0;
   TuplePageId lastPageId = 0;
