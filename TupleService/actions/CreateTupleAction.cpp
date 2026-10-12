@@ -7,15 +7,21 @@ CreateTupleAction::CreateTupleAction(TupleFetchPagePort &fetchPagePort,
       unpinPagePort(unpinPagePort) {}
 
 TupleSlotId CreateTupleAction::execute(TuplePageId pageId,
-                                      std::vector<char> tupleData) {
+                                       std::vector<char> tupleData) {
   TuplePage page = fetchPagePort.fetchPage(pageId);
+  TupleSlotId slotId;
   try {
-    const TupleSlotId slotId = page.insert(tupleData);
+    slotId = page.insert(tupleData);
     writePagePort.writePage(pageId, page);
-    unpinPagePort.unpinPage(pageId);
-    return slotId;
   } catch (...) {
-    try { unpinPagePort.unpinPage(pageId); } catch (...) {}
+    try {
+      unpinPagePort.unpinPage(pageId);
+    } catch (...) {
+      // Preserve the original operation failure.
+    }
     throw;
   }
+
+  unpinPagePort.unpinPage(pageId);
+  return slotId;
 }
