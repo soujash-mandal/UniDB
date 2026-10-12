@@ -11,7 +11,6 @@ void DeleteTupleAction::execute(TuplePageId pageId, TupleSlotId slotId) {
   try {
     page.remove(slotId);
     writePagePort.writePage(pageId, page);
-    unpinPagePort.unpinPage(pageId);
   } catch (...) {
     try {
       unpinPagePort.unpinPage(pageId);
@@ -20,4 +19,6 @@ void DeleteTupleAction::execute(TuplePageId pageId, TupleSlotId slotId) {
     }
     throw;
   }
+
+  unpinPagePort.unpinPage(pageId);
 }
