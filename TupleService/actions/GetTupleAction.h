@@ -1,9 +1,10 @@
 #pragma once
 
+#include <vector>
+
 #include "../domain/TuplePage.h"
 #include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
-#include <vector>
 
 class GetTupleAction {
 public:
