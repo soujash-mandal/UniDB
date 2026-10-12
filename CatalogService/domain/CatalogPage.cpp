@@ -149,7 +149,6 @@ Table CatalogPage::get(CatalogTableId tableId) {
   throw std::runtime_error("Table not found");
 }
 
-
 Table CatalogPage::getByName(const std::string &name) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
@@ -175,7 +174,9 @@ void CatalogPage::update(Table table) {
     Entry entry;
     const uint32_t entryOffset = sizeof(Header) + i * sizeof(Entry);
     std::memcpy(&entry, bytes + entryOffset, sizeof(Entry));
-    if (entry.tableId != table.tableId) continue;
+    if (entry.tableId != table.tableId) {
+      continue;
+    }
     const uint32_t entryEnd =
         sizeof(Header) + header.tableCount * sizeof(Entry);
     if (tableData.size() > entry.size) {
