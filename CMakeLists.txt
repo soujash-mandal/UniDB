@@ -63,6 +63,16 @@ set(UNIDB_SOURCES
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
 
+    FreeSpaceMapService/domain/FSMPage.cpp
+    FreeSpaceMapService/adapter/FSMBufferPoolFetchPageAdapter.cpp
+    FreeSpaceMapService/adapter/FSMBufferPoolNewPageAdapter.cpp
+    FreeSpaceMapService/adapter/FSMBufferPoolUnpinPageAdapter.cpp
+    FreeSpaceMapService/adapter/BufferPoolWritePageAdapter.cpp
+    FreeSpaceMapService/adapter/FSMCreateTuplePageAdapter.cpp
+    FreeSpaceMapService/actions/CreateFSMPageAction.cpp
+    FreeSpaceMapService/actions/FindPageWithSpaceAction.cpp
+    FreeSpaceMapService/actions/UpdateFreeSpaceAction.cpp
+
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
@@ -90,6 +100,7 @@ add_executable(tests
     BufferPoolManager/test/FlushPageActionTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
+    FreeSpaceMapService/test/FSMPageTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
 
