@@ -235,9 +235,8 @@ void CatalogPage::remove(CatalogTableId tableId) {
     entry.offset = newFreeSpaceOffset;
 
     // Keep the entry array compact, with no gap for the deleted table.
-    std::memcpy(
-        bytes + sizeof(Header) + newTableCount * sizeof(Entry), &entry,
-        sizeof(Entry));
+    std::memcpy(bytes + sizeof(Header) + newTableCount * sizeof(Entry), &entry,
+                sizeof(Entry));
     ++newTableCount;
   }
 
