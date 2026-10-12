@@ -2,10 +2,10 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace {
-
 std::vector<char> serializeTable(Table table) {
   std::vector<char> data;
   auto append = [&data](const void *value, std::size_t size) {
@@ -73,13 +73,13 @@ Table deserializeTable(std::vector<char> data) {
     table.columns.push_back(column);
   }
   read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
-  if (offset < data.size())
+  if (offset < data.size()) {
     read(&table.firstTuplePageId, sizeof(table.firstTuplePageId));
-  else
+  } else {
     table.firstTuplePageId = CATALOG_INVALID_PAGE_ID;
+  }
   return table;
 }
-
 } // namespace
 
 CatalogPage::CatalogPage() {
@@ -149,6 +149,7 @@ Table CatalogPage::get(CatalogTableId tableId) {
   throw std::runtime_error("Table not found");
 }
 
+
 Table CatalogPage::getByName(const std::string &name) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
@@ -174,11 +175,10 @@ void CatalogPage::update(Table table) {
     Entry entry;
     const uint32_t entryOffset = sizeof(Header) + i * sizeof(Entry);
     std::memcpy(&entry, bytes + entryOffset, sizeof(Entry));
-    if (entry.tableId != table.tableId)
-      continue;
+    if (entry.tableId != table.tableId) continue;
+    const uint32_t entryEnd =
+        sizeof(Header) + header.tableCount * sizeof(Entry);
     if (tableData.size() > entry.size) {
-      const uint32_t entryEnd =
-          sizeof(Header) + header.tableCount * sizeof(Entry);
       if (header.freeSpaceOffset < tableData.size())
         throw std::runtime_error("Not enough space to update catalog table");
       const uint32_t newOffset =
@@ -235,29 +235,80 @@ bool CatalogPage::containsTableId(CatalogTableId tableId) {
 }
 
 void CatalogPage::remove(CatalogTableId tableId) {
+  // Step 1: Read the header so we know how many entries to inspect.
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
+
+  // Step 2: Find the entry for the table we want to delete.
+  // Using tableCount as the "not found" marker keeps this step simple.
+  uint32_t targetIndex = header.tableCount;
+
   for (uint32_t i = 0; i < header.tableCount; ++i) {
     Entry entry;
     std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
                 sizeof(Entry));
-    if (entry.tableId != tableId) {
-      continue;
+
+    if (entry.tableId == tableId) {
+      targetIndex = i;
+      break;
     }
-    for (uint32_t j = i + 1; j < header.tableCount; ++j) {
-      Entry nextEntry;
-      std::memcpy(&nextEntry, bytes + sizeof(Header) + j * sizeof(Entry),
-                  sizeof(Entry));
-      std::memcpy(bytes + sizeof(Header) + (j - 1) * sizeof(Entry), &nextEntry,
-                  sizeof(Entry));
-    }
-    --header.tableCount;
-    std::memset(bytes + sizeof(Header) + header.tableCount * sizeof(Entry), 0,
-                sizeof(Entry));
-    std::memcpy(bytes, &header, sizeof(Header));
-    return;
   }
-  throw std::runtime_error("Table not found");
+
+  // If we checked every entry and found no match, report the error.
+  if (targetIndex == header.tableCount) {
+    throw std::runtime_error("Table not found");
+  }
+
+  // Step 3: Copy every table except the one being deleted.
+  // We take these copies before changing the page, so compaction cannot
+  // overwrite payload bytes that we still need to keep.
+  std::vector<std::pair<Entry, std::vector<char>>> remainingTables;
+
+  for (uint32_t i = 0; i < header.tableCount; ++i) {
+    if (i == targetIndex) {
+      continue; // Skip the table requested for deletion.
+    }
+
+    Entry entry;
+    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
+                sizeof(Entry));
+
+    std::vector<char> payload(bytes + entry.offset,
+                              bytes + entry.offset + entry.size);
+
+    remainingTables.emplace_back(entry, std::move(payload));
+  }
+
+  // Step 4: Write the remaining payloads back, starting at the page's end.
+  // Each payload gets a new offset because the deleted table left a gap.
+  uint32_t newFreeSpaceOffset = PAGE_SIZE;
+  uint32_t newTableCount = 0;
+
+  for (auto &table : remainingTables) {
+    Entry entry = table.first;
+    const std::vector<char> &payload = table.second;
+
+    newFreeSpaceOffset -= entry.size;
+    std::memcpy(bytes + newFreeSpaceOffset, payload.data(), payload.size());
+
+    // Store the payload's new location in its entry.
+    entry.offset = newFreeSpaceOffset;
+
+    // Keep the entry array compact, with no gap for the deleted table.
+    std::memcpy(bytes + sizeof(Header) + newTableCount * sizeof(Entry), &entry,
+                sizeof(Entry));
+    ++newTableCount;
+  }
+
+  // Step 5: Clear entry slots left over at the end of the old entry array.
+  const uint32_t removedEntryCount = header.tableCount - newTableCount;
+  std::memset(bytes + sizeof(Header) + newTableCount * sizeof(Entry), 0,
+              removedEntryCount * sizeof(Entry));
+
+  // Step 6: Save the updated table count and free-space boundary.
+  header.tableCount = newTableCount;
+  header.freeSpaceOffset = newFreeSpaceOffset;
+  std::memcpy(bytes, &header, sizeof(Header));
 }
 
 bool CatalogPage::hasSpace(Table table) {

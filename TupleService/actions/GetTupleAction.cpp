@@ -7,7 +7,12 @@ GetTupleAction::GetTupleAction(TupleFetchPagePort &fetchPagePort,
 std::vector<char> GetTupleAction::execute(TuplePageId pageId,
                                           TupleSlotId slotId) {
   TuplePage page = fetchPagePort.fetchPage(pageId);
-  std::vector<char> tupleData = page.get(slotId);
-  unpinPagePort.unpinPage(pageId);
-  return tupleData;
+  try {
+    std::vector<char> tupleData = page.get(slotId);
+    unpinPagePort.unpinPage(pageId);
+    return tupleData;
+  } catch (...) {
+    try { unpinPagePort.unpinPage(pageId); } catch (...) {}
+    throw;
+  }
 }

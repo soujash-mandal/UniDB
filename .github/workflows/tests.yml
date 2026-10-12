@@ -27,3 +27,9 @@ jobs:
 
       - name: Run tests
         run: ctest --test-dir build --output-on-failure
+
+      - name: Check service boundaries
+        run: python3 architecture/serviceBoundaryTest.py
+
+      - name: Check service graph consistency
+        run: python3 architecture/serviceGraphValidationTest.py
