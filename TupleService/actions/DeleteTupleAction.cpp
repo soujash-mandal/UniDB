@@ -13,7 +13,11 @@ void DeleteTupleAction::execute(TuplePageId pageId, TupleSlotId slotId) {
     writePagePort.writePage(pageId, page);
     unpinPagePort.unpinPage(pageId);
   } catch (...) {
-    try { unpinPagePort.unpinPage(pageId); } catch (...) {}
+    try {
+      unpinPagePort.unpinPage(pageId);
+    } catch (...) {
+      // Preserve the original operation failure.
+    }
     throw;
   }
 }
