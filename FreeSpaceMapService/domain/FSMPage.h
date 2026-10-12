@@ -32,13 +32,13 @@ public:
     return !(pageId == INVALID_PAGE_ID);
   }
 
-  FSMPageId getNextPageId();
+  FSMPageId getNextPageId() const;
   void setNextPageId(FSMPageId pageId);
 
-  FSMPageId findPageWithSpace(uint32_t requiredSpace);
+  FSMPageId findPageWithSpace(uint32_t requiredSpace) const;
   void insert(FSMPageId pageId, uint32_t freeSpace);
   void update(FSMPageId pageId, uint32_t freeSpace);
-  bool isFull();
+  bool isFull() const;
 
 private:
   char bytes[PAGE_SIZE]{};

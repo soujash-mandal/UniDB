@@ -1,5 +1,7 @@
 #include "FSMBufferPoolFetchPageAdapter.h"
 
+#include <cstring>
+
 FSMBufferPoolFetchPageAdapter::FSMBufferPoolFetchPageAdapter(
     FetchPageAction &fetchPageAction)
     : fetchPageAction(fetchPageAction) {}

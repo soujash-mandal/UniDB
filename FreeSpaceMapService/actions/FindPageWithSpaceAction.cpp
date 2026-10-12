@@ -1,4 +1,5 @@
 #include "FindPageWithSpaceAction.h"
+
 #include <stdexcept>
 
 FindPageWithSpaceAction::FindPageWithSpaceAction(
@@ -50,6 +51,9 @@ TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
 
           FSMPage newFsmPage;
           writePagePort.writePage(nextFsmPageId, newFsmPage);
+          // NewPageAction pins the new page. Release it before traversing it
+          // again so a full FSM chain does not leak buffer-pool pins.
+          unpinPagePort.unpinPage(nextFsmPageId);
 
           fsmPage.setNextPageId(nextFsmPageId);
           writePagePort.writePage(fsmPageId, fsmPage);

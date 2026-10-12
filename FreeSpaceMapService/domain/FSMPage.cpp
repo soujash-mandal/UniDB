@@ -11,7 +11,7 @@ FSMPage::FSMPage() {
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
-FSMPageId FSMPage::getNextPageId() {
+FSMPageId FSMPage::getNextPageId() const {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   return header.nextPageId;
@@ -24,7 +24,7 @@ void FSMPage::setNextPageId(FSMPageId pageId) {
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
-bool FSMPage::isFull() {
+bool FSMPage::isFull() const {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   return header.entryCount >= MAX_ENTRIES;
@@ -61,7 +61,7 @@ void FSMPage::update(FSMPageId pageId, uint32_t freeSpace) {
   throw std::runtime_error("PageId not found in FSMPage");
 }
 
-FSMPageId FSMPage::findPageWithSpace(uint32_t requiredSpace) {
+FSMPageId FSMPage::findPageWithSpace(uint32_t requiredSpace) const {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   for (uint32_t i = 0; i < header.entryCount; ++i) {
