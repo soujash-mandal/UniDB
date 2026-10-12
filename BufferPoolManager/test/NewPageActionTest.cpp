@@ -58,3 +58,24 @@ TEST(NewPageActionTest, ReusedFrameStartsWithZeroedPageContents) {
   EXPECT_TRUE(frame.isDirty());
   EXPECT_EQ(frame.getPage().data()[0], 0);
 }
+
+TEST(NewPageActionTest, UnoccupiedFrameStartsWithZeroedPageContents) {
+  BufferPool bufferPool(1);
+  Frame &frame = bufferPool.getFrame(0);
+  BufferPoolPage stalePage;
+  stalePage.data()[0] = 'X';
+  frame.setPage(stalePage);
+
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy evictionPolicy;
+
+  NewPageAction action(bufferPool, allocatePort, writePort, evictionPolicy);
+  EXPECT_EQ(action.execute(), 2);
+
+  EXPECT_EQ(writePort.writeCount, 0);
+  EXPECT_EQ(frame.getPageId(), 2);
+  EXPECT_EQ(frame.getPinCount(), 1);
+  EXPECT_TRUE(frame.isDirty());
+  EXPECT_EQ(frame.getPage().data()[0], 0);
+}
