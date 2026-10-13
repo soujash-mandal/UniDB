@@ -20,6 +20,11 @@ struct TupleSlotEntry {
 };
 } // namespace
 
+struct TupleRecord {
+  TupleSlotId slotId;
+  std::vector<char> data;
+};
+
 class TuplePage {
 public:
   TuplePage();
@@ -34,6 +39,7 @@ public:
   void setNextPageId(TuplePageId pageId);
   uint32_t getSlotCount() const;
   std::vector<std::vector<char>> getAllTuples() const;
+  std::vector<TupleRecord> getAllTupleRecords() const;
 
 private:
   char bytes[TUPLE_PAGE_SIZE]{};
