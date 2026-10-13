@@ -13,8 +13,7 @@ TableDefinition CatalogGetTableDefinitionAdapter::get(const std::string &tableNa
   result.columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
     switch (column.type) {
-      case DataType::INT:
-      case DataType::BIGINT: result.columns.push_back({column.name, unidb::sql::SqlType::Int}); break;
+      case DataType::INT: result.columns.push_back({column.name, unidb::sql::SqlType::Int}); break;
       case DataType::VARCHAR: result.columns.push_back({column.name, unidb::sql::SqlType::Text}); break;
       default: throw std::runtime_error("Column type is not supported by the V1 SQL contract");
     }
