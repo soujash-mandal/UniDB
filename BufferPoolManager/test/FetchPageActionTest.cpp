@@ -1,10 +1,10 @@
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/FetchPageAction.h"
 
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <stdexcept>
-
-#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 
 class FakeReadPagePort : public ReadPagePort {
 public:
