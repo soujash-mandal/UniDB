@@ -53,6 +53,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/GetTableAction.cpp
     CatalogService/actions/GetTableByNameAction.cpp
     CatalogService/actions/GetCatalogTableDefinitionAction.cpp
+    CatalogService/actions/UpdateCatalogTupleRootAction.cpp
     CatalogService/actions/UpdateTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
