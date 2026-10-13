@@ -23,8 +23,8 @@ public:
 };
 
 namespace {
-void OccupyFrame(BufferPool &pool,
-                 BufferPoolPageId pageId, uint32_t pinCount) {
+void OccupyFrame(BufferPool &pool, BufferPoolPageId pageId,
+                 uint32_t pinCount) {
   Frame &frame = pool.getFrame(0);
   frame.setPageId(pageId);
   frame.setOccupied(true);
