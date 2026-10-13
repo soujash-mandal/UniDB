@@ -1,4 +1,5 @@
 #include "DropTableAction.h"
+#include "../domain/CatalogPage.h"
 
 #include <stdexcept>
 
