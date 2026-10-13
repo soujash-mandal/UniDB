@@ -1,5 +1,7 @@
 #include "GetCatalogTableDefinitionAction.h"
 #include "../domain/CatalogPage.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
 
 #include <stdexcept>
 
