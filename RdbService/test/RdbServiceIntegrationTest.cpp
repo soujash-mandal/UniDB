@@ -127,6 +127,17 @@ TEST(RdbServiceIntegrationTest, ReportsTypeMismatchAndDropTableErrors) {
     auto badInsert = container.insertRowAction().execute({"items", {"id"}, {std::string{"not-an-int"}}});
     ASSERT_FALSE(badInsert.hasValue());
     EXPECT_EQ(badInsert.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+
+    auto badSelectPredicate = container.selectRowsAction().execute(
+        {true, {}, "items", unidb::sql::WhereEquals{"id", std::string{"not-an-int"}}});
+    ASSERT_FALSE(badSelectPredicate.hasValue());
+    EXPECT_EQ(badSelectPredicate.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+
+    auto badDeletePredicate = container.deleteRowsAction().execute(
+        "items", {"id", std::string{"not-an-int"}});
+    ASSERT_FALSE(badDeletePredicate.hasValue());
+    EXPECT_EQ(badDeletePredicate.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+
     auto dropped = container.rdbDropTableAction().execute("items");
     EXPECT_TRUE(dropped.hasValue());
     auto missing = container.getTableDefinitionAction().execute("items");
