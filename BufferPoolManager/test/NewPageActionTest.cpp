@@ -1,5 +1,6 @@
-#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/NewPageAction.h"
+
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 
 #include <gtest/gtest.h>
 
