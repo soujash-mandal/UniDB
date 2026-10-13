@@ -23,7 +23,8 @@ CatalogTableDefinition GetCatalogTableDefinitionAction::execute(
     if (page.containsTableName(tableName)) {
       const Table stored = page.getByName(tableName);
       unpinPagePort.unpinPage(pageId);
-      return CatalogTableDefinition{stored.tableId, stored.name, stored.columns};
+      return CatalogTableDefinition{stored.tableId, stored.name, stored.columns,
+                                   stored.firstTuplePageId};
     }
     unpinPagePort.unpinPage(pageId);
     pageId = nextPageId;
