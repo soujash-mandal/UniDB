@@ -15,6 +15,6 @@ unidb::rdb::RdbResult<MetadataPageId> InitializeRdbAction::execute() {
     updateRdbMetadataPagePort.updateRdbMetadataPage(metadataPageId, catalogRootPageId);
     return unidb::rdb::RdbResult<MetadataPageId>::success(metadataPageId);
   } catch (const std::exception &e) {
-    return unidb::rdb::RdbResult<MetadataPageId>::failure(classifyError(e));
+    return unidb::rdb::RdbResult<MetadataPageId>::failure(unidb::rdb::classifyError(e));
   }
 }
