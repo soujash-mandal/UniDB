@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../domain/CatalogTypes.h"
+#include "../domain/CatalogPage.h"
 #include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
 
@@ -11,8 +11,7 @@ public:
   GetTableByNameAction(CatalogFetchPagePort &fetchPagePort,
                        CatalogUnpinPagePort &unpinPagePort);
 
-  CatalogTableDefinition execute(CatalogPageId rootPageId,
-                                 const std::string &tableName);
+  Table execute(CatalogPageId rootPageId, const std::string &tableName);
 
 private:
   CatalogFetchPagePort &fetchPagePort;
