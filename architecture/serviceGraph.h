@@ -30,7 +30,6 @@ inline const std::vector<ServiceEdge> SERVICE_EDGES = {
     {"RdbService", "TupleService"},
     {"RdbService", "FreeSpaceMapService"},
     {"RdbService", "RdbMetadataService"},
-    {"QueryExecutionService", "TupleService"},
 };
 
 } // namespace Architecture
