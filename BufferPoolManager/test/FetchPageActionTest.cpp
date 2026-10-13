@@ -260,3 +260,32 @@ TEST(FetchPageActionTest, FailedReadRestoresVictimPolicyStateForRetry) {
   EXPECT_EQ(readPort.readCount, 3);
   EXPECT_EQ(writePort.writeCount, 1);
 }
+
+// Scenario 9: A failed read into an empty frame leaves the frame unoccupied and does not register a phantom page.
+TEST(FetchPageActionTest, FailedReadIntoEmptyFrameLeavesFrameUnoccupied) {
+  BufferPool bufferPool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy evictionPolicy;
+  readPort.shouldThrow = true;
+  FetchPageAction action(bufferPool, readPort, writePort, evictionPolicy);
+
+  EXPECT_THROW(action.execute(3), std::runtime_error);
+
+  EXPECT_FALSE(bufferPool.getFrame(0).isOccupied());
+  EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 0);
+  EXPECT_EQ(evictionPolicy.recordAccessCount, 0);
+}
+
+// Scenario 10: A zero-sized pool fails a fetch cleanly without attempting disk I/O or mutating frame state.
+TEST(FetchPageActionTest, ZeroSizedPoolFailsCleanly) {
+  BufferPool bufferPool(0);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy evictionPolicy;
+  FetchPageAction action(bufferPool, readPort, writePort, evictionPolicy);
+
+  EXPECT_THROW(action.execute(3), std::runtime_error);
+  EXPECT_EQ(readPort.readCount, 0);
+  EXPECT_EQ(evictionPolicy.recordAccessCount, 0);
+}
