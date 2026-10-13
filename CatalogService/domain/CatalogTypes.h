@@ -22,4 +22,6 @@ struct CatalogTableDefinition {
   CatalogTableId tableId{};
   std::string name;
   std::vector<Column> columns;
+  // Opaque root locator for TupleService; no CatalogPage/FSM layout is exposed.
+  CatalogPageId tupleRootPageId{CATALOG_INVALID_PAGE_ID};
 };
