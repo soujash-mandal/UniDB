@@ -73,7 +73,8 @@ public:
   }
 };
 
-// Scenario 1: A page fetches into an empty frame with its bytes and initial frame/policy state intact.
+// Scenario 1: A page fetches into an empty frame with its bytes and initial
+// frame/policy state intact.
 TEST(FetchPageActionTest, FetchesPageIntoEmptyFrame) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -99,7 +100,8 @@ TEST(FetchPageActionTest, FetchesPageIntoEmptyFrame) {
   EXPECT_FALSE(evictionPolicy.lastEvictableValue);
 }
 
-// Scenario 2: Fetching a cached page reuses its frame, avoids another disk read, and increments its pin count.
+// Scenario 2: Fetching a cached page reuses its frame, avoids another disk
+// read, and increments its pin count.
 TEST(FetchPageActionTest, FetchingCachedPageDoesNotReadAgain) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -117,7 +119,8 @@ TEST(FetchPageActionTest, FetchingCachedPageDoesNotReadAgain) {
   EXPECT_EQ(frame.getPageId(), 10);
 }
 
-// Scenario 3: A clean evictable victim is replaced without writing it, and policy/frame mappings move to the new page.
+// Scenario 3: A clean evictable victim is replaced without writing it, and
+// policy/frame mappings move to the new page.
 TEST(FetchPageActionTest, EvictsCleanPageWhenBufferPoolIsFull) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -145,7 +148,8 @@ TEST(FetchPageActionTest, EvictsCleanPageWhenBufferPoolIsFull) {
   EXPECT_EQ(page.data()[0], 'B');
 }
 
-// Scenario 4: Dirty victim contents are written before the frame is reused for another PageId.
+// Scenario 4: Dirty victim contents are written before the frame is reused
+// for another PageId.
 TEST(FetchPageActionTest, WritesDirtyVictimBeforeEviction) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -167,7 +171,8 @@ TEST(FetchPageActionTest, WritesDirtyVictimBeforeEviction) {
   EXPECT_FALSE(frame.isDirty());
 }
 
-// Scenario 5: If every frame is pinned, fetch fails without replacing the pinned page.
+// Scenario 5: If every frame is pinned, fetch fails without replacing the
+// pinned page.
 TEST(FetchPageActionTest, ThrowsWhenNoPageIsEvictable) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -183,7 +188,8 @@ TEST(FetchPageActionTest, ThrowsWhenNoPageIsEvictable) {
   EXPECT_EQ(readPort.readCount, 1);
 }
 
-// Scenario 6: A policy returning a PageId not resident in the pool fails without changing the resident frame.
+// Scenario 6: A policy returning a PageId not resident in the pool fails
+// without changing the resident frame.
 TEST(FetchPageActionTest, ThrowsWhenEvictionPolicyReturnsUnknownPage) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -199,7 +205,8 @@ TEST(FetchPageActionTest, ThrowsWhenEvictionPolicyReturnsUnknownPage) {
   EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 0);
 }
 
-// Scenario 7: Failed dirty-victim writeback keeps the original page dirty and restores it to the eviction policy for retry.
+// Scenario 7: Failed dirty-victim writeback keeps the original page dirty and
+// restores it to the eviction policy for retry.
 TEST(FetchPageActionTest, FailedDirtyVictimWriteCanBeRetried) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -230,7 +237,8 @@ TEST(FetchPageActionTest, FailedDirtyVictimWriteCanBeRetried) {
   EXPECT_EQ(writePort.writeCount, 2);
 }
 
-// Scenario 8: Failed read of the requested page leaves the old page resident and makes it evictable again for a retry.
+// Scenario 8: Failed read of the requested page leaves the old page resident
+// and makes it evictable again for a retry.
 TEST(FetchPageActionTest, FailedReadRestoresVictimPolicyStateForRetry) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -249,7 +257,8 @@ TEST(FetchPageActionTest, FailedReadRestoresVictimPolicyStateForRetry) {
   EXPECT_THROW(action.execute(2), std::runtime_error);
   EXPECT_EQ(frame.getPageId(), 1);
   EXPECT_TRUE(frame.isOccupied());
-  EXPECT_FALSE(frame.isDirty()); // The dirty page was successfully written before the read failed.
+  // The dirty page was successfully written before the read failed.
+  EXPECT_FALSE(frame.isDirty());
   EXPECT_EQ(frame.getPinCount(), 0);
 
   readPort.shouldThrow = false;
@@ -261,7 +270,8 @@ TEST(FetchPageActionTest, FailedReadRestoresVictimPolicyStateForRetry) {
   EXPECT_EQ(writePort.writeCount, 1);
 }
 
-// Scenario 9: A failed read into an empty frame leaves the frame unoccupied and does not register a phantom page.
+// Scenario 9: A failed read into an empty frame leaves the frame unoccupied
+// and does not register a phantom page.
 TEST(FetchPageActionTest, FailedReadIntoEmptyFrameLeavesFrameUnoccupied) {
   BufferPool bufferPool(1);
   FakeReadPagePort readPort;
@@ -277,7 +287,8 @@ TEST(FetchPageActionTest, FailedReadIntoEmptyFrameLeavesFrameUnoccupied) {
   EXPECT_EQ(evictionPolicy.recordAccessCount, 0);
 }
 
-// Scenario 10: A zero-sized pool fails a fetch cleanly without attempting disk I/O or mutating frame state.
+// Scenario 10: A zero-sized pool fails a fetch cleanly without attempting
+// disk I/O or mutating frame state.
 TEST(FetchPageActionTest, ZeroSizedPoolFailsCleanly) {
   BufferPool bufferPool(0);
   FakeReadPagePort readPort;
