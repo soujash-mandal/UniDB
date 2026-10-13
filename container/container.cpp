@@ -60,7 +60,8 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       deleteRowsAdapter(getCatalogRootId, getTableByName, scanTupleTableWithLocations, deleteTuple),
       rdbCreateTable(rdbCreateTableAdapter), rdbDropTable(rdbDropTableAdapter),
       insertRow(insertRowAdapter), selectRows(selectRowsAdapter),
-      getTableDefinition(getTableDefinitionAdapter), deleteRows(deleteRowsAdapter) {
+      getTableDefinition(getTableDefinitionAdapter), deleteRows(deleteRowsAdapter),
+      queryRdbAdapter(rdbCreateTable, rdbDropTable, getTableDefinition, insertRow, selectRows, deleteRows) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
