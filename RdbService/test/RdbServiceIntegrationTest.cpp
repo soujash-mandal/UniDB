@@ -33,6 +33,9 @@ TEST(RdbServiceIntegrationTest, CreateInsertSelectAndPersistRows) {
     ASSERT_EQ(selected.value()[0].size(), 2u);
     EXPECT_EQ(std::get<std::int64_t>(selected.value()[0][0]), 7);
     EXPECT_EQ(std::get<std::string>(selected.value()[0][1]), "Ada");
+    // Bootstrap allocates catalog root at page 2 and the first tuple page at page 3.
+    container.flushPageAction().execute(2);
+    container.flushPageAction().execute(3);
   }
   {
     Container container(path.string(), 8, EvictionPolicyType::FIFO);
