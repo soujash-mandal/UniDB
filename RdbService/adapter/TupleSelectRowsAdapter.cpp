@@ -4,7 +4,7 @@
 #include <limits>
 #include <stdexcept>
 namespace unidb::rdb {
-TupleSelectRowsAdapter::TupleSelectRowsAdapter(::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table, ::ScanTupleTableAction &scanAction) : getRoot(root), getTable(table), scan(scanAction) {}
+TupleSelectRowsAdapter::TupleSelectRowsAdapter(::GetCatalogRootPageIdAction &root, ::GetCatalogTableDefinitionAction &table, ::ScanTupleTableAction &scanAction) : getRoot(root), getTable(table), scan(scanAction) {}
 std::vector<std::vector<unidb::sql::SqlValue>> TupleSelectRowsAdapter::select(const unidb::sql::SelectStatement &statement) {
   constexpr CatalogPageId metadataPageId = 1;
   const auto root = getRoot.execute(metadataPageId);
@@ -31,7 +31,7 @@ std::vector<std::vector<unidb::sql::SqlValue>> TupleSelectRowsAdapter::select(co
       throw std::invalid_argument("Predicate value type does not match column type");
     }
   }
-  if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) return {};
+  if (table.tupleRootPageId == CATALOG_INVALID_PAGE_ID) return {};
 
   std::vector<unidb::sql::SqlType> schema;
   schema.reserve(table.columns.size());
