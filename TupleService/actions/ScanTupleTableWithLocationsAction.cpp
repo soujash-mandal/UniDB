@@ -1,5 +1,6 @@
 #include "ScanTupleTableWithLocationsAction.h"
 #include <limits>
+#include <utility>
 ScanTupleTableWithLocationsAction::ScanTupleTableWithLocationsAction(TupleFetchPagePort &fetch, TupleUnpinPagePort &unpin)
   : fetchPagePort(fetch), unpinPagePort(unpin) {}
 std::vector<LocatedTuple> ScanTupleTableWithLocationsAction::execute(TuplePageId firstPageId) {
