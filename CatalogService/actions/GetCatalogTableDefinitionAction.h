@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../domain/CatalogTypes.h"
-#include "../port/FetchPagePort.h"
-#include "../port/UnpinPagePort.h"
 
 #include <string>
+
+class CatalogFetchPagePort;
+class CatalogUnpinPagePort;
 
 class GetCatalogTableDefinitionAction {
 public:
