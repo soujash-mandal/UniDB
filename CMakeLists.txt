@@ -96,6 +96,7 @@ add_executable(tests
     CatalogService/test/CatalogPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
+    TupleService/test/TuplePageTest.cpp
     TupleService/test/TableTupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
