@@ -1,19 +1,11 @@
 #pragma once
-#include "../../CatalogService/actions/DropTableAction.h"
-#include "../../CatalogService/actions/GetTableByNameAction.h"
-#include "../../RdbMetadataService/actions/GetCatalogRootPageIdAction.h"
-#include <string>
+#include "../port/DropTablePort.h"
 namespace unidb::rdb {
 class DropTableAction {
 public:
-  DropTableAction(::GetCatalogRootPageIdAction &getRoot,
-                  ::GetTableByNameAction &getTable,
-                  ::DropTableAction &dropTable)
-      : getRoot(getRoot), getTable(getTable), dropTable(dropTable) {}
+  explicit DropTableAction(DropTablePort &port) : port(port) {}
   void execute(const std::string &tableName);
 private:
-  ::GetCatalogRootPageIdAction &getRoot;
-  ::GetTableByNameAction &getTable;
-  ::DropTableAction &dropTable;
+  DropTablePort &port;
 };
 }
