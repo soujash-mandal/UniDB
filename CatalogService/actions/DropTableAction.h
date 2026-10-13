@@ -1,9 +1,10 @@
 #pragma once
 
 #include "../domain/CatalogTypes.h"
-#include "../port/FetchPagePort.h"
-#include "../port/UnpinPagePort.h"
-#include "../port/WritePagePort.h"
+
+class CatalogFetchPagePort;
+class CatalogWritePagePort;
+class CatalogUnpinPagePort;
 
 class DropTableAction {
 public:
