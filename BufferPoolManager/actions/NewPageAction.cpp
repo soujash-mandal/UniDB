@@ -38,13 +38,24 @@ BufferPoolPageId NewPageAction::execute() {
       continue;
     }
 
-    if (frame.isDirty()) {
-      writePagePort.writePage(frame.getPageId(), frame.getPage());
-      frame.setDirty(false);
+    BufferPoolPageId pageId;
+    try {
+      // Persist dirty data before allocating a replacement. Clear dirty only
+      // after the write succeeds, so a failed write remains retryable.
+      if (frame.isDirty()) {
+        writePagePort.writePage(frame.getPageId(), frame.getPage());
+        frame.setDirty(false);
+      }
+      pageId = allocatePagePort.allocatePage();
+    } catch (...) {
+      // Evict() may remove its victim from policy state. Restore it on any
+      // failure before replacing the frame, so a subsequent request can retry.
+      evictionPolicy.RecordAccess(victimPageId.value());
+      evictionPolicy.SetEvictable(victimPageId.value(),
+                                  frame.getPinCount() == 0);
+      throw;
     }
 
-    // Keep the victim registered if allocating its replacement fails.
-    BufferPoolPageId pageId = allocatePagePort.allocatePage();
     evictionPolicy.Remove(victimPageId.value());
 
     // A new logical page must never inherit the evicted page's bytes.
