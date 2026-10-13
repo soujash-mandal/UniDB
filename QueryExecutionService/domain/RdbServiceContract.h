@@ -9,6 +9,7 @@
 #include <variant>
 #include <vector>
 
+// QueryExecutionService owns these contracts; the adapter maps RDBService results.
 namespace unidb::query {
 enum class RdbServiceErrorCode {
   InvalidArgument,
