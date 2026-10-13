@@ -34,7 +34,7 @@ std::size_t TupleDeleteRowsAdapter::erase(const std::string &tableName, const un
   }
 
   std::vector<LocatedTuple> matches;
-  for (const auto &record : scan.execute(table.firstTuplePageId)) {
+  for (const auto &record : scan.execute(table.tupleRootPageId)) {
     const auto values = RdbTupleCodec::decode(schema, record.data);
     if (values[index] == condition.value) matches.push_back(record);
   }
