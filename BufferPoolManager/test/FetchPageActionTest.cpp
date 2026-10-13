@@ -1,5 +1,5 @@
-#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/FetchPageAction.h"
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 
 #include <gtest/gtest.h>
 
