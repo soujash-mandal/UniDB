@@ -2,9 +2,8 @@
 #include <gtest/gtest.h>
 
 TEST(SqlTupleCodecTest, RoundTripsIntAndText) {
-  const std::vector<unidb::sql::SqlType> schema{
-      unidb::sql::SqlType::Int,
-      unidb::sql::SqlType::Text};
+  const std::vector<unidb::sql::SqlType> schema{unidb::sql::SqlType::Int,
+                                               unidb::sql::SqlType::Text};
   const std::vector<unidb::sql::SqlValue> values{int64_t{42},
                                                  std::string("hello")};
   const auto bytes = SqlTupleCodec::encode(schema, values);
