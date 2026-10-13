@@ -69,6 +69,7 @@ set(UNIDB_SOURCES
     TupleService/actions/ScanTupleTableAction.cpp
     TupleService/actions/ScanTupleTableWithLocationsAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
+    QueryExecutionService/adapter/RdbServiceAdapter.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/actions/CreateTableAction.cpp
