@@ -1,5 +1,5 @@
 #include "TupleSelectRowsAdapter.h"
-#include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
+#include "RdbTupleCodec.h"
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -29,7 +29,7 @@ std::vector<std::vector<unidb::sql::SqlValue>> TupleSelectRowsAdapter::select(co
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) return {};
   std::vector<std::vector<unidb::sql::SqlValue>> rows;
   for (const auto &bytes : scan.execute(table.firstTuplePageId)) {
-    auto values = SqlTupleCodec::decode(table.columns, bytes);
+    auto values = RdbTupleCodec::decode(table.columns, bytes);
     if (predicate && values[predicateIndex] != predicate->value) continue;
     std::vector<unidb::sql::SqlValue> projected;
     projected.reserve(projection.size());
