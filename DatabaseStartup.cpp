@@ -21,8 +21,11 @@ bool DatabaseStartup::execute(Container &container) {
     // Page 0 stores Free Page Manager metadata. The RDB metadata root must be
     // allocated at page 1; it stores the catalog root page ID.
     container.createFpmPageAction().execute(0);
-    const MetadataPageId metadataPageId =
-        container.initializeRdbAction().execute();
+    const auto initialization = container.initializeRdbAction().execute();
+    if (!initialization.hasValue()) {
+      throw std::runtime_error("RDB initialization failed: " + initialization.error().message);
+    }
+    const MetadataPageId metadataPageId = initialization.value();
     if (metadataPageId != RDB_METADATA_PAGE_ID) {
       throw std::runtime_error("RDB metadata page must be allocated at page 1");
     }
