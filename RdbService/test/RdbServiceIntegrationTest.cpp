@@ -55,6 +55,9 @@ TEST(RdbServiceIntegrationTest, SelectSupportsProjectionAndEqualityPredicate) {
     Container container(path.string(), 8, EvictionPolicyType::FIFO);
     ASSERT_TRUE(DatabaseStartup::execute(container));
     ASSERT_TRUE(container.queryRdbServiceAdapter().createTable({"items", {{"id", unidb::sql::SqlType::Int}, {"label", unidb::sql::SqlType::Text}}}).hasValue());
+    auto empty = container.queryRdbServiceAdapter().selectRows({true, {}, "items", std::monostate{}});
+    ASSERT_TRUE(empty.hasValue());
+    EXPECT_TRUE(empty.value().empty());
     ASSERT_TRUE(container.queryRdbServiceAdapter().insertRow({"items", {"id", "label"}, {std::int64_t{1}, std::string{"one"}}}).hasValue());
     ASSERT_TRUE(container.queryRdbServiceAdapter().insertRow({"items", {"id", "label"}, {std::int64_t{2}, std::string{"two"}}}).hasValue());
     auto selected = container.queryRdbServiceAdapter().selectRows({false, {"label"}, "items", unidb::sql::WhereEquals{"id", std::int64_t{2}}});
@@ -100,6 +103,14 @@ TEST(RdbServiceIntegrationTest, ReturnsStructuredErrorsForInvalidColumnsAndDupli
   {
     Container container(path.string(), 8, EvictionPolicyType::FIFO);
     ASSERT_TRUE(DatabaseStartup::execute(container));
+    auto emptySchema = container.rdbCreateTableAction().execute({"empty_schema", {}});
+    ASSERT_FALSE(emptySchema.hasValue());
+    EXPECT_EQ(emptySchema.error().code, unidb::rdb::RdbErrorCode::InvalidArgument);
+    auto duplicateColumnSchema = container.rdbCreateTableAction().execute(
+        {"duplicate_columns", {{"id", unidb::sql::SqlType::Int}, {"id", unidb::sql::SqlType::Text}}});
+    ASSERT_FALSE(duplicateColumnSchema.hasValue());
+    EXPECT_EQ(duplicateColumnSchema.error().code, unidb::rdb::RdbErrorCode::InvalidArgument);
+
     ASSERT_TRUE(container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}}).hasValue());
     auto duplicate = container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}});
     ASSERT_FALSE(duplicate.hasValue());
@@ -107,6 +118,10 @@ TEST(RdbServiceIntegrationTest, ReturnsStructuredErrorsForInvalidColumnsAndDupli
     auto badProjection = container.selectRowsAction().execute({false, {"missing"}, "items", std::monostate{}});
     ASSERT_FALSE(badProjection.hasValue());
     EXPECT_EQ(badProjection.error().code, unidb::rdb::RdbErrorCode::UnknownColumn);
+    auto badInsertColumn = container.insertRowAction().execute(
+        {"items", {"missing"}, {std::int64_t{1}}});
+    ASSERT_FALSE(badInsertColumn.hasValue());
+    EXPECT_EQ(badInsertColumn.error().code, unidb::rdb::RdbErrorCode::UnknownColumn);
     auto badPredicate = container.deleteRowsAction().execute("items", {"missing", std::int64_t{1}});
     ASSERT_FALSE(badPredicate.hasValue());
     EXPECT_EQ(badPredicate.error().code, unidb::rdb::RdbErrorCode::UnknownColumn);
