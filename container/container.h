@@ -103,6 +103,7 @@ public:
   }
   CreateTableAction &createTableAction() { return createTable; }
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
+  GetCatalogTableDefinitionAction &getCatalogTableDefinitionAction() { return getCatalogTableDefinition; }
   UpdateTableAction &updateTableAction() { return updateTable; }
   InsertTupleIntoTableAction &insertTupleIntoTableAction() {
     return insertTupleIntoTable;
@@ -148,6 +149,7 @@ private:
 
   CreateTableAction createTable;
   GetTableByNameAction getTableByName;
+  GetCatalogTableDefinitionAction getCatalogTableDefinition;
   UpdateTableAction updateTable;
   DropTableAction dropTable;
 
