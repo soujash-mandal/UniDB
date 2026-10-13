@@ -1,6 +1,7 @@
 #include "TupleInsertRowAdapter.h"
 #include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
 #include <limits>
+#include <algorithm>
 #include <stdexcept>
 namespace unidb::rdb {
 TupleInsertRowAdapter::TupleInsertRowAdapter(::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table, ::UpdateTableAction &update, ::InsertTupleIntoTableAction &insert) : getRoot(root), getTable(table), updateTable(update), insertTuple(insert) {}
@@ -8,11 +9,22 @@ void TupleInsertRowAdapter::insert(const unidb::sql::InsertStatement &statement)
   constexpr CatalogPageId metadataPageId = 1;
   const auto root = getRoot.execute(metadataPageId);
   auto table = getTable.execute(root, statement.tableName);
+  std::vector<unidb::sql::SqlValue> orderedValues = statement.values;
   if (!statement.columnNames.empty()) {
-    if (statement.columnNames.size() != table.columns.size()) throw std::invalid_argument("V1 INSERT requires values for every table column");
-    for (std::size_t i = 0; i < table.columns.size(); ++i) if (statement.columnNames[i] != table.columns[i].name) throw std::invalid_argument("V1 INSERT columns must follow table schema order");
+    if (statement.columnNames.size() != table.columns.size() || statement.values.size() != statement.columnNames.size())
+      throw std::invalid_argument("V1 INSERT requires values for every table column");
+    orderedValues.resize(table.columns.size());
+    std::vector<bool> assigned(table.columns.size(), false);
+    for (std::size_t i = 0; i < statement.columnNames.size(); ++i) {
+      auto column = std::find_if(table.columns.begin(), table.columns.end(), [&](const Column &candidate) { return candidate.name == statement.columnNames[i]; });
+      if (column == table.columns.end()) throw std::invalid_argument("Unknown INSERT column: " + statement.columnNames[i]);
+      const auto index = static_cast<std::size_t>(column - table.columns.begin());
+      if (assigned[index]) throw std::invalid_argument("Duplicate INSERT column: " + statement.columnNames[i]);
+      assigned[index] = true;
+      orderedValues[index] = statement.values[i];
+    }
   }
-  auto bytes = SqlTupleCodec::encode(table.columns, statement.values);
+  auto bytes = SqlTupleCodec::encode(table.columns, orderedValues);
   const auto result = insertTuple.execute(table.firstTuplePageId, bytes);
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) {
     table.firstTuplePageId = result.firstPageId;
