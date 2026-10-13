@@ -17,7 +17,7 @@ struct Column {
   bool nullable = false;
 };
 
-// Logical catalog data exposed across service boundaries.
+// Logical catalog metadata, independent of page layout.
 struct CatalogTableDefinition {
   CatalogTableId tableId{};
   std::string name;
