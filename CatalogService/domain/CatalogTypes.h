@@ -1,0 +1,26 @@
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+using CatalogPageId = uint32_t;
+using CatalogTableId = uint32_t;
+static constexpr uint32_t CATALOG_INVALID_PAGE_ID = UINT32_MAX;
+
+enum class DataType { INT, BIGINT, FLOAT, DOUBLE, BOOLEAN, VARCHAR };
+
+struct Column {
+  std::string name;
+  DataType type;
+  uint16_t size = 0;
+  bool nullable = false;
+};
+
+// Logical catalog contract. Physical page/FSM/tuple-chain details are intentionally
+// excluded so callers cannot depend on the CatalogService storage representation.
+struct CatalogTableDefinition {
+  CatalogTableId tableId{};
+  std::string name;
+  std::vector<Column> columns;
+};
