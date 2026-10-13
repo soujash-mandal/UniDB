@@ -4,7 +4,7 @@
 #include <limits>
 #include <stdexcept>
 namespace unidb::rdb {
-TupleDeleteRowsAdapter::TupleDeleteRowsAdapter(::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table, ::ScanTupleTableWithLocationsAction &scanAction, ::DeleteTupleAction &deleteAction)
+TupleDeleteRowsAdapter::TupleDeleteRowsAdapter(::GetCatalogRootPageIdAction &root, ::GetCatalogTableDefinitionAction &table, ::ScanTupleTableWithLocationsAction &scanAction, ::DeleteTupleAction &deleteAction)
   : getRoot(root), getTable(table), scan(scanAction), deleteTuple(deleteAction) {}
 std::size_t TupleDeleteRowsAdapter::erase(const std::string &tableName, const unidb::sql::WhereEquals &condition) {
   constexpr CatalogPageId metadataPageId = 1;
@@ -21,7 +21,7 @@ std::size_t TupleDeleteRowsAdapter::erase(const std::string &tableName, const un
   if (column->type != DataType::INT && column->type != DataType::VARCHAR) {
     throw std::invalid_argument("Column type is not supported by the V1 SQL contract");
   }
-  if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) return 0;
+  if (table.tupleRootPageId == CATALOG_INVALID_PAGE_ID) return 0;
 
   std::vector<unidb::sql::SqlType> schema;
   schema.reserve(table.columns.size());
