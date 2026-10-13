@@ -52,6 +52,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/CreateTableAction.cpp
     CatalogService/actions/GetTableAction.cpp
     CatalogService/actions/GetTableByNameAction.cpp
+    # Catalog-owned logical contracts hide physical page representation from RDBService.
     CatalogService/actions/GetCatalogTableDefinitionAction.cpp
     CatalogService/actions/UpdateCatalogTupleRootAction.cpp
     CatalogService/actions/UpdateTableAction.cpp
