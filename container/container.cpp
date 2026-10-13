@@ -38,6 +38,8 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       insertTupleIntoTable(tupleFetchPageAdapter, tupleNewPageAdapter,
                            tupleWritePageAdapter, tupleUnpinPageAdapter),
       scanTupleTable(tupleFetchPageAdapter, tupleUnpinPageAdapter),
+      scanTupleTableWithLocations(tupleFetchPageAdapter, tupleUnpinPageAdapter),
+      deleteTuple(tupleFetchPageAdapter, tupleWritePageAdapter, tupleUnpinPageAdapter),
       createRdbMetadataPage(metadataNewPageAdapter, metadataWritePageAdapter,
                             metadataUnpinPageAdapter),
       updateRdbMetadataPage(metadataFetchPageAdapter, metadataWritePageAdapter,
@@ -55,8 +57,11 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       insertRowAdapter(getCatalogRootId, getTableByName, updateTable,
                        insertTupleIntoTable),
       selectRowsAdapter(getCatalogRootId, getTableByName, scanTupleTable),
+      getTableDefinitionAdapter(getCatalogRootId, getTableByName),
+      deleteRowsAdapter(getCatalogRootId, getTableByName, scanTupleTableWithLocations, deleteTuple),
       rdbCreateTable(rdbCreateTableAdapter), rdbDropTable(rdbDropTableAdapter),
-      insertRow(insertRowAdapter), selectRows(selectRowsAdapter) {
+      insertRow(insertRowAdapter), selectRows(selectRowsAdapter),
+      getTableDefinition(getTableDefinitionAdapter), deleteRows(deleteRowsAdapter) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
