@@ -79,6 +79,7 @@ add_executable(unidb
 )
 
 add_executable(tests
+    DatabaseStartup.cpp
     ${UNIDB_SOURCES}
 
     DiskManager/test/DiskManagerE2ETest.cpp
@@ -88,6 +89,7 @@ add_executable(tests
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
+    BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
