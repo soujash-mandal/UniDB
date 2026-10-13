@@ -1,4 +1,5 @@
 #include "GetTableByNameAction.h"
+#include "../domain/CatalogPage.h"
 
 #include <stdexcept>
 
@@ -6,8 +7,8 @@ GetTableByNameAction::GetTableByNameAction(CatalogFetchPagePort &fetchPagePort,
                                            CatalogUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
-Table GetTableByNameAction::execute(CatalogPageId rootPageId,
-                                    const std::string &tableName) {
+CatalogTableDefinition GetTableByNameAction::execute(
+    CatalogPageId rootPageId, const std::string &tableName) {
   if (tableName.empty()) {
     throw std::invalid_argument("Table name cannot be empty");
   }
@@ -17,9 +18,9 @@ Table GetTableByNameAction::execute(CatalogPageId rootPageId,
     CatalogPage page = fetchPagePort.fetchPage(currentPageId);
     const CatalogPageId nextPageId = page.getNextPageId();
     if (page.containsTableName(tableName)) {
-      Table table = page.getByName(tableName);
+      const Table stored = page.getByName(tableName);
       unpinPagePort.unpinPage(currentPageId);
-      return table;
+      return CatalogTableDefinition{stored.tableId, stored.name, stored.columns};
     }
     unpinPagePort.unpinPage(currentPageId);
     currentPageId = nextPageId;
