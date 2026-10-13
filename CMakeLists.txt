@@ -98,6 +98,7 @@ add_executable(unidb
 
 add_executable(tests
     ${UNIDB_SOURCES}
+    DatabaseStartup.cpp
 
     DiskManager/test/DiskManagerE2ETest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
