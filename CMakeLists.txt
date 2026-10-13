@@ -66,6 +66,7 @@ set(UNIDB_SOURCES
     TupleService/actions/DeleteTupleAction.cpp
     TupleService/actions/InsertTupleIntoTableAction.cpp
     TupleService/actions/ScanTupleTableAction.cpp
+    TupleService/actions/ScanTupleTableWithLocationsAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
@@ -73,6 +74,8 @@ set(UNIDB_SOURCES
     RdbService/actions/DropTableAction.cpp
     RdbService/actions/InsertRowAction.cpp
     RdbService/actions/SelectRowsAction.cpp
+    RdbService/actions/GetTableDefinitionAction.cpp
+    RdbService/actions/DeleteRowsAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
@@ -80,6 +83,8 @@ set(UNIDB_SOURCES
     RdbService/adapter/CatalogDropTableAdapter.cpp
     RdbService/adapter/TupleInsertRowAdapter.cpp
     RdbService/adapter/TupleSelectRowsAdapter.cpp
+    RdbService/adapter/CatalogGetTableDefinitionAdapter.cpp
+    RdbService/adapter/TupleDeleteRowsAdapter.cpp
 
     SQLParser/SqlLexer.cpp
     SQLParser/SqlParserImpl.cpp
