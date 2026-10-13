@@ -113,3 +113,22 @@ TEST(RdbServiceIntegrationTest, ReturnsStructuredErrorsForInvalidColumnsAndDupli
   }
   std::filesystem::remove(path);
 }
+
+TEST(RdbServiceIntegrationTest, ReportsTypeMismatchAndDropTableErrors) {
+  const auto path = testDatabasePath("types");
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    ASSERT_TRUE(container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}}).hasValue());
+    auto badInsert = container.insertRowAction().execute({"items", {"id"}, {std::string{"not-an-int"}}});
+    ASSERT_FALSE(badInsert.hasValue());
+    EXPECT_EQ(badInsert.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+    auto dropped = container.rdbDropTableAction().execute("items");
+    EXPECT_TRUE(dropped.hasValue());
+    auto missing = container.getTableDefinitionAction().execute("items");
+    ASSERT_FALSE(missing.hasValue());
+    EXPECT_EQ(missing.error().code, unidb::rdb::RdbErrorCode::TableNotFound);
+  }
+  std::filesystem::remove(path);
+}
