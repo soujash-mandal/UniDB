@@ -25,11 +25,27 @@ std::vector<std::vector<unidb::sql::SqlValue>> TupleSelectRowsAdapter::select(co
     auto it = std::find_if(table.columns.begin(), table.columns.end(), [&](const Column &c) { return c.name == predicate->columnName; });
     if (it == table.columns.end()) throw std::runtime_error("Unknown predicate column: " + predicate->columnName);
     predicateIndex = static_cast<std::size_t>(it - table.columns.begin());
+    const bool intColumn = it->type == DataType::INT;
+    if ((intColumn && !std::holds_alternative<std::int64_t>(predicate->value)) ||
+        (!intColumn && it->type == DataType::VARCHAR && !std::holds_alternative<std::string>(predicate->value))) {
+      throw std::invalid_argument("Predicate value type does not match column type");
+    }
   }
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) return {};
+
+  std::vector<unidb::sql::SqlType> schema;
+  schema.reserve(table.columns.size());
+  for (const auto &column : table.columns) {
+    switch (column.type) {
+    case DataType::INT: schema.push_back(unidb::sql::SqlType::Int); break;
+    case DataType::VARCHAR: schema.push_back(unidb::sql::SqlType::Text); break;
+    default: throw std::invalid_argument("Column type is not supported by the V1 SQL contract");
+    }
+  }
+
   std::vector<std::vector<unidb::sql::SqlValue>> rows;
   for (const auto &bytes : scan.execute(table.firstTuplePageId)) {
-    auto values = RdbTupleCodec::decode(table.columns, bytes);
+    auto values = RdbTupleCodec::decode(schema, bytes);
     if (predicate && values[predicateIndex] != predicate->value) continue;
     std::vector<unidb::sql::SqlValue> projected;
     projected.reserve(projection.size());
