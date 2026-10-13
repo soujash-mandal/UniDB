@@ -36,7 +36,8 @@ void OccupyFlushFrame(BufferPool &pool, BufferPoolPageId pageId, bool dirty,
 }
 } // namespace
 
-// Scenario 1: Flushing a dirty resident page writes the correct page and clears dirty state after success.
+// Scenario 1: Flushing a dirty resident page writes the correct page and
+// clears dirty state after success.
 TEST(FlushPageActionTest, FlushesDirtyPageAndClearsDirtyFlag) {
   BufferPool pool(1);
   FlushTestWritePagePort writePort;
@@ -51,7 +52,8 @@ TEST(FlushPageActionTest, FlushesDirtyPageAndClearsDirtyFlag) {
   EXPECT_FALSE(pool.getFrame(0).isDirty());
 }
 
-// Scenario 2: Explicit flush writes a clean resident page too, so callers can request persistence unconditionally.
+// Scenario 2: Explicit flush writes a clean resident page too, so callers can
+// request persistence unconditionally.
 TEST(FlushPageActionTest, FlushesCleanPageWhenExplicitlyRequested) {
   BufferPool pool(1);
   FlushTestWritePagePort writePort;
@@ -65,7 +67,8 @@ TEST(FlushPageActionTest, FlushesCleanPageWhenExplicitlyRequested) {
   EXPECT_FALSE(pool.getFrame(0).isDirty());
 }
 
-// Scenario 3: If disk write fails, the page remains dirty so a later flush can retry.
+// Scenario 3: If disk write fails, the page remains dirty so a later flush
+// can retry.
 TEST(FlushPageActionTest, PreservesDirtyFlagWhenWriteFails) {
   BufferPool pool(1);
   FlushTestWritePagePort writePort;
@@ -81,7 +84,8 @@ TEST(FlushPageActionTest, PreservesDirtyFlagWhenWriteFails) {
   EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
 }
 
-// Scenario 4: Flushing a page that is not resident reports a clear error and performs no I/O.
+// Scenario 4: Flushing a page that is not resident reports a clear error and
+// performs no I/O.
 TEST(FlushPageActionTest, UnknownPageThrowsWithoutWriting) {
   BufferPool pool(1);
   FlushTestWritePagePort writePort;
