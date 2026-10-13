@@ -111,6 +111,7 @@ add_executable(tests
     BufferPoolManager/test/FlushPageActionTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     RdbService/test/RdbServiceIntegrationTest.cpp
+    architecture/serviceGraphTest.cpp
     TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     TupleService/test/TableTupleActionsTest.cpp
