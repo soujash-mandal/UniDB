@@ -41,6 +41,7 @@
 #include "../CatalogService/actions/GetTableByNameAction.h"
 #include "../CatalogService/actions/GetCatalogTableDefinitionAction.h"
 #include "../CatalogService/actions/UpdateTableAction.h"
+#include "../CatalogService/actions/UpdateCatalogTupleRootAction.h"
 #include "../CatalogService/actions/DropTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
@@ -150,6 +151,7 @@ private:
   CreateTableAction createTable;
   GetTableByNameAction getTableByName;
   GetCatalogTableDefinitionAction getCatalogTableDefinition;
+  UpdateCatalogTupleRootAction updateCatalogTupleRoot;
   UpdateTableAction updateTable;
   DropTableAction dropTable;
 
