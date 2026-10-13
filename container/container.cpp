@@ -50,11 +50,13 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       initializeRdb(createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
                     updateRdbMetadataPageAdapter),
       getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter),
-      rdbCreateTable(getCatalogRootId, allocateNextTableId, createTable),
-      rdbDropTable(getCatalogRootId, getTableByName, dropTable),
-      insertRow(getCatalogRootId, getTableByName, updateTable,
-                insertTupleIntoTable),
-      selectRows(getCatalogRootId, getTableByName, scanTupleTable) {
+      rdbCreateTableAdapter(getCatalogRootId, allocateNextTableId, createTable),
+      rdbDropTableAdapter(getCatalogRootId, getTableByName, dropTable),
+      insertRowAdapter(getCatalogRootId, getTableByName, updateTable,
+                       insertTupleIntoTable),
+      selectRowsAdapter(getCatalogRootId, getTableByName, scanTupleTable),
+      rdbCreateTable(rdbCreateTableAdapter), rdbDropTable(rdbDropTableAdapter),
+      insertRow(insertRowAdapter), selectRows(selectRowsAdapter) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
