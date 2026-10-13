@@ -12,7 +12,7 @@ public:
                       CreateRootCatalogPagePort &createRootCatalogPagePort,
                       UpdateRdbMetadataPagePort &updateRdbMetadataPagePort);
 
-  RdbResult<MetadataPageId> execute();
+  unidb::rdb::RdbResult<MetadataPageId> execute();
 
 private:
   CreateRdbMetadataPagePort &createRdbMetadataPagePort;
