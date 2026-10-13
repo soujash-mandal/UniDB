@@ -1,5 +1,5 @@
 #include "TupleDeleteRowsAdapter.h"
-#include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
+#include "RdbTupleCodec.h"
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -16,7 +16,7 @@ std::size_t TupleDeleteRowsAdapter::erase(const std::string &tableName, const un
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) return 0;
   std::vector<LocatedTuple> matches;
   for (const auto &record : scan.execute(table.firstTuplePageId)) {
-    const auto values = SqlTupleCodec::decode(table.columns, record.data);
+    const auto values = RdbTupleCodec::decode(table.columns, record.data);
     if (values[index] == condition.value) matches.push_back(record);
   }
   for (const auto &record : matches) deleteTuple.execute(record.pageId, record.slotId);
