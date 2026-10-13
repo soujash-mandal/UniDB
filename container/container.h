@@ -40,6 +40,7 @@
 #include "../CatalogService/actions/CreateTableAction.h"
 #include "../CatalogService/actions/GetTableByNameAction.h"
 #include "../CatalogService/actions/UpdateTableAction.h"
+#include "../CatalogService/actions/DropTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
@@ -53,6 +54,10 @@
 #include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../RdbService/actions/InitializeRdbAction.h"
+#include "../RdbService/actions/CreateTableAction.h"
+#include "../RdbService/actions/DropTableAction.h"
+#include "../RdbService/actions/InsertRowAction.h"
+#include "../RdbService/actions/SelectRowsAction.h"
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
 #include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
@@ -80,6 +85,11 @@ public:
   CreateTableAction &createTableAction() { return createTable; }
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
   UpdateTableAction &updateTableAction() { return updateTable; }
+  DropTableAction &dropTableAction() { return dropTable; }
+  unidb::rdb::CreateTableAction &rdbCreateTableAction() { return rdbCreateTable; }
+  unidb::rdb::DropTableAction &rdbDropTableAction() { return rdbDropTable; }
+  unidb::rdb::InsertRowAction &insertRowAction() { return insertRow; }
+  unidb::rdb::SelectRowsAction &selectRowsAction() { return selectRows; }
   InsertTupleIntoTableAction &insertTupleIntoTableAction() {
     return insertTupleIntoTable;
   }
@@ -125,6 +135,7 @@ private:
   CreateTableAction createTable;
   GetTableByNameAction getTableByName;
   UpdateTableAction updateTable;
+  DropTableAction dropTable;
 
   TupleBufferPoolFetchPageAdapter tupleFetchPageAdapter;
   TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
@@ -143,4 +154,9 @@ private:
 
   InitializeRdbAction initializeRdb;
   GetCatalogRootPageIdAction getCatalogRootId;
+
+  unidb::rdb::CreateTableAction rdbCreateTable;
+  unidb::rdb::DropTableAction rdbDropTable;
+  unidb::rdb::InsertRowAction insertRow;
+  unidb::rdb::SelectRowsAction selectRows;
 };
