@@ -69,6 +69,10 @@ set(UNIDB_SOURCES
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
+    RdbService/actions/CreateTableAction.cpp
+    RdbService/actions/DropTableAction.cpp
+    RdbService/actions/InsertRowAction.cpp
+    RdbService/actions/SelectRowsAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
