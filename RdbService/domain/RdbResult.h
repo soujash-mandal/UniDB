@@ -40,14 +40,14 @@ inline RdbError classifyError(const std::exception &exception) {
     return {RdbErrorCode::TableNotFound, message};
   if (message.find("already exists") != std::string::npos)
     return {RdbErrorCode::DuplicateTable, message};
-  if (message.find("column") != std::string::npos || message.find("Column") != std::string::npos)
-    return {RdbErrorCode::UnknownColumn, message};
   if (message.find("Expected INT value") != std::string::npos || message.find("Expected TEXT value") != std::string::npos)
     return {RdbErrorCode::TypeMismatch, message};
-  if (dynamic_cast<const std::invalid_argument *>(&exception) != nullptr)
-    return {RdbErrorCode::InvalidArgument, message};
   if (message.find("supports only") != std::string::npos || message.find("Unsupported") != std::string::npos)
     return {RdbErrorCode::UnsupportedType, message};
+  if (message.find("column") != std::string::npos || message.find("Column") != std::string::npos)
+    return {RdbErrorCode::UnknownColumn, message};
+  if (dynamic_cast<const std::invalid_argument *>(&exception) != nullptr)
+    return {RdbErrorCode::InvalidArgument, message};
   return {RdbErrorCode::StorageFailure, message};
 }
 }
