@@ -37,7 +37,7 @@ void TupleInsertRowAdapter::insert(const unidb::sql::InsertStatement &statement)
 
   auto bytes = RdbTupleCodec::encode(schema, orderedValues);
   const auto result = insertTuple.execute(table.tupleRootPageId, bytes);
-  if (table.firstTuplePageId == CATALOG_INVALID_PAGE_ID) {
+  if (table.tupleRootPageId == CATALOG_INVALID_PAGE_ID) {
     updateTupleRoot.execute(root, table.tableId, result.firstPageId);
   }
 }
