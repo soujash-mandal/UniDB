@@ -1,6 +1,6 @@
 #pragma once
 #include "../../RdbService/domain/RdbResult.h"
-#include "../../RdbService/port/GetTableDefinitionPort.h"
+#include "../../RdbService/domain/TableDefinition.h"
 #include "../../SQLParserContract/sqlStatement.h"
 #include <cstddef>
 #include <string>
