@@ -54,10 +54,10 @@ TEST(RdbServiceIntegrationTest, SelectSupportsProjectionAndEqualityPredicate) {
   {
     Container container(path.string(), 8, EvictionPolicyType::FIFO);
     ASSERT_TRUE(DatabaseStartup::execute(container));
-    ASSERT_TRUE(container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}, {"label", unidb::sql::SqlType::Text}}}).hasValue());
-    ASSERT_TRUE(container.insertRowAction().execute({"items", {"id", "label"}, {std::int64_t{1}, std::string{"one"}}}).hasValue());
-    ASSERT_TRUE(container.insertRowAction().execute({"items", {"id", "label"}, {std::int64_t{2}, std::string{"two"}}}).hasValue());
-    auto selected = container.selectRowsAction().execute({false, {"label"}, "items", unidb::sql::WhereEquals{"id", std::int64_t{2}}});
+    ASSERT_TRUE(container.queryRdbServiceAdapter().createTable({"items", {{"id", unidb::sql::SqlType::Int}, {"label", unidb::sql::SqlType::Text}}}).hasValue());
+    ASSERT_TRUE(container.queryRdbServiceAdapter().insertRow({"items", {"id", "label"}, {std::int64_t{1}, std::string{"one"}}}).hasValue());
+    ASSERT_TRUE(container.queryRdbServiceAdapter().insertRow({"items", {"id", "label"}, {std::int64_t{2}, std::string{"two"}}}).hasValue());
+    auto selected = container.queryRdbServiceAdapter().selectRows({false, {"label"}, "items", unidb::sql::WhereEquals{"id", std::int64_t{2}}});
     ASSERT_TRUE(selected.hasValue());
     ASSERT_EQ(selected.value().size(), 1u);
     ASSERT_EQ(selected.value()[0].size(), 1u);
