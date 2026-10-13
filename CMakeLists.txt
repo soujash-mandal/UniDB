@@ -79,6 +79,7 @@ add_executable(unidb
 )
 
 add_executable(tests
+    DatabaseStartup.cpp
     ${UNIDB_SOURCES}
 
     DiskManager/test/DiskManagerE2ETest.cpp
