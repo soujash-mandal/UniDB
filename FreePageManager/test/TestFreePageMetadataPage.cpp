@@ -110,7 +110,8 @@ TEST(AllocatePageActionTest, AllocatesDistinctPagesAndPersistsMetadata) {
 
 // Scenario 8: A metadata write failure propagates and does not falsely report
 // an allocation as successful.
-TEST(AllocatePageActionTest, MetadataWriteFailureIsReportedAndRetryCanAllocateSamePage) {
+TEST(AllocatePageActionTest,
+     MetadataWriteFailureIsReportedAndRetryCanAllocateSamePage) {
   MetadataMemoryStore store;
   store.pages.emplace(0, MetadataPage{});
   AllocatePageAction action(store, store);
