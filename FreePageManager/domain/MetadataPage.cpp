@@ -8,9 +8,10 @@ MetadataPage::MetadataPage()
 }
 
 void MetadataPage::setPageOccupied(PageId pageId) {
-  // Reject IDs outside this metadata page's tracked range before subtracting or indexing.
+  // Validate before subtraction or bitmap indexing to prevent out-of-bounds access.
   if (pageId < firstTrackedPageId) {
-    throw std::out_of_range("PageId is below the metadata page's tracked range");
+    throw std::out_of_range(
+        "PageId is below the metadata page's tracked range");
   }
 
   const uint32_t relativePageId = pageId - firstTrackedPageId;
