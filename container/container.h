@@ -61,6 +61,10 @@
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
 #include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/CatalogCreateTableAdapter.h"
+#include "../RdbService/adapter/CatalogDropTableAdapter.h"
+#include "../RdbService/adapter/TupleInsertRowAdapter.h"
+#include "../RdbService/adapter/TupleSelectRowsAdapter.h"
 
 class Container {
 public:
@@ -154,6 +158,11 @@ private:
 
   InitializeRdbAction initializeRdb;
   GetCatalogRootPageIdAction getCatalogRootId;
+
+  unidb::rdb::CatalogCreateTableAdapter rdbCreateTableAdapter;
+  unidb::rdb::CatalogDropTableAdapter rdbDropTableAdapter;
+  unidb::rdb::TupleInsertRowAdapter insertRowAdapter;
+  unidb::rdb::TupleSelectRowsAdapter selectRowsAdapter;
 
   unidb::rdb::CreateTableAction rdbCreateTable;
   unidb::rdb::DropTableAction rdbDropTable;
