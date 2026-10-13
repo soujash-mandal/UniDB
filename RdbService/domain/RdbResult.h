@@ -40,7 +40,9 @@ inline RdbError classifyError(const std::exception &exception) {
     return {RdbErrorCode::TableNotFound, message};
   if (message.find("already exists") != std::string::npos)
     return {RdbErrorCode::DuplicateTable, message};
-  if (message.find("Expected INT value") != std::string::npos || message.find("Expected TEXT value") != std::string::npos)
+  if (message.find("Expected INT value") != std::string::npos ||
+      message.find("Expected TEXT value") != std::string::npos ||
+      message.find("Predicate value type does not match column type") != std::string::npos)
     return {RdbErrorCode::TypeMismatch, message};
   if (message.find("supports only") != std::string::npos || message.find("Unsupported") != std::string::npos || message.find("not supported") != std::string::npos)
     return {RdbErrorCode::UnsupportedType, message};
