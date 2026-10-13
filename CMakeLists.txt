@@ -54,6 +54,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/GetTableByNameAction.cpp
     CatalogService/actions/UpdateTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
+    CatalogService/actions/DropTableAction.cpp
 
     TupleService/domain/TuplePage.cpp
     TupleService/adapter/BufferPoolFetchPageAdapter.cpp
