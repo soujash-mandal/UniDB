@@ -32,7 +32,8 @@ public:
   }
 };
 
-// Scenario 1: A newly initialized metadata page reserves page 0 and returns page 1 as the first free page.
+// Scenario 1: A newly initialized metadata page reserves page 0 and returns
+// page 1 as the first free page.
 TEST(MetadataPageTest, ReservesMetadataPageAndFindsFirstFreePage) {
   MetadataPage page;
 
@@ -40,7 +41,8 @@ TEST(MetadataPageTest, ReservesMetadataPageAndFindsFirstFreePage) {
   EXPECT_EQ(page.findFirstFreePage(), 1);
 }
 
-// Scenario 2: Marking the current first free page occupied advances allocation to the next free PageId.
+// Scenario 2: Marking the current first free page occupied advances
+// allocation to the next free PageId.
 TEST(MetadataPageTest, MarkingPageOccupiedAdvancesFirstFreePage) {
   MetadataPage page;
 
@@ -49,7 +51,8 @@ TEST(MetadataPageTest, MarkingPageOccupiedAdvancesFirstFreePage) {
   EXPECT_EQ(page.findFirstFreePage(), 2);
 }
 
-// Scenario 3: Bitmap tracking supports the last valid bit and reports exhaustion after every tracked bit is occupied.
+// Scenario 3: Bitmap tracking supports the last valid bit and reports
+// exhaustion after every tracked bit is occupied.
 TEST(MetadataPageTest, SupportsLastBitmapBitAndDetectsExhaustion) {
   MetadataPage page;
 
@@ -64,7 +67,8 @@ TEST(MetadataPageTest, SupportsLastBitmapBitAndDetectsExhaustion) {
   EXPECT_EQ(page.findFirstFreePage(), INVALID_PAGE_ID);
 }
 
-// Scenario 4: A PageId below firstTrackedPageId is rejected instead of underflowing the relative index.
+// Scenario 4: A PageId below firstTrackedPageId is rejected instead of
+// underflowing the relative index.
 TEST(MetadataPageTest, RejectsPageBelowTrackedRange) {
   MetadataPage page;
   page.setFirstTrackedPageId(10);
@@ -72,7 +76,8 @@ TEST(MetadataPageTest, RejectsPageBelowTrackedRange) {
   EXPECT_THROW(page.setPageOccupied(9), std::out_of_range);
 }
 
-// Scenario 5: The invalid/sentinel PageId is rejected instead of indexing beyond the bitmap.
+// Scenario 5: The invalid/sentinel PageId is rejected instead of indexing
+// beyond the bitmap.
 TEST(MetadataPageTest, RejectsInvalidSentinelPageId) {
   MetadataPage page;
 
@@ -80,7 +85,8 @@ TEST(MetadataPageTest, RejectsInvalidSentinelPageId) {
                std::out_of_range);
 }
 
-// Scenario 6: A PageId at the first position of a shifted tracked range is accepted.
+// Scenario 6: A PageId at the first position of a shifted tracked range is
+// accepted.
 TEST(MetadataPageTest, AcceptsFirstPageOfShiftedTrackedRange) {
   MetadataPage page;
   page.setFirstTrackedPageId(100);
@@ -89,7 +95,8 @@ TEST(MetadataPageTest, AcceptsFirstPageOfShiftedTrackedRange) {
   EXPECT_EQ(page.findFirstFreePage(), 101);
 }
 
-// Scenario 7: Allocation returns distinct PageIds and persists each occupied bit through the metadata write port.
+// Scenario 7: Allocation returns distinct PageIds and persists each occupied
+// bit through the metadata write port.
 TEST(AllocatePageActionTest, AllocatesDistinctPagesAndPersistsMetadata) {
   MetadataMemoryStore store;
   store.pages.emplace(0, MetadataPage{});
@@ -101,7 +108,8 @@ TEST(AllocatePageActionTest, AllocatesDistinctPagesAndPersistsMetadata) {
   EXPECT_EQ(store.writeCount, 2);
 }
 
-// Scenario 8: A metadata write failure propagates and does not falsely report an allocation as successful.
+// Scenario 8: A metadata write failure propagates and does not falsely report
+// an allocation as successful.
 TEST(AllocatePageActionTest, MetadataWriteFailureIsReportedAndRetryCanAllocateSamePage) {
   MetadataMemoryStore store;
   store.pages.emplace(0, MetadataPage{});
@@ -116,7 +124,8 @@ TEST(AllocatePageActionTest, MetadataWriteFailureIsReportedAndRetryCanAllocateSa
   EXPECT_EQ(store.pages.at(0).findFirstFreePage(), 2);
 }
 
-// Scenario 9: When the root bitmap is full, allocation creates and links a new metadata page and reserves its own PageId.
+// Scenario 9: When the root bitmap is full, allocation creates and links a
+// new metadata page and reserves its own PageId.
 TEST(AllocatePageActionTest, CreatesAndChainsMetadataPageWhenBitmapIsFull) {
   MetadataMemoryStore store;
   MetadataPage fullPage;
