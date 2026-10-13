@@ -70,8 +70,7 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::SqlType> &schema,
       values.emplace_back(std::string(bytes.data() + offset, length));
       offset += length;
     } else {
-      throw std::invalid_argument(
-          "V1 tuple codec supports only INT and TEXT");
+      throw std::invalid_argument("V1 tuple codec supports only INT and TEXT");
     }
   }
   if (offset != bytes.size()) {
