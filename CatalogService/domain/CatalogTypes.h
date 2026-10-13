@@ -17,8 +17,7 @@ struct Column {
   bool nullable = false;
 };
 
-// Logical catalog contract. Physical page/FSM/tuple-chain details are intentionally
-// excluded so callers cannot depend on the CatalogService storage representation.
+// Logical catalog contract, independent of physical page/FSM/tuple-chain details.
 struct CatalogTableDefinition {
   CatalogTableId tableId{};
   std::string name;
