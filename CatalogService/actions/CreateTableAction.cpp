@@ -1,4 +1,5 @@
 #include "CreateTableAction.h"
+#include "../domain/CatalogPage.h"
 #include <stdexcept>
 
 CreateTableAction::CreateTableAction(CatalogFetchPagePort &fetchPagePort,
