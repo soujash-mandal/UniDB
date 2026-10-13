@@ -17,7 +17,7 @@ struct Column {
   bool nullable = false;
 };
 
-// Logical catalog contract, independent of physical page/FSM/tuple-chain details.
+// Logical catalog metadata, independent of page layout.
 struct CatalogTableDefinition {
   CatalogTableId tableId{};
   std::string name;
