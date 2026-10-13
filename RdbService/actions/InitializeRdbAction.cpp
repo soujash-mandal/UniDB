@@ -8,13 +8,13 @@ InitializeRdbAction::InitializeRdbAction(
       createRootCatalogPagePort(createRootCatalogPagePort),
       updateRdbMetadataPagePort(updateRdbMetadataPagePort) {}
 
-MetadataPageId InitializeRdbAction::execute() {
-  const MetadataPageId metadataPageId =
-      createRdbMetadataPagePort.createRdbMetadataPage();
-  const CatalogPageId catalogRootPageId =
-      createRootCatalogPagePort.createRootCatalogPage();
-
-  updateRdbMetadataPagePort.updateRdbMetadataPage(metadataPageId,
-                                                  catalogRootPageId);
-  return metadataPageId;
+RdbResult<MetadataPageId> InitializeRdbAction::execute() {
+  try {
+    const MetadataPageId metadataPageId = createRdbMetadataPagePort.createRdbMetadataPage();
+    const CatalogPageId catalogRootPageId = createRootCatalogPagePort.createRootCatalogPage();
+    updateRdbMetadataPagePort.updateRdbMetadataPage(metadataPageId, catalogRootPageId);
+    return RdbResult<MetadataPageId>::success(metadataPageId);
+  } catch (const std::exception &e) {
+    return RdbResult<MetadataPageId>::failure(classifyError(e));
+  }
 }
