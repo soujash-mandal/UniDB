@@ -1,14 +1,13 @@
 #pragma once
 
 #include "../domain/CatalogTypes.h"
+#include "../port/FetchPagePort.h"
+#include "../port/NewPagePort.h"
+#include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 #include <string>
 #include <vector>
-
-class CatalogFetchPagePort;
-class CatalogNewPagePort;
-class CatalogWritePagePort;
-class CatalogUnpinPagePort;
 
 class CreateTableAction {
 public:
