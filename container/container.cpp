@@ -31,6 +31,8 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       getTableByName(catalogFetchPageAdapter, catalogUnpinPageAdapter),
       updateTable(catalogFetchPageAdapter, catalogWritePageAdapter,
                   catalogUnpinPageAdapter),
+      dropTable(catalogFetchPageAdapter, catalogWritePageAdapter,
+                catalogUnpinPageAdapter),
       tupleFetchPageAdapter(fetchPage), tupleNewPageAdapter(newPage),
       tupleUnpinPageAdapter(unpinPage), tupleWritePageAdapter(writePage),
       insertTupleIntoTable(tupleFetchPageAdapter, tupleNewPageAdapter,
@@ -47,7 +49,12 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       updateRdbMetadataPageAdapter(updateRdbMetadataPage),
       initializeRdb(createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
                     updateRdbMetadataPageAdapter),
-      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter) {
+      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter),
+      rdbCreateTable(getCatalogRootId, allocateNextTableId, createTable),
+      rdbDropTable(getCatalogRootId, getTableByName, dropTable),
+      insertRow(getCatalogRootId, getTableByName, updateTable,
+                insertTupleIntoTable),
+      selectRows(getCatalogRootId, getTableByName, scanTupleTable) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
