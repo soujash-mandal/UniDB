@@ -1,5 +1,5 @@
 #include "TupleInsertRowAdapter.h"
-#include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
+#include "RdbTupleCodec.h"
 #include <limits>
 #include <algorithm>
 #include <stdexcept>
@@ -24,7 +24,7 @@ void TupleInsertRowAdapter::insert(const unidb::sql::InsertStatement &statement)
       orderedValues[index] = statement.values[i];
     }
   }
-  auto bytes = SqlTupleCodec::encode(table.columns, orderedValues);
+  auto bytes = RdbTupleCodec::encode(table.columns, orderedValues);
   const auto result = insertTuple.execute(table.firstTuplePageId, bytes);
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) {
     table.firstTuplePageId = result.firstPageId;
