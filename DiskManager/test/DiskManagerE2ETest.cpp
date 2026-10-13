@@ -18,7 +18,8 @@ void CreateEmptyFile(const std::filesystem::path &path) {
 }
 } // namespace
 
-// Scenario 1: A full 8192-byte page, including zero and high-bit binary bytes, survives write/read exactly.
+// Scenario 1: A full 8192-byte page, including zero and high-bit binary
+// bytes, survives write/read exactly.
 TEST(DiskManagerTest, WritesAndReadsEveryByteOfPage) {
   const auto path = TestFile("unidb_disk_full_page_test.db");
   std::filesystem::remove(path);
@@ -44,7 +45,8 @@ TEST(DiskManagerTest, WritesAndReadsEveryByteOfPage) {
   std::filesystem::remove(path);
 }
 
-// Scenario 2: Writing and overwriting one page does not alter neighboring pages or use the wrong page offset.
+// Scenario 2: Writing and overwriting one page does not alter neighboring
+// pages or use the wrong page offset.
 TEST(DiskManagerTest, MultiplePagesRemainIsolatedWhenOnePageIsOverwritten) {
   const auto path = TestFile("unidb_disk_multiple_pages_test.db");
   std::filesystem::remove(path);
@@ -75,7 +77,8 @@ TEST(DiskManagerTest, MultiplePagesRemainIsolatedWhenOnePageIsOverwritten) {
   std::filesystem::remove(path);
 }
 
-// Scenario 3: Reading a missing database file fails and does not create the file as a side effect.
+// Scenario 3: Reading a missing database file fails and does not create the
+// file as a side effect.
 TEST(DiskManagerTest, DoesNotCreateMissingDatabaseFile) {
   const auto path = TestFile("unidb_disk_missing_database_test.db");
   std::filesystem::remove(path);
@@ -87,7 +90,8 @@ TEST(DiskManagerTest, DoesNotCreateMissingDatabaseFile) {
   EXPECT_FALSE(std::filesystem::exists(path));
 }
 
-// Scenario 4: A file shorter than one page is rejected instead of returning partially initialized page bytes.
+// Scenario 4: A file shorter than one page is rejected instead of returning
+// partially initialized page bytes.
 TEST(DiskManagerTest, RejectsShortPageRead) {
   const auto path = TestFile("unidb_disk_short_page_test.db");
   std::filesystem::remove(path);
