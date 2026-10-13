@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-      - soujashbot/sim-24-complete-queryexecutionservice-dependencies
 
 jobs:
   lint:
