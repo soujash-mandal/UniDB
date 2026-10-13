@@ -1,5 +1,8 @@
 #include "DropTableAction.h"
 #include "../domain/CatalogPage.h"
+#include "../port/FetchPagePort.h"
+#include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 #include <stdexcept>
 
