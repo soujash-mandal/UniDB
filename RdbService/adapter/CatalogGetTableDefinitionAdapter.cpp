@@ -1,7 +1,7 @@
 #include "CatalogGetTableDefinitionAdapter.h"
 #include <stdexcept>
 namespace unidb::rdb {
-CatalogGetTableDefinitionAdapter::CatalogGetTableDefinitionAdapter(::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table)
+CatalogGetTableDefinitionAdapter::CatalogGetTableDefinitionAdapter(::GetCatalogRootPageIdAction &root, ::GetCatalogTableDefinitionAction &table)
   : getRoot(root), getTable(table) {}
 TableDefinition CatalogGetTableDefinitionAdapter::get(const std::string &tableName) {
   constexpr CatalogPageId metadataPageId = 1;
