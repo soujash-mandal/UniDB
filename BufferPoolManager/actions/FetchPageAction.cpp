@@ -40,38 +40,49 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     }
   }
 
-  // 3. Buffer pool is full.
-  // Ask the eviction policy which page should be removed.
+  // 3. Buffer pool is full. Evict() may remove its victim from policy state,
+  // so restore that victim if writeback or the requested read fails.
   std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
   if (!victimPageId.has_value()) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
   }
 
-  // 4. Find the frame containing the victim page
+  // 4. Find the frame containing the victim page.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied() || frame.getPageId() != victimPageId.value()) {
       continue;
     }
 
-    // 5. If the victim is dirty, write it to disk first.
-    if (frame.isDirty()) {
-      writePagePort.writePage(frame.getPageId(), frame.getPage());
-      frame.setDirty(false);
+    BufferPoolPage page;
+    try {
+      // 5. Persist dirty victim data before attempting to replace the frame.
+      if (frame.isDirty()) {
+        writePagePort.writePage(frame.getPageId(), frame.getPage());
+        frame.setDirty(false);
+      }
+
+      // 6. Read into a temporary first: do not replace the victim on read failure.
+      page = readPagePort.readDiskPage(pageId);
+    } catch (...) {
+      // Restore a selectable victim so the caller can retry this fetch.
+      evictionPolicy.RecordAccess(victimPageId.value());
+      evictionPolicy.SetEvictable(victimPageId.value(),
+                                  frame.getPinCount() == 0);
+      throw;
     }
 
-    // 6. Remove the old page from the eviction policy.
+    // 7. Commit the replacement only after both required I/O operations succeed.
+    // Some policies remove their victim inside Evict(); Remove is intentionally
+    // idempotent for policies that retain the victim until explicitly removed.
     evictionPolicy.Remove(victimPageId.value());
-
-    // 7. Load the requested page into the same frame.
-    BufferPoolPage page = readPagePort.readDiskPage(pageId);
     frame.setPage(page);
     frame.setPageId(pageId);
     frame.setOccupied(true);
     frame.setDirty(false);
     frame.pin();
 
-    // 8. Add the new page to the eviction policy.
+    // 8. Register the new resident page as non-evictable while it is pinned.
     evictionPolicy.RecordAccess(pageId);
     evictionPolicy.SetEvictable(pageId, false);
 
