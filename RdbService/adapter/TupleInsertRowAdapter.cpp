@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <stdexcept>
 namespace unidb::rdb {
-TupleInsertRowAdapter::TupleInsertRowAdapter(::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table, ::UpdateTableAction &update, ::InsertTupleIntoTableAction &insert) : getRoot(root), getTable(table), updateTable(update), insertTuple(insert) {}
+TupleInsertRowAdapter::TupleInsertRowAdapter(::GetCatalogRootPageIdAction &root, ::GetCatalogTableDefinitionAction &table, ::UpdateCatalogTupleRootAction &update, ::InsertTupleIntoTableAction &insert) : getRoot(root), getTable(table), updateTupleRoot(update), insertTuple(insert) {}
 void TupleInsertRowAdapter::insert(const unidb::sql::InsertStatement &statement) {
   constexpr CatalogPageId metadataPageId = 1;
   const auto root = getRoot.execute(metadataPageId);
@@ -36,10 +36,9 @@ void TupleInsertRowAdapter::insert(const unidb::sql::InsertStatement &statement)
   }
 
   auto bytes = RdbTupleCodec::encode(schema, orderedValues);
-  const auto result = insertTuple.execute(table.firstTuplePageId, bytes);
-  if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) {
-    table.firstTuplePageId = result.firstPageId;
-    updateTable.execute(root, table);
+  const auto result = insertTuple.execute(table.tupleRootPageId, bytes);
+  if (table.firstTuplePageId == CATALOG_INVALID_PAGE_ID) {
+    updateTupleRoot.execute(root, table.tableId, result.firstPageId);
   }
 }
 }
