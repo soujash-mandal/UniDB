@@ -3,6 +3,8 @@
 #include "../actions/CreateTableAction.h"
 #include "../actions/InsertRowAction.h"
 #include "../actions/SelectRowsAction.h"
+#include "../actions/GetTableDefinitionAction.h"
+#include "../actions/DeleteRowsAction.h"
 #include <gtest/gtest.h>
 #include <filesystem>
 
@@ -55,6 +57,42 @@ TEST(RdbServiceIntegrationTest, SelectSupportsProjectionAndEqualityPredicate) {
     ASSERT_EQ(rows.size(), 1u);
     ASSERT_EQ(rows[0].size(), 1u);
     EXPECT_EQ(std::get<std::string>(rows[0][0]), "two");
+  }
+  std::filesystem::remove(path);
+}
+
+TEST(RdbServiceIntegrationTest, GetDefinitionAndDeleteMatchingRows) {
+  const auto path = testDatabasePath();
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    container.rdbCreateTableAction().execute({"events", {{"id", unidb::sql::SqlType::Int}, {"label", unidb::sql::SqlType::Text}}});
+    container.insertRowAction().execute({"events", {}, {std::int64_t{1}, std::string{"keep"}}});
+    container.insertRowAction().execute({"events", {}, {std::int64_t{2}, std::string{"remove"}}});
+    const auto definition = container.getTableDefinitionAction().execute("events");
+    EXPECT_EQ(definition.tableName, "events");
+    ASSERT_EQ(definition.columns.size(), 2u);
+    EXPECT_EQ(definition.columns[0].name, "id");
+    const auto deleted = container.deleteRowsAction().execute("events", {"id", std::int64_t{2}});
+    EXPECT_EQ(deleted, 1u);
+    const auto rows = container.selectRowsAction().execute({true, {}, "events", std::monostate{}});
+    ASSERT_EQ(rows.size(), 1u);
+    EXPECT_EQ(std::get<std::string>(rows[0][1]), "keep");
+    EXPECT_EQ(container.deleteRowsAction().execute("events", {"id", std::int64_t{99}}), 0u);
+  }
+  std::filesystem::remove(path);
+}
+
+TEST(RdbServiceIntegrationTest, RejectsUnknownProjectionAndPredicateColumns) {
+  const auto path = testDatabasePath();
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}});
+    EXPECT_THROW(container.selectRowsAction().execute({false, {"missing"}, "items", std::monostate{}}), std::runtime_error);
+    EXPECT_THROW(container.deleteRowsAction().execute("items", {"missing", std::int64_t{1}}), std::invalid_argument);
   }
   std::filesystem::remove(path);
 }
