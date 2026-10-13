@@ -62,7 +62,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
         frame.setDirty(false);
       }
 
-      // 6. Read into a temporary first: do not replace the victim on read failure.
+      // 6. Read into a temporary first; preserve the victim on read failure.
       page = readPagePort.readDiskPage(pageId);
     } catch (...) {
       // Restore a selectable victim so the caller can retry this fetch.
@@ -72,7 +72,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
       throw;
     }
 
-    // 7. Commit the replacement only after both required I/O operations succeed.
+    // 7. Commit only after both required I/O operations succeed.
     // Some policies remove their victim inside Evict(); Remove is intentionally
     // idempotent for policies that retain the victim until explicitly removed.
     evictionPolicy.Remove(victimPageId.value());
