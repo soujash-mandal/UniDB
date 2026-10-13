@@ -1,11 +1,10 @@
+#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 #include "../actions/NewPageAction.h"
 
 #include <gtest/gtest.h>
 
 #include <optional>
 #include <stdexcept>
-
-#include "../../EvictionPolicy/FIFOEvictionPolicy.h"
 
 class NewPageTestAllocatePort : public AllocatePagePort {
 public:
