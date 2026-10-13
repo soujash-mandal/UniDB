@@ -49,7 +49,8 @@ TEST(UnpinPageActionTest, LastUnpinMakesPageEvictable) {
   EXPECT_TRUE(policy.lastEvictable);
 }
 
-// Scenario 2: A page with multiple pins stays non-evictable until its final unpin.
+// Scenario 2: A page with multiple pins stays non-evictable until its final
+// unpin.
 TEST(UnpinPageActionTest, PageRemainsNonEvictableWhileAnotherPinExists) {
   BufferPool pool(1);
   UnpinTestEvictionPolicy policy;
@@ -68,7 +69,8 @@ TEST(UnpinPageActionTest, PageRemainsNonEvictableWhileAnotherPinExists) {
   EXPECT_TRUE(policy.lastEvictable);
 }
 
-// Scenario 3: Unpinning a page that is not resident fails without changing another frame.
+// Scenario 3: Unpinning a page that is not resident fails without changing
+// another frame.
 TEST(UnpinPageActionTest, UnknownPageThrowsWithoutChangingResidentPage) {
   BufferPool pool(1);
   UnpinTestEvictionPolicy policy;
@@ -82,7 +84,8 @@ TEST(UnpinPageActionTest, UnknownPageThrowsWithoutChangingResidentPage) {
   EXPECT_EQ(policy.setEvictableCount, 0);
 }
 
-// Scenario 4: A second unpin after the pin count reaches zero is rejected and does not corrupt policy state.
+// Scenario 4: A second unpin after the pin count reaches zero is rejected and
+// does not corrupt policy state.
 TEST(UnpinPageActionTest, RejectsPinCountUnderflow) {
   BufferPool pool(1);
   UnpinTestEvictionPolicy policy;
