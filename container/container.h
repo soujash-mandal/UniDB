@@ -71,6 +71,7 @@
 #include "../RdbService/adapter/TupleSelectRowsAdapter.h"
 #include "../RdbService/adapter/CatalogGetTableDefinitionAdapter.h"
 #include "../RdbService/adapter/TupleDeleteRowsAdapter.h"
+#include "../QueryExecutionService/adapter/RdbServiceAdapter.h"
 
 class Container {
 public:
@@ -92,6 +93,7 @@ public:
   unidb::rdb::SelectRowsAction &selectRowsAction() { return selectRows; }
   unidb::rdb::GetTableDefinitionAction &getTableDefinitionAction() { return getTableDefinition; }
   unidb::rdb::DeleteRowsAction &deleteRowsAction() { return deleteRows; }
+  unidb::query::RdbServiceAdapter &queryRdbServiceAdapter() { return queryRdbAdapter; }
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
     return getCatalogRootId;
   }
@@ -181,4 +183,5 @@ private:
   unidb::rdb::SelectRowsAction selectRows;
   unidb::rdb::GetTableDefinitionAction getTableDefinition;
   unidb::rdb::DeleteRowsAction deleteRows;
+  unidb::query::RdbServiceAdapter queryRdbAdapter;
 };
