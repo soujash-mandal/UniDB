@@ -44,7 +44,7 @@ std::vector<std::vector<unidb::sql::SqlValue>> TupleSelectRowsAdapter::select(co
   }
 
   std::vector<std::vector<unidb::sql::SqlValue>> rows;
-  for (const auto &bytes : scan.execute(table.firstTuplePageId)) {
+  for (const auto &bytes : scan.execute(table.tupleRootPageId)) {
     auto values = RdbTupleCodec::decode(schema, bytes);
     if (predicate && values[predicateIndex] != predicate->value) continue;
     std::vector<unidb::sql::SqlValue> projected;
