@@ -24,7 +24,18 @@ void TupleInsertRowAdapter::insert(const unidb::sql::InsertStatement &statement)
       orderedValues[index] = statement.values[i];
     }
   }
-  auto bytes = RdbTupleCodec::encode(table.columns, orderedValues);
+
+  std::vector<unidb::sql::SqlType> schema;
+  schema.reserve(table.columns.size());
+  for (const auto &column : table.columns) {
+    switch (column.type) {
+    case DataType::INT: schema.push_back(unidb::sql::SqlType::Int); break;
+    case DataType::VARCHAR: schema.push_back(unidb::sql::SqlType::Text); break;
+    default: throw std::invalid_argument("Column type is not supported by the V1 SQL contract");
+    }
+  }
+
+  auto bytes = RdbTupleCodec::encode(schema, orderedValues);
   const auto result = insertTuple.execute(table.firstTuplePageId, bytes);
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max()) {
     table.firstTuplePageId = result.firstPageId;
