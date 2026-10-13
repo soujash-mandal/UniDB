@@ -85,6 +85,7 @@ set(UNIDB_SOURCES
     RdbService/adapter/CatalogDropTableAdapter.cpp
     RdbService/adapter/TupleInsertRowAdapter.cpp
     RdbService/adapter/TupleSelectRowsAdapter.cpp
+    RdbService/adapter/RdbTupleCodec.cpp
     RdbService/adapter/CatalogGetTableDefinitionAdapter.cpp
     RdbService/adapter/TupleDeleteRowsAdapter.cpp
 
