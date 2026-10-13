@@ -39,6 +39,7 @@
 #include "../CatalogService/actions/CreateRootCatalogPageAction.h"
 #include "../CatalogService/actions/CreateTableAction.h"
 #include "../CatalogService/actions/GetTableByNameAction.h"
+#include "../CatalogService/actions/GetCatalogTableDefinitionAction.h"
 #include "../CatalogService/actions/UpdateTableAction.h"
 #include "../CatalogService/actions/DropTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
