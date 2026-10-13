@@ -46,7 +46,8 @@ public:
   void Remove(BufferPoolPageId) override {}
 };
 
-// Scenario 1: Reusing a dirty victim flushes its old bytes before the new page starts zeroed and pinned.
+// Scenario 1: Reusing a dirty victim flushes its old bytes before the new
+// page starts zeroed and pinned.
 TEST(NewPageActionTest, ReusedFrameStartsWithZeroedPageContents) {
   BufferPool bufferPool(1);
   Frame &frame = bufferPool.getFrame(0);
@@ -74,7 +75,8 @@ TEST(NewPageActionTest, ReusedFrameStartsWithZeroedPageContents) {
   EXPECT_EQ(frame.getPage().data()[0], 0);
 }
 
-// Scenario 2: An unused frame is initialized with zeroed bytes without writing stale, unoccupied frame contents.
+// Scenario 2: An unused frame is initialized with zeroed bytes without
+// writing stale, unoccupied frame contents.
 TEST(NewPageActionTest, UnoccupiedFrameStartsWithZeroedPageContents) {
   BufferPool bufferPool(1);
   Frame &frame = bufferPool.getFrame(0);
@@ -95,7 +97,8 @@ TEST(NewPageActionTest, UnoccupiedFrameStartsWithZeroedPageContents) {
   EXPECT_EQ(frame.getPage().data()[0], 0);
 }
 
-// Scenario 3: If allocation of a replacement page fails, the evicted page remains resident and can be selected on retry.
+// Scenario 3: If allocation of a replacement page fails, the evicted page
+// remains resident and can be selected on retry.
 TEST(NewPageActionTest, AllocationFailureRestoresVictimForRetry) {
   BufferPool bufferPool(1);
   Frame &frame = bufferPool.getFrame(0);
@@ -121,7 +124,8 @@ TEST(NewPageActionTest, AllocationFailureRestoresVictimForRetry) {
   EXPECT_EQ(frame.getPinCount(), 1);
 }
 
-// Scenario 4: If dirty-victim writeback fails, the original page stays dirty and remains evictable for a retry.
+// Scenario 4: If dirty-victim writeback fails, the original page stays dirty
+// and remains evictable for a retry.
 TEST(NewPageActionTest, FailedVictimWriteRestoresVictimForRetry) {
   BufferPool bufferPool(1);
   Frame &frame = bufferPool.getFrame(0);
