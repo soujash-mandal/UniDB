@@ -12,8 +12,10 @@ std::filesystem::path IntegrationDatabasePath() {
 }
 } // namespace
 
-// Scenario 1: A fresh database initializes once; allocated page bytes and allocation metadata survive Container destruction/reopen.
-TEST(FoundationIntegrationTest, FreshStartupPersistsPagesAndAllocationMetadataAcrossReopen) {
+// Scenario 1: A fresh database initializes once; allocated page bytes and
+// allocation metadata survive Container destruction/reopen.
+TEST(FoundationIntegrationTest,
+     FreshStartupPersistsPagesAndAllocationMetadataAcrossReopen) {
   const auto path = IntegrationDatabasePath();
   std::filesystem::remove(path);
 
@@ -37,7 +39,8 @@ TEST(FoundationIntegrationTest, FreshStartupPersistsPagesAndAllocationMetadataAc
     Container reopened(path.string(), 2, EvictionPolicyType::FIFO);
     EXPECT_FALSE(DatabaseStartup::execute(reopened));
 
-    const BufferPoolPage actual = reopened.fetchPageAction().execute(dataPageId);
+    const BufferPoolPage actual =
+        reopened.fetchPageAction().execute(dataPageId);
     for (std::size_t i = 0; i < BufferPoolPage::PAGE_SIZE; ++i) {
       EXPECT_EQ(static_cast<unsigned char>(actual.data()[i]),
                 static_cast<unsigned char>((i * 19U) % 256U))
