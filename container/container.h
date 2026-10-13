@@ -47,15 +47,29 @@
 
 #include "../TupleService/actions/InsertTupleIntoTableAction.h"
 #include "../TupleService/actions/ScanTupleTableAction.h"
+#include "../TupleService/actions/ScanTupleTableWithLocationsAction.h"
+#include "../TupleService/actions/DeleteTupleAction.h"
 #include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../RdbService/actions/InitializeRdbAction.h"
+#include "../RdbService/actions/CreateTableAction.h"
+#include "../RdbService/actions/DropTableAction.h"
+#include "../RdbService/actions/InsertRowAction.h"
+#include "../RdbService/actions/SelectRowsAction.h"
+#include "../RdbService/actions/GetTableDefinitionAction.h"
+#include "../RdbService/actions/DeleteRowsAction.h"
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
 #include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/CatalogCreateTableAdapter.h"
+#include "../RdbService/adapter/CatalogDropTableAdapter.h"
+#include "../RdbService/adapter/TupleInsertRowAdapter.h"
+#include "../RdbService/adapter/TupleSelectRowsAdapter.h"
+#include "../RdbService/adapter/CatalogGetTableDefinitionAdapter.h"
+#include "../RdbService/adapter/TupleDeleteRowsAdapter.h"
 
 class Container {
 public:
@@ -71,6 +85,12 @@ public:
   WritePageAction &writePageAction() { return writePage; }
   CreateFpmPageAction &createFpmPageAction() { return createFpmPage; }
   InitializeRdbAction &initializeRdbAction() { return initializeRdb; }
+  unidb::rdb::CreateTableAction &rdbCreateTableAction() { return rdbCreateTable; }
+  unidb::rdb::DropTableAction &rdbDropTableAction() { return rdbDropTable; }
+  unidb::rdb::InsertRowAction &insertRowAction() { return insertRow; }
+  unidb::rdb::SelectRowsAction &selectRowsAction() { return selectRows; }
+  unidb::rdb::GetTableDefinitionAction &getTableDefinitionAction() { return getTableDefinition; }
+  unidb::rdb::DeleteRowsAction &deleteRowsAction() { return deleteRows; }
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
     return getCatalogRootId;
   }
@@ -132,6 +152,8 @@ private:
   TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
   InsertTupleIntoTableAction insertTupleIntoTable;
   ScanTupleTableAction scanTupleTable;
+  ScanTupleTableWithLocationsAction scanTupleTableWithLocations;
+  DeleteTupleAction deleteTuple;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
   UpdateRdbMetadataPageAction updateRdbMetadataPage;
@@ -143,4 +165,18 @@ private:
 
   InitializeRdbAction initializeRdb;
   GetCatalogRootPageIdAction getCatalogRootId;
+
+  unidb::rdb::CatalogCreateTableAdapter rdbCreateTableAdapter;
+  unidb::rdb::CatalogDropTableAdapter rdbDropTableAdapter;
+  unidb::rdb::TupleInsertRowAdapter insertRowAdapter;
+  unidb::rdb::TupleSelectRowsAdapter selectRowsAdapter;
+  unidb::rdb::CatalogGetTableDefinitionAdapter getTableDefinitionAdapter;
+  unidb::rdb::TupleDeleteRowsAdapter deleteRowsAdapter;
+
+  unidb::rdb::CreateTableAction rdbCreateTable;
+  unidb::rdb::DropTableAction rdbDropTable;
+  unidb::rdb::InsertRowAction insertRow;
+  unidb::rdb::SelectRowsAction selectRows;
+  unidb::rdb::GetTableDefinitionAction getTableDefinition;
+  unidb::rdb::DeleteRowsAction deleteRows;
 };
