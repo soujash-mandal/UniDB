@@ -52,6 +52,9 @@ set(UNIDB_SOURCES
     CatalogService/actions/CreateTableAction.cpp
     CatalogService/actions/GetTableAction.cpp
     CatalogService/actions/GetTableByNameAction.cpp
+    # Catalog-owned logical contracts hide physical page representation from RDBService.
+    CatalogService/actions/GetCatalogTableDefinitionAction.cpp
+    CatalogService/actions/UpdateCatalogTupleRootAction.cpp
     CatalogService/actions/UpdateTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
@@ -66,12 +69,27 @@ set(UNIDB_SOURCES
     TupleService/actions/DeleteTupleAction.cpp
     TupleService/actions/InsertTupleIntoTableAction.cpp
     TupleService/actions/ScanTupleTableAction.cpp
+    TupleService/actions/ScanTupleTableWithLocationsAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
+    QueryExecutionService/adapter/RdbServiceAdapter.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
+    RdbService/actions/CreateTableAction.cpp
+    RdbService/actions/DropTableAction.cpp
+    RdbService/actions/InsertRowAction.cpp
+    RdbService/actions/SelectRowsAction.cpp
+    RdbService/actions/GetTableDefinitionAction.cpp
+    RdbService/actions/DeleteRowsAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
+    RdbService/adapter/CatalogCreateTableAdapter.cpp
+    RdbService/adapter/CatalogDropTableAdapter.cpp
+    RdbService/adapter/TupleInsertRowAdapter.cpp
+    RdbService/adapter/TupleSelectRowsAdapter.cpp
+    RdbService/adapter/RdbTupleCodec.cpp
+    RdbService/adapter/CatalogGetTableDefinitionAdapter.cpp
+    RdbService/adapter/TupleDeleteRowsAdapter.cpp
 
     SQLParser/SqlLexer.cpp
     SQLParser/SqlParserImpl.cpp
@@ -85,6 +103,7 @@ add_executable(unidb
 
 add_executable(tests
     ${UNIDB_SOURCES}
+    DatabaseStartup.cpp
 
     DiskManager/test/DiskManagerE2ETest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
@@ -94,6 +113,8 @@ add_executable(tests
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
     CatalogService/test/CatalogPageTest.cpp
+    RdbService/test/RdbServiceIntegrationTest.cpp
+    architecture/serviceGraphTest.cpp
     TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     TupleService/test/TuplePageTest.cpp

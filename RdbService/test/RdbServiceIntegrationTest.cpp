@@ -1,0 +1,163 @@
+#include "../../DatabaseStartup.h"
+#include "../../EvictionPolicy/EvictionPolicyType.h"
+#include "../actions/CreateTableAction.h"
+#include "../actions/InsertRowAction.h"
+#include "../actions/SelectRowsAction.h"
+#include "../actions/GetTableDefinitionAction.h"
+#include "../actions/DeleteRowsAction.h"
+#include "../domain/RdbResult.h"
+#include <gtest/gtest.h>
+#include <filesystem>
+#include <string>
+
+namespace {
+std::filesystem::path testDatabasePath(const std::string &name) {
+  return std::filesystem::temp_directory_path() / ("unidb_rdb_service_" + name + ".db");
+}
+}
+
+TEST(RdbServiceIntegrationTest, CreateInsertSelectAndPersistRows) {
+  const auto path = testDatabasePath("persist");
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    auto created = container.rdbCreateTableAction().execute({"users", {{"id", unidb::sql::SqlType::Int}, {"name", unidb::sql::SqlType::Text}}});
+    ASSERT_TRUE(created.hasValue()) << (created.hasValue() ? "" : created.error().message);
+    auto inserted = container.insertRowAction().execute({"users", {"id", "name"}, {std::int64_t{7}, std::string{"Ada"}}});
+    ASSERT_TRUE(inserted.hasValue()) << (inserted.hasValue() ? "" : inserted.error().message);
+    EXPECT_EQ(inserted.value(), 1u);
+    auto selected = container.selectRowsAction().execute({true, {}, "users", std::monostate{}});
+    ASSERT_TRUE(selected.hasValue()) << (selected.hasValue() ? "" : selected.error().message);
+    ASSERT_EQ(selected.value().size(), 1u);
+    ASSERT_EQ(selected.value()[0].size(), 2u);
+    EXPECT_EQ(std::get<std::int64_t>(selected.value()[0][0]), 7);
+    EXPECT_EQ(std::get<std::string>(selected.value()[0][1]), "Ada");
+    // Bootstrap allocates catalog root at page 2 and the first tuple page at page 3.
+    container.flushPageAction().execute(2);
+    container.flushPageAction().execute(3);
+  }
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_FALSE(DatabaseStartup::execute(container));
+    auto selected = container.selectRowsAction().execute({true, {}, "users", std::monostate{}});
+    ASSERT_TRUE(selected.hasValue()) << (selected.hasValue() ? "" : selected.error().message);
+    ASSERT_EQ(selected.value().size(), 1u);
+    EXPECT_EQ(std::get<std::string>(selected.value()[0][1]), "Ada");
+  }
+  std::filesystem::remove(path);
+}
+
+TEST(RdbServiceIntegrationTest, SelectSupportsProjectionAndEqualityPredicate) {
+  const auto path = testDatabasePath("projection");
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    ASSERT_TRUE(container.queryRdbServiceAdapter().createTable({"items", {{"id", unidb::sql::SqlType::Int}, {"label", unidb::sql::SqlType::Text}}}).hasValue());
+    auto empty = container.queryRdbServiceAdapter().selectRows({true, {}, "items", std::monostate{}});
+    ASSERT_TRUE(empty.hasValue());
+    EXPECT_TRUE(empty.value().empty());
+    ASSERT_TRUE(container.queryRdbServiceAdapter().insertRow({"items", {"id", "label"}, {std::int64_t{1}, std::string{"one"}}}).hasValue());
+    ASSERT_TRUE(container.queryRdbServiceAdapter().insertRow({"items", {"id", "label"}, {std::int64_t{2}, std::string{"two"}}}).hasValue());
+    auto selected = container.queryRdbServiceAdapter().selectRows({false, {"label"}, "items", unidb::sql::WhereEquals{"id", std::int64_t{2}}});
+    ASSERT_TRUE(selected.hasValue());
+    ASSERT_EQ(selected.value().size(), 1u);
+    ASSERT_EQ(selected.value()[0].size(), 1u);
+    EXPECT_EQ(std::get<std::string>(selected.value()[0][0]), "two");
+  }
+  std::filesystem::remove(path);
+}
+
+TEST(RdbServiceIntegrationTest, GetsDefinitionAndDeletesOnlyMatchingRows) {
+  const auto path = testDatabasePath("delete");
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    ASSERT_TRUE(container.rdbCreateTableAction().execute({"events", {{"id", unidb::sql::SqlType::Int}, {"label", unidb::sql::SqlType::Text}}}).hasValue());
+    ASSERT_TRUE(container.insertRowAction().execute({"events", {"id", "label"}, {std::int64_t{1}, std::string{"keep"}}}).hasValue());
+    ASSERT_TRUE(container.insertRowAction().execute({"events", {"id", "label"}, {std::int64_t{2}, std::string{"remove"}}}).hasValue());
+    auto definition = container.getTableDefinitionAction().execute("events");
+    ASSERT_TRUE(definition.hasValue());
+    EXPECT_EQ(definition.value().tableName, "events");
+    ASSERT_EQ(definition.value().columns.size(), 2u);
+    EXPECT_EQ(definition.value().columns[0].name, "id");
+    auto deleted = container.deleteRowsAction().execute("events", {"id", std::int64_t{2}});
+    ASSERT_TRUE(deleted.hasValue());
+    EXPECT_EQ(deleted.value(), 1u);
+    auto selected = container.selectRowsAction().execute({true, {}, "events", std::monostate{}});
+    ASSERT_TRUE(selected.hasValue());
+    ASSERT_EQ(selected.value().size(), 1u);
+    EXPECT_EQ(std::get<std::string>(selected.value()[0][1]), "keep");
+    auto noMatch = container.deleteRowsAction().execute("events", {"id", std::int64_t{99}});
+    ASSERT_TRUE(noMatch.hasValue());
+    EXPECT_EQ(noMatch.value(), 0u);
+  }
+  std::filesystem::remove(path);
+}
+
+TEST(RdbServiceIntegrationTest, ReturnsStructuredErrorsForInvalidColumnsAndDuplicateTables) {
+  const auto path = testDatabasePath("errors");
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    auto emptySchema = container.rdbCreateTableAction().execute({"empty_schema", {}});
+    ASSERT_FALSE(emptySchema.hasValue());
+    EXPECT_EQ(emptySchema.error().code, unidb::rdb::RdbErrorCode::InvalidArgument);
+    auto duplicateColumnSchema = container.rdbCreateTableAction().execute(
+        {"duplicate_columns", {{"id", unidb::sql::SqlType::Int}, {"id", unidb::sql::SqlType::Text}}});
+    ASSERT_FALSE(duplicateColumnSchema.hasValue());
+    EXPECT_EQ(duplicateColumnSchema.error().code, unidb::rdb::RdbErrorCode::InvalidArgument);
+
+    ASSERT_TRUE(container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}}).hasValue());
+    auto duplicate = container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}});
+    ASSERT_FALSE(duplicate.hasValue());
+    EXPECT_EQ(duplicate.error().code, unidb::rdb::RdbErrorCode::DuplicateTable);
+    auto badProjection = container.selectRowsAction().execute({false, {"missing"}, "items", std::monostate{}});
+    ASSERT_FALSE(badProjection.hasValue());
+    EXPECT_EQ(badProjection.error().code, unidb::rdb::RdbErrorCode::UnknownColumn);
+    auto badInsertColumn = container.insertRowAction().execute(
+        {"items", {"missing"}, {std::int64_t{1}}});
+    ASSERT_FALSE(badInsertColumn.hasValue());
+    EXPECT_EQ(badInsertColumn.error().code, unidb::rdb::RdbErrorCode::UnknownColumn);
+    auto badPredicate = container.deleteRowsAction().execute("items", {"missing", std::int64_t{1}});
+    ASSERT_FALSE(badPredicate.hasValue());
+    EXPECT_EQ(badPredicate.error().code, unidb::rdb::RdbErrorCode::UnknownColumn);
+    auto missingTable = container.getTableDefinitionAction().execute("missing");
+    ASSERT_FALSE(missingTable.hasValue());
+    EXPECT_EQ(missingTable.error().code, unidb::rdb::RdbErrorCode::TableNotFound);
+  }
+  std::filesystem::remove(path);
+}
+
+TEST(RdbServiceIntegrationTest, ReportsTypeMismatchAndDropTableErrors) {
+  const auto path = testDatabasePath("types");
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    ASSERT_TRUE(container.rdbCreateTableAction().execute({"items", {{"id", unidb::sql::SqlType::Int}}}).hasValue());
+    auto badInsert = container.insertRowAction().execute({"items", {"id"}, {std::string{"not-an-int"}}});
+    ASSERT_FALSE(badInsert.hasValue());
+    EXPECT_EQ(badInsert.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+
+    auto badSelectPredicate = container.selectRowsAction().execute(
+        {true, {}, "items", unidb::sql::WhereEquals{"id", std::string{"not-an-int"}}});
+    ASSERT_FALSE(badSelectPredicate.hasValue());
+    EXPECT_EQ(badSelectPredicate.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+
+    auto badDeletePredicate = container.deleteRowsAction().execute(
+        "items", {"id", std::string{"not-an-int"}});
+    ASSERT_FALSE(badDeletePredicate.hasValue());
+    EXPECT_EQ(badDeletePredicate.error().code, unidb::rdb::RdbErrorCode::TypeMismatch);
+
+    auto dropped = container.rdbDropTableAction().execute("items");
+    EXPECT_TRUE(dropped.hasValue());
+    auto missing = container.getTableDefinitionAction().execute("items");
+    ASSERT_FALSE(missing.hasValue());
+    EXPECT_EQ(missing.error().code, unidb::rdb::RdbErrorCode::TableNotFound);
+  }
+  std::filesystem::remove(path);
+}

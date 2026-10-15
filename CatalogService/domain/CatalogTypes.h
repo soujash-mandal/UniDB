@@ -22,4 +22,6 @@ struct CatalogTableDefinition {
   CatalogTableId tableId{};
   std::string name;
   std::vector<Column> columns;
+  // Opaque tuple root locator.
+  CatalogPageId tupleRootPageId{CATALOG_INVALID_PAGE_ID};
 };

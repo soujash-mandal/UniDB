@@ -25,6 +25,10 @@ jobs:
           files=$(find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
             -not -path "./build/*")
 
+          failed=0
           for file in $files; do
-            clang-format --dry-run --Werror "$file"
+            if ! clang-format --dry-run --Werror "$file"; then
+              failed=1
+            fi
           done
+          exit "$failed"

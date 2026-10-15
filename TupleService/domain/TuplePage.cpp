@@ -91,3 +91,13 @@ std::vector<std::vector<char>> TuplePage::getAllTuples() const {
   }
   return tuples;
 }
+
+std::vector<TupleRecord> TuplePage::getAllTupleRecords() const {
+  const auto *header = reinterpret_cast<const TuplePageHeader *>(bytes);
+  std::vector<TupleRecord> records;
+  for (uint32_t i = 0; i < header->slotCount; ++i) {
+    const auto *slot = reinterpret_cast<const TupleSlotEntry *>(bytes + sizeof(TuplePageHeader) + i * sizeof(TupleSlotEntry));
+    if (slot->size != 0) records.push_back({i, std::vector<char>(bytes + slot->offset, bytes + slot->offset + slot->size)});
+  }
+  return records;
+}
