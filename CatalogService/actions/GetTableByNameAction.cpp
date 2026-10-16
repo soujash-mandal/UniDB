@@ -15,19 +15,28 @@ Table GetTableByNameAction::execute(CatalogPageId rootPageId,
   CatalogPageId currentPageId = rootPageId;
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(currentPageId);
+    CatalogPageId nextPageId;
+    bool found = false;
+    Table table{};
     try {
-      const CatalogPageId nextPageId = page.getNextPageId();
+      nextPageId = page.getNextPageId();
       if (page.containsTableName(tableName)) {
-        Table table = page.getByName(tableName);
-        unpinPagePort.unpinPage(currentPageId);
-        return table;
+        table = page.getByName(tableName);
+        found = true;
       }
-      unpinPagePort.unpinPage(currentPageId);
-      currentPageId = nextPageId;
     } catch (...) {
-      try { unpinPagePort.unpinPage(currentPageId); } catch (...) {}
+      try {
+        unpinPagePort.unpinPage(currentPageId);
+      } catch (...) {
+        // Preserve the original lookup failure.
+      }
       throw;
     }
+    unpinPagePort.unpinPage(currentPageId);
+    if (found) {
+      return table;
+    }
+    currentPageId = nextPageId;
   }
 
   throw std::runtime_error("Table not found");
