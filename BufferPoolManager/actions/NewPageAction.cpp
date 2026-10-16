@@ -34,7 +34,7 @@ BufferPoolPageId NewPageAction::execute() {
 
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
-    if (!frame.isOccupied() || frame.getPageId() != *victimPageId) {
+    if (!frame.isOccupied() || frame.getPageId() != victimPageId.value()) {
       continue;
     }
 
@@ -46,7 +46,7 @@ BufferPoolPageId NewPageAction::execute() {
 
       // Do not discard the victim until replacement allocation succeeds.
       const BufferPoolPageId pageId = allocatePagePort.allocatePage();
-      evictionPolicy.Remove(*victimPageId);
+      evictionPolicy.Remove(victimPageId.value());
 
       // A new logical page must never inherit the evicted page's bytes.
       frame.setPage(BufferPoolPage{});
@@ -61,8 +61,8 @@ BufferPoolPageId NewPageAction::execute() {
     } catch (...) {
       // Evict() removes the victim from policy state. Keep the old resident
       // frame reachable if writeback or page allocation fails.
-      evictionPolicy.RecordAccess(*victimPageId);
-      evictionPolicy.SetEvictable(*victimPageId, true);
+      evictionPolicy.RecordAccess(victimPageId.value());
+      evictionPolicy.SetEvictable(victimPageId.value(), true);
       throw;
     }
   }
