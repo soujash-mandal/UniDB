@@ -22,8 +22,8 @@ void TuplePage::loadFromBytes(const char *source) {
     const std::size_t slotEnd =
         sizeof(TuplePageHeader) +
         static_cast<std::size_t>(count) * sizeof(TupleSlotEntry);
-    if (count > maxSlots || header->freeSpaceOffset >
-                                TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
+    if (count > maxSlots ||
+        header->freeSpaceOffset > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
         slotEnd > header->freeSpaceOffset) {
       throw std::runtime_error("Invalid tuple page header");
     }
@@ -48,8 +48,9 @@ void TuplePage::loadFromBytes(const char *source) {
   std::size_t payloadBytes = 0;
   for (uint32_t i = 0; i < legacyCount; ++i) {
     TupleSlotEntry slot{};
-    std::memcpy(&slot, bytes + sizeof(TuplePageHeader) +
-                           static_cast<std::size_t>(i) * sizeof(TupleSlotEntry),
+    std::memcpy(&slot,
+                bytes + sizeof(TuplePageHeader) +
+                    static_cast<std::size_t>(i) * sizeof(TupleSlotEntry),
                 sizeof(TupleSlotEntry));
     if (slot.size == 0) {
       // Legacy pages used a nonzero offset for an inserted empty tuple and
@@ -73,7 +74,8 @@ void TuplePage::loadFromBytes(const char *source) {
     payloadBytes += slot.size;
   }
   if (legacySlotEnd + payloadBytes > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET) {
-    throw std::runtime_error("Legacy tuple page cannot fit the page-chain trailer");
+    throw std::runtime_error(
+        "Legacy tuple page cannot fit the page-chain trailer");
   }
 
   std::memset(bytes, 0, TUPLE_PAGE_SIZE);
@@ -139,8 +141,8 @@ std::vector<char> TuplePage::get(TupleSlotId slotId) {
     throw std::runtime_error("Tuple slot is deleted");
   }
   const std::size_t slotEnd =
-      sizeof(TuplePageHeader) + static_cast<std::size_t>(count) *
-                                    sizeof(TupleSlotEntry);
+      sizeof(TuplePageHeader) +
+      static_cast<std::size_t>(count) * sizeof(TupleSlotEntry);
   const bool invalidBounds =
       slot->offset < slotEnd || slot->offset < header->freeSpaceOffset ||
       slot->offset > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
@@ -227,7 +229,8 @@ void TuplePage::setNextPageId(TuplePageId pageId) {
   if ((header->slotCount & TUPLE_PAGE_FORMAT_FLAG) == 0) {
     throw std::runtime_error("Invalid tuple page format");
   }
-  std::memcpy(bytes + TUPLE_PAGE_NEXT_PAGE_ID_OFFSET, &pageId, sizeof(pageId));
+  std::memcpy(bytes + TUPLE_PAGE_NEXT_PAGE_ID_OFFSET, &pageId,
+              sizeof(pageId));
 }
 
 uint32_t TuplePage::getSlotCount() const {
