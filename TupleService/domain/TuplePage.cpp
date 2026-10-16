@@ -63,10 +63,10 @@ void TuplePage::loadFromBytes(const char *source) {
       }
       continue;
     }
-    const bool invalidBounds =
-        slot.offset < legacySlotEnd || slot.offset < legacyFreeSpaceOffset ||
-        slot.offset > TUPLE_PAGE_SIZE ||
-        slot.size > TUPLE_PAGE_SIZE - slot.offset;
+    const bool invalidBounds = slot.offset < legacySlotEnd ||
+                               slot.offset < legacyFreeSpaceOffset ||
+                               slot.offset > TUPLE_PAGE_SIZE ||
+                               slot.size > TUPLE_PAGE_SIZE - slot.offset;
     if (invalidBounds) {
       throw std::runtime_error("Invalid legacy tuple slot bounds");
     }
@@ -88,8 +88,7 @@ void TuplePage::loadFromBytes(const char *source) {
     if (!tuples[i].empty()) {
       const auto tupleSize = static_cast<uint32_t>(tuples[i].size());
       header->freeSpaceOffset -= tupleSize;
-      std::memcpy(bytes + header->freeSpaceOffset, tuples[i].data(),
-                  tupleSize);
+      std::memcpy(bytes + header->freeSpaceOffset, tuples[i].data(), tupleSize);
       slot.offset = header->freeSpaceOffset;
       slot.size = tupleSize;
     }
@@ -229,8 +228,7 @@ void TuplePage::setNextPageId(TuplePageId pageId) {
   if ((header->slotCount & TUPLE_PAGE_FORMAT_FLAG) == 0) {
     throw std::runtime_error("Invalid tuple page format");
   }
-  std::memcpy(bytes + TUPLE_PAGE_NEXT_PAGE_ID_OFFSET, &pageId,
-              sizeof(pageId));
+  std::memcpy(bytes + TUPLE_PAGE_NEXT_PAGE_ID_OFFSET, &pageId, sizeof(pageId));
 }
 
 uint32_t TuplePage::getSlotCount() const {
@@ -268,11 +266,10 @@ std::vector<std::vector<char>> TuplePage::getAllTuples() const {
     if (slot->size == 0) {
       continue;
     }
-    const bool invalidBounds =
-        slot->offset < slotEnd ||
-        slot->offset < header->freeSpaceOffset ||
-        slot->offset > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
-        slot->size > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET - slot->offset;
+    const bool invalidBounds = slot->offset < slotEnd ||
+                               slot->offset < header->freeSpaceOffset ||
+                               slot->offset > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
+                               slot->size > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET - slot->offset;
     if (invalidBounds) {
       throw std::runtime_error("Invalid tuple slot bounds");
     }
