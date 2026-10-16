@@ -15,14 +15,16 @@ TuplePage::TuplePage() {
 TupleSlotId TuplePage::insert(const std::vector<char> tupleData) {
   if (tupleData.empty())
     throw std::invalid_argument("Tuple data cannot be empty");
-  if (!hasSpace(static_cast<uint32_t>(tupleData.size())))
+  if (tupleData.size() > std::numeric_limits<uint32_t>::max())
+    throw std::length_error("Tuple exceeds the V1 tuple size limit");
+  const auto tupleSize = static_cast<uint32_t>(tupleData.size());
+  if (!hasSpace(tupleSize))
     throw std::runtime_error("TuplePage is full");
   auto *header = reinterpret_cast<TuplePageHeader *>(bytes);
   TupleSlotId slotId = header->slotCount;
   const std::size_t slotOffset =
       sizeof(TuplePageHeader) + slotId * sizeof(TupleSlotEntry);
   auto *slot = reinterpret_cast<TupleSlotEntry *>(bytes + slotOffset);
-  const uint32_t tupleSize = static_cast<uint32_t>(tupleData.size());
   header->freeSpaceOffset -= tupleSize;
   std::memcpy(bytes + header->freeSpaceOffset, tupleData.data(), tupleSize);
   slot->offset = header->freeSpaceOffset;
@@ -39,6 +41,12 @@ std::vector<char> TuplePage::get(TupleSlotId slotId) {
       bytes + sizeof(TuplePageHeader) + slotId * sizeof(TupleSlotEntry));
   if (slot->size == 0)
     throw std::runtime_error("Tuple slot is deleted");
+  const std::size_t slotEnd = sizeof(TuplePageHeader) +
+      static_cast<std::size_t>(header->slotCount) * sizeof(TupleSlotEntry);
+  if (slot->offset < slotEnd || slot->offset < header->freeSpaceOffset ||
+      slot->offset > TUPLE_PAGE_SIZE ||
+      slot->size > TUPLE_PAGE_SIZE - slot->offset)
+    throw std::runtime_error("Invalid tuple slot bounds");
   return std::vector<char>(bytes + slot->offset,
                            bytes + slot->offset + slot->size);
 }
@@ -55,17 +63,29 @@ void TuplePage::remove(TupleSlotId slotId) {
 
 bool TuplePage::hasSpace(uint32_t tupleSize) {
   const auto *header = reinterpret_cast<const TuplePageHeader *>(bytes);
-  const std::size_t nextSlotOffset =
-      sizeof(TuplePageHeader) + header->slotCount * sizeof(TupleSlotEntry);
-  return nextSlotOffset + sizeof(TupleSlotEntry) + tupleSize <=
-         header->freeSpaceOffset;
+  if (header->slotCount >
+          (TUPLE_PAGE_SIZE - sizeof(TuplePageHeader)) /
+              sizeof(TupleSlotEntry) ||
+      header->freeSpaceOffset > TUPLE_PAGE_SIZE)
+    return false;
+  const std::size_t nextSlotOffset = sizeof(TuplePageHeader) +
+      static_cast<std::size_t>(header->slotCount) * sizeof(TupleSlotEntry);
+  return nextSlotOffset <= header->freeSpaceOffset &&
+         sizeof(TupleSlotEntry) <= header->freeSpaceOffset - nextSlotOffset &&
+         tupleSize <= header->freeSpaceOffset - nextSlotOffset -
+                          sizeof(TupleSlotEntry);
 }
 
 uint32_t TuplePage::getFreeSpace() {
   TuplePageHeader header;
   std::memcpy(&header, bytes, sizeof(TuplePageHeader));
-  const uint32_t slotEnd = static_cast<uint32_t>(
-      sizeof(TuplePageHeader) + header.slotCount * sizeof(TupleSlotEntry));
+  if (header.slotCount >
+          (TUPLE_PAGE_SIZE - sizeof(TuplePageHeader)) /
+              sizeof(TupleSlotEntry) ||
+      header.freeSpaceOffset > TUPLE_PAGE_SIZE)
+    return 0;
+  const uint32_t slotEnd = static_cast<uint32_t>(sizeof(TuplePageHeader) +
+      static_cast<std::size_t>(header.slotCount) * sizeof(TupleSlotEntry));
   return header.freeSpaceOffset >= slotEnd ? header.freeSpaceOffset - slotEnd
                                            : 0;
 }
@@ -81,13 +101,29 @@ uint32_t TuplePage::getSlotCount() const {
 }
 std::vector<std::vector<char>> TuplePage::getAllTuples() const {
   const auto *header = reinterpret_cast<const TuplePageHeader *>(bytes);
+  const std::size_t maxSlots =
+      (TUPLE_PAGE_SIZE - sizeof(TuplePageHeader)) / sizeof(TupleSlotEntry);
+  if (header->slotCount > maxSlots ||
+      header->freeSpaceOffset > TUPLE_PAGE_SIZE)
+    throw std::runtime_error("Invalid tuple page header");
+  const std::size_t slotEnd = sizeof(TuplePageHeader) +
+      static_cast<std::size_t>(header->slotCount) * sizeof(TupleSlotEntry);
+  if (slotEnd > header->freeSpaceOffset)
+    throw std::runtime_error("Tuple page slots overlap tuple data");
+
   std::vector<std::vector<char>> tuples;
   for (uint32_t i = 0; i < header->slotCount; ++i) {
     const auto *slot = reinterpret_cast<const TupleSlotEntry *>(
-        bytes + sizeof(TuplePageHeader) + i * sizeof(TupleSlotEntry));
-    if (slot->size != 0)
-      tuples.emplace_back(bytes + slot->offset,
-                          bytes + slot->offset + slot->size);
+        bytes + sizeof(TuplePageHeader) +
+        static_cast<std::size_t>(i) * sizeof(TupleSlotEntry));
+    if (slot->size == 0)
+      continue;
+    if (slot->offset < slotEnd || slot->offset < header->freeSpaceOffset ||
+        slot->offset > TUPLE_PAGE_SIZE ||
+        slot->size > TUPLE_PAGE_SIZE - slot->offset)
+      throw std::runtime_error("Invalid tuple slot bounds");
+    tuples.emplace_back(bytes + slot->offset,
+                        bytes + slot->offset + slot->size);
   }
   return tuples;
 }
