@@ -17,3 +17,16 @@ TEST(SqlTupleCodecTest, RejectsTypeMismatchAndWrongArity) {
                std::invalid_argument);
   EXPECT_THROW(SqlTupleCodec::encode(schema, {}), std::invalid_argument);
 }
+
+TEST(SqlTupleCodecTest, RejectsTruncatedFieldsAndTrailingBytes) {
+  const std::vector<unidb::sql::SqlType> intSchema{unidb::sql::SqlType::Int};
+  const std::vector<unidb::sql::SqlType> textSchema{unidb::sql::SqlType::Text};
+  EXPECT_THROW(SqlTupleCodec::decode(intSchema, std::vector<char>{'x'}),
+               std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(textSchema, std::vector<char>{1, 0, 0}),
+               std::runtime_error);
+
+  auto encoded = SqlTupleCodec::encode(intSchema, {int64_t{42}});
+  encoded.push_back('x');
+  EXPECT_THROW(SqlTupleCodec::decode(intSchema, encoded), std::runtime_error);
+}
