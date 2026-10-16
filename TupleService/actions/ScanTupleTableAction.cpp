@@ -13,8 +13,13 @@ ScanTupleTableAction::execute(TuplePageId firstPageId) {
   while (currentPageId != std::numeric_limits<TuplePageId>::max()) {
     TuplePage page = fetchPagePort.fetchPage(currentPageId);
     const TuplePageId nextPageId = page.getNextPageId();
-    auto pageTuples = page.getAllTuples();
-    tuples.insert(tuples.end(), pageTuples.begin(), pageTuples.end());
+    try {
+      auto pageTuples = page.getAllTuples();
+      tuples.insert(tuples.end(), pageTuples.begin(), pageTuples.end());
+    } catch (...) {
+      try { unpinPagePort.unpinPage(currentPageId); } catch (...) {}
+      throw;
+    }
     unpinPagePort.unpinPage(currentPageId);
     currentPageId = nextPageId;
   }
