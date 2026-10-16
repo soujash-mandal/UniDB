@@ -1,6 +1,8 @@
 #include "ScanTupleTableAction.h"
 
 #include <limits>
+#include <stdexcept>
+#include <unordered_set>
 
 ScanTupleTableAction::ScanTupleTableAction(TupleFetchPagePort &fetchPagePort,
                                            TupleUnpinPagePort &unpinPagePort)
@@ -9,8 +11,13 @@ ScanTupleTableAction::ScanTupleTableAction(TupleFetchPagePort &fetchPagePort,
 std::vector<std::vector<char>>
 ScanTupleTableAction::execute(TuplePageId firstPageId) {
   std::vector<std::vector<char>> tuples;
+  std::unordered_set<TuplePageId> visitedPageIds;
   TuplePageId currentPageId = firstPageId;
   while (currentPageId != std::numeric_limits<TuplePageId>::max()) {
+    if (!visitedPageIds.insert(currentPageId).second) {
+      throw std::runtime_error("Tuple page chain is invalid");
+    }
+
     TuplePage page = fetchPagePort.fetchPage(currentPageId);
     TuplePageId nextPageId;
     try {
