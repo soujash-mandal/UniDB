@@ -12,11 +12,15 @@ class InMemoryTupleStore : public TupleFetchPagePort,
                            public TupleWritePagePort,
                            public TupleUnpinPagePort {
 public:
-  TuplePage fetchPage(TuplePageId pageId) override { return pages.at(pageId); }
+  TuplePage fetchPage(TuplePageId pageId) override {
+    ++pins[pageId];
+    return pages.at(pageId);
+  }
 
   TuplePageId newPage() override {
     const TuplePageId pageId = nextPageId++;
     pages.emplace(pageId, TuplePage{});
+    ++pins[pageId];
     return pageId;
   }
 
@@ -24,11 +28,27 @@ public:
     pages.insert_or_assign(pageId, page);
   }
 
-  void unpinPage(TuplePageId) override {}
+  void unpinPage(TuplePageId pageId) override {
+    auto it = pins.find(pageId);
+    if (it == pins.end() || it->second == 0) {
+      throw std::runtime_error("Unpin without matching pin");
+    }
+    --it->second;
+  }
+
+  bool hasPinnedPages() const {
+    for (const auto &entry : pins) {
+      if (entry.second != 0) {
+        return true;
+      }
+    }
+    return false;
+  }
 
 private:
   TuplePageId nextPageId{1};
   std::unordered_map<TuplePageId, TuplePage> pages;
+  std::unordered_map<TuplePageId, uint32_t> pins;
 };
 } // namespace
 
@@ -51,4 +71,5 @@ TEST(TableTupleActionsTest, InsertsAcrossPagesAndScansRowsInOrder) {
   ASSERT_EQ(rows.size(), 2U);
   EXPECT_EQ(rows[0], firstRow);
   EXPECT_EQ(rows[1], secondRow);
+  EXPECT_FALSE(store.hasPinnedPages());
 }
