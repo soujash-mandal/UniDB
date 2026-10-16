@@ -18,13 +18,17 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
   if (tupleData.empty()) {
     throw std::invalid_argument("Tuple data cannot be empty");
   }
+  if (tupleData.size() > std::numeric_limits<uint32_t>::max()) {
+    throw std::length_error("Tuple exceeds the V1 tuple size limit");
+  }
+  const auto tupleSize = static_cast<uint32_t>(tupleData.size());
   TuplePage emptyPage;
-  if (!emptyPage.hasSpace(static_cast<uint32_t>(tupleData.size()))) {
+  if (!emptyPage.hasSpace(tupleSize)) {
     throw std::length_error("Tuple is too large for a tuple page");
   }
 
-  // Keep page allocation and single-page tuple insertion in their existing
-  // actions; this action only coordinates table-level page chaining.
+  // This action coordinates table-level page chaining; existing actions own
+  // page creation and single-page tuple insertion.
   CreateTupleAction insertTuple(fetchPagePort, writePagePort, unpinPagePort);
   CreateTuplePageAction createPage(newPagePort, writePagePort, unpinPagePort);
 
@@ -38,20 +42,28 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
   TuplePageId currentPageId = firstPageId;
   while (currentPageId != std::numeric_limits<TuplePageId>::max()) {
     TuplePage page = fetchPagePort.fetchPage(currentPageId);
-    if (page.hasSpace(static_cast<uint32_t>(tupleData.size()))) {
+    bool hasSpace = false;
+    TuplePageId nextPageId = std::numeric_limits<TuplePageId>::max();
+    try {
+      hasSpace = page.hasSpace(tupleSize);
+      nextPageId = page.getNextPageId();
+    } catch (...) {
+      try { unpinPagePort.unpinPage(currentPageId); } catch (...) {}
+      throw;
+    }
+
+    if (hasSpace) {
       unpinPagePort.unpinPage(currentPageId);
       const TupleSlotId slotId = insertTuple.execute(currentPageId, tupleData);
       return {firstPageId, currentPageId, slotId};
     }
 
-    const TuplePageId nextPageId = page.getNextPageId();
     if (nextPageId == std::numeric_limits<TuplePageId>::max()) {
-      // A tuple table's page chain is distinct from the allocator's free-page
-      // bookkeeping: link the new page so scans can find it from the root.
+      // Release the tail before allocation so a one-frame pool can evict it.
+      unpinPagePort.unpinPage(currentPageId);
       const auto createdPage = createPage.execute();
       page.setNextPageId(createdPage.pageId);
       writePagePort.writePage(currentPageId, page);
-      unpinPagePort.unpinPage(currentPageId);
 
       const TupleSlotId slotId =
           insertTuple.execute(createdPage.pageId, tupleData);
