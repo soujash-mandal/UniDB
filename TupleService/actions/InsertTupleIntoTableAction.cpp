@@ -18,6 +18,11 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
   if (tupleData.empty()) {
     throw std::invalid_argument("Tuple data cannot be empty");
   }
+  const TuplePage emptyPage;
+  if (!const_cast<TuplePage &>(emptyPage).hasSpace(
+          static_cast<uint32_t>(tupleData.size()))) {
+    throw std::length_error("Tuple is too large for a tuple page");
+  }
 
   // Keep page allocation and single-page tuple insertion in their existing
   // actions; this action only coordinates table-level page chaining.
