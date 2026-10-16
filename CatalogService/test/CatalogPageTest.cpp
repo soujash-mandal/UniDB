@@ -121,7 +121,6 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   EXPECT_THROW(page.getByName("missing"), std::runtime_error);
 }
 
-
 TEST(CatalogPageTest, RepeatedGrowingUpdatesReuseCompactedPayloadSpace) {
   CatalogPage page;
   Table table = makeTable(17, "users");
