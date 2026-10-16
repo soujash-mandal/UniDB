@@ -11,8 +11,7 @@ FetchPageAction::FetchPageAction(BufferPool &bufferPool,
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
 BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
-
-  // 1. Check whether page is already in the buffer pool
+  // 1. Check whether the page is already in memory.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (frame.isOccupied() && frame.getPageId() == pageId) {
@@ -23,7 +22,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     }
   }
 
-  // 2. Find an empty frame
+  // 2. Use an empty frame if one is available.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied()) {
@@ -40,42 +39,49 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     }
   }
 
-  // 3. Buffer pool is full.
-  // Ask the eviction policy which page should be removed.
-  std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
+  // 3. The pool is full, so choose a page that can be replaced.
+  const std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
   if (!victimPageId.has_value()) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
   }
 
-  // 4. Find the frame containing the victim page
+  // Evict() also removes this page from the eviction policy. If I/O fails,
+  // we must add it back because its frame will still contain the old page.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied() || frame.getPageId() != victimPageId.value()) {
       continue;
     }
 
-    // 5. If the victim is dirty, write it to disk first.
-    if (frame.isDirty()) {
-      writePagePort.writePage(frame.getPageId(), frame.getPage());
+    try {
+      // 4. Save changes before replacing a dirty page.
+      if (frame.isDirty()) {
+        writePagePort.writePage(frame.getPageId(), frame.getPage());
+        frame.setDirty(false);
+      }
+
+      // 5. Read the requested page before changing the frame. If this read
+      // fails, the frame still contains the old page.
+      BufferPoolPage page = readPagePort.readDiskPage(pageId);
+
+      // 6. Replace the old page only after the required I/O has succeeded.
+      evictionPolicy.Remove(victimPageId.value());
+      frame.setPage(page);
+      frame.setPageId(pageId);
+      frame.setOccupied(true);
       frame.setDirty(false);
+      frame.pin();
+
+      evictionPolicy.RecordAccess(pageId);
+      evictionPolicy.SetEvictable(pageId, false);
+      return frame.getPage();
+    } catch (...) {
+      // Evict() removed the victim from FIFO before I/O started. Put it back
+      // so it can be chosen again; then pass the original error to the caller.
+      evictionPolicy.RecordAccess(victimPageId.value());
+      evictionPolicy.SetEvictable(victimPageId.value(), true);
+      throw;
     }
-
-    // 6. Remove the old page from the eviction policy.
-    evictionPolicy.Remove(victimPageId.value());
-
-    // 7. Load the requested page into the same frame.
-    BufferPoolPage page = readPagePort.readDiskPage(pageId);
-    frame.setPage(page);
-    frame.setPageId(pageId);
-    frame.setOccupied(true);
-    frame.setDirty(false);
-    frame.pin();
-
-    // 8. Add the new page to the eviction policy.
-    evictionPolicy.RecordAccess(pageId);
-    evictionPolicy.SetEvictable(pageId, false);
-
-    return frame.getPage();
   }
 
   throw std::runtime_error(
