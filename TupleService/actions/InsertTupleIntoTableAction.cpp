@@ -62,8 +62,21 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
       // Release the tail before allocation so a one-frame pool can evict it.
       unpinPagePort.unpinPage(currentPageId);
       const auto createdPage = createPage.execute();
-      page.setNextPageId(createdPage.pageId);
-      writePagePort.writePage(currentPageId, page);
+      // Allocation may have evicted the old tail from a one-frame pool, so
+      // fetch it again before linking and writing its next-page pointer.
+      TuplePage linkPage = fetchPagePort.fetchPage(currentPageId);
+      try {
+        linkPage.setNextPageId(createdPage.pageId);
+        writePagePort.writePage(currentPageId, linkPage);
+      } catch (...) {
+        try {
+          unpinPagePort.unpinPage(currentPageId);
+        } catch (...) {
+          // Preserve the original link/write failure.
+        }
+        throw;
+      }
+      unpinPagePort.unpinPage(currentPageId);
 
       const TupleSlotId slotId =
           insertTuple.execute(createdPage.pageId, tupleData);
