@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 
 TEST(TuplePageTest, MaintainsPageChainAndSkipsDeletedSlots) {
