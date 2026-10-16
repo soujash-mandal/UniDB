@@ -107,7 +107,7 @@ TEST(TableTupleActionsTest, ScanUnpinsPageWhenTupleMaterializationFails) {
   TuplePage corrupted;
   corrupted.insert({'x'});
   const uint32_t invalidOffset = 8192;
-  std::memcpy(corrupted.data() + sizeof(uint32_t) * 3, &invalidOffset,
+  std::memcpy(corrupted.data() + sizeof(uint32_t) * 2, &invalidOffset,
               sizeof(invalidOffset));
   store.storePage(99, corrupted);
 
