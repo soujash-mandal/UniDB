@@ -88,7 +88,6 @@ TEST(TableTupleActionsTest, InsertsAcrossPagesAndScansRowsInOrder) {
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
-
 TEST(TableTupleActionsTest, AllocationFailureDoesNotLeaveTailPagePinned) {
   InMemoryTupleStore store;
   InsertTupleIntoTableAction insert(store, store, store, store);
@@ -98,7 +97,8 @@ TEST(TableTupleActionsTest, AllocationFailureDoesNotLeaveTailPagePinned) {
       insert.execute(std::numeric_limits<TuplePageId>::max(), firstRow);
 
   store.failNextPageAllocation();
-  EXPECT_THROW(insert.execute(first.firstPageId, secondRow), std::runtime_error);
+  EXPECT_THROW(insert.execute(first.firstPageId, secondRow),
+               std::runtime_error);
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
