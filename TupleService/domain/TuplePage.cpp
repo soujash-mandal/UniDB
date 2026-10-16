@@ -57,7 +57,8 @@ void TuplePage::loadFromBytes(const char *source) {
       // that distinction, so fail explicitly rather than silently losing it.
       if (slot.offset != 0) {
         throw std::runtime_error(
-            "Legacy tuple page contains an empty tuple that cannot be migrated safely");
+            "Legacy tuple page contains an empty tuple that cannot be migrated "
+            "safely");
       }
       continue;
     }
