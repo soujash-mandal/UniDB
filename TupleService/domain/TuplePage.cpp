@@ -266,10 +266,11 @@ std::vector<std::vector<char>> TuplePage::getAllTuples() const {
     if (slot->size == 0) {
       continue;
     }
-    const bool invalidBounds = slot->offset < slotEnd ||
-                               slot->offset < header->freeSpaceOffset ||
-                               slot->offset > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
-                               slot->size > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET - slot->offset;
+    const bool invalidBounds =
+        slot->offset < slotEnd ||
+        slot->offset < header->freeSpaceOffset ||
+        slot->offset > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET ||
+        slot->size > TUPLE_PAGE_NEXT_PAGE_ID_OFFSET - slot->offset;
     if (invalidBounds) {
       throw std::runtime_error("Invalid tuple slot bounds");
     }
