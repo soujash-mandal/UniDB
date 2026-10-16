@@ -17,7 +17,11 @@ ScanTupleTableAction::execute(TuplePageId firstPageId) {
       auto pageTuples = page.getAllTuples();
       tuples.insert(tuples.end(), pageTuples.begin(), pageTuples.end());
     } catch (...) {
-      try { unpinPagePort.unpinPage(currentPageId); } catch (...) {}
+      try {
+        unpinPagePort.unpinPage(currentPageId);
+      } catch (...) {
+        // Preserve the original materialization failure.
+      }
       throw;
     }
     unpinPagePort.unpinPage(currentPageId);
