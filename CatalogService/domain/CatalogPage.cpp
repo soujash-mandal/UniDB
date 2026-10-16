@@ -198,8 +198,7 @@ void CatalogPage::update(Table table) {
   if (!found) {
     throw std::runtime_error("Table not found");
   }
-  const std::size_t entryEnd =
-      sizeof(Header) + tables.size() * sizeof(Entry);
+  const std::size_t entryEnd = sizeof(Header) + tables.size() * sizeof(Entry);
   if (entryEnd + payloadBytes > PAGE_SIZE) {
     throw std::runtime_error("Not enough space to update catalog table");
   }
