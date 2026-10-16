@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <fstream>
 #include <string>
 
 namespace {
@@ -109,5 +110,29 @@ TEST(FoundationIntegrationTest,
     reopenedAgain.flushPageAction().execute(nextDataPage);
   }
 
+  std::filesystem::remove(path);
+}
+
+// Scenario 3: Startup rejects a truncated pre-existing database and leaves
+// the file untouched instead of treating it as a new database.
+TEST(FoundationIntegrationTest,
+     TruncatedExistingDatabaseIsRejectedWithoutReinitialization) {
+  const auto path = std::filesystem::temp_directory_path() /
+                    "unidb_truncated_existing_database_test.db";
+  std::filesystem::remove(path);
+  {
+    std::ofstream file(path, std::ios::binary);
+    ASSERT_TRUE(file.is_open());
+    file.put('X');
+    ASSERT_TRUE(file.good());
+  }
+
+  {
+    Container container(path.string(), 2, EvictionPolicyType::FIFO);
+    EXPECT_THROW(DatabaseStartup::execute(container), std::runtime_error);
+  }
+
+  ASSERT_TRUE(std::filesystem::exists(path));
+  EXPECT_EQ(std::filesystem::file_size(path), 1);
   std::filesystem::remove(path);
 }
