@@ -26,7 +26,8 @@ public:
       throw std::runtime_error("Injected page allocation failure");
     }
     if (hasPinnedPages()) {
-      throw std::runtime_error("No evictable frame: another page remains pinned");
+      throw std::runtime_error(
+          "No evictable frame: another page remains pinned");
     }
     const TuplePageId pageId = nextPageId++;
     pages.emplace(pageId, TuplePage{});
