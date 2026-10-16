@@ -8,6 +8,8 @@ MetadataPage::MetadataPage()
 }
 
 void MetadataPage::setPageOccupied(PageId pageId) {
+  // This bitmap only tracks pages in this metadata page's range.
+  // The allocator must move to the next metadata page when this ID is outside it.
   if (pageId == INVALID_PAGE_ID || pageId < firstTrackedPageId) {
     throw std::out_of_range("PageId is outside the metadata bitmap range");
   }
@@ -17,6 +19,7 @@ void MetadataPage::setPageOccupied(PageId pageId) {
     throw std::out_of_range("PageId is outside the metadata bitmap range");
   }
 
+  // Convert the page's position in this range into a bitmap byte and bit.
   const uint32_t byteIndex = relativePageId / BITS_PER_BYTE;
   const uint32_t bitIndex = relativePageId % BITS_PER_BYTE;
   const uint8_t mask = static_cast<uint8_t>(1U << bitIndex);
