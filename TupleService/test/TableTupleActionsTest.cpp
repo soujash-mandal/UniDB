@@ -118,7 +118,7 @@ TEST(TableTupleActionsTest, ScanUnpinsPageWhenTupleMaterializationFails) {
   EXPECT_THROW(scan.execute(99), std::runtime_error);
   EXPECT_FALSE(store.hasPinnedPages());
 }
- 
+
 TEST(TableTupleActionsTest, RejectsCyclicPageChainDuringInsertion) {
   InMemoryTupleStore store;
   TuplePage page;
