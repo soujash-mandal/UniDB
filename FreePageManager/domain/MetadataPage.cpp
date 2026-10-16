@@ -9,7 +9,7 @@ MetadataPage::MetadataPage()
 
 void MetadataPage::setPageOccupied(PageId pageId) {
   // This bitmap only tracks pages in this metadata page's range.
-  // The allocator must move to the next metadata page when this ID is outside it.
+  // The allocator must move to the next metadata page when needed.
   if (pageId == INVALID_PAGE_ID || pageId < firstTrackedPageId) {
     throw std::out_of_range("PageId is outside the metadata bitmap range");
   }
