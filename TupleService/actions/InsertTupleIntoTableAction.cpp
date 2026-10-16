@@ -30,7 +30,8 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
 
   if (firstPageId == std::numeric_limits<TuplePageId>::max()) {
     const auto createdPage = createPage.execute();
-    const TupleSlotId slotId = insertTuple.execute(createdPage.pageId, tupleData);
+    const TupleSlotId slotId =
+        insertTuple.execute(createdPage.pageId, tupleData);
     return {createdPage.pageId, createdPage.pageId, slotId};
   }
 
@@ -52,7 +53,8 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
       writePagePort.writePage(currentPageId, page);
       unpinPagePort.unpinPage(currentPageId);
 
-      const TupleSlotId slotId = insertTuple.execute(createdPage.pageId, tupleData);
+      const TupleSlotId slotId =
+          insertTuple.execute(createdPage.pageId, tupleData);
       return {firstPageId, createdPage.pageId, slotId};
     }
 
