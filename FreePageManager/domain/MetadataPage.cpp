@@ -1,6 +1,6 @@
 #include "MetadataPage.h"
 
-#include <cstring>
+#include <stdexcept>
 
 MetadataPage::MetadataPage()
     : nextMetadataPageId(INVALID_PAGE_ID), firstTrackedPageId(0), bitmap{} {
@@ -8,20 +8,35 @@ MetadataPage::MetadataPage()
 }
 
 void MetadataPage::setPageOccupied(PageId pageId) {
-  MetadataPageId relativePageId = pageId - firstTrackedPageId;
-  uint32_t byteIndex = relativePageId / BITS_PER_BYTE;
-  uint32_t bitIndex = relativePageId % BITS_PER_BYTE;
-  uint8_t mask = static_cast<uint8_t>(1U << bitIndex);
+  // This bitmap only tracks pages in this metadata page's range.
+  // The allocator must move to the next metadata page when needed.
+  if (pageId == INVALID_PAGE_ID || pageId < firstTrackedPageId) {
+    throw std::out_of_range("PageId is outside the metadata bitmap range");
+  }
+
+  const uint32_t relativePageId = pageId - firstTrackedPageId;
+  if (relativePageId >= MAX_TRACKED_PAGES) {
+    throw std::out_of_range("PageId is outside the metadata bitmap range");
+  }
+
+  // Convert the page's position in this range into a bitmap byte and bit.
+  const uint32_t byteIndex = relativePageId / BITS_PER_BYTE;
+  const uint32_t bitIndex = relativePageId % BITS_PER_BYTE;
+  const uint8_t mask = static_cast<uint8_t>(1U << bitIndex);
   bitmap[byteIndex] |= mask;
 }
 
 PageId MetadataPage::findFirstFreePage() const {
   for (uint32_t offset = 0; offset < MAX_TRACKED_PAGES; ++offset) {
-    uint32_t byteIndex = offset / BITS_PER_BYTE;
-    uint32_t bitIndex = offset % BITS_PER_BYTE;
-    uint8_t mask = static_cast<uint8_t>(1U << bitIndex);
+    const uint32_t byteIndex = offset / BITS_PER_BYTE;
+    const uint32_t bitIndex = offset % BITS_PER_BYTE;
+    const uint8_t mask = static_cast<uint8_t>(1U << bitIndex);
     if ((bitmap[byteIndex] & mask) == 0) {
-      return firstTrackedPageId + offset;
+      const PageId pageId = firstTrackedPageId + offset;
+      if (pageId == INVALID_PAGE_ID) {
+        return INVALID_PAGE_ID;
+      }
+      return pageId;
     }
   }
   return INVALID_PAGE_ID;
