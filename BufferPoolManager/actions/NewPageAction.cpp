@@ -27,6 +27,7 @@ BufferPoolPageId NewPageAction::execute() {
     }
   }
 
+  // The pool is full. Evict() chooses a victim and removes it from FIFO.
   const std::optional<BufferPoolPageId> victimPageId = evictionPolicy.Evict();
   if (!victimPageId.has_value()) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
@@ -39,16 +40,18 @@ BufferPoolPageId NewPageAction::execute() {
     }
 
     try {
+      // Save the old page first if it has changes that are not on disk yet.
       if (frame.isDirty()) {
         writePagePort.writePage(frame.getPageId(), frame.getPage());
         frame.setDirty(false);
       }
 
-      // Do not discard the victim until replacement allocation succeeds.
+      // Get a new page ID before changing the frame. If allocation fails,
+      // the frame still holds the old page.
       const BufferPoolPageId pageId = allocatePagePort.allocatePage();
       evictionPolicy.Remove(victimPageId.value());
 
-      // A new logical page must never inherit the evicted page's bytes.
+      // Start the new page with empty bytes; do not reuse the victim's data.
       frame.setPage(BufferPoolPage{});
       frame.setPageId(pageId);
       frame.setOccupied(true);
@@ -59,8 +62,8 @@ BufferPoolPageId NewPageAction::execute() {
       evictionPolicy.SetEvictable(pageId, false);
       return pageId;
     } catch (...) {
-      // Evict() removes the victim from policy state. Keep the old resident
-      // frame reachable if writeback or page allocation fails.
+      // If saving or allocating fails, the old page is still in this frame.
+      // Add it back to FIFO so it can be selected again, then rethrow the error.
       evictionPolicy.RecordAccess(victimPageId.value());
       evictionPolicy.SetEvictable(victimPageId.value(), true);
       throw;
