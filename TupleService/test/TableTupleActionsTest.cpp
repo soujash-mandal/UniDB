@@ -25,6 +25,9 @@ public:
       failNextAllocation = false;
       throw std::runtime_error("Injected page allocation failure");
     }
+    if (hasPinnedPages()) {
+      throw std::runtime_error("No evictable frame: another page remains pinned");
+    }
     const TuplePageId pageId = nextPageId++;
     pages.emplace(pageId, TuplePage{});
     ++pins[pageId];
@@ -110,6 +113,31 @@ TEST(TableTupleActionsTest, ScanUnpinsPageWhenTupleMaterializationFails) {
   std::memcpy(corrupted.data() + sizeof(uint32_t) * 2, &invalidOffset,
               sizeof(invalidOffset));
   store.storePage(99, corrupted);
+
+  ScanTupleTableAction scan(store, store);
+  EXPECT_THROW(scan.execute(99), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+ 
+TEST(TableTupleActionsTest, RejectsCyclicPageChainDuringInsertion) {
+  InMemoryTupleStore store;
+  TuplePage page;
+  page.insert(std::vector<char>(6000, 'a'));
+  page.setNextPageId(99);
+  store.storePage(99, page);
+
+  InsertTupleIntoTableAction insert(store, store, store, store);
+  EXPECT_THROW(insert.execute(99, std::vector<char>(2500, 'b')),
+               std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(TableTupleActionsTest, RejectsCyclicPageChainDuringScan) {
+  InMemoryTupleStore store;
+  TuplePage page;
+  page.insert({'x'});
+  page.setNextPageId(99);
+  store.storePage(99, page);
 
   ScanTupleTableAction scan(store, store);
   EXPECT_THROW(scan.execute(99), std::runtime_error);
