@@ -9,7 +9,16 @@ CreateTuplePageAction::CreateTuplePageAction(TupleNewPagePort &newPagePort,
 CreateTuplePageActionResult CreateTuplePageAction::execute() {
   TuplePageId tuplePageId = newPagePort.newPage();
   TuplePage page;
-  writePagePort.writePage(tuplePageId, page);
+  try {
+    writePagePort.writePage(tuplePageId, page);
+  } catch (...) {
+    try {
+      unpinPagePort.unpinPage(tuplePageId);
+    } catch (...) {
+      // Preserve the original page initialization failure.
+    }
+    throw;
+  }
   unpinPagePort.unpinPage(tuplePageId);
   return {tuplePageId, page.getFreeSpace()};
 }
