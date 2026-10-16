@@ -36,5 +36,5 @@ public:
   std::vector<std::vector<char>> getAllTuples() const;
 
 private:
-  char bytes[TUPLE_PAGE_SIZE]{};
+  alignas(std::max_align_t) char bytes[TUPLE_PAGE_SIZE]{};
 };
