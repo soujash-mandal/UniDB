@@ -110,3 +110,18 @@ TEST(DiskManagerTest, RejectsShortPageRead) {
 
   std::filesystem::remove(path);
 }
+
+// Scenario 5: A write to a missing database file reports an error and does
+// not silently create a new database file.
+TEST(DiskManagerTest, DoesNotCreateMissingDatabaseFileOnWrite) {
+  const auto path = TestFile("unidb_disk_missing_write_test.db");
+  std::filesystem::remove(path);
+
+  FileDiskManagerAdapter disk;
+  disk.fileName = path.string();
+  DiskPage page;
+  page.data()[0] = 'W';
+
+  EXPECT_THROW(disk.writePage(0, page), std::runtime_error);
+  EXPECT_FALSE(std::filesystem::exists(path));
+}
