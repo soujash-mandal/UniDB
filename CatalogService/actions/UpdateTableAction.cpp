@@ -12,12 +12,18 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
   CatalogPageId currentPageId = rootPageId;
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
     CatalogPage page = fetchPagePort.fetchPage(currentPageId);
-    const CatalogPageId nextPageId = page.getNextPageId();
-    if (page.containsTableId(table.tableId)) {
-      page.update(table);
-      writePagePort.writePage(currentPageId, page);
-      unpinPagePort.unpinPage(currentPageId);
-      return;
+    CatalogPageId nextPageId;
+    try {
+      nextPageId = page.getNextPageId();
+      if (page.containsTableId(table.tableId)) {
+        page.update(table);
+        writePagePort.writePage(currentPageId, page);
+        unpinPagePort.unpinPage(currentPageId);
+        return;
+      }
+    } catch (...) {
+      try { unpinPagePort.unpinPage(currentPageId); } catch (...) {}
+      throw;
     }
     unpinPagePort.unpinPage(currentPageId);
     currentPageId = nextPageId;
