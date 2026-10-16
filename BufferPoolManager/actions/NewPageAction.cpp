@@ -63,7 +63,7 @@ BufferPoolPageId NewPageAction::execute() {
       return pageId;
     } catch (...) {
       // If saving or allocating fails, the old page is still in this frame.
-      // Add it back to FIFO so it can be selected again, then rethrow the error.
+      // Put it back in FIFO, then rethrow the original error.
       evictionPolicy.RecordAccess(victimPageId.value());
       evictionPolicy.SetEvictable(victimPageId.value(), true);
       throw;
