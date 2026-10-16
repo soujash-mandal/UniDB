@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <stdexcept>
+#include <unordered_set>
 
 InsertTupleIntoTableAction::InsertTupleIntoTableAction(
     TupleFetchPagePort &fetchPagePort, TupleNewPagePort &newPagePort,
@@ -39,8 +40,13 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
     return {createdPage.pageId, createdPage.pageId, slotId};
   }
 
+  std::unordered_set<TuplePageId> visitedPageIds;
   TuplePageId currentPageId = firstPageId;
   while (currentPageId != std::numeric_limits<TuplePageId>::max()) {
+    if (!visitedPageIds.insert(currentPageId).second) {
+      throw std::runtime_error("Tuple page chain is invalid");
+    }
+
     TuplePage page = fetchPagePort.fetchPage(currentPageId);
     bool hasSpace = false;
     TuplePageId nextPageId = std::numeric_limits<TuplePageId>::max();
