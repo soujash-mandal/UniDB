@@ -51,10 +51,10 @@ std::vector<char> TuplePage::get(TupleSlotId slotId) {
   const std::size_t slotEnd =
       sizeof(TuplePageHeader) +
       static_cast<std::size_t>(header->slotCount) * sizeof(TupleSlotEntry);
-  const bool invalidBounds =
-      slot->offset < slotEnd || slot->offset < header->freeSpaceOffset ||
-      slot->offset > TUPLE_PAGE_SIZE ||
-      slot->size > TUPLE_PAGE_SIZE - slot->offset;
+  const bool invalidBounds = slot->offset < slotEnd ||
+                             slot->offset < header->freeSpaceOffset ||
+                             slot->offset > TUPLE_PAGE_SIZE ||
+                             slot->size > TUPLE_PAGE_SIZE - slot->offset;
   if (invalidBounds) {
     throw std::runtime_error("Invalid tuple slot bounds");
   }
@@ -96,8 +96,7 @@ uint32_t TuplePage::getFreeSpace() {
   std::memcpy(&header, bytes, sizeof(TuplePageHeader));
   const std::size_t maxSlots =
       (TUPLE_PAGE_SIZE - sizeof(TuplePageHeader)) / sizeof(TupleSlotEntry);
-  if (header.slotCount > maxSlots ||
-      header.freeSpaceOffset > TUPLE_PAGE_SIZE) {
+  if (header.slotCount > maxSlots || header.freeSpaceOffset > TUPLE_PAGE_SIZE) {
     return 0;
   }
   const std::size_t slotEnd =
@@ -144,10 +143,10 @@ std::vector<std::vector<char>> TuplePage::getAllTuples() const {
     if (slot->size == 0) {
       continue;
     }
-    const bool invalidBounds =
-        slot->offset < slotEnd || slot->offset < header->freeSpaceOffset ||
-        slot->offset > TUPLE_PAGE_SIZE ||
-        slot->size > TUPLE_PAGE_SIZE - slot->offset;
+    const bool invalidBounds = slot->offset < slotEnd ||
+                               slot->offset < header->freeSpaceOffset ||
+                               slot->offset > TUPLE_PAGE_SIZE ||
+                               slot->size > TUPLE_PAGE_SIZE - slot->offset;
     if (invalidBounds) {
       throw std::runtime_error("Invalid tuple slot bounds");
     }
