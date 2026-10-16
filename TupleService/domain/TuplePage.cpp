@@ -52,6 +52,13 @@ void TuplePage::loadFromBytes(const char *source) {
                            static_cast<std::size_t>(i) * sizeof(TupleSlotEntry),
                 sizeof(TupleSlotEntry));
     if (slot.size == 0) {
+      // Legacy pages used a nonzero offset for an inserted empty tuple and
+      // offset zero for a deleted slot. The current format cannot represent
+      // that distinction, so fail explicitly rather than silently losing it.
+      if (slot.offset != 0) {
+        throw std::runtime_error(
+            "Legacy tuple page contains an empty tuple that cannot be migrated safely");
+      }
       continue;
     }
     const bool invalidBounds =
