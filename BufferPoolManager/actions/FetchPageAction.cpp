@@ -49,7 +49,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
   // from the policy, so restore it if replacement I/O fails.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
-    if (!frame.isOccupied() || frame.getPageId() != *victimPageId) {
+    if (!frame.isOccupied() || frame.getPageId() != victimPageId.value()) {
       continue;
     }
 
@@ -64,7 +64,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
       BufferPoolPage page = readPagePort.readDiskPage(pageId);
 
       // 7. Replace the old resident page only after all required I/O succeeds.
-      evictionPolicy.Remove(*victimPageId);
+      evictionPolicy.Remove(victimPageId.value());
       frame.setPage(page);
       frame.setPageId(pageId);
       frame.setOccupied(true);
@@ -77,8 +77,8 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     } catch (...) {
       // Evict() already removed this page from FIFO's internal state. Restore
       // it so the still-resident frame can be selected on the next attempt.
-      evictionPolicy.RecordAccess(*victimPageId);
-      evictionPolicy.SetEvictable(*victimPageId, true);
+      evictionPolicy.RecordAccess(victimPageId.value());
+      evictionPolicy.SetEvictable(victimPageId.value(), true);
       throw;
     }
   }
