@@ -48,7 +48,11 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
       hasSpace = page.hasSpace(tupleSize);
       nextPageId = page.getNextPageId();
     } catch (...) {
-      try { unpinPagePort.unpinPage(currentPageId); } catch (...) {}
+      try {
+        unpinPagePort.unpinPage(currentPageId);
+      } catch (...) {
+        // Preserve the original page-inspection failure.
+      }
       throw;
     }
 
