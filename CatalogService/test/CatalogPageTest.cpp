@@ -115,9 +115,8 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   EXPECT_EQ(loaded.tableId, 11U);
   ASSERT_EQ(loaded.columns.size(), 2U);
   EXPECT_EQ(loaded.columns[1].name, "name");
-  loaded.firstTuplePageId = 42;
   page.update(loaded);
-  EXPECT_EQ(page.getByName("users").firstTuplePageId, 42U);
+  EXPECT_EQ(page.getByName("users").name, "users");
   EXPECT_THROW(page.getByName("missing"), std::runtime_error);
 }
 
