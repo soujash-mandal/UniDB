@@ -22,6 +22,7 @@ TEST(CreateTableActionTest, CreatesTableWithSchema) {
   EXPECT_EQ(table.name, "users");
   ASSERT_EQ(table.columns.size(), 2U);
   EXPECT_EQ(table.columns[1].name, "name");
+  EXPECT_FALSE(store.hasPinnedPages());
 }
 
 TEST(CreateTableActionTest, RejectsEmptyNameAndDuplicateName) {
@@ -32,4 +33,35 @@ TEST(CreateTableActionTest, RejectsEmptyNameAndDuplicateName) {
   EXPECT_THROW(action.execute(10, 1, "", {}), std::invalid_argument);
   action.execute(10, 1, "users", {});
   EXPECT_THROW(action.execute(10, 2, "users", {}), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(CreateTableActionTest, UnpinsPageWhenTableWriteFails) {
+  InMemoryCatalogPageStore store;
+  store.seed(10, CatalogPage{});
+  store.failNextWrite = true;
+  CreateTableAction action(store, store, store, store);
+
+  EXPECT_THROW(action.execute(10, 1, "users", {}), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(CreateTableActionTest, ReleasesTailPageWhenAllocationFails) {
+  InMemoryCatalogPageStore store;
+  CatalogPage fullPage;
+  Table wideTable{};
+  wideTable.tableId = 1;
+  wideTable.name = "wide";
+  for (uint32_t columnId = 0; columnId < 203; ++columnId) {
+    wideTable.columns.push_back(
+        {std::string(32, static_cast<char>('a' + columnId % 26)),
+         DataType::INT, 0, false});
+  }
+  fullPage.insert(wideTable);
+  store.seed(10, fullPage);
+  store.failNextAllocation = true;
+  CreateTableAction action(store, store, store, store);
+
+  EXPECT_THROW(action.execute(10, 999, "a-new-table", {}), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
 }

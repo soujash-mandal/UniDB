@@ -13,4 +13,14 @@ TEST(CreateRootCatalogPageActionTest, CreatesWritesAndUnpinsRootPage) {
   EXPECT_TRUE(store.pages.contains(rootPageId));
   EXPECT_EQ(store.writtenPageIds, (std::vector<CatalogPageId>{rootPageId}));
   EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{rootPageId}));
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(CreateRootCatalogPageActionTest, UnpinsAllocatedPageWhenWriteFails) {
+  InMemoryCatalogPageStore store;
+  store.failNextWrite = true;
+  CreateRootCatalogPageAction action(store, store, store);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
 }
