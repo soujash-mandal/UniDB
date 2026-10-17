@@ -15,20 +15,21 @@ inline const std::vector<ServiceNode> SERVICE_NODES = {
     "RdbMetadataService",  "RdbService",      "QueryExecutionService",
 };
 
+// An edge A -> B means service A depends on/uses service B.
+// RdbService coordinates the RDB services; TupleService does not depend on FSM.
 inline const std::vector<ServiceEdge> SERVICE_EDGES = {
     {"FreePageManager", "DiskManager"},
     {"BufferPoolManager", "FreePageManager"},
     {"BufferPoolManager", "DiskManager"},
 
     {"FreeSpaceMapService", "BufferPoolManager"},
-    {"TupleService", "FreeSpaceMapService"},
-    {"TupleService", "BufferPoolManager"},
     {"CatalogService", "BufferPoolManager"},
     {"RdbMetadataService", "BufferPoolManager"},
 
     {"RdbService", "CatalogService"},
     {"RdbService", "TupleService"},
     {"RdbService", "RdbMetadataService"},
+    {"RdbService", "FreeSpaceMapService"},
     {"QueryExecutionService", "RdbService"},
 };
 

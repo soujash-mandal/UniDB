@@ -102,10 +102,14 @@ add_executable(tests
     CatalogService/test/GetTableActionTest.cpp
     CatalogService/test/GetTableByNameActionTest.cpp
     CatalogService/test/UpdateTableActionTest.cpp
-    TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     TupleService/test/TuplePageTest.cpp
-    TupleService/test/TableTupleActionsTest.cpp
+    TupleService/test/CreateTuplePageActionTest.cpp
+    TupleService/test/CreateTupleActionTest.cpp
+    TupleService/test/GetTupleActionTest.cpp
+    TupleService/test/DeleteTupleActionTest.cpp
+    TupleService/test/InsertTupleIntoTableActionTest.cpp
+    TupleService/test/ScanTupleTableActionTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
 
