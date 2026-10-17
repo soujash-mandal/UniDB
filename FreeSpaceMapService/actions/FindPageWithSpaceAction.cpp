@@ -4,8 +4,10 @@
 #include <stdexcept>
 #include <unordered_set>
 
-FindPageWithSpaceAction::FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
-    UnpinPagePort &unpinPagePort, WritePagePort &writePagePort,
+FindPageWithSpaceAction::FindPageWithSpaceAction(
+    FetchPagePort &fetchPagePort,
+    UnpinPagePort &unpinPagePort,
+    WritePagePort &writePagePort,
     NewPagePort &newPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
       writePagePort(writePagePort), newPagePort(newPagePort) {}
