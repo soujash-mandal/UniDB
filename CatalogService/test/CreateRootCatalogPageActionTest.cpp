@@ -24,3 +24,13 @@ TEST(CreateRootCatalogPageActionTest, UnpinsAllocatedPageWhenWriteFails) {
   EXPECT_THROW(action.execute(), std::runtime_error);
   EXPECT_FALSE(store.hasPinnedPages());
 }
+
+TEST(CreateRootCatalogPageActionTest,
+     PropagatesAllocationFailureWithoutPinning) {
+  InMemoryCatalogPageStore store;
+  store.failNextAllocation = true;
+  CreateRootCatalogPageAction action(store, store, store);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}

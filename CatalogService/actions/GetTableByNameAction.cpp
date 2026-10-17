@@ -1,6 +1,7 @@
 #include "GetTableByNameAction.h"
 
 #include <stdexcept>
+#include <unordered_set>
 
 GetTableByNameAction::GetTableByNameAction(CatalogFetchPagePort &fetchPagePort,
                                            CatalogUnpinPagePort &unpinPagePort)
@@ -13,7 +14,12 @@ Table GetTableByNameAction::execute(CatalogPageId rootPageId,
   }
 
   CatalogPageId currentPageId = rootPageId;
+  std::unordered_set<CatalogPageId> visitedPageIds;
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
+    if (!visitedPageIds.insert(currentPageId).second) {
+      throw std::runtime_error("Catalog page chain is invalid");
+    }
+
     CatalogPage page = fetchPagePort.fetchPage(currentPageId);
     CatalogPageId nextPageId;
     bool found = false;

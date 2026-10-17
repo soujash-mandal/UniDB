@@ -19,6 +19,7 @@ TEST(GetTableByNameActionTest, ReturnsTableByNameAndUnpinsPage) {
 
   EXPECT_EQ(result.tableId, 8U);
   EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10}));
+  EXPECT_FALSE(store.hasPinnedPages());
 }
 
 TEST(GetTableByNameActionTest, RejectsEmptyAndUnknownNames) {
@@ -29,4 +30,42 @@ TEST(GetTableByNameActionTest, RejectsEmptyAndUnknownNames) {
   EXPECT_THROW(action.execute(10, ""), std::invalid_argument);
   EXPECT_THROW(action.execute(10, "missing"), std::runtime_error);
   EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10}));
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(GetTableByNameActionTest, FindsTableOnLaterCatalogPage) {
+  InMemoryCatalogPageStore store;
+  CatalogPage firstPage;
+  firstPage.setNextPageId(11);
+  CatalogPage secondPage;
+  Table table{};
+  table.tableId = 8;
+  table.name = "products";
+  secondPage.insert(table);
+  store.seed(10, firstPage);
+  store.seed(11, secondPage);
+  GetTableByNameAction action(store, store);
+
+  EXPECT_EQ(action.execute(10, "products").tableId, 8U);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(GetTableByNameActionTest, PropagatesFetchFailureWithoutPinning) {
+  InMemoryCatalogPageStore store;
+  store.failNextFetch = true;
+  GetTableByNameAction action(store, store);
+
+  EXPECT_THROW(action.execute(10, "products"), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(GetTableByNameActionTest, RejectsCyclicCatalogChainWithoutLeakingPins) {
+  InMemoryCatalogPageStore store;
+  CatalogPage page;
+  page.setNextPageId(10);
+  store.seed(10, page);
+  GetTableByNameAction action(store, store);
+
+  EXPECT_THROW(action.execute(10, "products"), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
 }

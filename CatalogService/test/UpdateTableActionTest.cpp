@@ -21,6 +21,7 @@ TEST(UpdateTableActionTest, UpdatesExistingTableAndPersistsPage) {
   EXPECT_EQ(store.pages.at(10).get(9).firstTuplePageId, 123U);
   EXPECT_EQ(store.writtenPageIds, (std::vector<CatalogPageId>{10}));
   EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10}));
+  EXPECT_FALSE(store.hasPinnedPages());
 }
 
 TEST(UpdateTableActionTest, ThrowsWhenTableDoesNotExist) {
@@ -33,4 +34,46 @@ TEST(UpdateTableActionTest, ThrowsWhenTableDoesNotExist) {
 
   EXPECT_THROW(action.execute(10, missing), std::runtime_error);
   EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10}));
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(UpdateTableActionTest, PropagatesFetchFailureWithoutPinning) {
+  InMemoryCatalogPageStore store;
+  store.failNextFetch = true;
+  UpdateTableAction action(store, store, store);
+  Table table{};
+  table.tableId = 9;
+  table.name = "events";
+
+  EXPECT_THROW(action.execute(10, table), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(UpdateTableActionTest, UnpinsPageWhenWriteFails) {
+  InMemoryCatalogPageStore store;
+  CatalogPage page;
+  Table table{};
+  table.tableId = 9;
+  table.name = "events";
+  page.insert(table);
+  store.seed(10, page);
+  store.failNextWrite = true;
+  UpdateTableAction action(store, store, store);
+
+  EXPECT_THROW(action.execute(10, table), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(UpdateTableActionTest, RejectsCyclicCatalogChainWithoutLeakingPins) {
+  InMemoryCatalogPageStore store;
+  CatalogPage page;
+  page.setNextPageId(10);
+  store.seed(10, page);
+  UpdateTableAction action(store, store, store);
+  Table table{};
+  table.tableId = 9;
+  table.name = "events";
+
+  EXPECT_THROW(action.execute(10, table), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
 }
