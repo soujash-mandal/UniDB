@@ -53,6 +53,8 @@ set(UNIDB_SOURCES
     CatalogService/actions/GetTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
+    TablePageDirectory/domain/TablePageDirectoryPage.cpp
+
     TupleService/domain/TuplePage.cpp
     TupleService/adapter/BufferPoolFetchPageAdapter.cpp
     TupleService/adapter/BufferPoolNewPageAdapter.cpp
@@ -91,6 +93,7 @@ add_executable(tests
     BufferPoolManager/test/FlushPageActionTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPageTest.cpp
+    TablePageDirectory/test/TablePageDirectoryPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
