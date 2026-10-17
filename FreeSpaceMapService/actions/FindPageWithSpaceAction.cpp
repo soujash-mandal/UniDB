@@ -4,12 +4,6 @@
 #include <stdexcept>
 #include <unordered_set>
 
-FindPageWithSpaceAction::FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
-    UnpinPagePort &unpinPagePort,
-    WritePagePort &writePagePort, NewPagePort &newPagePort)
-    : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
-      writePagePort(writePagePort), newPagePort(newPagePort) {}
-
 TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
                                              uint32_t requiredSpace) {
   const TuplePageId invalidTuplePageId =

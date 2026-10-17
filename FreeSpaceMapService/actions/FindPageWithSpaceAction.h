@@ -10,7 +10,9 @@ public:
   FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
                           UnpinPagePort &unpinPagePort,
                           WritePagePort &writePagePort,
-                          NewPagePort &newPagePort);
+                          NewPagePort &newPagePort)
+      : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
+        writePagePort(writePagePort), newPagePort(newPagePort) {}
 
   // Returns an invalid TuplePageId when no existing tuple page has enough space.
   // RdbService owns creating a tuple page and registering its free space.
