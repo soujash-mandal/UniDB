@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../domain/CatalogPage.h"
+#include "../domain/CatalogTypes.h"
 #include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
