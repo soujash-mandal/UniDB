@@ -24,7 +24,6 @@ CatalogTableId CreateTableAction::execute(CatalogPageId rootPageId,
   table.name = name;
   table.columns = columns;
   table.firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
-  table.firstTuplePageId = CATALOG_INVALID_PAGE_ID;
 
   CatalogPage emptyPage;
   if (!emptyPage.hasSpace(table)) {
