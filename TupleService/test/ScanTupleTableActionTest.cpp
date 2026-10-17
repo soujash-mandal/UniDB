@@ -31,8 +31,7 @@ TEST(ScanTupleTableActionTest, ScansLinkedPagesInOrder) {
   store.seed(13, second);
   ScanTupleTableAction action(store, store);
 
-  EXPECT_EQ(action.execute(12),
-            (std::vector<std::vector<char>>{{'a'}, {'b'}}));
+  EXPECT_EQ(action.execute(12), (std::vector<std::vector<char>>{{'a'}, {'b'}}));
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
