@@ -8,6 +8,25 @@
 #include <string>
 #include <vector>
 
+namespace {
+CatalogPage makeCatalogPageWithoutRoomForAnotherTable() {
+  CatalogPage page;
+  Table wideTable{};
+  wideTable.tableId = 1;
+  wideTable.name = "wide";
+  for (uint32_t columnId = 0; columnId < 203; ++columnId) {
+    Column column{};
+    column.name = std::string(32, static_cast<char>('a' + columnId % 26));
+    column.type = DataType::INT;
+    column.size = 0;
+    column.nullable = false;
+    wideTable.columns.push_back(column);
+  }
+  page.insert(wideTable);
+  return page;
+}
+} // namespace
+
 TEST(CreateTableActionTest, CreatesTableWithSchema) {
   InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
@@ -48,17 +67,7 @@ TEST(CreateTableActionTest, UnpinsPageWhenTableWriteFails) {
 
 TEST(CreateTableActionTest, ReleasesTailPageWhenAllocationFails) {
   InMemoryCatalogPageStore store;
-  CatalogPage fullPage;
-  Table wideTable{};
-  wideTable.tableId = 1;
-  wideTable.name = "wide";
-  for (uint32_t columnId = 0; columnId < 203; ++columnId) {
-    wideTable.columns.push_back(
-        {std::string(32, static_cast<char>('a' + columnId % 26)),
-         DataType::INT, 0, false});
-  }
-  fullPage.insert(wideTable);
-  store.seed(10, fullPage);
+  store.seed(10, makeCatalogPageWithoutRoomForAnotherTable());
   store.failNextAllocation = true;
   CreateTableAction action(store, store, store, store);
 
@@ -89,17 +98,7 @@ TEST(CreateTableActionTest, RejectsCyclicCatalogChainWithoutLeakingPins) {
 
 TEST(CreateTableActionTest, CreatesTableOnNewPageWhenTailHasNoSpace) {
   InMemoryCatalogPageStore store;
-  CatalogPage fullPage;
-  Table wideTable{};
-  wideTable.tableId = 1;
-  wideTable.name = "wide";
-  for (uint32_t columnId = 0; columnId < 203; ++columnId) {
-    wideTable.columns.push_back(
-        {std::string(32, static_cast<char>('a' + columnId % 26)),
-         DataType::INT, 0, false});
-  }
-  fullPage.insert(wideTable);
-  store.seed(10, fullPage);
+  store.seed(10, makeCatalogPageWithoutRoomForAnotherTable());
   CreateTableAction action(store, store, store, store);
 
   EXPECT_EQ(action.execute(10, 999, "users", {}), 999U);
