@@ -45,7 +45,6 @@
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
 
-#include "../TupleService/actions/InsertTupleIntoTableAction.h"
 #include "../TupleService/actions/ScanTupleTableAction.h"
 #include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
@@ -80,9 +79,6 @@ public:
   CreateTableAction &createTableAction() { return createTable; }
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
   UpdateTableAction &updateTableAction() { return updateTable; }
-  InsertTupleIntoTableAction &insertTupleIntoTableAction() {
-    return insertTupleIntoTable;
-  }
   ScanTupleTableAction &scanTupleTableAction() { return scanTupleTable; }
 
 private:
@@ -130,7 +126,6 @@ private:
   TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
   TupleBufferPoolUnpinPageAdapter tupleUnpinPageAdapter;
   TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
-  InsertTupleIntoTableAction insertTupleIntoTable;
   ScanTupleTableAction scanTupleTable;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
