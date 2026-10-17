@@ -2,9 +2,8 @@
 
 #include "../domain/TuplePage.h"
 
-class UnpinPagePort {
+class TupleUnpinPagePort {
 public:
-  virtual ~UnpinPagePort() = default;
-
+  virtual ~TupleUnpinPagePort() = default;
   virtual void unpinPage(TuplePageId pageId) = 0;
 };

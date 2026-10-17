@@ -51,6 +51,8 @@ set(UNIDB_SOURCES
     CatalogService/actions/CreateRootCatalogPageAction.cpp
     CatalogService/actions/CreateTableAction.cpp
     CatalogService/actions/GetTableAction.cpp
+    CatalogService/actions/GetTableByNameAction.cpp
+    CatalogService/actions/UpdateTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
     TupleService/domain/TuplePage.cpp
@@ -62,6 +64,8 @@ set(UNIDB_SOURCES
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
+    TupleService/actions/ScanTupleTableAction.cpp
+    QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
@@ -91,7 +95,19 @@ add_executable(tests
     BufferPoolManager/test/FlushPageActionTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPageTest.cpp
-    TupleService/test/TupleActionsTest.cpp
+    CatalogService/test/CreateRootCatalogPageActionTest.cpp
+    CatalogService/test/CreateTableActionTest.cpp
+    CatalogService/test/DropTableActionTest.cpp
+    CatalogService/test/GetTableActionTest.cpp
+    CatalogService/test/GetTableByNameActionTest.cpp
+    CatalogService/test/UpdateTableActionTest.cpp
+    QueryExecutionService/test/SqlTupleCodecTest.cpp
+    TupleService/test/TuplePageTest.cpp
+    TupleService/test/CreateTuplePageActionTest.cpp
+    TupleService/test/CreateTupleActionTest.cpp
+    TupleService/test/GetTupleActionTest.cpp
+    TupleService/test/DeleteTupleActionTest.cpp
+    TupleService/test/ScanTupleTableActionTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
 

@@ -1,64 +1,80 @@
 #include "FindPageWithSpaceAction.h"
-#include <stdexcept>
 
-FindPageWithSpaceAction::FindPageWithSpaceAction(
-    FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort,
-    WritePagePort &writePagePort, NewPagePort &newPagePort,
-    CreateTuplePagePort &createTuplePagePort)
-    : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
-      writePagePort(writePagePort), newPagePort(newPagePort),
-      createTuplePagePort(createTuplePagePort) {}
+#include <limits>
+#include <stdexcept>
+#include <unordered_set>
 
 TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
                                              uint32_t requiredSpace) {
-
+  const TuplePageId invalidTuplePageId =
+      std::numeric_limits<TuplePageId>::max();
   FSMPageId fsmPageId = rootFsmPageId;
-  while (FSMPage::isValidPage(fsmPageId)) {
-    FSMPage fsmPage = fetchPagePort.fetchPage(fsmPageId);
-    TuplePageId tuplePageId = fsmPage.findPageWithSpace(requiredSpace);
+  std::unordered_set<FSMPageId> visitedPageIds;
 
-    // CASE 1: tuple with required space found
+  while (FSMPage::isValidPage(fsmPageId)) {
+    if (!visitedPageIds.insert(fsmPageId).second) {
+      throw std::runtime_error("Free-space-map page chain is invalid");
+    }
+
+    FSMPage fsmPage = fetchPagePort.fetchPage(fsmPageId);
+    TuplePageId tuplePageId;
+    FSMPageId nextFsmPageId;
+    bool fsmPageIsFull;
+    try {
+      tuplePageId = fsmPage.findPageWithSpace(requiredSpace);
+      nextFsmPageId = fsmPage.getNextPageId();
+      fsmPageIsFull = fsmPage.isFull();
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(fsmPageId);
+      } catch (...) {
+        // Preserve the original page-inspection failure.
+      }
+      throw;
+    }
+
+    unpinPagePort.unpinPage(fsmPageId);
     if (FSMPage::isValidPage(tuplePageId)) {
-      unpinPagePort.unpinPage(fsmPageId);
       return tuplePageId;
     }
-
-    // CASE 2 : Not found
-    else {
-      FSMPageId nextFsmPageId = fsmPage.getNextPageId();
-
-      // CASE 2.1 : valid next page go to next page
-      if (FSMPage::isValidPage(nextFsmPageId)) {
-        unpinPagePort.unpinPage(fsmPageId);
-        fsmPageId = nextFsmPageId;
-      }
-
-      // CASE 2.2 : Next page not exist
-      else {
-
-        // CASE  2.2.1 : Current FSM page have space to create tuple page
-        if (!fsmPage.isFull()) {
-          CreateTuplePageResult result = createTuplePagePort.createTuplePage();
-          fsmPage.insert(result.pageId, result.freeSpace);
-          writePagePort.writePage(fsmPageId, fsmPage);
-          unpinPagePort.unpinPage(fsmPageId);
-          return result.pageId;
-        }
-        // CASE  2.2.2 : Current FSM page is Full
-        else {
-          nextFsmPageId = newPagePort.newPage();
-
-          FSMPage newFsmPage;
-          writePagePort.writePage(nextFsmPageId, newFsmPage);
-
-          fsmPage.setNextPageId(nextFsmPageId);
-          writePagePort.writePage(fsmPageId, fsmPage);
-          unpinPagePort.unpinPage(fsmPageId);
-
-          fsmPageId = nextFsmPageId;
-        }
-      }
+    if (FSMPage::isValidPage(nextFsmPageId)) {
+      fsmPageId = nextFsmPageId;
+      continue;
     }
+    if (!fsmPageIsFull) {
+      return invalidTuplePageId;
+    }
+
+    // Extend only the FSM chain here. RdbService creates tuple pages.
+    const FSMPageId newFsmPageId = newPagePort.newPage();
+    FSMPage newFsmPage;
+    try {
+      writePagePort.writePage(newFsmPageId, newFsmPage);
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(newFsmPageId);
+      } catch (...) {
+        // Preserve the original page initialization failure.
+      }
+      throw;
+    }
+    unpinPagePort.unpinPage(newFsmPageId);
+
+    FSMPage tailPage = fetchPagePort.fetchPage(fsmPageId);
+    try {
+      tailPage.setNextPageId(newFsmPageId);
+      writePagePort.writePage(fsmPageId, tailPage);
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(fsmPageId);
+      } catch (...) {
+        // Preserve the original link/write failure.
+      }
+      throw;
+    }
+    unpinPagePort.unpinPage(fsmPageId);
+    fsmPageId = newFsmPageId;
   }
-  throw std::runtime_error("No valid FSM page found");
+
+  return invalidTuplePageId;
 }
