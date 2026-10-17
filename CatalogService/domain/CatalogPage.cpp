@@ -143,6 +143,77 @@ Table CatalogPage::get(CatalogTableId tableId) {
   throw std::runtime_error("Table not found");
 }
 
+Table CatalogPage::getByName(const std::string &name) {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  for (uint32_t i = 0; i < header.tableCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
+                sizeof(Entry));
+    std::vector<char> tableData(bytes + entry.offset,
+                                bytes + entry.offset + entry.size);
+    Table table = deserializeTable(tableData);
+    if (table.name == name) {
+      return table;
+    }
+  }
+  throw std::runtime_error("Table not found");
+}
+
+void CatalogPage::update(Table table) {
+  std::vector<char> replacement = serializeTable(table);
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+
+  std::vector<std::pair<Entry, std::vector<char>>> tables;
+  tables.reserve(header.tableCount);
+  bool found = false;
+  std::size_t payloadBytes = 0;
+
+  for (uint32_t i = 0; i < header.tableCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry),
+                sizeof(Entry));
+    std::vector<char> payload;
+    if (entry.tableId == table.tableId) {
+      if (found) {
+        throw std::runtime_error("Duplicate catalog table id");
+      }
+      found = true;
+      payload = replacement;
+      entry.size = static_cast<uint32_t>(payload.size());
+    } else {
+      payload.assign(bytes + entry.offset, bytes + entry.offset + entry.size);
+    }
+    payloadBytes += payload.size();
+    tables.emplace_back(entry, std::move(payload));
+  }
+
+  if (!found) {
+    throw std::runtime_error("Table not found");
+  }
+  const std::size_t entryEnd = sizeof(Header) + tables.size() * sizeof(Entry);
+  if (entryEnd + payloadBytes > PAGE_SIZE) {
+    throw std::runtime_error("Not enough space to update catalog table");
+  }
+
+  // Repack live payloads so repeated updates reclaim old payload space.
+  std::memset(bytes, 0, PAGE_SIZE);
+  uint32_t freeSpaceOffset = PAGE_SIZE;
+  for (std::size_t i = 0; i < tables.size(); ++i) {
+    auto &entry = tables[i].first;
+    const auto &payload = tables[i].second;
+    freeSpaceOffset -= static_cast<uint32_t>(payload.size());
+    std::memcpy(bytes + freeSpaceOffset, payload.data(), payload.size());
+    entry.offset = freeSpaceOffset;
+    entry.size = static_cast<uint32_t>(payload.size());
+    std::memcpy(bytes + sizeof(Header) + i * sizeof(Entry), &entry,
+                sizeof(Entry));
+  }
+  header.freeSpaceOffset = freeSpaceOffset;
+  std::memcpy(bytes, &header, sizeof(Header));
+}
+
 bool CatalogPage::containsTableName(std::string name) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
