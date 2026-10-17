@@ -96,6 +96,12 @@ add_executable(tests
     BufferPoolManager/test/FlushPageActionTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPageTest.cpp
+    CatalogService/test/CreateRootCatalogPageActionTest.cpp
+    CatalogService/test/CreateTableActionTest.cpp
+    CatalogService/test/DropTableActionTest.cpp
+    CatalogService/test/GetTableActionTest.cpp
+    CatalogService/test/GetTableByNameActionTest.cpp
+    CatalogService/test/UpdateTableActionTest.cpp
     TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     TupleService/test/TuplePageTest.cpp
