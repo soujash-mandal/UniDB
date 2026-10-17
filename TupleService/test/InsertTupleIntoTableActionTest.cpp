@@ -47,7 +47,8 @@ TEST(InsertTupleIntoTableActionTest, AllocatesAndLinksNewPageWhenTailIsFull) {
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
-TEST(InsertTupleIntoTableActionTest, RejectsEmptyOrOversizedTupleBeforeAllocation) {
+TEST(InsertTupleIntoTableActionTest,
+     RejectsEmptyOrOversizedTupleBeforeAllocation) {
   InMemoryTuplePageStore store;
   InsertTupleIntoTableAction action(store, store, store, store);
 
@@ -73,7 +74,8 @@ TEST(InsertTupleIntoTableActionTest, CleansUpWhenNewPageAllocationFails) {
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
-TEST(InsertTupleIntoTableActionTest, RejectsCyclicPageChainAndUnpinsVisitedPage) {
+TEST(InsertTupleIntoTableActionTest,
+     RejectsCyclicPageChainAndUnpinsVisitedPage) {
   InMemoryTuplePageStore store;
   TuplePage page;
   page.insert(std::vector<char>(6000, 'a'));

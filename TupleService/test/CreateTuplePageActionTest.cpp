@@ -17,7 +17,8 @@ TEST(CreateTuplePageActionTest, AllocatesInitializesAndUnpinsPage) {
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
-TEST(CreateTuplePageActionTest, UnpinsAllocatedPageWhenInitializationWriteFails) {
+TEST(CreateTuplePageActionTest,
+     UnpinsAllocatedPageWhenInitializationWriteFails) {
   InMemoryTuplePageStore store;
   store.failWrite = true;
   CreateTuplePageAction action(store, store, store);
