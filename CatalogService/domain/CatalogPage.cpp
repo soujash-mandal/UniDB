@@ -29,7 +29,6 @@ std::vector<char> serializeTable(Table table) {
     append(&nullable, sizeof(nullable));
   }
   append(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
-  append(&table.firstTuplePageId, sizeof(table.firstTuplePageId));
   return data;
 }
 
@@ -73,11 +72,6 @@ Table deserializeTable(std::vector<char> data) {
     table.columns.push_back(column);
   }
   read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
-  if (offset < data.size()) {
-    read(&table.firstTuplePageId, sizeof(table.firstTuplePageId));
-  } else {
-    table.firstTuplePageId = CATALOG_INVALID_PAGE_ID;
-  }
   return table;
 }
 } // namespace
