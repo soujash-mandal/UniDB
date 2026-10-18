@@ -77,3 +77,40 @@ TEST(UpdateTableActionTest, RejectsCyclicCatalogChainWithoutLeakingPins) {
   EXPECT_THROW(action.execute(10, table), std::runtime_error);
   EXPECT_FALSE(store.hasPinnedPages());
 }
+
+TEST(UpdateTableActionTest, RejectsEmptyTableName) {
+  InMemoryCatalogPageStore store;
+  UpdateTableAction action(store, store, store);
+  Table table{};
+  table.tableId = 9;
+
+  EXPECT_THROW(action.execute(10, table), std::invalid_argument);
+  EXPECT_TRUE(store.unpinnedPageIds.empty());
+  EXPECT_FALSE(store.hasPinnedPages());
+}
+
+TEST(UpdateTableActionTest, RejectsNameUsedByDifferentTableOnAnotherPage) {
+  InMemoryCatalogPageStore store;
+  CatalogPage root;
+  root.setNextPageId(11);
+  Table existing{};
+  existing.tableId = 1;
+  existing.name = "users";
+  root.insert(existing);
+
+  CatalogPage second;
+  Table target{};
+  target.tableId = 2;
+  target.name = "orders";
+  second.insert(target);
+
+  store.seed(10, root);
+  store.seed(11, second);
+  UpdateTableAction action(store, store, store);
+  target.name = "users";
+
+  EXPECT_THROW(action.execute(10, target), std::runtime_error);
+  EXPECT_TRUE(store.writtenPageIds.empty());
+  EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10, 11}));
+  EXPECT_FALSE(store.hasPinnedPages());
+}
