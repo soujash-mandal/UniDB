@@ -9,56 +9,56 @@ FindPageWithSpaceAction::FindPageWithSpaceAction(
       writePagePort(writePagePort), newPagePort(newPagePort),
       createTuplePagePort(createTuplePagePort) {}
 
-TuplePageId FindPageWithSpaceAction::execute(FSMPageId rootFsmPageId,
+TuplePageId FindPageWithSpaceAction::execute(SpaceMapPageId rootSpaceMapPageId,
                                              uint32_t requiredSpace) {
 
-  FSMPageId fsmPageId = rootFsmPageId;
-  while (FSMPage::isValidPage(fsmPageId)) {
-    FSMPage fsmPage = fetchPagePort.fetchPage(fsmPageId);
-    TuplePageId tuplePageId = fsmPage.findPageWithSpace(requiredSpace);
+  SpaceMapPageId spaceMapPageId = rootSpaceMapPageId;
+  while (SpaceMapPage::isValidPage(spaceMapPageId)) {
+    SpaceMapPage spaceMapPage = fetchPagePort.fetchPage(spaceMapPageId);
+    TuplePageId tuplePageId = spaceMapPage.findPageWithSpace(requiredSpace);
 
     // CASE 1: tuple with required space found
-    if (FSMPage::isValidPage(tuplePageId)) {
-      unpinPagePort.unpinPage(fsmPageId);
+    if (SpaceMapPage::isValidPage(tuplePageId)) {
+      unpinPagePort.unpinPage(spaceMapPageId);
       return tuplePageId;
     }
 
     // CASE 2 : Not found
     else {
-      FSMPageId nextFsmPageId = fsmPage.getNextPageId();
+      SpaceMapPageId nextSpaceMapPageId = spaceMapPage.getNextPageId();
 
       // CASE 2.1 : valid next page go to next page
-      if (FSMPage::isValidPage(nextFsmPageId)) {
-        unpinPagePort.unpinPage(fsmPageId);
-        fsmPageId = nextFsmPageId;
+      if (SpaceMapPage::isValidPage(nextSpaceMapPageId)) {
+        unpinPagePort.unpinPage(spaceMapPageId);
+        spaceMapPageId = nextSpaceMapPageId;
       }
 
       // CASE 2.2 : Next page not exist
       else {
 
-        // CASE  2.2.1 : Current FSM page have space to create tuple page
-        if (!fsmPage.isFull()) {
+        // CASE  2.2.1 : Current SpaceMap page have space to create tuple page
+        if (!spaceMapPage.isFull()) {
           CreateTuplePageResult result = createTuplePagePort.createTuplePage();
-          fsmPage.insert(result.pageId, result.freeSpace);
-          writePagePort.writePage(fsmPageId, fsmPage);
-          unpinPagePort.unpinPage(fsmPageId);
+          spaceMapPage.insert(result.pageId, result.freeSpace);
+          writePagePort.writePage(spaceMapPageId, spaceMapPage);
+          unpinPagePort.unpinPage(spaceMapPageId);
           return result.pageId;
         }
-        // CASE  2.2.2 : Current FSM page is Full
+        // CASE  2.2.2 : Current SpaceMap page is Full
         else {
-          nextFsmPageId = newPagePort.newPage();
+          nextSpaceMapPageId = newPagePort.newPage();
 
-          FSMPage newFsmPage;
-          writePagePort.writePage(nextFsmPageId, newFsmPage);
+          SpaceMapPage newFsmPage;
+          writePagePort.writePage(nextSpaceMapPageId, newFsmPage);
 
-          fsmPage.setNextPageId(nextFsmPageId);
-          writePagePort.writePage(fsmPageId, fsmPage);
-          unpinPagePort.unpinPage(fsmPageId);
+          spaceMapPage.setNextPageId(nextSpaceMapPageId);
+          writePagePort.writePage(spaceMapPageId, spaceMapPage);
+          unpinPagePort.unpinPage(spaceMapPageId);
 
-          fsmPageId = nextFsmPageId;
+          spaceMapPageId = nextSpaceMapPageId;
         }
       }
     }
   }
-  throw std::runtime_error("No valid FSM page found");
+  throw std::runtime_error("No valid SpaceMap page found");
 }
