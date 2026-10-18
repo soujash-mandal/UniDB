@@ -6,9 +6,9 @@ CreateSpaceMapPageAction::CreateSpaceMapPageAction(NewPagePort &newPagePort,
     : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
-FSMPageId CreateSpaceMapPageAction::execute() {
-  FSMPageId pageId = newPagePort.newPage();
-  FSMPage page;
+SpaceMapPageId CreateSpaceMapPageAction::execute() {
+  SpaceMapPageId pageId = newPagePort.newPage();
+  SpaceMapPage page;
   writePagePort.writePage(pageId, page);
   unpinPagePort.unpinPage(pageId);
   return pageId;
