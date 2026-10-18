@@ -17,6 +17,7 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
   // First validate the name across the complete chain before mutating a page.
   CatalogPageId currentPageId = rootPageId;
   std::unordered_set<CatalogPageId> visitedPageIds;
+  bool targetFound = false;
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
     if (!visitedPageIds.insert(currentPageId).second) {
       throw std::runtime_error("Catalog page chain is invalid");
@@ -26,6 +27,9 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     CatalogPageId nextPageId;
     try {
       nextPageId = page.getNextPageId();
+      if (page.containsTableId(table.tableId)) {
+        targetFound = true;
+      }
       if (page.containsTableName(table.name)) {
         const Table namedTable = page.getByName(table.name);
         if (namedTable.tableId != table.tableId) {
@@ -42,6 +46,10 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     }
     unpinPagePort.unpinPage(currentPageId);
     currentPageId = nextPageId;
+  }
+
+  if (!targetFound) {
+    throw std::runtime_error("Table not found");
   }
 
   // Second pass finds and updates the target only after uniqueness is known.
