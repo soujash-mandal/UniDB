@@ -38,7 +38,7 @@ flowchart TD
     Container -. "wires Actions and concrete Adapters" .-> RDB
     Container -. "wires Actions and concrete Adapters" .-> Catalog
     Container -. "wires Actions and concrete Adapters" .-> Tuple
-    Container -. "wires Actions and concrete Adapters" .-> FSM
+    Container -. "wires Actions and concrete Adapters" .-> SpaceMap
     Container -. "wires Actions and concrete Adapters" .-> Metadata
     Container -. "wires storage dependencies" .-> BPM
 ```
