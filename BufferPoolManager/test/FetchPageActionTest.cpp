@@ -311,7 +311,7 @@ TEST(FetchPageActionTest, ZeroSizedPoolFailsCleanly) {
   EXPECT_EQ(evictionPolicy.recordAccessCount, 0);
 }
 
- // Scenario 11: An eviction-policy failure during a cached fetch does not
+// Scenario 11: An eviction-policy failure during a cached fetch does not
  // leave an extra pin behind.
 TEST(FetchPageActionTest, PolicyFailureOnCachedFetchDoesNotLeakPin) {
   BufferPool bufferPool(1);
