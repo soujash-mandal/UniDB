@@ -41,7 +41,7 @@ CatalogTableId CreateTableAction::execute(CatalogPageId rootPageId,
     CatalogPageId nextPageId;
     bool duplicate;
     try {
-      duplicate = page.containsTableName(name);
+      duplicate = page.containsTableId(tableId) || page.containsTableName(name);
       nextPageId = page.getNextPageId();
     } catch (...) {
       try {
