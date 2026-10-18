@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../domain/FSMPage.h"
+#include "../domain/SpaceMapPage.h"
 
 class WritePagePort {
 public:
   virtual ~WritePagePort() = default;
 
-  virtual void writePage(FSMPageId pageId, FSMPage page) = 0;
+  virtual void writePage(SpaceMapPageId pageId, SpaceMapPage page) = 0;
 };
