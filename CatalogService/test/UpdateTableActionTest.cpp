@@ -93,16 +93,16 @@ TEST(UpdateTableActionTest, RejectsNameUsedByDifferentTableOnAnotherPage) {
   InMemoryCatalogPageStore store;
   CatalogPage root;
   root.setNextPageId(11);
-  Table existing{};
-  existing.tableId = 1;
-  existing.name = "users";
-  root.insert(existing);
-
-  CatalogPage second;
   Table target{};
   target.tableId = 2;
   target.name = "orders";
-  second.insert(target);
+  root.insert(target);
+
+  CatalogPage second;
+  Table existing{};
+  existing.tableId = 1;
+  existing.name = "users";
+  second.insert(existing);
 
   store.seed(10, root);
   store.seed(11, second);
