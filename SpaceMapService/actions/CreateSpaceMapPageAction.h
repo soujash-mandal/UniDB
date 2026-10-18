@@ -4,12 +4,13 @@
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
 
-class CreateFSMPageAction {
+class CreateSpaceMapPageAction {
 public:
-  CreateFSMPageAction(NewPagePort &newPagePort, WritePagePort &writePagePort,
-                      UnpinPagePort &unpinPagePort);
+  CreateSpaceMapPageAction(NewPagePort &newPagePort,
+                           WritePagePort &writePagePort,
+                           UnpinPagePort &unpinPagePort);
 
-  FSMPageId execute();
+  SpaceMapPageId execute();
 
 private:
   NewPagePort &newPagePort;

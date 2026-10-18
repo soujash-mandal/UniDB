@@ -82,11 +82,11 @@ button {
 <script>
 
 const nodes = new vis.DataSet(
-    [{"id":"BufferPoolManager","label":"BufferPoolManager","x":520,"y":0},{"id":"CatalogService","label":"CatalogService","x":780,"y":-90},{"id":"DiskManager","label":"DiskManager","x":0,"y":0},{"id":"FreePageManager","label":"FreePageManager","x":260,"y":0},{"id":"FreeSpaceMapService","label":"FreeSpaceMapService","x":780,"y":0},{"id":"RdbService","label":"RdbService","x":1040,"y":0},{"id":"TupleService","label":"TupleService","x":780,"y":90}]
+    [{"id":"BufferPoolManager","label":"BufferPoolManager","x":520,"y":0},{"id":"CatalogService","label":"CatalogService","x":780,"y":-90},{"id":"DiskManager","label":"DiskManager","x":0,"y":0},{"id":"FreePageManager","label":"FreePageManager","x":260,"y":0},{"id":"SpaceMapService","label":"SpaceMapService","x":780,"y":0},{"id":"RdbService","label":"RdbService","x":1040,"y":0},{"id":"TupleService","label":"TupleService","x":780,"y":90}]
 );
 
 const edges = new vis.DataSet(
-    [{"id":0,"from":"FreePageManager","to":"DiskManager"},{"id":1,"from":"BufferPoolManager","to":"FreePageManager"},{"id":2,"from":"BufferPoolManager","to":"DiskManager"},{"id":3,"from":"FreeSpaceMapService","to":"BufferPoolManager"},{"id":4,"from":"TupleService","to":"BufferPoolManager"},{"id":5,"from":"CatalogService","to":"BufferPoolManager"},{"id":6,"from":"RdbService","to":"CatalogService"},{"id":7,"from":"RdbService","to":"TupleService"},{"id":8,"from":"RdbService","to":"FreeSpaceMapService"}]
+    [{"id":0,"from":"FreePageManager","to":"DiskManager"},{"id":1,"from":"BufferPoolManager","to":"FreePageManager"},{"id":2,"from":"BufferPoolManager","to":"DiskManager"},{"id":3,"from":"SpaceMapService","to":"BufferPoolManager"},{"id":4,"from":"TupleService","to":"BufferPoolManager"},{"id":5,"from":"CatalogService","to":"BufferPoolManager"},{"id":6,"from":"RdbService","to":"CatalogService"},{"id":7,"from":"RdbService","to":"TupleService"},{"id":8,"from":"RdbService","to":"SpaceMapService"}]
 );
 
 const network = new vis.Network(

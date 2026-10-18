@@ -1,10 +1,10 @@
-#include "FSMCreateTuplePageAdapter.h"
+#include "SpaceMapCreateTuplePageAdapter.h"
 
-FSMCreateTuplePageAdapter::FSMCreateTuplePageAdapter(
+SpaceMapCreateTuplePageAdapter::SpaceMapCreateTuplePageAdapter(
     CreateTuplePageAction &createTuplePageAction)
     : createTuplePageAction(createTuplePageAction) {}
 
-CreateTuplePageResult FSMCreateTuplePageAdapter::createTuplePage() {
+CreateTuplePageResult SpaceMapCreateTuplePageAdapter::createTuplePage() {
   CreateTuplePageActionResult result = createTuplePageAction.execute();
   return {result.pageId, result.freeSpace};
 }

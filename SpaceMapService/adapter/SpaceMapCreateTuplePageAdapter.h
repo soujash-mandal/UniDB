@@ -3,9 +3,9 @@
 #include "../../TupleService/actions/CreateTuplePageAction.h"
 #include "../port/CreateTuplePagePort.h"
 
-class FSMCreateTuplePageAdapter : public CreateTuplePagePort {
+class SpaceMapCreateTuplePageAdapter : public CreateTuplePagePort {
 public:
-  explicit FSMCreateTuplePageAdapter(
+  explicit SpaceMapCreateTuplePageAdapter(
       CreateTuplePageAction &createTuplePageAction);
 
   CreateTuplePageResult createTuplePage() override;
