@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../domain/FSMPage.h"
+#include "../domain/SpaceMapPage.h"
 
 class UnpinPagePort {
 public:
   virtual ~UnpinPagePort() = default;
 
-  virtual void unpinPage(FSMPageId pageId) = 0;
+  virtual void unpinPage(SpaceMapPageId pageId) = 0;
 };
