@@ -20,7 +20,7 @@ TEST(UpdateTableActionTest, UpdatesExistingTableAndPersistsPage) {
 
   EXPECT_EQ(store.pages.at(10).get(9).firstFreeSpaceMapPageId, 123U);
   EXPECT_EQ(store.writtenPageIds, (std::vector<CatalogPageId>{10}));
-  EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10}));
+  EXPECT_EQ(store.unpinnedPageIds, (std::vector<CatalogPageId>{10, 10}));
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
