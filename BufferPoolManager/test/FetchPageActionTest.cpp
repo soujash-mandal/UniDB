@@ -49,17 +49,27 @@ public:
   BufferPoolPageId lastEvictablePageId = 0;
   BufferPoolPageId lastRemovedPageId = 0;
   bool lastEvictableValue = false;
+  bool throwNextRecordAccess = false;
+  bool throwNextSetEvictable = false;
   std::optional<BufferPoolPageId> victim;
 
   void RecordAccess(BufferPoolPageId pageId) override {
     ++recordAccessCount;
     lastRecordedPageId = pageId;
+    if (throwNextRecordAccess) {
+      throwNextRecordAccess = false;
+      throw std::runtime_error("simulated RecordAccess failure");
+    }
   }
 
   void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
     ++setEvictableCount;
     lastEvictablePageId = pageId;
     lastEvictableValue = evictable;
+    if (throwNextSetEvictable) {
+      throwNextSetEvictable = false;
+      throw std::runtime_error("simulated SetEvictable failure");
+    }
   }
 
   std::optional<BufferPoolPageId> Evict() override {
@@ -299,4 +309,43 @@ TEST(FetchPageActionTest, ZeroSizedPoolFailsCleanly) {
   EXPECT_THROW(action.execute(3), std::runtime_error);
   EXPECT_EQ(readPort.readCount, 0);
   EXPECT_EQ(evictionPolicy.recordAccessCount, 0);
+}
+
+ // Scenario 11: An eviction-policy failure during a cached fetch does not
+ // leave an extra pin behind.
+TEST(FetchPageActionTest, PolicyFailureOnCachedFetchDoesNotLeakPin) {
+  BufferPool bufferPool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy evictionPolicy;
+  FetchPageAction action(bufferPool, readPort, writePort, evictionPolicy);
+
+  action.execute(10);
+  Frame &frame = bufferPool.getFrame(0);
+  frame.unpin();
+  evictionPolicy.throwNextSetEvictable = true;
+
+  EXPECT_THROW(action.execute(10), std::runtime_error);
+  EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 10);
+}
+
+// Scenario 12: An eviction-policy failure while loading an empty frame leaves
+// the frame available for a later fetch.
+TEST(FetchPageActionTest, PolicyFailureOnEmptyFrameLeavesFrameUnoccupied) {
+  BufferPool bufferPool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy evictionPolicy;
+  evictionPolicy.throwNextRecordAccess = true;
+  FetchPageAction action(bufferPool, readPort, writePort, evictionPolicy);
+
+  EXPECT_THROW(action.execute(10), std::runtime_error);
+  EXPECT_FALSE(bufferPool.getFrame(0).isOccupied());
+  EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 0);
+
+  EXPECT_NO_THROW(action.execute(10));
+  EXPECT_TRUE(bufferPool.getFrame(0).isOccupied());
+  EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 1);
 }
