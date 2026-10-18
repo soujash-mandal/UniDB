@@ -10,7 +10,7 @@ public:
                            WritePagePort &writePagePort,
                            UnpinPagePort &unpinPagePort);
 
-  FSMPageId execute();
+  SpaceMapPageId execute();
 
 private:
   NewPagePort &newPagePort;
