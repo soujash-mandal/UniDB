@@ -79,12 +79,14 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     const BufferPoolPage oldPage = frame.getPage();
     const BufferPoolPageId oldPageId = frame.getPageId();
     const bool oldDirty = frame.isDirty();
+    bool restoredDirty = oldDirty;
 
     try {
       // 4. Save changes before replacing a dirty page.
       if (frame.isDirty()) {
         writePagePort.writePage(frame.getPageId(), frame.getPage());
         frame.setDirty(false);
+        restoredDirty = false;
       }
 
       // 5. Read the requested page before changing the frame.
@@ -112,7 +114,7 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
       frame.setPage(oldPage);
       frame.setPageId(oldPageId);
       frame.setOccupied(true);
-      frame.setDirty(oldDirty);
+      frame.setDirty(restoredDirty);
       try {
         evictionPolicy.RecordAccess(oldPageId);
         evictionPolicy.SetEvictable(oldPageId, true);
