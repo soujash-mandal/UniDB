@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../domain/FSMPage.h"
+#include "../domain/SpaceMapPage.h"
 
 class FetchPagePort {
 public:
   virtual ~FetchPagePort() = default;
 
-  virtual FSMPage fetchPage(FSMPageId pageId) = 0;
+  virtual SpaceMapPage fetchPage(SpaceMapPageId pageId) = 0;
 };
