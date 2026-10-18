@@ -71,7 +71,15 @@ Table deserializeTable(std::vector<char> data) {
     column.nullable = nullable != 0;
     table.columns.push_back(column);
   }
-  read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
+  if (offset == data.size()) {
+    table.firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
+  } else {
+    read(&table.firstFreeSpaceMapPageId,
+         sizeof(table.firstFreeSpaceMapPageId));
+    if (offset != data.size()) {
+      throw std::runtime_error("Unexpected trailing catalog table data");
+    }
+  }
   return table;
 }
 } // namespace
