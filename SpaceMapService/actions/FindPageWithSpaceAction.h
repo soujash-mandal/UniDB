@@ -14,7 +14,8 @@ public:
                           NewPagePort &newPagePort,
                           CreateTuplePagePort &createTuplePagePort);
 
-  TuplePageId execute(SpaceMapPageId rootSpaceMapPageId, uint32_t requiredSpace);
+  TuplePageId execute(SpaceMapPageId rootSpaceMapPageId,
+                      uint32_t requiredSpace);
 
 private:
   FetchPagePort &fetchPagePort;
