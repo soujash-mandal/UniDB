@@ -10,7 +10,7 @@ public:
                         WritePagePort &writePagePort,
                         UnpinPagePort &unpinPagePort);
 
-  void execute(FSMPageId fsmPageId, TuplePageId pageId,
+  void execute(SpaceMapPageId spaceMapPageId, TuplePageId pageId,
                uint32_t updatedfFreeSpace);
 
 private:
