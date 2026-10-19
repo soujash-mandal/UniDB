@@ -89,6 +89,7 @@ add_executable(tests
     BufferPoolManager/test/UnpinPageActionTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
+    BufferPoolManager/test/WritePageActionTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
