@@ -9,13 +9,16 @@ UnpinPageAction::UnpinPageAction(BufferPool &bufferPool,
 void UnpinPageAction::execute(BufferPoolPageId pageId) {
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
-    if (frame.isOccupied() && frame.getPageId() == pageId) {
-      frame.unpin();
-      if (frame.getPinCount() == 0) {
-        evictionPolicy.SetEvictable(pageId, true);
-      }
-      return;
+    if (!frame.isOccupied() || frame.getPageId() != pageId) {
+      continue;
     }
+
+    // Update policy state first: if it throws, the pin count remains unchanged.
+    if (frame.getPinCount() == 1) {
+      evictionPolicy.SetEvictable(pageId, true);
+    }
+    frame.unpin();
+    return;
   }
   throw std::runtime_error("Page not found in buffer pool");
 }
