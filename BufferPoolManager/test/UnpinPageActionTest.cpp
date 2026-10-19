@@ -1,12 +1,11 @@
 #include "../actions/NewPageAction.h"
 #include "../actions/UnpinPageAction.h"
 
-#include <gtest/gtest.h>
-
 #include <functional>
+#include <gtest/gtest.h>
 #include <optional>
-#include <utility>
 #include <stdexcept>
+#include <utility>
 
 class UnpinTestEvictionPolicy : public EvictionPolicy {
 public:
