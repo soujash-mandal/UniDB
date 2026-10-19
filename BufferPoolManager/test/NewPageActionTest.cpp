@@ -166,7 +166,6 @@ TEST(NewPageActionTest, FailedVictimWriteRestoresVictimForRetry) {
   EXPECT_EQ(writePort.writeCount, 2);
 }
 
-
 // Scenario 5: A policy registration failure on an empty frame rolls back the
 // frame so a subsequent NewPage can safely reuse it.
 TEST(NewPageActionTest, EmptyFramePolicyFailureRollsBackFrame) {
@@ -216,7 +215,6 @@ TEST(NewPageActionTest, ReplacementPolicyFailureRestoresVictimForRetry) {
   EXPECT_EQ(frame.getPageId(), 3);
   EXPECT_EQ(frame.getPinCount(), 1);
 }
-
 
 // Scenario 7: SetEvictable failure on an empty frame also rolls back the
 // partially registered page and leaves the frame reusable.
