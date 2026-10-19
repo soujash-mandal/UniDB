@@ -1,9 +1,11 @@
+#include "../actions/NewPageAction.h"
 #include "../actions/UnpinPageAction.h"
 
 #include <gtest/gtest.h>
 
 #include <functional>
 #include <optional>
+#include <utility>
 #include <stdexcept>
 
 class UnpinTestEvictionPolicy : public EvictionPolicy {
@@ -14,6 +16,7 @@ public:
   bool lastEvictable = false;
   bool shouldThrowOnEvictable = false;
   std::function<void()> onMakeEvictable;
+  std::optional<BufferPoolPageId> victim;
 
   void RecordAccess(BufferPoolPageId) override { ++recordAccessCount; }
   void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
@@ -28,7 +31,7 @@ public:
       onMakeEvictable();
     }
   }
-  std::optional<BufferPoolPageId> Evict() override { return std::nullopt; }
+  std::optional<BufferPoolPageId> Evict() override { return victim; }
   void Remove(BufferPoolPageId) override {}
 };
 
@@ -128,25 +131,39 @@ TEST(UnpinPageActionTest, PolicyFailurePreservesFinalPinForRetry) {
   EXPECT_TRUE(policy.lastEvictable);
 }
 
-// Scenario 6: A replacement interleaving after a page becomes evictable must
-// not let the old page's unpin decrement the replacement page's pin count.
-TEST(UnpinPageActionTest, InterleavedReplacementKeepsNewPagePinned) {
+class UnpinTestAllocatePort : public AllocatePagePort {
+public:
+  BufferPoolPageId allocatePage() override { return 8; }
+};
+
+class UnpinTestWritePort : public WritePagePort {
+public:
+  void writePage(BufferPoolPageId, BufferPoolPage) override {}
+};
+
+// Scenario 6: Reproduce replacement between SetEvictable(true) and the
+// original unpin by invoking the real NewPageAction from the policy callback.
+// The replacement page must start with exactly its own pin, not inherit the
+// victim page's outstanding pin.
+TEST(UnpinPageActionTest, ReplacementDoesNotInheritVictimPin) {
   BufferPool pool(1);
   UnpinTestEvictionPolicy policy;
   OccupyFrame(pool, 7, 1);
-  UnpinPageAction action(pool, policy);
+  UnpinPageAction unpinAction(pool, policy);
+  UnpinTestAllocatePort allocatePort;
+  UnpinTestWritePort writePort;
+  NewPageAction newPageAction(pool, allocatePort, writePort, policy);
+  policy.victim = 7;
 
-  policy.onMakeEvictable = [&pool]() {
-    // Model a concurrent replacer running immediately after the policy exposes
-    // page 7 as evictable but before UnpinPageAction decrements its old pin.
-    Frame &frame = pool.getFrame(0);
-    frame.setPageId(8);
-    frame.setOccupied(true);
-    frame.pin();
+  uint32_t replacementPinCountBeforeOldUnpin = 0;
+  policy.onMakeEvictable = [&]() {
+    EXPECT_EQ(newPageAction.execute(), 8);
+    replacementPinCountBeforeOldUnpin = pool.getFrame(0).getPinCount();
   };
 
-  action.execute(7);
+  unpinAction.execute(7);
 
   EXPECT_EQ(pool.getFrame(0).getPageId(), 8);
+  EXPECT_EQ(replacementPinCountBeforeOldUnpin, 1);
   EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
 }
