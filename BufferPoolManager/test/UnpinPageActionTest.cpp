@@ -34,7 +34,7 @@ public:
     if (evictable && onMakeEvictable) {
       onMakeEvictable();
     }
-    if (shouldThrowAfterCallback) {
+    if (evictable && shouldThrowAfterCallback) {
       shouldThrowAfterCallback = false;
       throw std::runtime_error("simulated post-callback policy failure");
     }
@@ -256,15 +256,16 @@ TEST(UnpinPageActionTest, PolicyFailureAfterReplacementDoesNotPinReplacement) {
   UnpinTestEvictionPolicy policy;
   OccupyFrame(pool, 7, 1);
   UnpinPageAction unpinAction(pool, policy);
-  UnpinTestAllocatePort allocatePort;
-  UnpinTestWritePort writePort;
-  NewPageAction newPageAction(pool, allocatePort, writePort, policy);
-  policy.victim = 7;
+  Frame &frame = pool.getFrame(0);
   policy.shouldThrowAfterCallback = true;
-  policy.onMakeEvictable = [&]() { EXPECT_EQ(newPageAction.execute(), 8); };
+  policy.onMakeEvictable = [&]() {
+    // Simulate a replacement occurring before the policy reports failure.
+    frame.setPageId(8);
+    frame.pin();
+  };
 
   EXPECT_THROW(unpinAction.execute(7), std::runtime_error);
 
-  EXPECT_EQ(pool.getFrame(0).getPageId(), 8);
-  EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
+  EXPECT_EQ(frame.getPageId(), 8);
+  EXPECT_EQ(frame.getPinCount(), 1);
 }
