@@ -83,16 +83,15 @@ TEST(WritePageActionTest, PreservesBinaryBoundaryBytes) {
   OccupyWriteFrame(pool, 12, 'A', false);
   BufferPoolPage replacement;
   replacement.data()[0] = '\0';
-  replacement.data()[BufferPoolPage::PAGE_SIZE - 1] =
-      static_cast<char>(0xFF);
+  replacement.data()[BufferPoolPage::PAGE_SIZE - 1] = static_cast<char>(0xFF);
   WritePageAction action(pool);
 
   action.execute(12, replacement);
 
   const BufferPoolPage actual = pool.getFrame(0).getPage();
   EXPECT_EQ(actual.data()[0], '\0');
-  EXPECT_EQ(static_cast<unsigned char>(
-                actual.data()[BufferPoolPage::PAGE_SIZE - 1]),
-            0xFF);
+  EXPECT_EQ(
+      static_cast<unsigned char>(actual.data()[BufferPoolPage::PAGE_SIZE - 1]),
+      0xFF);
   EXPECT_TRUE(pool.getFrame(0).isDirty());
 }
