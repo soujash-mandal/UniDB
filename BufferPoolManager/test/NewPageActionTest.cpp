@@ -6,6 +6,8 @@
 
 #include <optional>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 class NewPageTestAllocatePort : public AllocatePagePort {
 public:
@@ -42,20 +44,26 @@ public:
   std::optional<BufferPoolPageId> victim;
   bool throwNextRecordAccess = false;
   bool throwNextSetEvictable = false;
-  void RecordAccess(BufferPoolPageId) override {
+  std::vector<BufferPoolPageId> removed;
+  std::vector<BufferPoolPageId> accessed;
+  std::vector<std::pair<BufferPoolPageId, bool>> evictableCalls;
+
+  void RecordAccess(BufferPoolPageId pageId) override {
     if (throwNextRecordAccess) {
       throwNextRecordAccess = false;
       throw std::runtime_error("simulated RecordAccess failure");
     }
+    accessed.push_back(pageId);
   }
-  void SetEvictable(BufferPoolPageId, bool) override {
+  void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
     if (throwNextSetEvictable) {
       throwNextSetEvictable = false;
       throw std::runtime_error("simulated SetEvictable failure");
     }
+    evictableCalls.emplace_back(pageId, evictable);
   }
   std::optional<BufferPoolPageId> Evict() override { return victim; }
-  void Remove(BufferPoolPageId) override {}
+  void Remove(BufferPoolPageId pageId) override { removed.push_back(pageId); }
 };
 
 // Scenario 1: Reusing a dirty victim flushes its old bytes before the new
@@ -209,6 +217,12 @@ TEST(NewPageActionTest, ReplacementPolicyFailureRestoresVictimForRetry) {
   EXPECT_EQ(frame.getPageId(), 1);
   EXPECT_EQ(frame.getPinCount(), 0);
   EXPECT_EQ(frame.getPage().data()[0], 'R');
+  ASSERT_FALSE(policy.removed.empty());
+  EXPECT_EQ(policy.removed.back(), 2);
+  ASSERT_FALSE(policy.accessed.empty());
+  EXPECT_EQ(policy.accessed.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute());
@@ -259,6 +273,12 @@ TEST(NewPageActionTest, ReplacementSetEvictableFailureRestoresVictim) {
   EXPECT_EQ(frame.getPageId(), 1);
   EXPECT_EQ(frame.getPage().data()[0], 'S');
   EXPECT_EQ(frame.getPinCount(), 0);
+  ASSERT_FALSE(policy.removed.empty());
+  EXPECT_EQ(policy.removed.back(), 2);
+  ASSERT_FALSE(policy.accessed.empty());
+  EXPECT_EQ(policy.accessed.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute());
