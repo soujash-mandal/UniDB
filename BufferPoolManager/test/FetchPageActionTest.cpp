@@ -328,6 +328,9 @@ TEST(FetchPageActionTest, PolicyFailureOnCachedFetchDoesNotLeakPin) {
   EXPECT_EQ(frame.getPinCount(), 0);
   EXPECT_TRUE(frame.isOccupied());
   EXPECT_EQ(frame.getPageId(), 10);
+  EXPECT_EQ(evictionPolicy.setEvictableCount, 3);
+  EXPECT_EQ(evictionPolicy.lastEvictablePageId, 10);
+  EXPECT_TRUE(evictionPolicy.lastEvictableValue);
 }
 
 // Scenario 12: An eviction-policy failure while loading an empty frame leaves
@@ -343,6 +346,8 @@ TEST(FetchPageActionTest, PolicyFailureOnEmptyFrameLeavesFrameUnoccupied) {
   EXPECT_THROW(action.execute(10), std::runtime_error);
   EXPECT_FALSE(bufferPool.getFrame(0).isOccupied());
   EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 0);
+  EXPECT_EQ(evictionPolicy.removeCount, 1);
+  EXPECT_EQ(evictionPolicy.lastRemovedPageId, 10);
 
   EXPECT_NO_THROW(action.execute(10));
   EXPECT_TRUE(bufferPool.getFrame(0).isOccupied());
