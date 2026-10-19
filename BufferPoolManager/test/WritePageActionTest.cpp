@@ -19,7 +19,8 @@ void OccupyWriteFrame(BufferPool &pool, BufferPoolPageId pageId, char firstByte,
 }
 } // namespace
 
-// Scenario 1: Writing a page replaces its full byte contents and marks it dirty.
+// Scenario 1: Writing a page replaces its full byte contents and marks it
+// dirty.
 TEST(WritePageActionTest, WritesAllBytesAndMarksPageDirty) {
   BufferPool pool(1);
   OccupyWriteFrame(pool, 12, 'A', false);
