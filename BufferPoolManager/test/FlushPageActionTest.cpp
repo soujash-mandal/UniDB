@@ -98,3 +98,23 @@ TEST(FlushPageActionTest, UnknownPageThrowsWithoutWriting) {
   EXPECT_TRUE(pool.getFrame(0).isDirty());
   EXPECT_EQ(pool.getFrame(0).getPageId(), 12);
 }
+
+
+// Scenario 5: A transient write failure can be retried, and only the
+// successful retry clears the dirty flag.
+TEST(FlushPageActionTest, SuccessfulRetryClearsDirtyFlag) {
+  BufferPool pool(1);
+  FlushTestWritePagePort writePort;
+  writePort.shouldThrow = true;
+  OccupyFlushFrame(pool, 12, true, 'R');
+  FlushPageAction action(pool, writePort);
+
+  EXPECT_THROW(action.execute(12), std::runtime_error);
+  EXPECT_TRUE(pool.getFrame(0).isDirty());
+
+  writePort.shouldThrow = false;
+  EXPECT_NO_THROW(action.execute(12));
+  EXPECT_EQ(writePort.writeCount, 2);
+  EXPECT_EQ(writePort.lastPageId, 12);
+  EXPECT_FALSE(pool.getFrame(0).isDirty());
+}
