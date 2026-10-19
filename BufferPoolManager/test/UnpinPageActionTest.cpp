@@ -11,12 +11,17 @@ public:
   int setEvictableCount = 0;
   BufferPoolPageId lastPageId = 0;
   bool lastEvictable = false;
+  bool shouldThrowOnEvictable = false;
 
   void RecordAccess(BufferPoolPageId) override { ++recordAccessCount; }
   void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
     ++setEvictableCount;
     lastPageId = pageId;
     lastEvictable = evictable;
+    if (shouldThrowOnEvictable) {
+      shouldThrowOnEvictable = false;
+      throw std::runtime_error("simulated policy failure");
+    }
   }
   std::optional<BufferPoolPageId> Evict() override { return std::nullopt; }
   void Remove(BufferPoolPageId) override {}
@@ -99,4 +104,22 @@ TEST(UnpinPageActionTest, RejectsPinCountUnderflow) {
 
   EXPECT_EQ(pool.getFrame(0).getPinCount(), 0);
   EXPECT_EQ(policy.setEvictableCount, 1);
+}
+
+
+// Scenario 5: If making the page evictable fails, its final pin is retained
+// so the caller can retry without policy/frame divergence.
+TEST(UnpinPageActionTest, PolicyFailurePreservesFinalPinForRetry) {
+  BufferPool pool(1);
+  UnpinTestEvictionPolicy policy;
+  OccupyFrame(pool, 7, 1);
+  UnpinPageAction action(pool, policy);
+  policy.shouldThrowOnEvictable = true;
+
+  EXPECT_THROW(action.execute(7), std::runtime_error);
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
+
+  EXPECT_NO_THROW(action.execute(7));
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 0);
+  EXPECT_TRUE(policy.lastEvictable);
 }
