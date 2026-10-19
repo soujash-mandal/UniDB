@@ -222,7 +222,8 @@ TEST(NewPageActionTest, ReplacementPolicyFailureRestoresVictimForRetry) {
   ASSERT_FALSE(policy.accessed.empty());
   EXPECT_EQ(policy.accessed.back(), 1);
   ASSERT_FALSE(policy.evictableCalls.empty());
-  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute());
