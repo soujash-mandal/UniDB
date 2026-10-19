@@ -40,8 +40,20 @@ public:
 class NewPageTestEvictionPolicy : public EvictionPolicy {
 public:
   std::optional<BufferPoolPageId> victim;
-  void RecordAccess(BufferPoolPageId) override {}
-  void SetEvictable(BufferPoolPageId, bool) override {}
+  bool throwNextRecordAccess = false;
+  bool throwNextSetEvictable = false;
+  void RecordAccess(BufferPoolPageId) override {
+    if (throwNextRecordAccess) {
+      throwNextRecordAccess = false;
+      throw std::runtime_error("simulated RecordAccess failure");
+    }
+  }
+  void SetEvictable(BufferPoolPageId, bool) override {
+    if (throwNextSetEvictable) {
+      throwNextSetEvictable = false;
+      throw std::runtime_error("simulated SetEvictable failure");
+    }
+  }
   std::optional<BufferPoolPageId> Evict() override { return victim; }
   void Remove(BufferPoolPageId) override {}
 };
@@ -152,4 +164,55 @@ TEST(NewPageActionTest, FailedVictimWriteRestoresVictimForRetry) {
   EXPECT_EQ(action.execute(), 2);
   EXPECT_EQ(frame.getPageId(), 2);
   EXPECT_EQ(writePort.writeCount, 2);
+}
+
+
+// Scenario 5: A policy registration failure on an empty frame rolls back the
+// frame so a subsequent NewPage can safely reuse it.
+TEST(NewPageActionTest, EmptyFramePolicyFailureRollsBackFrame) {
+  BufferPool pool(1);
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.throwNextRecordAccess = true;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_FALSE(pool.getFrame(0).isOccupied());
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 0);
+
+  EXPECT_NO_THROW(action.execute());
+  EXPECT_TRUE(pool.getFrame(0).isOccupied());
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
+}
+
+// Scenario 6: A policy failure after victim replacement restores the original
+// page and makes it selectable again for retry.
+TEST(NewPageActionTest, ReplacementPolicyFailureRestoresVictimForRetry) {
+  BufferPool pool(1);
+  Frame &frame = pool.getFrame(0);
+  BufferPoolPage oldPage;
+  oldPage.data()[0] = 'R';
+  frame.setPage(oldPage);
+  frame.setPageId(1);
+  frame.setOccupied(true);
+  frame.setDirty(false);
+
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.victim = 1;
+  policy.throwNextRecordAccess = true;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_EQ(frame.getPage().data()[0], 'R');
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute());
+  EXPECT_EQ(frame.getPageId(), 3);
+  EXPECT_EQ(frame.getPinCount(), 1);
 }
