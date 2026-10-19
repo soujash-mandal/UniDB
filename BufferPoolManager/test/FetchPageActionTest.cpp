@@ -419,7 +419,8 @@ TEST(FetchPageActionTest, ReplacementSetEvictableFailureRestoresVictim) {
   ASSERT_FALSE(policy.accessedPageIds.empty());
   EXPECT_EQ(policy.accessedPageIds.back(), 1);
   ASSERT_FALSE(policy.evictableCalls.empty());
-  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute(2));
