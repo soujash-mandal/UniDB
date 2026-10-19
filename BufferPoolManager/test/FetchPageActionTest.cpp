@@ -348,3 +348,60 @@ TEST(FetchPageActionTest, PolicyFailureOnEmptyFrameLeavesFrameUnoccupied) {
   EXPECT_TRUE(bufferPool.getFrame(0).isOccupied());
   EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 1);
 }
+
+
+// Scenario 13: If RecordAccess fails after victim replacement, the old frame
+// is restored and the requested fetch can be retried.
+TEST(FetchPageActionTest, ReplacementRecordAccessFailureRestoresVictim) {
+  BufferPool pool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy policy;
+  readPort.pageToReturn.data()[0] = 'A';
+  FetchPageAction action(pool, readPort, writePort, policy);
+  action.execute(1);
+  Frame &frame = pool.getFrame(0);
+  frame.unpin();
+  policy.victim = 1;
+  policy.throwNextRecordAccess = true;
+  readPort.pageToReturn.data()[0] = 'B';
+
+  EXPECT_THROW(action.execute(2), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPage().data()[0], 'A');
+  EXPECT_EQ(frame.getPinCount(), 0);
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute(2));
+  EXPECT_EQ(frame.getPageId(), 2);
+  EXPECT_EQ(frame.getPinCount(), 1);
+}
+
+// Scenario 14: If SetEvictable fails after replacement, the frame mapping is
+// rolled back and a retry can fetch the requested page.
+TEST(FetchPageActionTest, ReplacementSetEvictableFailureRestoresVictim) {
+  BufferPool pool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy policy;
+  readPort.pageToReturn.data()[0] = 'A';
+  FetchPageAction action(pool, readPort, writePort, policy);
+  action.execute(1);
+  Frame &frame = pool.getFrame(0);
+  frame.unpin();
+  policy.victim = 1;
+  policy.throwNextSetEvictable = true;
+  readPort.pageToReturn.data()[0] = 'B';
+
+  EXPECT_THROW(action.execute(2), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPage().data()[0], 'A');
+  EXPECT_EQ(frame.getPinCount(), 0);
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute(2));
+  EXPECT_EQ(frame.getPageId(), 2);
+  EXPECT_EQ(frame.getPinCount(), 1);
+}
