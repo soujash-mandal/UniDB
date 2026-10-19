@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <functional>
 #include <optional>
 #include <stdexcept>
 
@@ -12,6 +13,7 @@ public:
   BufferPoolPageId lastPageId = 0;
   bool lastEvictable = false;
   bool shouldThrowOnEvictable = false;
+  std::function<void()> onMakeEvictable;
 
   void RecordAccess(BufferPoolPageId) override { ++recordAccessCount; }
   void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
@@ -21,6 +23,9 @@ public:
     if (shouldThrowOnEvictable) {
       shouldThrowOnEvictable = false;
       throw std::runtime_error("simulated policy failure");
+    }
+    if (evictable && onMakeEvictable) {
+      onMakeEvictable();
     }
   }
   std::optional<BufferPoolPageId> Evict() override { return std::nullopt; }
@@ -121,4 +126,27 @@ TEST(UnpinPageActionTest, PolicyFailurePreservesFinalPinForRetry) {
   EXPECT_NO_THROW(action.execute(7));
   EXPECT_EQ(pool.getFrame(0).getPinCount(), 0);
   EXPECT_TRUE(policy.lastEvictable);
+}
+
+// Scenario 6: A replacement interleaving after a page becomes evictable must
+// not let the old page's unpin decrement the replacement page's pin count.
+TEST(UnpinPageActionTest, InterleavedReplacementKeepsNewPagePinned) {
+  BufferPool pool(1);
+  UnpinTestEvictionPolicy policy;
+  OccupyFrame(pool, 7, 1);
+  UnpinPageAction action(pool, policy);
+
+  policy.onMakeEvictable = [&pool]() {
+    // Model a concurrent replacer running immediately after the policy exposes
+    // page 7 as evictable but before UnpinPageAction decrements its old pin.
+    Frame &frame = pool.getFrame(0);
+    frame.setPageId(8);
+    frame.setOccupied(true);
+    frame.pin();
+  };
+
+  action.execute(7);
+
+  EXPECT_EQ(pool.getFrame(0).getPageId(), 8);
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
 }
