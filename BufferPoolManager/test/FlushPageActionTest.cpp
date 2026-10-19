@@ -99,7 +99,6 @@ TEST(FlushPageActionTest, UnknownPageThrowsWithoutWriting) {
   EXPECT_EQ(pool.getFrame(0).getPageId(), 12);
 }
 
-
 // Scenario 5: A transient write failure can be retried, and only the
 // successful retry clears the dirty flag.
 TEST(FlushPageActionTest, SuccessfulRetryClearsDirtyFlag) {
