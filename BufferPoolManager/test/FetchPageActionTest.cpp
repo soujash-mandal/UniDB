@@ -5,6 +5,8 @@
 
 #include <optional>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 class FakeReadPagePort : public ReadPagePort {
 public:
@@ -52,6 +54,8 @@ public:
   bool throwNextRecordAccess = false;
   bool throwNextSetEvictable = false;
   std::optional<BufferPoolPageId> victim;
+  std::vector<BufferPoolPageId> accessedPageIds;
+  std::vector<std::pair<BufferPoolPageId, bool>> evictableCalls;
 
   void RecordAccess(BufferPoolPageId pageId) override {
     ++recordAccessCount;
@@ -60,6 +64,7 @@ public:
       throwNextRecordAccess = false;
       throw std::runtime_error("simulated RecordAccess failure");
     }
+    accessedPageIds.push_back(pageId);
   }
 
   void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
@@ -70,6 +75,7 @@ public:
       throwNextSetEvictable = false;
       throw std::runtime_error("simulated SetEvictable failure");
     }
+    evictableCalls.emplace_back(pageId, evictable);
   }
 
   std::optional<BufferPoolPageId> Evict() override {
@@ -376,6 +382,11 @@ TEST(FetchPageActionTest, ReplacementRecordAccessFailureRestoresVictim) {
   EXPECT_EQ(frame.getPageId(), 1);
   EXPECT_EQ(frame.getPage().data()[0], 'A');
   EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_EQ(policy.lastRemovedPageId, 2);
+  ASSERT_FALSE(policy.accessedPageIds.empty());
+  EXPECT_EQ(policy.accessedPageIds.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute(2));
@@ -404,6 +415,11 @@ TEST(FetchPageActionTest, ReplacementSetEvictableFailureRestoresVictim) {
   EXPECT_EQ(frame.getPageId(), 1);
   EXPECT_EQ(frame.getPage().data()[0], 'A');
   EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_EQ(policy.lastRemovedPageId, 2);
+  ASSERT_FALSE(policy.accessedPageIds.empty());
+  EXPECT_EQ(policy.accessedPageIds.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute(2));
