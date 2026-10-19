@@ -13,10 +13,20 @@ void UnpinPageAction::execute(BufferPoolPageId pageId) {
       continue;
     }
 
-    // Update policy state first: if it throws, the pin count remains unchanged.
+    // Release the final pin before exposing the page to eviction. Otherwise,
+    // replacement can reuse this frame before the old pin is decremented.
     if (frame.getPinCount() == 1) {
-      evictionPolicy.SetEvictable(pageId, true);
+      frame.unpin();
+      try {
+        evictionPolicy.SetEvictable(pageId, true);
+      } catch (...) {
+        // Preserve the pin if the policy update fails, so the caller can retry.
+        frame.pin();
+        throw;
+      }
+      return;
     }
+
     frame.unpin();
     return;
   }
