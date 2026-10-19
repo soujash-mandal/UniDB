@@ -6,11 +6,12 @@ UpdateFreeSpaceAction::UpdateFreeSpaceAction(FetchPagePort &fetchPagePort,
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
-void UpdateFreeSpaceAction::execute(FSMPageId fsmPageId, TuplePageId pageId,
+void UpdateFreeSpaceAction::execute(SpaceMapPageId spaceMapPageId,
+                                    TuplePageId pageId,
                                     uint32_t updatedfFreeSpace) {
-  FSMPage fsmPage = fetchPagePort.fetchPage(fsmPageId);
-  fsmPage.update(pageId, updatedfFreeSpace);
-  writePagePort.writePage(fsmPageId, fsmPage);
-  unpinPagePort.unpinPage(fsmPageId);
+  SpaceMapPage spaceMapPage = fetchPagePort.fetchPage(spaceMapPageId);
+  spaceMapPage.update(pageId, updatedfFreeSpace);
+  writePagePort.writePage(spaceMapPageId, spaceMapPage);
+  unpinPagePort.unpinPage(spaceMapPageId);
   return;
 }

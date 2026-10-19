@@ -1,9 +1,9 @@
-#include "FSMPage.h"
+#include "SpaceMapPage.h"
 
 #include <cstring>
 #include <stdexcept>
 
-FSMPage::FSMPage() {
+SpaceMapPage::SpaceMapPage() {
   std::memset(bytes, 0, PAGE_SIZE);
   Header header;
   header.nextPageId = INVALID_PAGE_ID;
@@ -11,30 +11,30 @@ FSMPage::FSMPage() {
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
-FSMPageId FSMPage::getNextPageId() {
+SpaceMapPageId SpaceMapPage::getNextPageId() {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   return header.nextPageId;
 }
 
-void FSMPage::setNextPageId(FSMPageId pageId) {
+void SpaceMapPage::setNextPageId(SpaceMapPageId pageId) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   header.nextPageId = pageId;
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
-bool FSMPage::isFull() {
+bool SpaceMapPage::isFull() {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   return header.entryCount >= MAX_ENTRIES;
 }
 
-void FSMPage::insert(FSMPageId pageId, uint32_t freeSpace) {
+void SpaceMapPage::insert(SpaceMapPageId pageId, uint32_t freeSpace) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   if (header.entryCount >= MAX_ENTRIES) {
-    throw std::runtime_error("FSMPage is full");
+    throw std::runtime_error("SpaceMapPage is full");
   }
   Entry entry;
   entry.pageId = pageId;
@@ -45,7 +45,7 @@ void FSMPage::insert(FSMPageId pageId, uint32_t freeSpace) {
   std::memcpy(bytes, &header, sizeof(Header));
 }
 
-void FSMPage::update(FSMPageId pageId, uint32_t freeSpace) {
+void SpaceMapPage::update(SpaceMapPageId pageId, uint32_t freeSpace) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   for (uint32_t i = 0; i < header.entryCount; ++i) {
@@ -58,10 +58,10 @@ void FSMPage::update(FSMPageId pageId, uint32_t freeSpace) {
       return;
     }
   }
-  throw std::runtime_error("PageId not found in FSMPage");
+  throw std::runtime_error("PageId not found in SpaceMapPage");
 }
 
-FSMPageId FSMPage::findPageWithSpace(uint32_t requiredSpace) {
+SpaceMapPageId SpaceMapPage::findPageWithSpace(uint32_t requiredSpace) {
   Header header;
   std::memcpy(&header, bytes, sizeof(Header));
   for (uint32_t i = 0; i < header.entryCount; ++i) {

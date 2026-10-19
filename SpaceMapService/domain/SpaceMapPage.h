@@ -3,18 +3,18 @@
 #include <cstddef>
 #include <cstdint>
 
-using FSMPageId = uint32_t;
+using SpaceMapPageId = uint32_t;
 using TuplePageId = uint32_t;
 
 namespace {
 static constexpr std::size_t PAGE_SIZE = 8192;
-static constexpr FSMPageId INVALID_PAGE_ID = UINT32_MAX;
+static constexpr SpaceMapPageId INVALID_PAGE_ID = UINT32_MAX;
 struct Header {
-  FSMPageId nextPageId;
+  SpaceMapPageId nextPageId;
   uint32_t entryCount;
 };
 struct Entry {
-  FSMPageId pageId;
+  SpaceMapPageId pageId;
   uint32_t freeSpace;
 };
 static constexpr uint32_t HEADER_SIZE = sizeof(Header);
@@ -22,9 +22,9 @@ static constexpr uint32_t MAX_ENTRIES =
     (PAGE_SIZE - HEADER_SIZE) / sizeof(Entry);
 } // namespace
 
-class FSMPage {
+class SpaceMapPage {
 public:
-  FSMPage();
+  SpaceMapPage();
   char *data() { return bytes; }
   const char *data() const { return bytes; }
 
@@ -32,12 +32,12 @@ public:
     return !(pageId == INVALID_PAGE_ID);
   }
 
-  FSMPageId getNextPageId();
-  void setNextPageId(FSMPageId pageId);
+  SpaceMapPageId getNextPageId();
+  void setNextPageId(SpaceMapPageId pageId);
 
-  FSMPageId findPageWithSpace(uint32_t requiredSpace);
-  void insert(FSMPageId pageId, uint32_t freeSpace);
-  void update(FSMPageId pageId, uint32_t freeSpace);
+  SpaceMapPageId findPageWithSpace(uint32_t requiredSpace);
+  void insert(SpaceMapPageId pageId, uint32_t freeSpace);
+  void update(SpaceMapPageId pageId, uint32_t freeSpace);
   bool isFull();
 
 private:

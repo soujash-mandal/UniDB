@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../domain/FSMPage.h"
+#include "../domain/SpaceMapPage.h"
 
 class NewPagePort {
 public:
   virtual ~NewPagePort() = default;
 
-  virtual FSMPageId newPage() = 0;
+  virtual SpaceMapPageId newPage() = 0;
 };

@@ -6,7 +6,7 @@
 class BufferPoolWritePageAdapter : public WritePagePort {
 public:
   explicit BufferPoolWritePageAdapter(WritePageAction &writePageAction);
-  void writePage(FSMPageId pageId, FSMPage page) override;
+  void writePage(SpaceMapPageId pageId, SpaceMapPage page) override;
 
 private:
   WritePageAction &writePageAction;
