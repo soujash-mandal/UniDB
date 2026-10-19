@@ -360,7 +360,6 @@ TEST(FetchPageActionTest, PolicyFailureOnEmptyFrameLeavesFrameUnoccupied) {
   EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 1);
 }
 
-
 // Scenario 13: If RecordAccess fails after victim replacement, the old frame
 // is restored and the requested fetch can be retried.
 TEST(FetchPageActionTest, ReplacementRecordAccessFailureRestoresVictim) {
@@ -386,7 +385,8 @@ TEST(FetchPageActionTest, ReplacementRecordAccessFailureRestoresVictim) {
   ASSERT_FALSE(policy.accessedPageIds.empty());
   EXPECT_EQ(policy.accessedPageIds.back(), 1);
   ASSERT_FALSE(policy.evictableCalls.empty());
-  EXPECT_EQ(policy.evictableCalls.back(), std::make_pair(BufferPoolPageId{1}, true));
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
 
   policy.victim = 1;
   EXPECT_NO_THROW(action.execute(2));
