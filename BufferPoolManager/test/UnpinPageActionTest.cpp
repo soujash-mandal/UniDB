@@ -106,7 +106,6 @@ TEST(UnpinPageActionTest, RejectsPinCountUnderflow) {
   EXPECT_EQ(policy.setEvictableCount, 1);
 }
 
-
 // Scenario 5: If making the page evictable fails, its final pin is retained
 // so the caller can retry without policy/frame divergence.
 TEST(UnpinPageActionTest, PolicyFailurePreservesFinalPinForRetry) {
