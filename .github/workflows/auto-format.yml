@@ -1,0 +1,140 @@
+name: Auto Format C++
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auto-format-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: Format C++ files
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout trusted base scripts
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Checkout pull request content without credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          persist-credentials: false
+
+      - name: Install clang-format
+        run: brew install clang-format
+
+      # Execute only the formatter script from the trusted base checkout.
+      # The pull request checkout is treated as data and never runs its own scripts.
+      - name: Format C++ files
+        working-directory: pr
+        run: ../trusted/scripts/format.sh
+
+      - name: Verify formatting
+        working-directory: pr
+        run: |
+          git diff --check
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+            -not -path "./build/*" -print0 |
+            xargs -0 -n 1 clang-format --dry-run --Werror
+
+      - name: Commit formatting changes
+        working-directory: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet -- '*.cpp' '*.h' '*.hpp'; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u
+          git commit -m "Apply clang-format"
+
+          auth_header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git -c http.https://github.com/.extraheader="$auth_header" push origin "HEAD:${BRANCH_NAME}"
+
+  validate:
+    name: Validate formatted tree
+    needs: format
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      statuses: write
+
+    steps:
+      - name: Checkout latest pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+
+      - name: Record checked-out commit
+        id: checked-out
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          brew install clang-format googletest
+
+      - name: Check formatting
+        run: |
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+            -not -path "./build/*" -print0 |
+            xargs -0 -n 1 clang-format --dry-run --Werror
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Check service boundaries
+        run: python3 architecture/serviceBoundaryTest.py
+
+      - name: Check service graph consistency
+        run: python3 architecture/serviceGraphValidationTest.py
+
+      - name: Publish validation status for checked-out commit
+        if: always() && steps.checked-out.outputs.sha != ''
+        uses: actions/github-script@v7
+        env:
+          VALIDATED_SHA: ${{ steps.checked-out.outputs.sha }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const state = process.env.JOB_STATUS === 'success' ? 'success' : 'failure';
+            const description = state === 'success'
+              ? 'Formatting, build, tests, and architecture checks passed'
+              : 'One or more formatted-tree validation checks failed';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: process.env.VALIDATED_SHA,
+              state,
+              context: 'Auto Format / Validate formatted tree',
+              description
+            });
