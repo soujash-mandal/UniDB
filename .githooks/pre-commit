@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if ! command -v clang-format >/dev/null 2>&1; then
+  echo "ERROR: clang-format is required. Install it before committing." >&2
+  exit 1
+fi
+
+echo "Running required UniDB formatter: ./scripts/format.sh"
+./scripts/format.sh
+
+# Never commit code that the formatter has just changed. Review and stage the
+# formatting changes, then retry the commit.
+if ! git diff --quiet -- '*.cpp' '*.h' '*.hpp'; then
+  echo >&2
+  echo "ERROR: Formatting changed C++ files. Review the diff, stage the intended changes, and commit again." >&2
+  git diff --stat -- '*.cpp' '*.h' '*.hpp' >&2
+  exit 1
+fi
+
+echo "Pre-commit formatting check passed."
