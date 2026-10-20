@@ -1,4 +1,5 @@
 #include "FetchPageAction.h"
+#include <mutex>
 
 #include <optional>
 #include <stdexcept>
@@ -11,6 +12,7 @@ FetchPageAction::FetchPageAction(BufferPool &bufferPool,
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
 BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
+  std::lock_guard<std::mutex> lock(bufferPool.getSynchronizationMutex());
   // 1. Check whether the page is already in memory.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
