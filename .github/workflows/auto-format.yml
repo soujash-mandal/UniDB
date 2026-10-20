@@ -80,6 +80,7 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: read
+      statuses: write
 
     steps:
       - name: Checkout latest pull request branch
@@ -87,6 +88,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           persist-credentials: false
+
+      - name: Record checked-out commit
+        id: checked-out
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: |
@@ -112,3 +117,24 @@ jobs:
 
       - name: Check service graph consistency
         run: python3 architecture/serviceGraphValidationTest.py
+
+      - name: Publish validation status for checked-out commit
+        if: always() && steps.checked-out.outputs.sha != ''
+        uses: actions/github-script@v7
+        env:
+          VALIDATED_SHA: ${{ steps.checked-out.outputs.sha }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const state = process.env.JOB_STATUS === 'success' ? 'success' : 'failure';
+            const description = state === 'success'
+              ? 'Formatting, build, tests, and architecture checks passed'
+              : 'One or more formatted-tree validation checks failed';
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: process.env.VALIDATED_SHA,
+              state,
+              context: 'Auto Format / Validate formatted tree',
+              description
+            });
