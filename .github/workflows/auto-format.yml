@@ -8,7 +8,7 @@ on:
       - reopened
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: auto-format-${{ github.event.pull_request.number }}
@@ -19,6 +19,8 @@ jobs:
     name: Format C++ files
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout trusted base scripts
@@ -44,20 +46,15 @@ jobs:
         working-directory: pr
         run: ../trusted/scripts/format.sh
 
-      - name: Verify formatting and patch
+      - name: Verify formatting
         working-directory: pr
         run: |
           git diff --check
-          files=$(find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
-            -not -path "./build/*")
-          while IFS= read -r file; do
-            clang-format --dry-run --Werror "$file"
-          done <<EOF
-          $files
-          EOF
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+            -not -path "./build/*" -print0 |
+            xargs -0 -n 1 clang-format --dry-run --Werror
 
       - name: Commit formatting changes
-        if: success()
         working-directory: pr
         env:
           GH_TOKEN: ${{ github.token }}
@@ -75,3 +72,43 @@ jobs:
 
           auth_header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
           git -c http.https://github.com/.extraheader="$auth_header" push origin "HEAD:${BRANCH_NAME}"
+
+  validate:
+    name: Validate formatted tree
+    needs: format
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout latest pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: false
+
+      - name: Install dependencies
+        run: |
+          brew install clang-format googletest
+
+      - name: Check formatting
+        run: |
+          find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
+            -not -path "./build/*" -print0 |
+            xargs -0 -n 1 clang-format --dry-run --Werror
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Check service boundaries
+        run: python3 architecture/serviceBoundaryTest.py
+
+      - name: Check service graph consistency
+        run: python3 architecture/serviceGraphValidationTest.py
