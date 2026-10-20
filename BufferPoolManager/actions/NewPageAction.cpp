@@ -1,4 +1,5 @@
 #include "NewPageAction.h"
+#include <mutex>
 
 #include <exception>
 #include <optional>
@@ -12,6 +13,7 @@ NewPageAction::NewPageAction(BufferPool &bufferPool,
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
 BufferPoolPageId NewPageAction::execute() {
+  std::lock_guard<std::mutex> lock(bufferPool.getSynchronizationMutex());
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (frame.isOccupied()) {
