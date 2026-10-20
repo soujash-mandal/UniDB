@@ -72,21 +72,3 @@ service graph, but remains deferred from V1 acceptance criteria unless a concret
 operation requires it. The `SpaceMapService --> TupleService` edge reflects the
 current implementation's tuple-page creation port; it should be revisited when SpaceMapService's
 page-selection and page-creation responsibilities are refactored.
-
-## Development workflow
-
-Install the repository's Git hooks once in each local clone:
-
-```bash
-./scripts/install-hooks.sh
-```
-
-The installed pre-commit hook runs `./scripts/format.sh` before each commit. If formatting changes C++ files, review the diff, stage the intended formatting changes, and retry the commit. The formatter requires `clang-format` to be installed.
-
-Run the project's build and test workflow with:
-
-```bash
-./scripts/test.sh
-```
-
-Git hooks can be bypassed explicitly, so pull-request CI remains an independent check.
