@@ -1,0 +1,42 @@
+name: Auto Format C++
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    name: Format C++ files
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install clang-format
+        run: brew install clang-format
+
+      - name: Format C++ files
+        run: ./scripts/format.sh
+
+      - name: Commit formatting changes
+        run: |
+          if git diff --quiet -- '*.cpp' '*.h' '*.hpp'; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- '*.cpp' '*.h' '*.hpp'
+          git commit -m "Apply clang-format"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
