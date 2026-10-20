@@ -6,6 +6,8 @@
 
 #include <optional>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 class NewPageTestAllocatePort : public AllocatePagePort {
 public:
@@ -40,10 +42,28 @@ public:
 class NewPageTestEvictionPolicy : public EvictionPolicy {
 public:
   std::optional<BufferPoolPageId> victim;
-  void RecordAccess(BufferPoolPageId) override {}
-  void SetEvictable(BufferPoolPageId, bool) override {}
+  bool throwNextRecordAccess = false;
+  bool throwNextSetEvictable = false;
+  std::vector<BufferPoolPageId> removed;
+  std::vector<BufferPoolPageId> accessed;
+  std::vector<std::pair<BufferPoolPageId, bool>> evictableCalls;
+
+  void RecordAccess(BufferPoolPageId pageId) override {
+    if (throwNextRecordAccess) {
+      throwNextRecordAccess = false;
+      throw std::runtime_error("simulated RecordAccess failure");
+    }
+    accessed.push_back(pageId);
+  }
+  void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
+    if (throwNextSetEvictable) {
+      throwNextSetEvictable = false;
+      throw std::runtime_error("simulated SetEvictable failure");
+    }
+    evictableCalls.emplace_back(pageId, evictable);
+  }
   std::optional<BufferPoolPageId> Evict() override { return victim; }
-  void Remove(BufferPoolPageId) override {}
+  void Remove(BufferPoolPageId pageId) override { removed.push_back(pageId); }
 };
 
 // Scenario 1: Reusing a dirty victim flushes its old bytes before the new
@@ -152,4 +172,139 @@ TEST(NewPageActionTest, FailedVictimWriteRestoresVictimForRetry) {
   EXPECT_EQ(action.execute(), 2);
   EXPECT_EQ(frame.getPageId(), 2);
   EXPECT_EQ(writePort.writeCount, 2);
+}
+
+// Scenario 5: A policy registration failure on an empty frame rolls back the
+// frame so a subsequent NewPage can safely reuse it.
+TEST(NewPageActionTest, EmptyFramePolicyFailureRollsBackFrame) {
+  BufferPool pool(1);
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.throwNextRecordAccess = true;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_FALSE(pool.getFrame(0).isOccupied());
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 0);
+
+  EXPECT_NO_THROW(action.execute());
+  EXPECT_TRUE(pool.getFrame(0).isOccupied());
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
+}
+
+// Scenario 6: A policy failure after victim replacement restores the original
+// page and makes it selectable again for retry.
+TEST(NewPageActionTest, ReplacementPolicyFailureRestoresVictimForRetry) {
+  BufferPool pool(1);
+  Frame &frame = pool.getFrame(0);
+  BufferPoolPage oldPage;
+  oldPage.data()[0] = 'R';
+  frame.setPage(oldPage);
+  frame.setPageId(1);
+  frame.setOccupied(true);
+  frame.setDirty(false);
+
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.victim = 1;
+  policy.throwNextRecordAccess = true;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_EQ(frame.getPage().data()[0], 'R');
+  ASSERT_FALSE(policy.removed.empty());
+  EXPECT_EQ(policy.removed.back(), 2);
+  ASSERT_FALSE(policy.accessed.empty());
+  EXPECT_EQ(policy.accessed.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute());
+  EXPECT_EQ(frame.getPageId(), 3);
+  EXPECT_EQ(frame.getPinCount(), 1);
+}
+
+// Scenario 7: SetEvictable failure on an empty frame also rolls back the
+// partially registered page and leaves the frame reusable.
+TEST(NewPageActionTest, EmptyFrameSetEvictableFailureRollsBackFrame) {
+  BufferPool pool(1);
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.throwNextSetEvictable = true;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_FALSE(pool.getFrame(0).isOccupied());
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 0);
+
+  EXPECT_NO_THROW(action.execute());
+  EXPECT_TRUE(pool.getFrame(0).isOccupied());
+  EXPECT_EQ(pool.getFrame(0).getPinCount(), 1);
+}
+
+// Scenario 8: SetEvictable failure after victim replacement restores the
+// victim frame and allows a later allocation attempt.
+TEST(NewPageActionTest, ReplacementSetEvictableFailureRestoresVictim) {
+  BufferPool pool(1);
+  Frame &frame = pool.getFrame(0);
+  BufferPoolPage oldPage;
+  oldPage.data()[0] = 'S';
+  frame.setPage(oldPage);
+  frame.setPageId(1);
+  frame.setOccupied(true);
+  frame.setDirty(false);
+
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.victim = 1;
+  policy.throwNextSetEvictable = true;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPage().data()[0], 'S');
+  EXPECT_EQ(frame.getPinCount(), 0);
+  ASSERT_FALSE(policy.removed.empty());
+  EXPECT_EQ(policy.removed.back(), 2);
+  ASSERT_FALSE(policy.accessed.empty());
+  EXPECT_EQ(policy.accessed.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute());
+  EXPECT_EQ(frame.getPageId(), 3);
+  EXPECT_EQ(frame.getPinCount(), 1);
+}
+
+// Scenario 9: A full pool with no evictable victim fails without changing the
+// resident page or its pin count.
+TEST(NewPageActionTest, FullPoolWithoutEvictableVictimFailsCleanly) {
+  BufferPool pool(1);
+  Frame &frame = pool.getFrame(0);
+  frame.setPageId(1);
+  frame.setOccupied(true);
+  frame.pin();
+  NewPageTestAllocatePort allocatePort;
+  NewPageTestWritePort writePort;
+  NewPageTestEvictionPolicy policy;
+  policy.victim = std::nullopt;
+  NewPageAction action(pool, allocatePort, writePort, policy);
+
+  EXPECT_THROW(action.execute(), std::runtime_error);
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPinCount(), 1);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(allocatePort.nextPageId, 2);
 }

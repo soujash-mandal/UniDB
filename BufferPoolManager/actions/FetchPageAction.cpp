@@ -1,4 +1,5 @@
 #include "FetchPageAction.h"
+#include <mutex>
 
 #include <optional>
 #include <stdexcept>
@@ -11,13 +12,25 @@ FetchPageAction::FetchPageAction(BufferPool &bufferPool,
       writePagePort(writePagePort), evictionPolicy(evictionPolicy) {}
 
 BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
+  std::lock_guard<std::mutex> lock(bufferPool.getSynchronizationMutex());
   // 1. Check whether the page is already in memory.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (frame.isOccupied() && frame.getPageId() == pageId) {
+      // Update policy state before pinning: policy methods may throw, and the
+      // caller cannot unpin a page when fetchPage itself fails.
+      try {
+        evictionPolicy.RecordAccess(pageId);
+        evictionPolicy.SetEvictable(pageId, false);
+      } catch (...) {
+        try {
+          evictionPolicy.SetEvictable(pageId, frame.getPinCount() == 0);
+        } catch (...) {
+          // Preserve the original eviction-policy failure.
+        }
+        throw;
+      }
       frame.pin();
-      evictionPolicy.RecordAccess(pageId);
-      evictionPolicy.SetEvictable(pageId, false);
       return frame.getPage();
     }
   }
@@ -31,10 +44,22 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
       frame.setPage(page);
       frame.setOccupied(true);
       frame.setDirty(false);
-      frame.pin();
 
-      evictionPolicy.RecordAccess(pageId);
-      evictionPolicy.SetEvictable(pageId, false);
+      try {
+        evictionPolicy.RecordAccess(pageId);
+        evictionPolicy.SetEvictable(pageId, false);
+      } catch (...) {
+        try {
+          evictionPolicy.Remove(pageId);
+        } catch (...) {
+          // Preserve the original eviction-policy failure.
+        }
+        frame.setOccupied(false);
+        frame.setDirty(false);
+        throw;
+      }
+
+      frame.pin();
       return frame.getPage();
     }
   }
@@ -45,41 +70,59 @@ BufferPoolPage FetchPageAction::execute(BufferPoolPageId pageId) {
     throw std::runtime_error("Buffer pool is full and no page is evictable");
   }
 
-  // Evict() also removes this page from the eviction policy. If I/O fails,
-  // we must add it back because its frame will still contain the old page.
+  // Evict() removes the victim from the policy. Preserve its frame contents so
+  // policy failures can roll back the replacement as well as the mapping.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
     Frame &frame = bufferPool.getFrame(frameId);
     if (!frame.isOccupied() || frame.getPageId() != victimPageId.value()) {
       continue;
     }
 
+    const BufferPoolPage oldPage = frame.getPage();
+    const BufferPoolPageId oldPageId = frame.getPageId();
+    const bool oldDirty = frame.isDirty();
+    bool restoredDirty = oldDirty;
+
     try {
       // 4. Save changes before replacing a dirty page.
       if (frame.isDirty()) {
         writePagePort.writePage(frame.getPageId(), frame.getPage());
         frame.setDirty(false);
+        restoredDirty = false;
       }
 
-      // 5. Read the requested page before changing the frame. If this read
-      // fails, the frame still contains the old page.
+      // 5. Read the requested page before changing the frame.
       BufferPoolPage page = readPagePort.readDiskPage(pageId);
 
-      // 6. Replace the old page only after the required I/O has succeeded.
+      // 6. Replace the old page only after required I/O has succeeded.
       evictionPolicy.Remove(victimPageId.value());
       frame.setPage(page);
       frame.setPageId(pageId);
       frame.setOccupied(true);
       frame.setDirty(false);
-      frame.pin();
 
       evictionPolicy.RecordAccess(pageId);
       evictionPolicy.SetEvictable(pageId, false);
+      frame.pin();
       return frame.getPage();
     } catch (...) {
-      // Evict() removed the victim from FIFO before I/O started. Put it back
-      // so it can be chosen again; then pass the original error to the caller.
-      evictionPolicy.RecordAccess(victimPageId.value());
-      evictionPolicy.SetEvictable(victimPageId.value(), true);
+      // Remove any partial mapping for the requested page, then restore the
+      // victim frame and make it evictable again for a later retry.
+      try {
+        evictionPolicy.Remove(pageId);
+      } catch (...) {
+        // Preserve the original failure.
+      }
+      frame.setPage(oldPage);
+      frame.setPageId(oldPageId);
+      frame.setOccupied(true);
+      frame.setDirty(restoredDirty);
+      try {
+        evictionPolicy.RecordAccess(oldPageId);
+        evictionPolicy.SetEvictable(oldPageId, true);
+      } catch (...) {
+        // Preserve the original failure.
+      }
       throw;
     }
   }

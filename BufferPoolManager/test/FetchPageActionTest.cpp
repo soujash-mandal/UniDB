@@ -5,6 +5,8 @@
 
 #include <optional>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 class FakeReadPagePort : public ReadPagePort {
 public:
@@ -49,17 +51,31 @@ public:
   BufferPoolPageId lastEvictablePageId = 0;
   BufferPoolPageId lastRemovedPageId = 0;
   bool lastEvictableValue = false;
+  bool throwNextRecordAccess = false;
+  bool throwNextSetEvictable = false;
   std::optional<BufferPoolPageId> victim;
+  std::vector<BufferPoolPageId> accessedPageIds;
+  std::vector<std::pair<BufferPoolPageId, bool>> evictableCalls;
 
   void RecordAccess(BufferPoolPageId pageId) override {
     ++recordAccessCount;
     lastRecordedPageId = pageId;
+    if (throwNextRecordAccess) {
+      throwNextRecordAccess = false;
+      throw std::runtime_error("simulated RecordAccess failure");
+    }
+    accessedPageIds.push_back(pageId);
   }
 
   void SetEvictable(BufferPoolPageId pageId, bool evictable) override {
     ++setEvictableCount;
     lastEvictablePageId = pageId;
     lastEvictableValue = evictable;
+    if (throwNextSetEvictable) {
+      throwNextSetEvictable = false;
+      throw std::runtime_error("simulated SetEvictable failure");
+    }
+    evictableCalls.emplace_back(pageId, evictable);
   }
 
   std::optional<BufferPoolPageId> Evict() override {
@@ -299,4 +315,115 @@ TEST(FetchPageActionTest, ZeroSizedPoolFailsCleanly) {
   EXPECT_THROW(action.execute(3), std::runtime_error);
   EXPECT_EQ(readPort.readCount, 0);
   EXPECT_EQ(evictionPolicy.recordAccessCount, 0);
+}
+
+// Scenario 11: A cached-fetch policy failure must not leak a pin.
+TEST(FetchPageActionTest, PolicyFailureOnCachedFetchDoesNotLeakPin) {
+  BufferPool bufferPool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy evictionPolicy;
+  FetchPageAction action(bufferPool, readPort, writePort, evictionPolicy);
+
+  action.execute(10);
+  Frame &frame = bufferPool.getFrame(0);
+  frame.unpin();
+  evictionPolicy.throwNextSetEvictable = true;
+
+  EXPECT_THROW(action.execute(10), std::runtime_error);
+  EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 10);
+  EXPECT_EQ(evictionPolicy.setEvictableCount, 3);
+  EXPECT_EQ(evictionPolicy.lastEvictablePageId, 10);
+  EXPECT_TRUE(evictionPolicy.lastEvictableValue);
+}
+
+// Scenario 12: An eviction-policy failure while loading an empty frame leaves
+// the frame available for a later fetch.
+TEST(FetchPageActionTest, PolicyFailureOnEmptyFrameLeavesFrameUnoccupied) {
+  BufferPool bufferPool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy evictionPolicy;
+  evictionPolicy.throwNextRecordAccess = true;
+  FetchPageAction action(bufferPool, readPort, writePort, evictionPolicy);
+
+  EXPECT_THROW(action.execute(10), std::runtime_error);
+  EXPECT_FALSE(bufferPool.getFrame(0).isOccupied());
+  EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 0);
+  EXPECT_EQ(evictionPolicy.removeCount, 1);
+  EXPECT_EQ(evictionPolicy.lastRemovedPageId, 10);
+
+  EXPECT_NO_THROW(action.execute(10));
+  EXPECT_TRUE(bufferPool.getFrame(0).isOccupied());
+  EXPECT_EQ(bufferPool.getFrame(0).getPinCount(), 1);
+}
+
+// Scenario 13: If RecordAccess fails after victim replacement, the old frame
+// is restored and the requested fetch can be retried.
+TEST(FetchPageActionTest, ReplacementRecordAccessFailureRestoresVictim) {
+  BufferPool pool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy policy;
+  readPort.pageToReturn.data()[0] = 'A';
+  FetchPageAction action(pool, readPort, writePort, policy);
+  action.execute(1);
+  Frame &frame = pool.getFrame(0);
+  frame.unpin();
+  policy.victim = 1;
+  policy.throwNextRecordAccess = true;
+  readPort.pageToReturn.data()[0] = 'B';
+
+  EXPECT_THROW(action.execute(2), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPage().data()[0], 'A');
+  EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_EQ(policy.lastRemovedPageId, 2);
+  ASSERT_FALSE(policy.accessedPageIds.empty());
+  EXPECT_EQ(policy.accessedPageIds.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute(2));
+  EXPECT_EQ(frame.getPageId(), 2);
+  EXPECT_EQ(frame.getPinCount(), 1);
+}
+
+// Scenario 14: If SetEvictable fails after replacement, the frame mapping is
+// rolled back and a retry can fetch the requested page.
+TEST(FetchPageActionTest, ReplacementSetEvictableFailureRestoresVictim) {
+  BufferPool pool(1);
+  FakeReadPagePort readPort;
+  FakeWritePagePort writePort;
+  FakeEvictionPolicy policy;
+  readPort.pageToReturn.data()[0] = 'A';
+  FetchPageAction action(pool, readPort, writePort, policy);
+  action.execute(1);
+  Frame &frame = pool.getFrame(0);
+  frame.unpin();
+  policy.victim = 1;
+  policy.throwNextSetEvictable = true;
+  readPort.pageToReturn.data()[0] = 'B';
+
+  EXPECT_THROW(action.execute(2), std::runtime_error);
+  EXPECT_TRUE(frame.isOccupied());
+  EXPECT_EQ(frame.getPageId(), 1);
+  EXPECT_EQ(frame.getPage().data()[0], 'A');
+  EXPECT_EQ(frame.getPinCount(), 0);
+  EXPECT_EQ(policy.lastRemovedPageId, 2);
+  ASSERT_FALSE(policy.accessedPageIds.empty());
+  EXPECT_EQ(policy.accessedPageIds.back(), 1);
+  ASSERT_FALSE(policy.evictableCalls.empty());
+  EXPECT_EQ(policy.evictableCalls.back(),
+            std::make_pair(BufferPoolPageId{1}, true));
+
+  policy.victim = 1;
+  EXPECT_NO_THROW(action.execute(2));
+  EXPECT_EQ(frame.getPageId(), 2);
+  EXPECT_EQ(frame.getPinCount(), 1);
 }

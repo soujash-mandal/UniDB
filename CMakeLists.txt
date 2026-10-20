@@ -86,9 +86,17 @@ add_executable(tests
     FreePageManager/test/TestFreePageMetadataPage.cpp
     EvictionPolicy/test/FIFOEvictionPolicyTest.cpp
     BufferPoolManager/test/FetchPageActionTest.cpp
-    BufferPoolManager/test/UnpinPageActionTest.cpp
+    BufferPoolManager/test/UnpinPageAction/LastUnpinMakesPageEvictableTest.cpp
+    BufferPoolManager/test/UnpinPageAction/PageRemainsNonEvictableWhileAnotherPinExistsTest.cpp
+    BufferPoolManager/test/UnpinPageAction/UnknownPageThrowsWithoutChangingResidentPageTest.cpp
+    BufferPoolManager/test/UnpinPageAction/RejectsPinCountUnderflowTest.cpp
+    BufferPoolManager/test/UnpinPageAction/PolicyFailurePreservesFinalPinForRetryTest.cpp
+    BufferPoolManager/test/UnpinPageAction/ReplacementDoesNotInheritVictimPinTest.cpp
+    BufferPoolManager/test/UnpinPageAction/ReplacementWaitsForFinalUnpinToFinishTest.cpp
+    BufferPoolManager/test/UnpinPageAction/PolicyFailureAfterReplacementDoesNotPinReplacementTest.cpp
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
+    BufferPoolManager/test/WritePageActionTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
