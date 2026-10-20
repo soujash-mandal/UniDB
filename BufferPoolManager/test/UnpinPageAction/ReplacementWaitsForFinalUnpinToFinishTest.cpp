@@ -32,7 +32,9 @@ TEST(UnpinPageActionTest, ReplacementWaitsForFinalUnpinToFinish) {
   std::thread unpinThread([&]() { unpinAction.execute(7); });
   {
     std::unique_lock<std::mutex> lock(callbackMutex);
-    ASSERT_TRUE(callbackCondition.wait_for(lock, 2s, [&]() { return callbackEntered; }));
+    ASSERT_TRUE(callbackCondition.wait_for(lock, 2s, [&]() {
+      return callbackEntered;
+    }));
   }
 
   std::mutex replacementMutex;
