@@ -22,7 +22,8 @@ std::vector<Column> makeColumns(uint32_t count) {
 }
 } // namespace
 
-TEST(UpdateTableActionTest, PreservesOriginalTableWhenRelocationAllocationFails) {
+TEST(UpdateTableActionTest,
+     PreservesOriginalTableWhenRelocationAllocationFails) {
   InMemoryCatalogPageStore store;
   CatalogPage page;
   Table filler{};
