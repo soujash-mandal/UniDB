@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(GetTableByNameActionTest, ReturnsTableByNameAndUnpinsPage) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CatalogPage page;
   Table table{};
   table.tableId = 8;
