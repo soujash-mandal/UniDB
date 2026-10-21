@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(UpdateTableActionTest, RejectsNameUsedByDifferentTableOnAnotherPage) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CatalogPage root;
   root.setNextPageId(11);
   Table target{};
