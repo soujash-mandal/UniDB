@@ -15,7 +15,7 @@ TEST(UpdateTableActionTest, UpdatesExistingTableAndPersistsPage) {
   table.name = "events";
   page.insert(table);
   store.seed(10, page);
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
   table.firstFreeSpaceMapPageId = 123;
 
   action.execute(10, table);
