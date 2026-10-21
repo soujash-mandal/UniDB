@@ -10,7 +10,7 @@
 TEST(UpdateTableActionTest, PropagatesFetchFailureWithoutPinning) {
   InMemoryCatalogPageStore store;
   store.failNextFetch = true;
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
   Table table{};
   table.tableId = 9;
   table.name = "events";
