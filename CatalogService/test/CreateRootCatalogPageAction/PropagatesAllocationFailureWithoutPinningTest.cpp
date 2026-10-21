@@ -7,7 +7,8 @@
 #include <string>
 #include <vector>
 
-TEST(CreateRootCatalogPageActionTest, PropagatesAllocationFailureWithoutPinning) {
+TEST(CreateRootCatalogPageActionTest,
+     PropagatesAllocationFailureWithoutPinning) {
   InMemoryCatalogPageStore store;
   store.failNextAllocation = true;
   CreateRootCatalogPageAction action(store, store, store);
