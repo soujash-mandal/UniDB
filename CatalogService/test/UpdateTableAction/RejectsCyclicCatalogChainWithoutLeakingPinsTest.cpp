@@ -12,7 +12,7 @@ TEST(UpdateTableActionTest, RejectsCyclicCatalogChainWithoutLeakingPins) {
   CatalogPage page;
   page.setNextPageId(10);
   store.seed(10, page);
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
   Table table{};
   table.tableId = 9;
   table.name = "events";
