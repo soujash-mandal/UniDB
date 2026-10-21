@@ -9,10 +9,10 @@
 #include <vector>
 
 TEST(CreateTableActionTest, RejectsDuplicateTableName) {
-  InMemoryCatalogPageStore store;
-    store.seed(10, CatalogPage{});
-    CreateTableAction action(store, store, store, store);
-    action.execute(10, 1, "users", {});
-    EXPECT_THROW(action.execute(10, 2, "users", {}), std::runtime_error);
-    EXPECT_FALSE(store.hasPinnedPages());
+InMemoryCatalogPageStore store;
+  store.seed(10, CatalogPage{});
+  CreateTableAction action(store, store, store, store);
+  action.execute(10, 1, "users", {});
+  EXPECT_THROW(action.execute(10, 2, "users", {}), std::runtime_error);
+  EXPECT_FALSE(store.hasPinnedPages());
 }
