@@ -2,12 +2,14 @@
 
 #include "../domain/CatalogPage.h"
 #include "../port/FetchPagePort.h"
+#include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
 
 class UpdateTableAction {
 public:
   UpdateTableAction(CatalogFetchPagePort &fetchPagePort,
+                    CatalogNewPagePort &newPagePort,
                     CatalogWritePagePort &writePagePort,
                     CatalogUnpinPagePort &unpinPagePort);
 
@@ -15,6 +17,7 @@ public:
 
 private:
   CatalogFetchPagePort &fetchPagePort;
+  CatalogNewPagePort &newPagePort;
   CatalogWritePagePort &writePagePort;
   CatalogUnpinPagePort &unpinPagePort;
 };
