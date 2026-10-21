@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, ReleasesTailPageWhenAllocationFails) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, makeCatalogPageWithoutRoomForAnotherTable());
   store.failNextAllocation = true;
   CreateTableAction action(store, store, store, store);
