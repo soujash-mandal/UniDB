@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, PropagatesFetchFailureWithoutLeakingPins) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   store.failNextFetch = true;
   CreateTableAction action(store, store, store, store);
