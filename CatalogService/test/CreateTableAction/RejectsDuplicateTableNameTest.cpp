@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, RejectsDuplicateTableName) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   CreateTableAction action(store, store, store, store);
   action.execute(10, 1, "users", {});
