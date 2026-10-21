@@ -15,7 +15,6 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     throw std::invalid_argument("Table name cannot be empty");
   }
 
-  // First validate the name across the complete chain before mutating a page.
   CatalogPageId currentPageId = rootPageId;
   std::unordered_set<CatalogPageId> visitedPageIds;
   bool targetFound = false;
@@ -53,11 +52,9 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     throw std::runtime_error("Table not found");
   }
 
-  // Update in place when possible; otherwise remove the old record and
-  // relocate it to a page with room, allocating a new tail page if needed.
+  CatalogPageId originalPageId = CATALOG_INVALID_PAGE_ID;
   currentPageId = rootPageId;
   visitedPageIds.clear();
-  bool relocate = false;
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
     if (!visitedPageIds.insert(currentPageId).second) {
       throw std::runtime_error("Catalog page chain is invalid");
@@ -75,9 +72,8 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
           page.update(table);
           writePagePort.writePage(currentPageId, page);
         } else {
-          page.remove(table.tableId);
-          writePagePort.writePage(currentPageId, page);
-          relocate = true;
+          // Keep the old record until the replacement has been persisted.
+          originalPageId = currentPageId;
         }
         found = true;
       }
@@ -91,7 +87,7 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     }
     unpinPagePort.unpinPage(currentPageId);
     if (found) {
-      if (!relocate) {
+      if (originalPageId == CATALOG_INVALID_PAGE_ID) {
         return;
       }
       break;
@@ -99,11 +95,28 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     currentPageId = nextPageId;
   }
 
-  if (!relocate) {
+  if (originalPageId == CATALOG_INVALID_PAGE_ID) {
     throw std::runtime_error("Table not found");
   }
 
-  // Search the chain for the first page that can hold the updated metadata.
+  const auto removeOriginalAfterReplacementIsSaved = [&]() {
+    CatalogPage original = fetchPagePort.fetchPage(originalPageId);
+    try {
+      original.remove(table.tableId);
+      writePagePort.writePage(originalPageId, original);
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(originalPageId);
+      } catch (...) {
+        // Preserve the original removal failure.
+      }
+      throw;
+    }
+    unpinPagePort.unpinPage(originalPageId);
+  };
+
+  // Search for an existing destination, excluding the page that still owns
+  // the original record. Persist the replacement before removing that record.
   currentPageId = rootPageId;
   visitedPageIds.clear();
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
@@ -113,13 +126,15 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
 
     CatalogPage page = fetchPagePort.fetchPage(currentPageId);
     CatalogPageId nextPageId;
-    bool hasSpace;
+    bool hasSpace = false;
     try {
       nextPageId = page.getNextPageId();
-      hasSpace = page.hasSpace(table);
-      if (hasSpace) {
-        page.insert(table);
-        writePagePort.writePage(currentPageId, page);
+      if (currentPageId != originalPageId) {
+        hasSpace = page.hasSpace(table);
+        if (hasSpace) {
+          page.insert(table);
+          writePagePort.writePage(currentPageId, page);
+        }
       }
     } catch (...) {
       try {
@@ -130,7 +145,9 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
       throw;
     }
     unpinPagePort.unpinPage(currentPageId);
+
     if (hasSpace) {
+      removeOriginalAfterReplacementIsSaved();
       return;
     }
 
@@ -139,7 +156,6 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
       continue;
     }
 
-    // Release the tail before allocation so a one-frame pool can evict it.
     const CatalogPageId tailPageId = currentPageId;
     const CatalogPageId newPageId = newPagePort.newPage();
     CatalogPage newPage;
@@ -169,6 +185,8 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
       throw;
     }
     unpinPagePort.unpinPage(tailPageId);
+
+    removeOriginalAfterReplacementIsSaved();
     return;
   }
 
