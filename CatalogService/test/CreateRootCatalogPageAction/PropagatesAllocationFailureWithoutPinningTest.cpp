@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(CreateRootCatalogPageActionTest, PropagatesAllocationFailureWithoutPinning) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.failNextAllocation = true;
   CreateRootCatalogPageAction action(store, store, store);
   EXPECT_THROW(action.execute(), std::runtime_error);
