@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, RejectsCyclicCatalogChainWithoutLeakingPins) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CatalogPage page;
   page.setNextPageId(10);
   store.seed(10, page);
