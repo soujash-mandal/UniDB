@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(GetTableByNameActionTest, PropagatesFetchFailureWithoutPinning) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.failNextFetch = true;
   GetTableByNameAction action(store, store);
 
