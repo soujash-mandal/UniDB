@@ -38,11 +38,11 @@ TEST(UpdateTableActionTest,
   target.name = "target";
   target.columns = makeColumns(50);
   root.insert(target);
-  ASSERT_FALSE(root.hasSpace(Table{3, "another", {}, CATALOG_INVALID_PAGE_ID}));
+  target.columns = makeColumns(70);
+  ASSERT_FALSE(root.hasSpace(target));
   store.seed(10, root);
 
   UpdateTableAction action(store, store, store, store);
-  target.columns = makeColumns(70);
 
   action.execute(10, target);
 
