@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(UpdateTableActionTest, RejectsEmptyTableName) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   UpdateTableAction action(store, store, store);
   Table table{};
   table.tableId = 9;
