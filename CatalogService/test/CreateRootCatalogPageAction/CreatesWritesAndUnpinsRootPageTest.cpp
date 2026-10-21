@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(CreateRootCatalogPageActionTest, CreatesWritesAndUnpinsRootPage) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CreateRootCatalogPageAction action(store, store, store);
   const CatalogPageId rootPageId = action.execute();
   EXPECT_NE(rootPageId, CATALOG_INVALID_PAGE_ID);
