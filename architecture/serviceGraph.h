@@ -10,9 +10,15 @@ using ServiceNode = std::string;
 using ServiceEdge = std::pair<ServiceNode, ServiceNode>;
 
 inline const std::vector<ServiceNode> SERVICE_NODES = {
-    "DiskManager",           "FreePageManager",     "BufferPoolManager",
-    "SpaceMapService",       "FreeSpaceMapService", "TupleService",
-    "CatalogService",        "RdbMetadataService",  "RdbService",
+    "DiskManager",
+    "FreePageManager",
+    "BufferPoolManager",
+    "SpaceMapService",
+    "FreeSpaceMapService",
+    "TupleService",
+    "CatalogService",
+    "RdbMetadataService",
+    "RdbService",
     "QueryExecutionService",
 };
 
