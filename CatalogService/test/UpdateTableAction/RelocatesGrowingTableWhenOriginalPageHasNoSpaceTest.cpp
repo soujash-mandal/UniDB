@@ -37,8 +37,10 @@ TEST(UpdateTableActionTest, RelocatesGrowingTableWhenOriginalPageHasNoSpace) {
   target.name = "target";
   target.columns = makeColumns(50);
   root.insert(target);
-  target.columns = makeColumns(150);
-  ASSERT_FALSE(root.hasSpace(target));
+  target.columns = makeColumns(180);
+  CatalogPage withoutTarget = root;
+  withoutTarget.remove(target.tableId);
+  ASSERT_FALSE(withoutTarget.hasSpace(target));
   store.seed(10, root);
 
   UpdateTableAction action(store, store, store, store);
@@ -48,11 +50,11 @@ TEST(UpdateTableActionTest, RelocatesGrowingTableWhenOriginalPageHasNoSpace) {
   EXPECT_FALSE(store.pages.at(10).containsTableId(target.tableId));
   EXPECT_EQ(store.pages.at(10).getNextPageId(), 11U);
   EXPECT_TRUE(store.pages.at(11).containsTableId(target.tableId));
-  EXPECT_EQ(store.pages.at(11).get(target.tableId).columns.size(), 150U);
+  EXPECT_EQ(store.pages.at(11).get(target.tableId).columns.size(), 180U);
   EXPECT_EQ(store.writtenPageIds, (std::vector<CatalogPageId>{10, 11, 10}));
   EXPECT_FALSE(store.hasPinnedPages());
 
   GetTableAction getTable(store, store);
   const Table updated = getTable.execute(10, target.tableId);
-  EXPECT_EQ(updated.columns.size(), 150U);
+  EXPECT_EQ(updated.columns.size(), 180U);
 }
