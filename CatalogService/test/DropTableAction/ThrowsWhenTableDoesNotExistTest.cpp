@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(DropTableActionTest, ThrowsWhenTableDoesNotExist) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   DropTableAction action(store, store, store);
   EXPECT_THROW(action.execute(10, 99), std::runtime_error);
