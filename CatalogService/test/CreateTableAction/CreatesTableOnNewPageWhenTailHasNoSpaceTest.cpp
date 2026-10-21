@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, CreatesTableOnNewPageWhenTailHasNoSpace) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, makeCatalogPageWithoutRoomForAnotherTable());
   CreateTableAction action(store, store, store, store);
   EXPECT_EQ(action.execute(10, 999, "users", {}), 999U);
