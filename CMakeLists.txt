@@ -113,12 +113,40 @@ add_executable(tests
     TupleService/test/TupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
-    CatalogService/test/CreateRootCatalogPageActionTest.cpp
-    CatalogService/test/CreateTableActionTest.cpp
-    CatalogService/test/DropTableActionTest.cpp
-    CatalogService/test/GetTableActionTest.cpp
-    CatalogService/test/GetTableByNameActionTest.cpp
-    CatalogService/test/UpdateTableActionTest.cpp
+    CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
+    CatalogService/test/CreateRootCatalogPageAction/PropagatesAllocationFailureWithoutPinningTest.cpp
+    CatalogService/test/CreateRootCatalogPageAction/UnpinsAllocatedPageWhenWriteFailsTest.cpp
+    CatalogService/test/CreateTableAction/CreatesTableOnNewPageWhenTailHasNoSpaceTest.cpp
+    CatalogService/test/CreateTableAction/CreatesTableWithSchemaTest.cpp
+    CatalogService/test/CreateTableAction/PropagatesFetchFailureWithoutLeakingPinsTest.cpp
+    CatalogService/test/CreateTableAction/RejectsCyclicCatalogChainWithoutLeakingPinsTest.cpp
+    CatalogService/test/CreateTableAction/RejectsDuplicateTableNameTest.cpp
+    CatalogService/test/CreateTableAction/RejectsEmptyTableNameTest.cpp
+    CatalogService/test/CreateTableAction/ReleasesTailPageWhenAllocationFailsTest.cpp
+    CatalogService/test/CreateTableAction/UnpinsPageWhenTableWriteFailsTest.cpp
+    CatalogService/test/DropTableAction/PropagatesFetchFailureWithoutPinningTest.cpp
+    CatalogService/test/DropTableAction/RejectsCyclicCatalogChainWithoutLeakingPinsTest.cpp
+    CatalogService/test/DropTableAction/RemovesMatchingTableAndPersistsPageTest.cpp
+    CatalogService/test/DropTableAction/ThrowsWhenTableDoesNotExistTest.cpp
+    CatalogService/test/DropTableAction/UnpinsPageWhenWriteFailsTest.cpp
+    CatalogService/test/GetTableAction/FindsTableOnLaterCatalogPageTest.cpp
+    CatalogService/test/GetTableAction/PropagatesFetchFailureWithoutPinningTest.cpp
+    CatalogService/test/GetTableAction/RejectsCyclicCatalogChainWithoutLeakingPinsTest.cpp
+    CatalogService/test/GetTableAction/ReturnsTableByIdAndUnpinsPageTest.cpp
+    CatalogService/test/GetTableAction/ThrowsWhenTableIdIsMissingTest.cpp
+    CatalogService/test/GetTableByNameAction/FindsTableOnLaterCatalogPageTest.cpp
+    CatalogService/test/GetTableByNameAction/PropagatesFetchFailureWithoutPinningTest.cpp
+    CatalogService/test/GetTableByNameAction/RejectsCyclicCatalogChainWithoutLeakingPinsTest.cpp
+    CatalogService/test/GetTableByNameAction/RejectsEmptyNameTest.cpp
+    CatalogService/test/GetTableByNameAction/ReturnsTableByNameAndUnpinsPageTest.cpp
+    CatalogService/test/GetTableByNameAction/ThrowsWhenNameIsUnknownTest.cpp
+    CatalogService/test/UpdateTableAction/PropagatesFetchFailureWithoutPinningTest.cpp
+    CatalogService/test/UpdateTableAction/RejectsCyclicCatalogChainWithoutLeakingPinsTest.cpp
+    CatalogService/test/UpdateTableAction/RejectsEmptyTableNameTest.cpp
+    CatalogService/test/UpdateTableAction/RejectsNameUsedByDifferentTableOnAnotherPageTest.cpp
+    CatalogService/test/UpdateTableAction/ThrowsWhenTableDoesNotExistTest.cpp
+    CatalogService/test/UpdateTableAction/UnpinsPageWhenWriteFailsTest.cpp
+    CatalogService/test/UpdateTableAction/UpdatesExistingTableAndPersistsPageTest.cpp
 )
 
 target_link_libraries(tests
