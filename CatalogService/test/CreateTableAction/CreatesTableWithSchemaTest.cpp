@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, CreatesTableWithSchema) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   CreateTableAction action(store, store, store, store);
   const std::vector<Column> columns = {{"id", DataType::INT, 0, false},
