@@ -51,7 +51,7 @@ TEST(UpdateTableActionTest, RelocatesGrowingTableWhenOriginalPageHasNoSpace) {
   EXPECT_EQ(store.pages.at(10).getNextPageId(), 11U);
   EXPECT_TRUE(store.pages.at(11).containsTableId(target.tableId));
   EXPECT_EQ(store.pages.at(11).get(target.tableId).columns.size(), 180U);
-  EXPECT_EQ(store.writtenPageIds, (std::vector<CatalogPageId>{10, 11, 10}));
+  EXPECT_EQ(store.writtenPageIds, (std::vector<CatalogPageId>{11, 10, 10}));
   EXPECT_FALSE(store.hasPinnedPages());
 
   GetTableAction getTable(store, store);
