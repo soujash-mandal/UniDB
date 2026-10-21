@@ -6,7 +6,7 @@
 #include <stdexcept>
 
 TEST(GetTableByNameActionTest, ThrowsWhenNameIsUnknown) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
 store.seed(10, CatalogPage{});
 GetTableByNameAction action(store, store);
 EXPECT_THROW(action.execute(10, "missing"), std::runtime_error);
