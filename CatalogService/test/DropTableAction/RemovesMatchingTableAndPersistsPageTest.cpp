@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(DropTableActionTest, RemovesMatchingTableAndPersistsPage) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CatalogPage page;
   Table table{};
   table.tableId = 3;
