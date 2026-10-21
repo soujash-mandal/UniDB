@@ -16,7 +16,7 @@ TEST(UpdateTableActionTest, UnpinsPageWhenWriteFails) {
   page.insert(table);
   store.seed(10, page);
   store.failNextWrite = true;
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
 
   EXPECT_THROW(action.execute(10, table), std::runtime_error);
   EXPECT_FALSE(store.hasPinnedPages());
