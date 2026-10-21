@@ -4,10 +4,11 @@
 #include <unordered_set>
 
 UpdateTableAction::UpdateTableAction(CatalogFetchPagePort &fetchPagePort,
+                                     CatalogNewPagePort &newPagePort,
                                      CatalogWritePagePort &writePagePort,
                                      CatalogUnpinPagePort &unpinPagePort)
-    : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
-      unpinPagePort(unpinPagePort) {}
+    : fetchPagePort(fetchPagePort), newPagePort(newPagePort),
+      writePagePort(writePagePort), unpinPagePort(unpinPagePort) {}
 
 void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
   if (table.name.empty()) {
@@ -52,9 +53,11 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     throw std::runtime_error("Table not found");
   }
 
-  // Second pass finds and updates the target only after uniqueness is known.
+  // Update in place when possible; otherwise remove the old record and
+  // relocate it to a page with room, allocating a new tail page if needed.
   currentPageId = rootPageId;
   visitedPageIds.clear();
+  bool relocate = false;
   while (currentPageId != CATALOG_INVALID_PAGE_ID) {
     if (!visitedPageIds.insert(currentPageId).second) {
       throw std::runtime_error("Catalog page chain is invalid");
@@ -66,8 +69,16 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     try {
       nextPageId = page.getNextPageId();
       if (page.containsTableId(table.tableId)) {
-        page.update(table);
-        writePagePort.writePage(currentPageId, page);
+        CatalogPage withoutTarget = page;
+        withoutTarget.remove(table.tableId);
+        if (withoutTarget.hasSpace(table)) {
+          page.update(table);
+          writePagePort.writePage(currentPageId, page);
+        } else {
+          page.remove(table.tableId);
+          writePagePort.writePage(currentPageId, page);
+          relocate = true;
+        }
         found = true;
       }
     } catch (...) {
@@ -80,10 +91,86 @@ void UpdateTableAction::execute(CatalogPageId rootPageId, Table table) {
     }
     unpinPagePort.unpinPage(currentPageId);
     if (found) {
-      return;
+      if (!relocate) {
+        return;
+      }
+      break;
     }
     currentPageId = nextPageId;
   }
 
-  throw std::runtime_error("Table not found");
+  if (!relocate) {
+    throw std::runtime_error("Table not found");
+  }
+
+  // Search the chain for the first page that can hold the updated metadata.
+  currentPageId = rootPageId;
+  visitedPageIds.clear();
+  while (currentPageId != CATALOG_INVALID_PAGE_ID) {
+    if (!visitedPageIds.insert(currentPageId).second) {
+      throw std::runtime_error("Catalog page chain is invalid");
+    }
+
+    CatalogPage page = fetchPagePort.fetchPage(currentPageId);
+    CatalogPageId nextPageId;
+    bool hasSpace;
+    try {
+      nextPageId = page.getNextPageId();
+      hasSpace = page.hasSpace(table);
+      if (hasSpace) {
+        page.insert(table);
+        writePagePort.writePage(currentPageId, page);
+      }
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(currentPageId);
+      } catch (...) {
+        // Preserve the original relocation failure.
+      }
+      throw;
+    }
+    unpinPagePort.unpinPage(currentPageId);
+    if (hasSpace) {
+      return;
+    }
+
+    if (nextPageId != CATALOG_INVALID_PAGE_ID) {
+      currentPageId = nextPageId;
+      continue;
+    }
+
+    // Release the tail before allocation so a one-frame pool can evict it.
+    const CatalogPageId tailPageId = currentPageId;
+    const CatalogPageId newPageId = newPagePort.newPage();
+    CatalogPage newPage;
+    try {
+      newPage.insert(table);
+      writePagePort.writePage(newPageId, newPage);
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(newPageId);
+      } catch (...) {
+        // Preserve the original allocation or write failure.
+      }
+      throw;
+    }
+    unpinPagePort.unpinPage(newPageId);
+
+    CatalogPage tailPage = fetchPagePort.fetchPage(tailPageId);
+    try {
+      tailPage.setNextPageId(newPageId);
+      writePagePort.writePage(tailPageId, tailPage);
+    } catch (...) {
+      try {
+        unpinPagePort.unpinPage(tailPageId);
+      } catch (...) {
+        // Preserve the original page-link failure.
+      }
+      throw;
+    }
+    unpinPagePort.unpinPage(tailPageId);
+    return;
+  }
+
+  throw std::runtime_error("Catalog page chain is invalid");
 }
