@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(UpdateTableActionTest, UpdatesExistingTableAndPersistsPage) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CatalogPage page;
   Table table{};
   table.tableId = 9;
