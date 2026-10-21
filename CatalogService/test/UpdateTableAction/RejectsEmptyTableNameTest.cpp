@@ -9,7 +9,7 @@
 
 TEST(UpdateTableActionTest, RejectsEmptyTableName) {
   InMemoryCatalogPageStore store;
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
   Table table{};
   table.tableId = 9;
 
