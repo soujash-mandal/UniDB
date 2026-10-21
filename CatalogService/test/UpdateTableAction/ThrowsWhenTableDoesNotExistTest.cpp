@@ -10,7 +10,7 @@
 TEST(UpdateTableActionTest, ThrowsWhenTableDoesNotExist) {
   InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
   Table missing{};
   missing.tableId = 99;
   missing.name = "missing";
