@@ -9,7 +9,16 @@ CreateRootCatalogPageAction::CreateRootCatalogPageAction(
 CatalogPageId CreateRootCatalogPageAction::execute() {
   CatalogPageId catalogRootPageId = newPagePort.newPage();
   CatalogPage page;
-  writePagePort.writePage(catalogRootPageId, page);
+  try {
+    writePagePort.writePage(catalogRootPageId, page);
+  } catch (...) {
+    try {
+      unpinPagePort.unpinPage(catalogRootPageId);
+    } catch (...) {
+      // Preserve the original page initialization failure.
+    }
+    throw;
+  }
   unpinPagePort.unpinPage(catalogRootPageId);
   return catalogRootPageId;
 }
