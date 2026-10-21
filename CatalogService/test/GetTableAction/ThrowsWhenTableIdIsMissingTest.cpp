@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(GetTableActionTest, ThrowsWhenTableIdIsMissing) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   GetTableAction action(store, store);
   EXPECT_THROW(action.execute(10, 404), std::runtime_error);
