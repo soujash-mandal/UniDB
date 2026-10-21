@@ -100,7 +100,16 @@ add_executable(tests
     BufferPoolManager/test/FlushPageActionTest.cpp
     BufferPoolManager/test/WritePageActionTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
-    CatalogService/test/CatalogPageTest.cpp
+    CatalogService/test/CatalogPage/RemovingTableReclaimsSpaceAndPreservesOtherTablesTest.cpp
+    CatalogService/test/CatalogPage/RemovingFirstEntryPreservesRemainingTablesTest.cpp
+    CatalogService/test/CatalogPage/RemovingMiddleEntryPreservesRemainingTablesTest.cpp
+    CatalogService/test/CatalogPage/RemovingLastEntryPreservesRemainingTablesTest.cpp
+    CatalogService/test/CatalogPage/RemovingOnlyEntryLeavesPageEmptyAndReusableTest.cpp
+    CatalogService/test/CatalogPage/RemovingMissingTableThrowsWithoutChangingPageTest.cpp
+    CatalogService/test/CatalogPage/LooksUpAndUpdatesTableMetadataByNameTest.cpp
+    CatalogService/test/CatalogPage/RepeatedGrowingUpdatesReuseCompactedPayloadSpaceTest.cpp
+    CatalogService/test/CatalogPage/ReadsLegacyTablePayloadWithoutFreeSpaceMapPageIdTest.cpp
+    CatalogService/test/CatalogPage/CatalogPageTestSupport.h
     TupleService/test/TupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
