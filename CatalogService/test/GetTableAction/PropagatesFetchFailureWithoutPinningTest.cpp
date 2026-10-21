@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(GetTableActionTest, PropagatesFetchFailureWithoutPinning) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.failNextFetch = true;
   GetTableAction action(store, store);
   EXPECT_THROW(action.execute(10, 5), std::runtime_error);
