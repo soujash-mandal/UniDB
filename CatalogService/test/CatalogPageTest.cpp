@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cstring>
+
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -101,4 +103,56 @@ TEST(CatalogPageTest, RemovingMissingTableThrowsWithoutChangingPage) {
   EXPECT_EQ(page.get(1).name, "first");
   EXPECT_EQ(page.get(2).name, "middle");
   EXPECT_EQ(page.get(3).name, "last");
+}
+
+TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
+  CatalogPage page;
+  Table table{};
+  table.tableId = 11;
+  table.name = "users";
+  table.columns = {{"id", DataType::INT, 0, false},
+                   {"name", DataType::VARCHAR, 64, false}};
+  page.insert(table);
+  Table loaded = page.getByName("users");
+  EXPECT_EQ(loaded.tableId, 11U);
+  ASSERT_EQ(loaded.columns.size(), 2U);
+  EXPECT_EQ(loaded.columns[1].name, "name");
+  page.update(loaded);
+  EXPECT_EQ(page.getByName("users").name, "users");
+  EXPECT_THROW(page.getByName("missing"), std::runtime_error);
+}
+
+TEST(CatalogPageTest, RepeatedGrowingUpdatesReuseCompactedPayloadSpace) {
+  CatalogPage page;
+  Table table = makeTable(17, "users");
+  page.insert(table);
+
+  table.name = std::string(3000, 'A');
+  page.update(table);
+  table.name = "users";
+  page.update(table);
+  table.name = std::string(3000, 'B');
+  page.update(table);
+  table.name = "users";
+  page.update(table);
+  table.name = std::string(3000, 'C');
+  page.update(table);
+
+  EXPECT_EQ(page.get(17).name, std::string(3000, 'C'));
+}
+
+TEST(CatalogPageTest, ReadsLegacyTablePayloadWithoutFreeSpaceMapPageId) {
+  CatalogPage page;
+  page.insert(makeTable(31, "legacy"));
+
+  // Scenario 1: Simulate the old payload format by excluding its final field.
+  uint32_t payloadSize = 0;
+  std::memcpy(&payloadSize, page.data() + sizeof(uint32_t) * 5,
+              sizeof(payloadSize));
+  payloadSize -= sizeof(FSMPageId);
+  std::memcpy(page.data() + sizeof(uint32_t) * 5, &payloadSize,
+              sizeof(payloadSize));
+
+  const Table loaded = page.get(31);
+  EXPECT_EQ(loaded.firstFreeSpaceMapPageId, CATALOG_INVALID_PAGE_ID);
 }

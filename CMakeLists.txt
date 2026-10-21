@@ -70,6 +70,8 @@ set(UNIDB_SOURCES
 
     SQLParser/SqlLexer.cpp
     SQLParser/SqlParserImpl.cpp
+    CatalogService/actions/GetTableByNameAction.cpp
+    CatalogService/actions/UpdateTableAction.cpp
 )
 
 add_executable(unidb
@@ -101,6 +103,13 @@ add_executable(tests
     CatalogService/test/CatalogPageTest.cpp
     TupleService/test/TupleActionsTest.cpp
     SQLParser/test/SqlParserTest.cpp
+    CatalogService/test/CatalogActionTestSupport.h
+    CatalogService/test/CreateRootCatalogPageActionTest.cpp
+    CatalogService/test/CreateTableActionTest.cpp
+    CatalogService/test/DropTableActionTest.cpp
+    CatalogService/test/GetTableActionTest.cpp
+    CatalogService/test/GetTableByNameActionTest.cpp
+    CatalogService/test/UpdateTableActionTest.cpp
 )
 
 target_link_libraries(tests
