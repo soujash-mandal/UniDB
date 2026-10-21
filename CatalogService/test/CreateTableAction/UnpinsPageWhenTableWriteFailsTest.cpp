@@ -9,7 +9,7 @@
 #include <vector>
 
 TEST(CreateTableActionTest, UnpinsPageWhenTableWriteFails) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   store.failNextWrite = true;
   CreateTableAction action(store, store, store, store);
