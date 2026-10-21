@@ -1,8 +1,8 @@
 #include "CreateTupleAction.h"
 
-CreateTupleAction::CreateTupleAction(FetchPagePort &fetchPagePort,
-                                     WritePagePort &writePagePort,
-                                     UnpinPagePort &unpinPagePort)
+CreateTupleAction::CreateTupleAction(TupleFetchPagePort &fetchPagePort,
+                                     TupleWritePagePort &writePagePort,
+                                     TupleUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 

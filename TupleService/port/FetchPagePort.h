@@ -2,9 +2,8 @@
 
 #include "../domain/TuplePage.h"
 
-class FetchPagePort {
+class TupleFetchPagePort {
 public:
-  virtual ~FetchPagePort() = default;
-
+  virtual ~TupleFetchPagePort() = default;
   virtual TuplePage fetchPage(TuplePageId pageId) = 0;
 };

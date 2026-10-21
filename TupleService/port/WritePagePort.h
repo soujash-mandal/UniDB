@@ -2,9 +2,8 @@
 
 #include "../domain/TuplePage.h"
 
-class WritePagePort {
+class TupleWritePagePort {
 public:
-  virtual ~WritePagePort() = default;
-
+  virtual ~TupleWritePagePort() = default;
   virtual void writePage(TuplePageId pageId, TuplePage page) = 0;
 };

@@ -1,13 +1,16 @@
 #pragma once
 
 #include "../../BufferPoolManager/actions/FetchPageAction.h"
+#include "../../BufferPoolManager/actions/UnpinPageAction.h"
 #include "../port/FetchPagePort.h"
 
-class TupleBufferPoolFetchPageAdapter : public FetchPagePort {
+class TupleBufferPoolFetchPageAdapter : public TupleFetchPagePort {
 public:
-  explicit TupleBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction);
+  TupleBufferPoolFetchPageAdapter(FetchPageAction &fetchPageAction,
+                                  UnpinPageAction &unpinPageAction);
   TuplePage fetchPage(TuplePageId pageId) override;
 
 private:
   FetchPageAction &fetchPageAction;
+  UnpinPageAction &unpinPageAction;
 };

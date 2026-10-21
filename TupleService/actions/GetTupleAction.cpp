@@ -1,7 +1,7 @@
 #include "GetTupleAction.h"
 
-GetTupleAction::GetTupleAction(FetchPagePort &fetchPagePort,
-                               UnpinPagePort &unpinPagePort)
+GetTupleAction::GetTupleAction(TupleFetchPagePort &fetchPagePort,
+                               TupleUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
 std::vector<char> GetTupleAction::execute(TuplePageId pageId,
