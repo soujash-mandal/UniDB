@@ -24,7 +24,7 @@ TEST(UpdateTableActionTest, RejectsNameUsedByDifferentTableOnAnotherPage) {
 
   store.seed(10, root);
   store.seed(11, second);
-  UpdateTableAction action(store, store, store);
+  UpdateTableAction action(store, store, store, store);
   target.name = "users";
 
   EXPECT_THROW(action.execute(10, target), std::runtime_error);
