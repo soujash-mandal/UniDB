@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(CreateRootCatalogPageActionTest, UnpinsAllocatedPageWhenWriteFails) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.failNextWrite = true;
   CreateRootCatalogPageAction action(store, store, store);
   EXPECT_THROW(action.execute(), std::runtime_error);
