@@ -145,6 +145,8 @@ add_executable(tests
     CatalogService/test/UpdateTableAction/RejectsEmptyTableNameTest.cpp
     CatalogService/test/UpdateTableAction/RejectsNameUsedByDifferentTableOnAnotherPageTest.cpp
     CatalogService/test/UpdateTableAction/RelocatesGrowingTableWhenOriginalPageHasNoSpaceTest.cpp
+    CatalogService/test/UpdateTableAction/PreservesOriginalTableWhenRelocationAllocationFailsTest.cpp
+    CatalogService/test/UpdateTableAction/PreservesOriginalTableWhenRelocationWriteFailsTest.cpp
     CatalogService/test/UpdateTableAction/ThrowsWhenTableDoesNotExistTest.cpp
     CatalogService/test/UpdateTableAction/UnpinsPageWhenWriteFailsTest.cpp
     CatalogService/test/UpdateTableAction/UpdatesExistingTableAndPersistsPageTest.cpp
