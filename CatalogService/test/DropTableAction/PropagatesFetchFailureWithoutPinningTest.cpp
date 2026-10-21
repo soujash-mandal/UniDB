@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(DropTableActionTest, PropagatesFetchFailureWithoutPinning) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   store.failNextFetch = true;
   DropTableAction action(store, store, store);
