@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(GetTableActionTest, FindsTableOnLaterCatalogPage) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   CatalogPage firstPage;
   firstPage.setNextPageId(11);
   CatalogPage secondPage;
