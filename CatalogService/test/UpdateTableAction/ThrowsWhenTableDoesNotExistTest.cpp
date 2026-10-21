@@ -8,7 +8,7 @@
 #include <vector>
 
 TEST(UpdateTableActionTest, ThrowsWhenTableDoesNotExist) {
-InMemoryCatalogPageStore store;
+  InMemoryCatalogPageStore store;
   store.seed(10, CatalogPage{});
   UpdateTableAction action(store, store, store);
   Table missing{};
