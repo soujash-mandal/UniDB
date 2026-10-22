@@ -4,8 +4,8 @@ ScanTupleTableAction::ScanTupleTableAction(TupleFetchPagePort &fetchPagePort,
                                            TupleUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
-std::vector<std::vector<char>> ScanTupleTableAction::execute(
-    const std::vector<TuplePageId> &tuplePageIds) {
+std::vector<std::vector<char>>
+ScanTupleTableAction::execute(const std::vector<TuplePageId> &tuplePageIds) {
   std::vector<std::vector<char>> tuples;
   for (const TuplePageId pageId : tuplePageIds) {
     TuplePage page = fetchPagePort.fetchPage(pageId);
