@@ -5,7 +5,8 @@
 #include <stdexcept>
 
 // Scenario 1: Release the allocated page if initialization write fails.
-TEST(CreateTuplePageActionTest, UnpinsAllocatedPageWhenInitializationWriteFails) {
+TEST(CreateTuplePageActionTest,
+     UnpinsAllocatedPageWhenInitializationWriteFails) {
   InMemoryTuplePageStore store;
   store.failWrite = true;
   CreateTuplePageAction action(store, store, store);
