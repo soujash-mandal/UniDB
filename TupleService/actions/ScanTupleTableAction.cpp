@@ -1,39 +1,26 @@
 #include "ScanTupleTableAction.h"
 
-#include <limits>
-#include <stdexcept>
-#include <unordered_set>
-
 ScanTupleTableAction::ScanTupleTableAction(TupleFetchPagePort &fetchPagePort,
                                            TupleUnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort) {}
 
-std::vector<std::vector<char>>
-ScanTupleTableAction::execute(TuplePageId firstPageId) {
+std::vector<std::vector<char>> ScanTupleTableAction::execute(
+    const std::vector<TuplePageId> &tuplePageIds) {
   std::vector<std::vector<char>> tuples;
-  std::unordered_set<TuplePageId> visitedPageIds;
-  TuplePageId currentPageId = firstPageId;
-  while (currentPageId != std::numeric_limits<TuplePageId>::max()) {
-    if (!visitedPageIds.insert(currentPageId).second) {
-      throw std::runtime_error("Tuple page chain is invalid");
-    }
-
-    TuplePage page = fetchPagePort.fetchPage(currentPageId);
-    TuplePageId nextPageId;
+  for (const TuplePageId pageId : tuplePageIds) {
+    TuplePage page = fetchPagePort.fetchPage(pageId);
     try {
-      nextPageId = page.getNextPageId();
       auto pageTuples = page.getAllTuples();
       tuples.insert(tuples.end(), pageTuples.begin(), pageTuples.end());
     } catch (...) {
       try {
-        unpinPagePort.unpinPage(currentPageId);
+        unpinPagePort.unpinPage(pageId);
       } catch (...) {
         // Preserve the original materialization failure.
       }
       throw;
     }
-    unpinPagePort.unpinPage(currentPageId);
-    currentPageId = nextPageId;
+    unpinPagePort.unpinPage(pageId);
   }
   return tuples;
 }
