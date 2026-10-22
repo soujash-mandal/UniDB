@@ -4,11 +4,15 @@
 #include <cstdint>
 #include <vector>
 
+#include "../../BufferPoolManager/domain/BufferPoolPage.h"
+
 using TuplePageId = uint32_t;
 using TupleSlotId = uint32_t;
 
 namespace {
 static constexpr std::size_t TUPLE_PAGE_SIZE = 8192;
+static_assert(TUPLE_PAGE_SIZE <= BufferPoolPage::PAGE_SIZE,
+              "Tuple page must fit in a buffer-pool page");
 static constexpr uint32_t TUPLE_PAGE_FORMAT_FLAG = 0x80000000U;
 static constexpr uint32_t TUPLE_PAGE_SLOT_COUNT_MASK = 0x7FFFFFFFU;
 static constexpr std::size_t TUPLE_PAGE_NEXT_PAGE_ID_OFFSET =
