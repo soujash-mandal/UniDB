@@ -111,11 +111,26 @@ add_executable(tests
     CatalogService/test/CatalogPage/RepeatedGrowingUpdatesReuseCompactedPayloadSpaceTest.cpp
     CatalogService/test/CatalogPage/ReadsLegacyTablePayloadWithoutFreeSpaceMapPageIdTest.cpp
     CatalogService/test/CatalogPage/CatalogPageTestSupport.h
-    TupleService/test/TuplePageTest.cpp
-    TupleService/test/CreateTuplePageActionTest.cpp
-    TupleService/test/CreateTupleActionTest.cpp
-    TupleService/test/GetTupleActionTest.cpp
-    TupleService/test/DeleteTupleActionTest.cpp
+    TupleService/test/TuplePage/UsesFullPageCapacityAndSkipsDeletedSlotsTest.cpp
+    TupleService/test/TuplePage/RejectsCorruptSlotBoundsDuringScanTest.cpp
+    TupleService/test/TuplePage/RejectsCorruptSlotCountDuringScanTest.cpp
+    TupleService/test/TuplePage/MigratesLegacyEightByteHeaderWithoutLosingRowsTest.cpp
+    TupleService/test/TuplePage/RejectsLegacyPagesWithAmbiguousEmptyTupleSlotsTest.cpp
+    TupleService/test/CreateTuplePageAction/AllocatesInitializesAndUnpinsPageTest.cpp
+    TupleService/test/CreateTuplePageAction/UnpinsAllocatedPageWhenInitializationWriteFailsTest.cpp
+    TupleService/test/CreateTuplePageAction/PropagatesAllocationFailureTest.cpp
+    TupleService/test/CreateTupleAction/InsertsTupleWritesPageAndUnpinsTest.cpp
+    TupleService/test/CreateTupleAction/RejectsTupleThatCannotFitAndUnpinsTest.cpp
+    TupleService/test/CreateTupleAction/UnpinsWhenPageWriteFailsTest.cpp
+    TupleService/test/CreateTupleAction/PropagatesFetchFailureTest.cpp
+    TupleService/test/GetTupleAction/ReturnsTupleBytesAndUnpinsPageTest.cpp
+    TupleService/test/GetTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
+    TupleService/test/GetTupleAction/RejectsDeletedSlotAndUnpinsPageTest.cpp
+    TupleService/test/GetTupleAction/PropagatesFetchFailureWithoutUnpinningTest.cpp
+    TupleService/test/DeleteTupleAction/DeletesTupleAndPersistsPageTest.cpp
+    TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
+    TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
+    TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
