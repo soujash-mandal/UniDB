@@ -45,7 +45,6 @@
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
 
-#include "../TupleService/actions/ScanTupleTableAction.h"
 #include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
@@ -79,7 +78,6 @@ public:
   CreateTableAction &createTableAction() { return createTable; }
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
   UpdateTableAction &updateTableAction() { return updateTable; }
-  ScanTupleTableAction &scanTupleTableAction() { return scanTupleTable; }
 
 private:
   std::string databaseFileName;
@@ -126,7 +124,6 @@ private:
   TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
   TupleBufferPoolUnpinPageAdapter tupleUnpinPageAdapter;
   TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
-  ScanTupleTableAction scanTupleTable;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
   UpdateRdbMetadataPageAction updateRdbMetadataPage;
