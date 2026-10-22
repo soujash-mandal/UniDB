@@ -6,15 +6,13 @@
 #include <limits>
 #include <stdexcept>
 
-TEST(TuplePageTest, MaintainsPageChainAndSkipsDeletedSlots) {
+TEST(TuplePageTest, SkipsDeletedSlotsWithoutPageChainMetadata) {
   TuplePage page;
   const auto first = page.insert({'a', 'b'});
   page.insert({'c'});
   page.remove(first);
   EXPECT_EQ(page.getAllTuples().size(), 1U);
   EXPECT_EQ(page.getAllTuples().front(), (std::vector<char>{'c'}));
-  page.setNextPageId(17);
-  EXPECT_EQ(page.getNextPageId(), 17U);
 }
 
 TEST(TuplePageTest, RejectsCorruptSlotBoundsDuringScan) {
@@ -54,7 +52,6 @@ TEST(TuplePageTest, MigratesLegacyEightByteHeaderWithoutLosingRows) {
 
   EXPECT_EQ(page.get(0), (std::vector<char>{'z'}));
   EXPECT_EQ(page.getAllTuples(), (std::vector<std::vector<char>>{{'z'}}));
-  EXPECT_EQ(page.getNextPageId(), std::numeric_limits<TuplePageId>::max());
 }
 
 TEST(TuplePageTest, RejectsLegacyPagesWithAmbiguousEmptyTupleSlots) {
