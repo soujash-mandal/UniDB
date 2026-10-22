@@ -116,6 +116,7 @@ add_executable(tests
     TupleService/test/TuplePage/RejectsCorruptSlotCountDuringScanTest.cpp
     TupleService/test/TuplePage/MigratesLegacyEightByteHeaderWithoutLosingRowsTest.cpp
     TupleService/test/TuplePage/RejectsLegacyPagesWithAmbiguousEmptyTupleSlotsTest.cpp
+    TupleService/test/TuplePage/StoresEmptyTupleAndSkipsDeletedSlotTest.cpp
     TupleService/test/CreateTuplePageAction/AllocatesInitializesAndUnpinsPageTest.cpp
     TupleService/test/CreateTuplePageAction/UnpinsAllocatedPageWhenInitializationWriteFailsTest.cpp
     TupleService/test/CreateTuplePageAction/PropagatesAllocationFailureTest.cpp
