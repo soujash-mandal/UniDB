@@ -3,11 +3,11 @@
 
 #include <cstdint>
 #include <cstring>
-#include <limits>
 #include <stdexcept>
 
-TEST(TuplePageTest, SkipsDeletedSlotsWithoutPageChainMetadata) {
+TEST(TuplePageTest, UsesFullPageCapacityAndSkipsDeletedSlots) {
   TuplePage page;
+  EXPECT_EQ(page.getFreeSpace(), TUPLE_PAGE_SIZE - sizeof(uint32_t) * 2);
   const auto first = page.insert({'a', 'b'});
   page.insert({'c'});
   page.remove(first);
