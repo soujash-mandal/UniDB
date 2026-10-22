@@ -9,7 +9,7 @@ TuplePage::TuplePage() {
   auto *header = reinterpret_cast<TuplePageHeader *>(bytes);
   header->slotCount = TUPLE_PAGE_FORMAT_FLAG;
   header->freeSpaceOffset = TUPLE_PAGE_SIZE;
-  }
+}
 
 void TuplePage::loadFromBytes(const char *source) {
   std::memcpy(bytes, source, TUPLE_PAGE_SIZE);
@@ -30,7 +30,7 @@ void TuplePage::loadFromBytes(const char *source) {
   }
 
   // Legacy V1 pages used the same 8-byte header without a format flag.
-  // Move live tuples below the reserved trailer while preserving slot IDs.
+  // Move live tuples into the current layout while preserving slot IDs.
   const uint32_t legacyCount = header->slotCount;
   const uint32_t legacyFreeSpaceOffset = header->freeSpaceOffset;
   const std::size_t maxSlots =
@@ -74,7 +74,7 @@ void TuplePage::loadFromBytes(const char *source) {
   }
   if (legacySlotEnd + payloadBytes > TUPLE_PAGE_SIZE) {
     throw std::runtime_error(
-        "Legacy tuple page cannot fit the tuple page");
+        "Legacy tuple page cannot fit its tuples");
   }
 
   std::memset(bytes, 0, TUPLE_PAGE_SIZE);
