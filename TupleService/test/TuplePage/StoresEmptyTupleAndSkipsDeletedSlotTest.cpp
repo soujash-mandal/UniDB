@@ -1,6 +1,7 @@
 #include "../../domain/TuplePage.h"
 #include <gtest/gtest.h>
 
+#include <stdexcept>
 #include <vector>
 
 // Scenario 1: Empty tuples remain distinguishable from deleted slots.
