@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <vector>
 
-
 using TuplePageId = uint32_t;
 using TupleSlotId = uint32_t;
 
