@@ -8,9 +8,9 @@ TupleBufferPoolFetchPageAdapter::TupleBufferPoolFetchPageAdapter(
 
 TuplePage TupleBufferPoolFetchPageAdapter::fetchPage(TuplePageId pageId) {
   BufferPoolPage bufferPage = fetchPageAction.execute(pageId);
-  TuplePage tuplePage;
   try {
-    tuplePage.loadFromBytes(bufferPage.data());
+    TuplePage tuplePage(bufferPage.data());
+    return tuplePage;
   } catch (...) {
     try {
       unpinPageAction.execute(pageId);
@@ -19,5 +19,4 @@ TuplePage TupleBufferPoolFetchPageAdapter::fetchPage(TuplePageId pageId) {
     }
     throw;
   }
-  return tuplePage;
 }
