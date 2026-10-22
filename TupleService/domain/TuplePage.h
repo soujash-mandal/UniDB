@@ -11,8 +11,6 @@ namespace {
 static constexpr std::size_t TUPLE_PAGE_SIZE = 8192;
 static constexpr uint32_t TUPLE_PAGE_FORMAT_FLAG = 0x80000000U;
 static constexpr uint32_t TUPLE_PAGE_SLOT_COUNT_MASK = 0x7FFFFFFFU;
-static constexpr std::size_t TUPLE_PAGE_NEXT_PAGE_ID_OFFSET =
-    TUPLE_PAGE_SIZE - sizeof(TuplePageId);
 
 struct TuplePageHeader {
   uint32_t slotCount;
@@ -35,8 +33,6 @@ public:
   void remove(TupleSlotId slotId);
   bool hasSpace(uint32_t tupleSize);
   uint32_t getFreeSpace();
-  TuplePageId getNextPageId() const;
-  void setNextPageId(TuplePageId pageId);
   uint32_t getSlotCount() const;
   std::vector<std::vector<char>> getAllTuples() const;
 
