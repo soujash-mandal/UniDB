@@ -11,7 +11,7 @@ TuplePage::TuplePage() {
   header->freeSpaceOffset = TUPLE_PAGE_SIZE;
 }
 
-void TuplePage::loadFromBytes(const char *source) {
+TuplePage::TuplePage(const char *source) {
   std::memcpy(bytes, source, TUPLE_PAGE_SIZE);
   auto *header = reinterpret_cast<TuplePageHeader *>(bytes);
   if ((header->slotCount & TUPLE_PAGE_FORMAT_FLAG) != 0) {
@@ -43,6 +43,7 @@ void TuplePage::loadFromBytes(const char *source) {
   }
 
   std::vector<std::vector<char>> tuples(legacyCount);
+  std::vector<bool> liveTuples(legacyCount, false);
   std::size_t payloadBytes = 0;
   for (uint32_t i = 0; i < legacyCount; ++i) {
     TupleSlotEntry slot{};
@@ -51,14 +52,16 @@ void TuplePage::loadFromBytes(const char *source) {
                     static_cast<std::size_t>(i) * sizeof(TupleSlotEntry),
                 sizeof(TupleSlotEntry));
     if (slot.size == 0) {
-      // Legacy pages used a nonzero offset for an inserted empty tuple and
-      // offset zero for a deleted slot. The current format cannot represent
-      // that distinction, so fail explicitly rather than silently losing it.
-      if (slot.offset != 0) {
-        throw std::runtime_error(
-            "Legacy tuple page contains an empty tuple that cannot be migrated "
-            "safely");
+      if (slot.offset == 0) {
+        continue;
       }
+      const bool invalidBounds = slot.offset < legacySlotEnd ||
+                                 slot.offset < legacyFreeSpaceOffset ||
+                                 slot.offset > TUPLE_PAGE_SIZE;
+      if (invalidBounds) {
+        throw std::runtime_error("Invalid legacy empty tuple slot bounds");
+      }
+      liveTuples[i] = true;
       continue;
     }
     const bool invalidBounds = slot.offset < legacySlotEnd ||
@@ -69,6 +72,7 @@ void TuplePage::loadFromBytes(const char *source) {
       throw std::runtime_error("Invalid legacy tuple slot bounds");
     }
     tuples[i].assign(bytes + slot.offset, bytes + slot.offset + slot.size);
+    liveTuples[i] = true;
     payloadBytes += slot.size;
   }
   if (legacySlotEnd + payloadBytes > TUPLE_PAGE_SIZE) {
@@ -81,12 +85,16 @@ void TuplePage::loadFromBytes(const char *source) {
   header->freeSpaceOffset = TUPLE_PAGE_SIZE;
   for (uint32_t i = 0; i < legacyCount; ++i) {
     TupleSlotEntry slot{};
-    if (!tuples[i].empty()) {
-      const auto tupleSize = static_cast<uint32_t>(tuples[i].size());
-      header->freeSpaceOffset -= tupleSize;
-      std::memcpy(bytes + header->freeSpaceOffset, tuples[i].data(), tupleSize);
-      slot.offset = header->freeSpaceOffset;
-      slot.size = tupleSize;
+    if (liveTuples[i]) {
+      slot.size = static_cast<uint32_t>(tuples[i].size());
+      if (slot.size == 0) {
+        slot.offset = header->freeSpaceOffset;
+      } else {
+        header->freeSpaceOffset -= slot.size;
+        std::memcpy(bytes + header->freeSpaceOffset, tuples[i].data(),
+                    slot.size);
+        slot.offset = header->freeSpaceOffset;
+      }
     }
     std::memcpy(bytes + sizeof(TuplePageHeader) +
                     static_cast<std::size_t>(i) * sizeof(TupleSlotEntry),
@@ -95,9 +103,6 @@ void TuplePage::loadFromBytes(const char *source) {
 }
 
 TupleSlotId TuplePage::insert(const std::vector<char> tupleData) {
-  if (tupleData.empty()) {
-    throw std::invalid_argument("Tuple data cannot be empty");
-  }
   if (tupleData.size() > std::numeric_limits<uint32_t>::max()) {
     throw std::length_error("Tuple exceeds the V1 tuple size limit");
   }
@@ -110,8 +115,10 @@ TupleSlotId TuplePage::insert(const std::vector<char> tupleData) {
   const std::size_t slotOffset =
       sizeof(TuplePageHeader) + slotId * sizeof(TupleSlotEntry);
   auto *slot = reinterpret_cast<TupleSlotEntry *>(bytes + slotOffset);
-  header->freeSpaceOffset -= tupleSize;
-  std::memcpy(bytes + header->freeSpaceOffset, tupleData.data(), tupleSize);
+  if (tupleSize > 0) {
+    header->freeSpaceOffset -= tupleSize;
+    std::memcpy(bytes + header->freeSpaceOffset, tupleData.data(), tupleSize);
+  }
   slot->offset = header->freeSpaceOffset;
   slot->size = tupleSize;
   header->slotCount = TUPLE_PAGE_FORMAT_FLAG | (slotId + 1);
@@ -132,7 +139,7 @@ std::vector<char> TuplePage::get(TupleSlotId slotId) {
   const auto *slot = reinterpret_cast<const TupleSlotEntry *>(
       bytes + sizeof(TuplePageHeader) +
       static_cast<std::size_t>(slotId) * sizeof(TupleSlotEntry));
-  if (slot->size == 0) {
+  if (slot->size == 0 && slot->offset == 0) {
     throw std::runtime_error("Tuple slot is deleted");
   }
   const std::size_t slotEnd =
@@ -144,6 +151,9 @@ std::vector<char> TuplePage::get(TupleSlotId slotId) {
                              slot->size > TUPLE_PAGE_SIZE - slot->offset;
   if (invalidBounds) {
     throw std::runtime_error("Invalid tuple slot bounds");
+  }
+  if (slot->size == 0) {
+    return {};
   }
   return std::vector<char>(bytes + slot->offset,
                            bytes + slot->offset + slot->size);
@@ -238,7 +248,7 @@ std::vector<std::vector<char>> TuplePage::getAllTuples() const {
     const auto *slot = reinterpret_cast<const TupleSlotEntry *>(
         bytes + sizeof(TuplePageHeader) +
         static_cast<std::size_t>(i) * sizeof(TupleSlotEntry));
-    if (slot->size == 0) {
+    if (slot->size == 0 && slot->offset == 0) {
       continue;
     }
     const bool invalidBounds = slot->offset < slotEnd ||
@@ -247,6 +257,10 @@ std::vector<std::vector<char>> TuplePage::getAllTuples() const {
                                slot->size > TUPLE_PAGE_SIZE - slot->offset;
     if (invalidBounds) {
       throw std::runtime_error("Invalid tuple slot bounds");
+    }
+    if (slot->size == 0) {
+      tuples.emplace_back();
+      continue;
     }
     tuples.emplace_back(bytes + slot->offset,
                         bytes + slot->offset + slot->size);
