@@ -1,7 +1,5 @@
 #include "BufferPoolFetchPageAdapter.h"
 
-#include <cstring>
-
 TupleBufferPoolFetchPageAdapter::TupleBufferPoolFetchPageAdapter(
     FetchPageAction &fetchPageAction, UnpinPageAction &unpinPageAction)
     : fetchPageAction(fetchPageAction), unpinPageAction(unpinPageAction) {}
