@@ -27,7 +27,7 @@ public:
   TuplePage();
   char *data() { return bytes; }
   const char *data() const { return bytes; }
-  void loadFromBytes(const char *source);
+  explicit TuplePage(const char *source);
   TupleSlotId insert(const std::vector<char> tupleData);
   std::vector<char> get(TupleSlotId slotId);
   void remove(TupleSlotId slotId);
