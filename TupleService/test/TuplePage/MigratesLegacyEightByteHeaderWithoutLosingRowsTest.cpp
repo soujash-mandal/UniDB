@@ -21,8 +21,7 @@ TEST(TuplePageTest, MigratesLegacyEightByteHeaderWithoutLosingRows) {
               sizeof(tupleSize));
   legacy[tupleOffset] = 'z';
 
-  TuplePage page;
-  page.loadFromBytes(legacy.data());
+  TuplePage page(legacy.data());
 
   EXPECT_EQ(page.get(0), (std::vector<char>{'z'}));
   EXPECT_EQ(page.getAllTuples(), (std::vector<std::vector<char>>{{'z'}}));
