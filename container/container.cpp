@@ -68,3 +68,12 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
+
+void Container::close() {
+  for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
+    Frame &frame = bufferPool.getFrame(frameId);
+    if (frame.isOccupied() && frame.isDirty()) {
+      flushPage.execute(frame.getPageId());
+    }
+  }
+}
