@@ -1,6 +1,6 @@
 #include "RdbTupleCodec.h"
 
-#include <cstring>
+#include <bit>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -31,7 +31,11 @@ T readLittleEndian(const std::vector<char> &bytes, std::size_t &offset) {
            << (i * 8U);
   }
   offset += sizeof(Unsigned);
-  return static_cast<T>(raw);
+  if constexpr (std::is_signed_v<T>) {
+    return std::bit_cast<T>(raw);
+  } else {
+    return raw;
+  }
 }
 
 } // namespace
