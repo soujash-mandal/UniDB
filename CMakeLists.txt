@@ -115,6 +115,7 @@ add_executable(tests
     TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     TupleService/test/TableTupleActionsTest.cpp
+    TupleService/test/TuplePageTest.cpp
     TupleService/test/DropTupleTableActionTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     RdbService/test/RdbServiceIntegrationTest.cpp
