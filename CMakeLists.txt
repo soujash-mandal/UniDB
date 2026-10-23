@@ -113,6 +113,9 @@ add_executable(tests
     TupleService/test/TableTupleActionsTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     RdbService/test/RdbServiceIntegrationTest.cpp
+    RdbService/test/RdbTupleCodec/RoundTripsIntAndTextTest.cpp
+    RdbService/test/RdbTupleCodec/RejectsValueCountOrTypeMismatchTest.cpp
+    RdbService/test/RdbTupleCodec/RejectsTruncatedOrTrailingBytesTest.cpp
     SQLParser/test/SqlParserTest.cpp
 )
 
