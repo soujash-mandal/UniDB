@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../domain/BufferPool.h"
 #include "../../EvictionPolicy/EvictionPolicy.h"
+#include "../domain/BufferPool.h"
 
 class DiscardPageAction {
 public:

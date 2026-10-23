@@ -5,9 +5,9 @@
 #include <limits>
 #include <vector>
 
-DropTupleTableAction::DropTupleTableAction(
-    TupleFetchPagePort &fetchPagePort, TupleUnpinPagePort &unpinPagePort,
-    FreeTuplePagePort &freeTuplePagePort)
+DropTupleTableAction::DropTupleTableAction(TupleFetchPagePort &fetchPagePort,
+                                           TupleUnpinPagePort &unpinPagePort,
+                                           FreeTuplePagePort &freeTuplePagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
       freeTuplePagePort(freeTuplePagePort) {}
 

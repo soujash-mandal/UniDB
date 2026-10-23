@@ -11,8 +11,8 @@
 #include "../EvictionPolicy/EvictionPolicy.h"
 #include "../EvictionPolicy/EvictionPolicyType.h"
 
-#include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/DiscardPageAction.h"
+#include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
 #include "../BufferPoolManager/actions/NewPageAction.h"
 #include "../BufferPoolManager/actions/UnpinPageAction.h"

@@ -3,10 +3,9 @@
 
 #include <stdexcept>
 
-FreePageAction::FreePageAction(
-    ReadFreePageMetadataPort &readMetadataPort,
-    WriteFreePageMetadataPort &writeMetadataPort,
-    DiscardPagePort &discardPagePort)
+FreePageAction::FreePageAction(ReadFreePageMetadataPort &readMetadataPort,
+                               WriteFreePageMetadataPort &writeMetadataPort,
+                               DiscardPagePort &discardPagePort)
     : readMetadataPort(readMetadataPort), writeMetadataPort(writeMetadataPort),
       discardPagePort(discardPagePort) {}
 
