@@ -22,7 +22,7 @@ T read(const std::vector<char> &bytes, std::size_t &offset) {
 } // namespace
 
 std::vector<char>
-SqlTupleCodec::encode(const std::vector<Column> &schema,
+SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
                       const std::vector<unidb::sql::SqlValue> &values) {
   if (schema.size() != values.size()) {
     throw std::invalid_argument(
@@ -30,12 +30,12 @@ SqlTupleCodec::encode(const std::vector<Column> &schema,
   }
   std::vector<char> out;
   for (std::size_t i = 0; i < schema.size(); ++i) {
-    if (schema[i].type == DataType::INT) {
+    if (schema[i].type == unidb::sql::SqlType::Int) {
       if (!std::holds_alternative<std::int64_t>(values[i])) {
         throw std::invalid_argument("Expected INT value");
       }
       append(out, std::get<std::int64_t>(values[i]));
-    } else if (schema[i].type == DataType::VARCHAR) {
+    } else if (schema[i].type == unidb::sql::SqlType::Text) {
       if (!std::holds_alternative<std::string>(values[i])) {
         throw std::invalid_argument("Expected TEXT value");
       }
@@ -57,10 +57,10 @@ SqlTupleCodec::decode(const std::vector<Column> &schema,
   std::size_t offset = 0;
   std::vector<unidb::sql::SqlValue> values;
   values.reserve(schema.size());
-  for (const Column &column : schema) {
-    if (column.type == DataType::INT) {
+  for (const unidb::sql::ColumnDefinition &column : schema) {
+    if (column.type == unidb::sql::SqlType::Int) {
       values.emplace_back(read<std::int64_t>(bytes, offset));
-    } else if (column.type == DataType::VARCHAR) {
+    } else if (column.type == unidb::sql::SqlType::Text) {
       const uint32_t length = read<uint32_t>(bytes, offset);
       if (offset + length > bytes.size()) {
         throw std::runtime_error("Tuple text value is truncated");
