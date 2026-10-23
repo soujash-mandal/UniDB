@@ -18,6 +18,7 @@ BufferPoolPageId NewPageAction::execute() {
     if (!frame.isOccupied()) {
       BufferPoolPageId pageId = allocatePagePort.allocatePage();
       frame.setPageId(pageId);
+      frame.setPage(BufferPoolPage{});
       frame.setOccupied(true);
       frame.setDirty(true);
       frame.pin();
@@ -56,6 +57,7 @@ BufferPoolPageId NewPageAction::execute() {
 
     // 6. Replace the victim with the new page.
     frame.setPageId(pageId);
+    frame.setPage(BufferPoolPage{});
     frame.setOccupied(true);
     frame.setDirty(true);
     frame.pin();
