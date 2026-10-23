@@ -9,10 +9,9 @@
 
 TEST(SqlTupleCodecTest, RoundTripsIntAndText) {
   const std::vector<unidb::sql::ColumnDefinition> schema{
-      {"id", unidb::sql::SqlType::Int},
-      {"name", unidb::sql::SqlType::Text}};
-  const std::vector<unidb::sql::SqlValue> values{
-      std::int64_t{42}, std::string("hello")};
+      {"id", unidb::sql::SqlType::Int}, {"name", unidb::sql::SqlType::Text}};
+  const std::vector<unidb::sql::SqlValue> values{std::int64_t{42},
+                                                 std::string("hello")};
   const auto bytes = SqlTupleCodec::encode(schema, values);
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }

@@ -53,9 +53,8 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
 }
 
 std::vector<unidb::sql::SqlValue>
-SqlTupleCodec::decode(
-    const std::vector<unidb::sql::ColumnDefinition> &schema,
-    const std::vector<char> &bytes) {
+SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
+                      const std::vector<char> &bytes) {
   std::size_t offset = 0;
   std::vector<unidb::sql::SqlValue> values;
   values.reserve(schema.size());
