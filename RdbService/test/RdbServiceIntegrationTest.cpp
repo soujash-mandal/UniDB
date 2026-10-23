@@ -136,3 +136,37 @@ TEST(RdbServiceIntegrationTest, RejectsUnknownProjectionAndPredicateColumns) {
   }
   std::filesystem::remove(path);
 }
+
+TEST(RdbServiceIntegrationTest, DroppingPopulatedTableReleasesPagesWithoutStaleRows) {
+  const auto path = testDatabasePath();
+  std::filesystem::remove(path);
+  {
+    Container container(path.string(), 8, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+    container.rdbCreateTableAction().execute(
+        {"old_rows", {{"id", unidb::sql::SqlType::Int},
+                      {"payload", unidb::sql::SqlType::Text}}});
+    const std::string payload(1200, 'x');
+    for (int64_t id = 0; id < 20; ++id) {
+      container.insertRowAction().execute(
+          {"old_rows", {}, {id, payload}});
+    }
+
+    container.rdbDropTableAction().execute("old_rows");
+    EXPECT_THROW(container.getTableDefinitionAction().execute("old_rows"),
+                 std::runtime_error);
+
+    container.rdbCreateTableAction().execute(
+        {"new_rows", {{"id", unidb::sql::SqlType::Int},
+                      {"payload", unidb::sql::SqlType::Text}}});
+    container.insertRowAction().execute(
+        {"new_rows", {}, {std::int64_t{99}, std::string{"fresh"}}});
+    const auto rows = container.selectRowsAction().execute(
+        {true, {}, "new_rows", std::monostate{}});
+    ASSERT_EQ(rows.size(), 1u);
+    EXPECT_EQ(std::get<std::int64_t>(rows[0][0]), 99);
+    EXPECT_EQ(std::get<std::string>(rows[0][1]), "fresh");
+    container.close();
+  }
+  std::filesystem::remove(path);
+}
