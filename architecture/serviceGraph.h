@@ -16,12 +16,14 @@ inline const std::vector<ServiceNode> SERVICE_NODES = {
 };
 
 inline const std::vector<ServiceEdge> SERVICE_EDGES = {
-    {"FreePageManager", "DiskManager"},\n    {"FreePageManager", "BufferPoolManager"},
+    {"FreePageManager", "DiskManager"},
+    {"FreePageManager", "BufferPoolManager"},
     {"BufferPoolManager", "FreePageManager"},
     {"BufferPoolManager", "DiskManager"},
 
     {"FreeSpaceMapService", "BufferPoolManager"},
-    {"TupleService", "BufferPoolManager"},\n    {"TupleService", "FreePageManager"},
+    {"TupleService", "BufferPoolManager"},
+    {"TupleService", "FreePageManager"},
     {"CatalogService", "BufferPoolManager"},
     {"RdbMetadataService", "BufferPoolManager"},
 
