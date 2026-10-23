@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 
 namespace {
 using MetadataPageId = uint32_t;
@@ -13,8 +14,8 @@ constexpr uint32_t BITMAP_OFFSET =
 constexpr uint32_t BITMAP_SIZE = PAGE_SIZE - BITMAP_OFFSET;
 constexpr uint32_t INVALID_PAGE_ID = UINT32_MAX;
 constexpr MetadataPageId FIRST_METADATA_PAGE_ID = 0;
-uint32_t BITS_PER_BYTE = 8;
-uint32_t MAX_TRACKED_PAGES = BITMAP_SIZE * BITS_PER_BYTE;
+constexpr uint32_t BITS_PER_BYTE = 8;
+constexpr uint32_t MAX_TRACKED_PAGES = BITMAP_SIZE * BITS_PER_BYTE;
 } // namespace
 
 class MetadataPage {
@@ -31,14 +32,14 @@ public:
   }
 
   uint32_t findFirstFreePage() const;
-
   void setPageOccupied(PageId pageId);
+  void setPageFree(PageId pageId);
 
-  uint32_t getNextMetadataPageId() { return nextMetadataPageId; };
-  void setNextMetadataPageId(uint32_t pageId) { nextMetadataPageId = pageId; };
+  uint32_t getNextMetadataPageId() { return nextMetadataPageId; }
+  void setNextMetadataPageId(uint32_t pageId) { nextMetadataPageId = pageId; }
 
-  uint32_t getFirstTrackedPageId() { return firstTrackedPageId; };
-  void setFirstTrackedPageId(uint32_t pageId) { firstTrackedPageId = pageId; };
+  uint32_t getFirstTrackedPageId() { return firstTrackedPageId; }
+  void setFirstTrackedPageId(uint32_t pageId) { firstTrackedPageId = pageId; }
 
 private:
   uint32_t nextMetadataPageId;
