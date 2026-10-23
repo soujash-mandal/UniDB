@@ -10,7 +10,8 @@ namespace unidb::rdb {
 TupleInsertRowAdapter::TupleInsertRowAdapter(
     ::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table,
     ::UpdateTableAction &update, ::InsertTupleIntoTableAction &insert)
-    : getRoot(root), getTable(table), updateTable(update), insertTuple(insert) {}
+    : getRoot(root), getTable(table), updateTable(update), insertTuple(insert) {
+}
 
 void TupleInsertRowAdapter::insert(
     const unidb::sql::InsertStatement &statement) {

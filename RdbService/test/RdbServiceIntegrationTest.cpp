@@ -103,8 +103,8 @@ TEST(RdbServiceIntegrationTest, GetDefinitionAndDeleteMatchingRows) {
         {true, {}, "events", std::monostate{}});
     ASSERT_EQ(rows.size(), 1u);
     EXPECT_EQ(std::get<std::string>(rows[0][1]), "keep");
-    EXPECT_EQ(container.deleteRowsAction().execute(
-                  "events", {"id", std::int64_t{99}}),
+    EXPECT_EQ(container.deleteRowsAction().execute("events",
+                                                   {"id", std::int64_t{99}}),
               0u);
   }
   std::filesystem::remove(path);
@@ -125,7 +125,9 @@ TEST(RdbServiceIntegrationTest, RejectsUnknownProjectionAndPredicateColumns) {
                      "items", {"missing", std::int64_t{1}}),
                  std::invalid_argument);
     EXPECT_THROW(container.selectRowsAction().execute(
-                     {true, {}, "items",
+                     {true,
+                      {},
+                      "items",
                       unidb::sql::WhereEquals{"id", std::string{"wrong"}}}),
                  std::invalid_argument);
     EXPECT_THROW(container.deleteRowsAction().execute(
