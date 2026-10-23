@@ -133,6 +133,8 @@ add_executable(tests
     TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
     TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
+    QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
+    QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
