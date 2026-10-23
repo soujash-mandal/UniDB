@@ -10,10 +10,12 @@ using ServiceNode = std::string;
 using ServiceEdge = std::pair<ServiceNode, ServiceNode>;
 
 inline const std::vector<ServiceNode> SERVICE_NODES = {
-    "DiskManager",  "FreePageManager", "BufferPoolManager",  "SpaceMapService",
-    "TupleService", "CatalogService",  "RdbMetadataService", "RdbService",
+    "DiskManager",        "FreePageManager", "BufferPoolManager",
+    "SpaceMapService",    "TupleService",    "CatalogService",
+    "RdbMetadataService", "RdbService",      "QueryExecutionService",
 };
 
+// An edge A -> B means service A depends on/uses service B.
 inline const std::vector<ServiceEdge> SERVICE_EDGES = {
     {"FreePageManager", "DiskManager"},
     {"BufferPoolManager", "FreePageManager"},
@@ -27,8 +29,9 @@ inline const std::vector<ServiceEdge> SERVICE_EDGES = {
 
     {"RdbService", "CatalogService"},
     {"RdbService", "TupleService"},
-    {"RdbService", "SpaceMapService"},
     {"RdbService", "RdbMetadataService"},
+    {"RdbService", "SpaceMapService"},
+    {"QueryExecutionService", "RdbService"},
 };
 
 } // namespace Architecture

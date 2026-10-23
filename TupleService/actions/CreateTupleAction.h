@@ -9,12 +9,13 @@
 
 class CreateTupleAction {
 public:
-  CreateTupleAction(FetchPagePort &fetchPagePort, WritePagePort &writePagePort,
-                    UnpinPagePort &unpinPagePort);
+  CreateTupleAction(TupleFetchPagePort &fetchPagePort,
+                    TupleWritePagePort &writePagePort,
+                    TupleUnpinPagePort &unpinPagePort);
   TupleSlotId execute(TuplePageId pageId, std::vector<char> tupleData);
 
 private:
-  FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  TupleFetchPagePort &fetchPagePort;
+  TupleWritePagePort &writePagePort;
+  TupleUnpinPagePort &unpinPagePort;
 };

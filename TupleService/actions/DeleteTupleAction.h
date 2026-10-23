@@ -7,12 +7,13 @@
 
 class DeleteTupleAction {
 public:
-  DeleteTupleAction(FetchPagePort &fetchPagePort, WritePagePort &writePagePort,
-                    UnpinPagePort &unpinPagePort);
+  DeleteTupleAction(TupleFetchPagePort &fetchPagePort,
+                    TupleWritePagePort &writePagePort,
+                    TupleUnpinPagePort &unpinPagePort);
   void execute(TuplePageId pageId, TupleSlotId slotId);
 
 private:
-  FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
-  UnpinPagePort &unpinPagePort;
+  TupleFetchPagePort &fetchPagePort;
+  TupleWritePagePort &writePagePort;
+  TupleUnpinPagePort &unpinPagePort;
 };

@@ -1,14 +1,20 @@
 #include "BufferPoolFetchPageAdapter.h"
 
-#include <cstring>
-
 TupleBufferPoolFetchPageAdapter::TupleBufferPoolFetchPageAdapter(
-    FetchPageAction &fetchPageAction)
-    : fetchPageAction(fetchPageAction) {}
+    FetchPageAction &fetchPageAction, UnpinPageAction &unpinPageAction)
+    : fetchPageAction(fetchPageAction), unpinPageAction(unpinPageAction) {}
 
 TuplePage TupleBufferPoolFetchPageAdapter::fetchPage(TuplePageId pageId) {
   BufferPoolPage bufferPage = fetchPageAction.execute(pageId);
-  TuplePage tuplePage;
-  std::memcpy(tuplePage.data(), bufferPage.data(), PAGE_SIZE);
-  return tuplePage;
+  try {
+    TuplePage tuplePage(bufferPage.data());
+    return tuplePage;
+  } catch (...) {
+    try {
+      unpinPageAction.execute(pageId);
+    } catch (...) {
+      // Preserve the original page validation failure.
+    }
+    throw;
+  }
 }

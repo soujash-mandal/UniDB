@@ -27,6 +27,7 @@
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
+#include "../RdbMetadataService/actions/AllocateNextTableIdAction.h"
 #include "../RdbMetadataService/actions/CreateRdbMetadataPageAction.h"
 #include "../RdbMetadataService/actions/GetCatalogRootPageIdAction.h"
 #include "../RdbMetadataService/actions/UpdateRdbMetadataPageAction.h"
@@ -36,10 +37,18 @@
 #include "../RdbMetadataService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../CatalogService/actions/CreateRootCatalogPageAction.h"
+#include "../CatalogService/actions/CreateTableAction.h"
+#include "../CatalogService/actions/GetTableByNameAction.h"
+#include "../CatalogService/actions/UpdateTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
+
+#include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
+#include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../RdbService/actions/InitializeRdbAction.h"
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
@@ -63,6 +72,12 @@ public:
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
     return getCatalogRootId;
   }
+  AllocateNextTableIdAction &allocateNextTableIdAction() {
+    return allocateNextTableId;
+  }
+  CreateTableAction &createTableAction() { return createTable; }
+  GetTableByNameAction &getTableByNameAction() { return getTableByName; }
+  UpdateTableAction &updateTableAction() { return updateTable; }
 
 private:
   std::string databaseFileName;
@@ -94,11 +109,21 @@ private:
   BufferPoolNewPageAdapter metadataNewPageAdapter;
   BufferPoolUnpinPageAdapter metadataUnpinPageAdapter;
   BufferPoolWritePageAdapter metadataWritePageAdapter;
+  AllocateNextTableIdAction allocateNextTableId;
 
   CatalogBufferPoolFetchPageAdapter catalogFetchPageAdapter;
   CatalogBufferPoolNewPageAdapter catalogNewPageAdapter;
   CatalogBufferPoolUnpinPageAdapter catalogUnpinPageAdapter;
   CatalogBufferPoolWritePageAdapter catalogWritePageAdapter;
+
+  CreateTableAction createTable;
+  GetTableByNameAction getTableByName;
+  UpdateTableAction updateTable;
+
+  TupleBufferPoolFetchPageAdapter tupleFetchPageAdapter;
+  TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
+  TupleBufferPoolUnpinPageAdapter tupleUnpinPageAdapter;
+  TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
   UpdateRdbMetadataPageAction updateRdbMetadataPage;

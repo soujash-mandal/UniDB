@@ -62,6 +62,7 @@ set(UNIDB_SOURCES
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
+    QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
@@ -110,7 +111,30 @@ add_executable(tests
     CatalogService/test/CatalogPage/RepeatedGrowingUpdatesReuseCompactedPayloadSpaceTest.cpp
     CatalogService/test/CatalogPage/ReadsLegacyTablePayloadWithoutFreeSpaceMapPageIdTest.cpp
     CatalogService/test/CatalogPage/CatalogPageTestSupport.h
-    TupleService/test/TupleActionsTest.cpp
+    TupleService/test/TuplePage/UsesFullPageCapacityAndSkipsDeletedSlotsTest.cpp
+    TupleService/test/TuplePage/RejectsCorruptSlotBoundsDuringScanTest.cpp
+    TupleService/test/TuplePage/RejectsCorruptSlotCountDuringScanTest.cpp
+    TupleService/test/TuplePage/MigratesLegacyEightByteHeaderWithoutLosingRowsTest.cpp
+    TupleService/test/TuplePage/MigratesLegacyEmptyTupleWithoutLosingItsSlotTest.cpp
+    TupleService/test/TuplePage/StoresEmptyTupleAndSkipsDeletedSlotTest.cpp
+    TupleService/test/CreateTuplePageAction/AllocatesInitializesAndUnpinsPageTest.cpp
+    TupleService/test/CreateTuplePageAction/UnpinsAllocatedPageWhenInitializationWriteFailsTest.cpp
+    TupleService/test/CreateTuplePageAction/PropagatesAllocationFailureTest.cpp
+    TupleService/test/CreateTupleAction/InsertsTupleWritesPageAndUnpinsTest.cpp
+    TupleService/test/CreateTupleAction/RejectsTupleThatCannotFitAndUnpinsTest.cpp
+    TupleService/test/CreateTupleAction/UnpinsWhenPageWriteFailsTest.cpp
+    TupleService/test/CreateTupleAction/PropagatesFetchFailureTest.cpp
+    TupleService/test/GetTupleAction/ReturnsTupleBytesAndUnpinsPageTest.cpp
+    TupleService/test/GetTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
+    TupleService/test/GetTupleAction/RejectsDeletedSlotAndUnpinsPageTest.cpp
+    TupleService/test/GetTupleAction/PropagatesFetchFailureWithoutUnpinningTest.cpp
+    TupleService/test/DeleteTupleAction/DeletesTupleAndPersistsPageTest.cpp
+    TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
+    TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
+    TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
+    QueryExecutionService/test/SqlTupleCodecTest.cpp
+    QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
+    QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
