@@ -1,23 +1,40 @@
 #include "SqlTupleCodec.h"
 
-#include <cstring>
+#include <bit>
 #include <limits>
 #include <stdexcept>
+#include <type_traits>
 
 namespace {
-template <typename T> void append(std::vector<char> &out, const T &value) {
-  const auto *begin = reinterpret_cast<const char *>(&value);
-  out.insert(out.end(), begin, begin + sizeof(T));
+template <typename T> void appendLittleEndian(std::vector<char> &out, T value) {
+  static_assert(std::is_integral_v<T>);
+  using Unsigned = std::make_unsigned_t<T>;
+  const auto raw = static_cast<Unsigned>(value);
+  for (std::size_t i = 0; i < sizeof(T); ++i) {
+    out.push_back(static_cast<char>((raw >> (i * 8U)) & Unsigned{0xff}));
+  }
 }
+
 template <typename T>
-T read(const std::vector<char> &bytes, std::size_t &offset) {
+T readLittleEndian(const std::vector<char> &bytes, std::size_t &offset) {
+  static_assert(std::is_integral_v<T>);
   if (offset > bytes.size() || sizeof(T) > bytes.size() - offset) {
     throw std::runtime_error("Tuple bytes are truncated");
   }
-  T value{};
-  std::memcpy(&value, bytes.data() + offset, sizeof(T));
+
+  using Unsigned = std::make_unsigned_t<T>;
+  Unsigned raw{};
+  for (std::size_t i = 0; i < sizeof(T); ++i) {
+    raw |= static_cast<Unsigned>(
+               static_cast<unsigned char>(bytes[offset + i]))
+           << (i * 8U);
+  }
   offset += sizeof(T);
-  return value;
+  if constexpr (std::is_signed_v<T>) {
+    return std::bit_cast<T>(raw);
+  } else {
+    return raw;
+  }
 }
 } // namespace
 
@@ -34,7 +51,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::SqlType> &schema,
       if (!std::holds_alternative<std::int64_t>(values[i])) {
         throw std::invalid_argument("Expected INT value");
       }
-      append(out, std::get<std::int64_t>(values[i]));
+      appendLittleEndian(out, std::get<std::int64_t>(values[i]));
     } else if (schema[i] == unidb::sql::SqlType::Text) {
       if (!std::holds_alternative<std::string>(values[i])) {
         throw std::invalid_argument("Expected TEXT value");
@@ -44,7 +61,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::SqlType> &schema,
         throw std::invalid_argument("TEXT value exceeds V1 tuple length limit");
       }
       const auto length = static_cast<uint32_t>(value.size());
-      append(out, length);
+      appendLittleEndian(out, length);
       out.insert(out.end(), value.begin(), value.end());
     } else {
       throw std::invalid_argument("V1 tuple codec supports only INT and TEXT");
@@ -61,9 +78,9 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::SqlType> &schema,
   values.reserve(schema.size());
   for (const auto type : schema) {
     if (type == unidb::sql::SqlType::Int) {
-      values.emplace_back(read<std::int64_t>(bytes, offset));
+      values.emplace_back(readLittleEndian<std::int64_t>(bytes, offset));
     } else if (type == unidb::sql::SqlType::Text) {
-      const uint32_t length = read<uint32_t>(bytes, offset);
+      const uint32_t length = readLittleEndian<uint32_t>(bytes, offset);
       if (offset > bytes.size() || length > bytes.size() - offset) {
         throw std::runtime_error("Tuple text value is truncated");
       }
