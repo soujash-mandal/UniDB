@@ -6,4 +6,4 @@ public:
   virtual ~DropTablePort() = default;
   virtual void drop(const std::string &tableName) = 0;
 };
-}
+} // namespace unidb::rdb

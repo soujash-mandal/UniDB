@@ -6,4 +6,4 @@ public:
   virtual ~InsertRowPort() = default;
   virtual void insert(const unidb::sql::InsertStatement &statement) = 0;
 };
-}
+} // namespace unidb::rdb

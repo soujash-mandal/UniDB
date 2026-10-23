@@ -5,7 +5,8 @@ class DropTableAction {
 public:
   explicit DropTableAction(DropTablePort &port) : port(port) {}
   void execute(const std::string &tableName);
+
 private:
   DropTablePort &port;
 };
-}
+} // namespace unidb::rdb

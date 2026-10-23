@@ -99,8 +99,9 @@ std::vector<TupleRecord> TuplePage::getAllTupleRecords() const {
     const auto *slot = reinterpret_cast<const TupleSlotEntry *>(
         bytes + sizeof(TuplePageHeader) + i * sizeof(TupleSlotEntry));
     if (slot->size != 0) {
-      records.push_back({i, std::vector<char>(bytes + slot->offset,
-                                              bytes + slot->offset + slot->size)});
+      records.push_back(
+          {i, std::vector<char>(bytes + slot->offset,
+                                bytes + slot->offset + slot->size)});
     }
   }
   return records;

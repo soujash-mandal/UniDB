@@ -14,4 +14,4 @@ public:
   virtual ~GetTableDefinitionPort() = default;
   virtual TableDefinition get(const std::string &tableName) = 0;
 };
-}
+} // namespace unidb::rdb

@@ -38,39 +38,39 @@
 
 #include "../CatalogService/actions/CreateRootCatalogPageAction.h"
 #include "../CatalogService/actions/CreateTableAction.h"
+#include "../CatalogService/actions/DropTableAction.h"
 #include "../CatalogService/actions/GetTableByNameAction.h"
 #include "../CatalogService/actions/UpdateTableAction.h"
-#include "../CatalogService/actions/DropTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
 
+#include "../TupleService/actions/DeleteTupleAction.h"
 #include "../TupleService/actions/InsertTupleIntoTableAction.h"
 #include "../TupleService/actions/ScanTupleTableAction.h"
 #include "../TupleService/actions/ScanTupleTableWithLocationsAction.h"
-#include "../TupleService/actions/DeleteTupleAction.h"
 #include "../TupleService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
 
-#include "../RdbService/actions/InitializeRdbAction.h"
 #include "../RdbService/actions/CreateTableAction.h"
+#include "../RdbService/actions/DeleteRowsAction.h"
 #include "../RdbService/actions/DropTableAction.h"
+#include "../RdbService/actions/GetTableDefinitionAction.h"
+#include "../RdbService/actions/InitializeRdbAction.h"
 #include "../RdbService/actions/InsertRowAction.h"
 #include "../RdbService/actions/SelectRowsAction.h"
-#include "../RdbService/actions/GetTableDefinitionAction.h"
-#include "../RdbService/actions/DeleteRowsAction.h"
-#include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
-#include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
-#include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/CatalogCreateTableAdapter.h"
 #include "../RdbService/adapter/CatalogDropTableAdapter.h"
+#include "../RdbService/adapter/CatalogGetTableDefinitionAdapter.h"
+#include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
+#include "../RdbService/adapter/TupleDeleteRowsAdapter.h"
 #include "../RdbService/adapter/TupleInsertRowAdapter.h"
 #include "../RdbService/adapter/TupleSelectRowsAdapter.h"
-#include "../RdbService/adapter/CatalogGetTableDefinitionAdapter.h"
-#include "../RdbService/adapter/TupleDeleteRowsAdapter.h"
+#include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
 
 class Container {
 public:
@@ -96,11 +96,15 @@ public:
   GetTableByNameAction &getTableByNameAction() { return getTableByName; }
   UpdateTableAction &updateTableAction() { return updateTable; }
   DropTableAction &dropTableAction() { return dropTable; }
-  unidb::rdb::CreateTableAction &rdbCreateTableAction() { return rdbCreateTable; }
+  unidb::rdb::CreateTableAction &rdbCreateTableAction() {
+    return rdbCreateTable;
+  }
   unidb::rdb::DropTableAction &rdbDropTableAction() { return rdbDropTable; }
   unidb::rdb::InsertRowAction &insertRowAction() { return insertRow; }
   unidb::rdb::SelectRowsAction &selectRowsAction() { return selectRows; }
-  unidb::rdb::GetTableDefinitionAction &getTableDefinitionAction() { return getTableDefinition; }
+  unidb::rdb::GetTableDefinitionAction &getTableDefinitionAction() {
+    return getTableDefinition;
+  }
   unidb::rdb::DeleteRowsAction &deleteRowsAction() { return deleteRows; }
   InsertTupleIntoTableAction &insertTupleIntoTableAction() {
     return insertTupleIntoTable;

@@ -39,7 +39,8 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
                            tupleWritePageAdapter, tupleUnpinPageAdapter),
       scanTupleTable(tupleFetchPageAdapter, tupleUnpinPageAdapter),
       scanTupleTableWithLocations(tupleFetchPageAdapter, tupleUnpinPageAdapter),
-      deleteTuple(tupleFetchPageAdapter, tupleWritePageAdapter, tupleUnpinPageAdapter),
+      deleteTuple(tupleFetchPageAdapter, tupleWritePageAdapter,
+                  tupleUnpinPageAdapter),
       createRdbMetadataPage(metadataNewPageAdapter, metadataWritePageAdapter,
                             metadataUnpinPageAdapter),
       updateRdbMetadataPage(metadataFetchPageAdapter, metadataWritePageAdapter,
@@ -58,10 +59,12 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
                        insertTupleIntoTable),
       selectRowsAdapter(getCatalogRootId, getTableByName, scanTupleTable),
       getTableDefinitionAdapter(getCatalogRootId, getTableByName),
-      deleteRowsAdapter(getCatalogRootId, getTableByName, scanTupleTableWithLocations, deleteTuple),
+      deleteRowsAdapter(getCatalogRootId, getTableByName,
+                        scanTupleTableWithLocations, deleteTuple),
       rdbCreateTable(rdbCreateTableAdapter), rdbDropTable(rdbDropTableAdapter),
       insertRow(insertRowAdapter), selectRows(selectRowsAdapter),
-      getTableDefinition(getTableDefinitionAdapter), deleteRows(deleteRowsAdapter) {
+      getTableDefinition(getTableDefinitionAdapter),
+      deleteRows(deleteRowsAdapter) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }

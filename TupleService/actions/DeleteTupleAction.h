@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../port/FetchPagePort.h"
-#include "../port/WritePagePort.h"
 #include "../port/UnpinPagePort.h"
+#include "../port/WritePagePort.h"
 
 class DeleteTupleAction {
 public:

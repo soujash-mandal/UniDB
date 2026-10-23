@@ -6,4 +6,4 @@ void CatalogDropTableAdapter::drop(const std::string &tableName) {
   const auto table = getTable.execute(root, tableName);
   dropTable.execute(root, table.tableId);
 }
-}
+} // namespace unidb::rdb
