@@ -122,6 +122,13 @@ TEST(RdbServiceIntegrationTest, RejectsUnknownProjectionAndPredicateColumns) {
     EXPECT_THROW(container.deleteRowsAction().execute(
                      "items", {"missing", std::int64_t{1}}),
                  std::invalid_argument);
+    EXPECT_THROW(container.selectRowsAction().execute(
+                     {true, {}, "items",
+                      unidb::sql::WhereEquals{"id", std::string{"wrong"}}}),
+                 std::invalid_argument);
+    EXPECT_THROW(container.deleteRowsAction().execute(
+                     "items", {"id", std::string{"wrong"}}),
+                 std::invalid_argument);
   }
   std::filesystem::remove(path);
 }
