@@ -25,8 +25,7 @@ T readLittleEndian(const std::vector<char> &bytes, std::size_t &offset) {
   using Unsigned = std::make_unsigned_t<T>;
   Unsigned raw{};
   for (std::size_t i = 0; i < sizeof(T); ++i) {
-    raw |= static_cast<Unsigned>(
-               static_cast<unsigned char>(bytes[offset + i]))
+    raw |= static_cast<Unsigned>(static_cast<unsigned char>(bytes[offset + i]))
            << (i * 8U);
   }
   offset += sizeof(T);
