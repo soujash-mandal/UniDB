@@ -22,6 +22,7 @@ inline const std::vector<ServiceEdge> SERVICE_EDGES = {
     {"BufferPoolManager", "DiskManager"},
 
     {"FreeSpaceMapService", "BufferPoolManager"},
+    {"FreeSpaceMapService", "TupleService"},
     {"TupleService", "BufferPoolManager"},
     {"TupleService", "FreePageManager"},
     {"CatalogService", "BufferPoolManager"},
