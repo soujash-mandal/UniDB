@@ -106,6 +106,7 @@ add_executable(tests
 
     DiskManager/test/DiskManagerE2ETest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
+    FreePageManager/test/FreePageActionTest.cpp
     EvictionPolicy/test/FIFOEvictionPolicyTest.cpp
     BufferPoolManager/test/FetchPageActionTest.cpp
     BufferPoolManager/test/UnpinPageActionTest.cpp
@@ -114,6 +115,7 @@ add_executable(tests
     TupleService/test/TupleActionsTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     TupleService/test/TableTupleActionsTest.cpp
+    TupleService/test/DropTupleTableActionTest.cpp
     CatalogService/test/CatalogPageTest.cpp
     RdbService/test/RdbServiceIntegrationTest.cpp
     RdbService/test/RdbTupleCodec/RoundTripsIntAndTextTest.cpp
