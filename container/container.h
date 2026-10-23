@@ -12,6 +12,7 @@
 #include "../EvictionPolicy/EvictionPolicyType.h"
 
 #include "../BufferPoolManager/actions/FetchPageAction.h"
+#include "../BufferPoolManager/actions/DiscardPageAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
 #include "../BufferPoolManager/actions/NewPageAction.h"
 #include "../BufferPoolManager/actions/UnpinPageAction.h"
@@ -24,6 +25,8 @@
 
 #include "../FreePageManager/actions/AllocatePageAction.h"
 #include "../FreePageManager/actions/CreateFpmPageAction.h"
+#include "../FreePageManager/actions/FreePageAction.h"
+#include "../FreePageManager/adapter/BufferPoolDiscardPageAdapter.h"
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
@@ -47,6 +50,7 @@
 #include "../CatalogService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../TupleService/actions/DeleteTupleAction.h"
+#include "../TupleService/actions/DropTupleTableAction.h"
 #include "../TupleService/actions/InsertTupleIntoTableAction.h"
 #include "../TupleService/actions/ScanTupleTableAction.h"
 #include "../TupleService/actions/ScanTupleTableWithLocationsAction.h"
@@ -54,6 +58,7 @@
 #include "../TupleService/adapter/BufferPoolNewPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolUnpinPageAdapter.h"
 #include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
+#include "../TupleService/adapter/FreePageAdapter.h"
 
 #include "../RdbService/actions/CreateTableAction.h"
 #include "../RdbService/actions/DeleteRowsAction.h"
@@ -136,7 +141,7 @@ private:
   UnpinPageAction unpinPage;
   FlushPageAction flushPage;
   NewPageAction newPage;
-  WritePageAction writePage;
+  WritePageAction writePage;\n  DiscardPageAction discardPage;\n  BufferPoolDiscardPageAdapter discardPageAdapter;\n  FreePageAction freePage;
 
   BufferPoolFetchPageAdapter metadataFetchPageAdapter;
   BufferPoolNewPageAdapter metadataNewPageAdapter;
@@ -157,10 +162,10 @@ private:
   TupleBufferPoolFetchPageAdapter tupleFetchPageAdapter;
   TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
   TupleBufferPoolUnpinPageAdapter tupleUnpinPageAdapter;
-  TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
+  TupleBufferPoolWritePageAdapter tupleWritePageAdapter;\n  FreePageAdapter tupleFreePageAdapter;
   InsertTupleIntoTableAction insertTupleIntoTable;
   ScanTupleTableAction scanTupleTable;
-  ScanTupleTableWithLocationsAction scanTupleTableWithLocations;
+  ScanTupleTableWithLocationsAction scanTupleTableWithLocations;\n  DropTupleTableAction dropTupleTable;
   DeleteTupleAction deleteTuple;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
