@@ -9,13 +9,16 @@ class CatalogDropTableAdapter final : public DropTablePort {
 public:
   CatalogDropTableAdapter(::GetCatalogRootPageIdAction &getRoot,
                           ::GetTableByNameAction &getTable,
-                          ::DropTableAction &dropTable,\n                          ::DropTupleTableAction &dropTupleTable)
-      : getRoot(getRoot), getTable(getTable), dropTable(dropTable),\n        dropTupleTable(dropTupleTable) {}
+                          ::DropTableAction &dropTable,
+                          ::DropTupleTableAction &dropTupleTable)
+      : getRoot(getRoot), getTable(getTable), dropTable(dropTable),
+        dropTupleTable(dropTupleTable) {}
   void drop(const std::string &tableName) override;
 
 private:
   ::GetCatalogRootPageIdAction &getRoot;
   ::GetTableByNameAction &getTable;
-  ::DropTableAction &dropTable;\n  ::DropTupleTableAction &dropTupleTable;
+  ::DropTableAction &dropTable;
+  ::DropTupleTableAction &dropTupleTable;
 };
 } // namespace unidb::rdb
