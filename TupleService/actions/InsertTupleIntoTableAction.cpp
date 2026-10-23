@@ -12,38 +12,49 @@ InsertTupleIntoTableAction::InsertTupleIntoTableAction(
 TableTupleInsertResult
 InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
                                     const std::vector<char> &tupleData) {
-  if (tupleData.empty())
+  if (tupleData.empty()) {
     throw std::invalid_argument("Tuple data cannot be empty");
+  }
+  if (tupleData.size() > std::numeric_limits<uint32_t>::max()) {
+    throw std::length_error("Tuple is too large for a tuple page");
+  }
+
+  const auto tupleSize = static_cast<uint32_t>(tupleData.size());
+  TuplePage emptyPage;
+  if (!emptyPage.hasSpace(tupleSize)) {
+    throw std::length_error("Tuple is too large for a tuple page");
+  }
+
   if (firstPageId == std::numeric_limits<TuplePageId>::max()) {
     const TuplePageId pageId = newPagePort.newPage();
     TuplePage page;
-    if (!page.hasSpace(static_cast<uint32_t>(tupleData.size()))) {
-      unpinPagePort.unpinPage(pageId);
-      throw std::length_error("Tuple is too large for a tuple page");
-    }
     const TupleSlotId slotId = page.insert(tupleData);
     writePagePort.writePage(pageId, page);
     unpinPagePort.unpinPage(pageId);
     return {pageId, pageId, slotId};
   }
+
   TuplePageId currentPageId = firstPageId;
   while (currentPageId != std::numeric_limits<TuplePageId>::max()) {
     TuplePage page = fetchPagePort.fetchPage(currentPageId);
-    if (page.hasSpace(static_cast<uint32_t>(tupleData.size()))) {
+    if (page.hasSpace(tupleSize)) {
       const TupleSlotId slotId = page.insert(tupleData);
       writePagePort.writePage(currentPageId, page);
       unpinPagePort.unpinPage(currentPageId);
       return {firstPageId, currentPageId, slotId};
     }
+
     const TuplePageId nextPageId = page.getNextPageId();
     if (nextPageId == std::numeric_limits<TuplePageId>::max()) {
-      const TuplePageId newPageId = newPagePort.newPage();
-      TuplePage newPage;
-      if (!newPage.hasSpace(static_cast<uint32_t>(tupleData.size()))) {
-        unpinPagePort.unpinPage(newPageId);
+      TuplePageId newPageId;
+      try {
+        newPageId = newPagePort.newPage();
+      } catch (...) {
         unpinPagePort.unpinPage(currentPageId);
-        throw std::length_error("Tuple is too large for a tuple page");
+        throw;
       }
+
+      TuplePage newPage;
       page.setNextPageId(newPageId);
       writePagePort.writePage(currentPageId, page);
       const TupleSlotId slotId = newPage.insert(tupleData);
@@ -52,8 +63,10 @@ InsertTupleIntoTableAction::execute(TuplePageId firstPageId,
       unpinPagePort.unpinPage(currentPageId);
       return {firstPageId, newPageId, slotId};
     }
+
     unpinPagePort.unpinPage(currentPageId);
     currentPageId = nextPageId;
   }
+
   throw std::runtime_error("Tuple page chain is invalid");
 }
