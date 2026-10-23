@@ -1,4 +1,4 @@
-#include "../adapter/SqlTupleCodec.h"
+#include "../../adapter/SqlTupleCodec.h"
 
 #include <gtest/gtest.h>
 
