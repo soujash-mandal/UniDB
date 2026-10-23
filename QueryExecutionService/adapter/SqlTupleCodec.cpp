@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <stdexcept>
-#include <type_traits>
 
 namespace {
 template <typename T> void append(std::vector<char> &out, const T &value) {
@@ -40,20 +39,23 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
         throw std::invalid_argument("Expected TEXT value");
       }
       const auto &value = std::get<std::string>(values[i]);
-      const uint32_t length = static_cast<uint32_t>(value.size());
+      if (value.size() > UINT32_MAX) {
+        throw std::length_error("TEXT value exceeds the supported size");
+      }
+      const auto length = static_cast<uint32_t>(value.size());
       append(out, length);
       out.insert(out.end(), value.begin(), value.end());
     } else {
-      throw std::invalid_argument(
-          "V1 tuple codec supports only INT and VARCHAR/TEXT");
+      throw std::invalid_argument("Unsupported SQL type in V1 tuple codec");
     }
   }
   return out;
 }
 
 std::vector<unidb::sql::SqlValue>
-SqlTupleCodec::decode(const std::vector<Column> &schema,
-                      const std::vector<char> &bytes) {
+SqlTupleCodec::decode(
+    const std::vector<unidb::sql::ColumnDefinition> &schema,
+    const std::vector<char> &bytes) {
   std::size_t offset = 0;
   std::vector<unidb::sql::SqlValue> values;
   values.reserve(schema.size());
@@ -68,8 +70,7 @@ SqlTupleCodec::decode(const std::vector<Column> &schema,
       values.emplace_back(std::string(bytes.data() + offset, length));
       offset += length;
     } else {
-      throw std::invalid_argument(
-          "V1 tuple codec supports only INT and VARCHAR/TEXT");
+      throw std::invalid_argument("Unsupported SQL type in V1 tuple codec");
     }
   }
   if (offset != bytes.size()) {
