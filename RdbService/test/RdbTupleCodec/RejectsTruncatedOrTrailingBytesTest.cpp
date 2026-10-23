@@ -4,8 +4,9 @@
 
 TEST(RdbTupleCodecDecodeTest, RejectsTruncatedInt) {
   const std::vector<Column> schema{{"id", DataType::INT, 0, false}};
-  EXPECT_THROW(unidb::rdb::RdbTupleCodec::decode(schema, std::vector<char>{1, 2}),
-               std::runtime_error);
+  EXPECT_THROW(
+      unidb::rdb::RdbTupleCodec::decode(schema, std::vector<char>{1, 2}),
+      std::runtime_error);
 }
 
 TEST(RdbTupleCodecDecodeTest, RejectsTrailingBytes) {
