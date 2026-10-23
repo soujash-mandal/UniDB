@@ -18,7 +18,7 @@ set(UNIDB_SOURCES
     FreePageManager/adapter/ReadFreePageMetadataAdapter.cpp
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
     FreePageManager/domain/MetadataPage.cpp
-    FreePageManager/actions/AllocatePageAction.cpp
+    FreePageManager/actions/AllocatePageAction.cpp\n    FreePageManager/actions/FreePageAction.cpp
     FreePageManager/actions/CreateFpmPageAction.cpp
 
     EvictionPolicy/EvictionPolicyFactory.cpp
@@ -27,7 +27,7 @@ set(UNIDB_SOURCES
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
     BufferPoolManager/adapter/AllocatePageAdapter.cpp
-    BufferPoolManager/actions/FetchPageAction.cpp
+    BufferPoolManager/actions/FetchPageAction.cpp\n    BufferPoolManager/actions/DiscardPageAction.cpp
     BufferPoolManager/actions/WritePageAction.cpp
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
@@ -66,7 +66,7 @@ set(UNIDB_SOURCES
     TupleService/actions/DeleteTupleAction.cpp
     TupleService/actions/InsertTupleIntoTableAction.cpp
     TupleService/actions/ScanTupleTableAction.cpp
-    TupleService/actions/ScanTupleTableWithLocationsAction.cpp
+    TupleService/actions/ScanTupleTableWithLocationsAction.cpp\n    TupleService/actions/DropTupleTableAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
