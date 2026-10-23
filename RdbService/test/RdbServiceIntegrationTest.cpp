@@ -7,8 +7,8 @@
 #include "../actions/SelectRowsAction.h"
 
 #include <filesystem>
-#include <stdexcept>
 #include <gtest/gtest.h>
+#include <stdexcept>
 
 namespace {
 std::filesystem::path testDatabasePath() {
