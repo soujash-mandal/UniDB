@@ -1,4 +1,4 @@
-#include "TuplePage.h"
+#include "../domain/TuplePage.h"
 
 #include <gtest/gtest.h>
 
