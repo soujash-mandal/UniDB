@@ -141,7 +141,10 @@ private:
   UnpinPageAction unpinPage;
   FlushPageAction flushPage;
   NewPageAction newPage;
-  WritePageAction writePage;\n  DiscardPageAction discardPage;\n  BufferPoolDiscardPageAdapter discardPageAdapter;\n  FreePageAction freePage;
+  WritePageAction writePage;
+  DiscardPageAction discardPage;
+  BufferPoolDiscardPageAdapter discardPageAdapter;
+  FreePageAction freePage;
 
   BufferPoolFetchPageAdapter metadataFetchPageAdapter;
   BufferPoolNewPageAdapter metadataNewPageAdapter;
@@ -162,10 +165,12 @@ private:
   TupleBufferPoolFetchPageAdapter tupleFetchPageAdapter;
   TupleBufferPoolNewPageAdapter tupleNewPageAdapter;
   TupleBufferPoolUnpinPageAdapter tupleUnpinPageAdapter;
-  TupleBufferPoolWritePageAdapter tupleWritePageAdapter;\n  FreePageAdapter tupleFreePageAdapter;
+  TupleBufferPoolWritePageAdapter tupleWritePageAdapter;
+  FreePageAdapter tupleFreePageAdapter;
   InsertTupleIntoTableAction insertTupleIntoTable;
   ScanTupleTableAction scanTupleTable;
-  ScanTupleTableWithLocationsAction scanTupleTableWithLocations;\n  DropTupleTableAction dropTupleTable;
+  ScanTupleTableWithLocationsAction scanTupleTableWithLocations;
+  DropTupleTableAction dropTupleTable;
   DeleteTupleAction deleteTuple;
 
   CreateRdbMetadataPageAction createRdbMetadataPage;
