@@ -1,5 +1,5 @@
-#include "../actions/AllocatePageAction.h"
 #include "../actions/FreePageAction.h"
+#include "../actions/AllocatePageAction.h"
 
 #include <gtest/gtest.h>
 
