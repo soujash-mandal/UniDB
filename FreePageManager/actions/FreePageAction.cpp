@@ -10,7 +10,7 @@ FreePageAction::FreePageAction(ReadFreePageMetadataPort &readMetadataPort,
       discardPagePort(discardPagePort) {}
 
 void FreePageAction::execute(uint32_t pageId) {
-  if (pageId == 0 || pageId == INVALID_PAGE_ID) {
+  if (pageId <= 1 || pageId == INVALID_PAGE_ID) {
     throw std::invalid_argument("Cannot free a reserved or invalid page");
   }
 
