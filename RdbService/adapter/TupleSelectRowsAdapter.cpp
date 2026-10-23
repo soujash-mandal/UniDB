@@ -52,7 +52,7 @@ TupleSelectRowsAdapter::select(const unidb::sql::SelectStatement &statement) {
         [&](const Column &c) { return c.name == predicate->columnName; });
     if (it == table.columns.end())
       throw std::invalid_argument("Unknown predicate column: " +
-                                    predicate->columnName);
+                                  predicate->columnName);
     validatePredicateValue(*it, predicate->value);
     predicateIndex = static_cast<std::size_t>(it - table.columns.begin());
   }
