@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <stdexcept>
+#include <vector>
 
 namespace {
 class MetadataStore final : public ReadFreePageMetadataPort,
