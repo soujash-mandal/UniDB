@@ -4,6 +4,22 @@
 #include <limits>
 #include <stdexcept>
 namespace unidb::rdb {
+namespace {
+void validatePredicateValue(const Column &column,
+                            const unidb::sql::SqlValue &value) {
+  if (column.type == DataType::INT &&
+      std::holds_alternative<std::int64_t>(value)) {
+    return;
+  }
+  if (column.type == DataType::VARCHAR &&
+      std::holds_alternative<std::string>(value)) {
+    return;
+  }
+  throw std::invalid_argument("Predicate value type does not match column: " +
+                              column.name);
+}
+} // namespace
+
 TupleDeleteRowsAdapter::TupleDeleteRowsAdapter(
     ::GetCatalogRootPageIdAction &root, ::GetTableByNameAction &table,
     ::ScanTupleTableWithLocationsAction &scanAction,
@@ -23,6 +39,7 @@ TupleDeleteRowsAdapter::erase(const std::string &tableName,
   if (column == table.columns.end())
     throw std::invalid_argument("Unknown delete predicate column: " +
                                 condition.columnName);
+  validatePredicateValue(*column, condition.value);
   const auto index = static_cast<std::size_t>(column - table.columns.begin());
   if (table.firstTuplePageId == std::numeric_limits<CatalogPageId>::max())
     return 0;
