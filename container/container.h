@@ -76,6 +76,7 @@ class Container {
 public:
   explicit Container(std::string databaseFileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType);
+  void close();
 
   const std::string &getDatabaseFileName() const { return databaseFileName; }
 
