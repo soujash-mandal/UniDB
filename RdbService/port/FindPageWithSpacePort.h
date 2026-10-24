@@ -7,6 +7,6 @@ struct RdbFindPageWithSpaceResult {
 class FindPageWithSpacePort {
 public:
   virtual ~FindPageWithSpacePort() = default;
-  virtual RdbFindPageWithSpaceResult findPageWithSpace(
-      uint32_t rootSpaceMapPageId, uint32_t requiredSpace) = 0;
+  virtual RdbFindPageWithSpaceResult
+  findPageWithSpace(uint32_t rootSpaceMapPageId, uint32_t requiredSpace) = 0;
 };

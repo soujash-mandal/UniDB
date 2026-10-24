@@ -4,5 +4,6 @@
 class CreateTuplePort {
 public:
   virtual ~CreateTuplePort() = default;
-  virtual uint32_t createTuple(uint32_t tuplePageId, std::vector<char> tupleData) = 0;
+  virtual uint32_t createTuple(uint32_t tuplePageId,
+                               std::vector<char> tupleData) = 0;
 };
