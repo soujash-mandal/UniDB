@@ -1,9 +1,12 @@
 #pragma once
-#include "../../TupleService/actions/CreateTupleAction.h"
-#include "../../TupleService/actions/CreateTuplePageAction.h"
-#include "../../TupleService/actions/GetAllTuplesAction.h"
-#include "../../TupleService/actions/GetTupleAction.h"
+
 #include "../port/TuplePagePort.h"
+
+class CreateTupleAction;
+class CreateTuplePageAction;
+class GetAllTuplesAction;
+class GetTupleAction;
+
 class TuplePageAdapter final : public TuplePagePort {
 public:
   TuplePageAdapter(CreateTuplePageAction &createTuplePageAction,
