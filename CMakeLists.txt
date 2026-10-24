@@ -138,6 +138,7 @@ add_executable(tests
     SpaceMapService/test/GetTablePagesAction/ReturnsTuplePagesFromSingleSpaceMapPageTest.cpp
     SpaceMapService/test/GetTablePagesAction/TraversesChainedSpaceMapPagesTest.cpp
     SpaceMapService/test/GetTablePagesAction/RejectsCycleWithoutLeakingPinsTest.cpp
+    SpaceMapService/test/GetTablePagesAction/RetriesUnpinFailureAndDoesNotLeakPinnedPageTest.cpp
     SpaceMapService/test/GetTablePagesAction/PropagatesFetchFailureWithoutUnpinningMissingPageTest.cpp
     SpaceMapService/test/GetTablePagesAction/ReturnsEmptyInventoryWhenRootPageIdIsInvalidTest.cpp
     SpaceMapService/test/GetTablePagesAction/RejectsCorruptEntryCountAndUnpinsPageTest.cpp
