@@ -71,9 +71,12 @@ set(UNIDB_SOURCES
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
+    RdbService/actions/RdbCreateTableAction.cpp
+    RdbService/actions/GetTableDefinitionAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CatalogTableAdapter.cpp
+    RdbService/adapter/RdbMetadataAdapter.cpp
     RdbService/adapter/SpaceMapAdapter.cpp
     RdbService/adapter/TuplePageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
@@ -167,6 +170,10 @@ add_executable(tests
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     SQLParser/test/SqlParserTest.cpp
+    RdbService/test/RdbCreateTableAction/CreatesTableUsingMetadataAndCatalogPortsTest.cpp
+    RdbService/test/RdbCreateTableAction/RejectsDuplicateColumnsBeforeAllocatingTableIdTest.cpp
+    RdbService/test/GetTableDefinitionAction/ReturnsTableDefinitionFromCatalogPortTest.cpp
+    RdbService/test/GetTableDefinitionAction/RejectsEmptyTableNameBeforeMetadataLookupTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CatalogTableAdapter/CatalogTableAdapterTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
