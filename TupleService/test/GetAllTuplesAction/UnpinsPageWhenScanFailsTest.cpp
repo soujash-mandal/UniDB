@@ -6,8 +6,8 @@
 #include <cstring>
 #include <stdexcept>
 
- // Scenario 5: Preserve the scan error and release the fetched page even when
- // unpinning also fails.
+// Scenario 5: Preserve the scan error and release the fetched page even when
+// unpinning also fails.
 TEST(GetAllTuplesActionTest, UnpinsPageWhenScanFails) {
   GetAllTuplesFetchPort fetch;
   // A valid-format header whose slot count cannot fit before the free-space
