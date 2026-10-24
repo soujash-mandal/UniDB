@@ -1,7 +1,7 @@
-#include "../../adapter/FindPageWithSpaceAdapter.h"
-#include "../StorageAdapterTestSupport.h"
 #include "../../../SpaceMapService/actions/CreateSpaceMapPageAction.h"
 #include "../../../SpaceMapService/actions/FindPageWithSpaceAction.h"
+#include "../../adapter/FindPageWithSpaceAdapter.h"
+#include "../StorageAdapterTestSupport.h"
 #include <gtest/gtest.h>
 TEST(FindPageWithSpaceAdapterTest, DelegatesPageDiscovery) {
   FakeSpaceMapStore store;

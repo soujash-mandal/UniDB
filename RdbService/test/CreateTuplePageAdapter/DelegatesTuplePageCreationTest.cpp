@@ -1,6 +1,6 @@
+#include "../../../TupleService/actions/CreateTuplePageAction.h"
 #include "../../adapter/CreateTuplePageAdapter.h"
 #include "../StorageAdapterTestSupport.h"
-#include "../../../TupleService/actions/CreateTuplePageAction.h"
 #include <gtest/gtest.h>
 TEST(CreateTuplePageAdapterTest, DelegatesTuplePageCreation) {
   FakeTupleStore store;

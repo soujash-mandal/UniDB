@@ -1,7 +1,7 @@
-#include "../../adapter/GetTablePagesAdapter.h"
-#include "../StorageAdapterTestSupport.h"
 #include "../../../SpaceMapService/actions/CreateSpaceMapPageAction.h"
 #include "../../../SpaceMapService/actions/GetTablePagesAction.h"
+#include "../../adapter/GetTablePagesAdapter.h"
+#include "../StorageAdapterTestSupport.h"
 #include <gtest/gtest.h>
 TEST(GetTablePagesAdapterTest, DelegatesTablePageEnumeration) {
   FakeSpaceMapStore store;

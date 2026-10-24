@@ -1,6 +1,6 @@
+#include "../../../SpaceMapService/actions/CreateSpaceMapPageAction.h"
 #include "../../adapter/CreateSpaceMapPageAdapter.h"
 #include "../StorageAdapterTestSupport.h"
-#include "../../../SpaceMapService/actions/CreateSpaceMapPageAction.h"
 #include <gtest/gtest.h>
 TEST(CreateSpaceMapPageAdapterTest, DelegatesPageCreation) {
   FakeSpaceMapStore store;
