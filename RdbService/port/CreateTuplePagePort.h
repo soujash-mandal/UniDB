@@ -6,6 +6,6 @@ struct RdbCreatedTuplePage {
 };
 class RdbCreateTuplePagePort {
 public:
-  virtual ~CreateTuplePagePort() = default;
+  virtual ~RdbCreateTuplePagePort() = default;
   virtual RdbCreatedTuplePage createTuplePage() = 0;
 };
