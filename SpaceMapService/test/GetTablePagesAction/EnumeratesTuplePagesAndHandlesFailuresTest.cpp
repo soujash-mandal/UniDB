@@ -98,12 +98,12 @@ TEST(GetTablePagesActionTest,
   EXPECT_FALSE(store.hasPinnedPages());
 }
 
-// Scenario 5: Reject an invalid root before attempting any fetch.
-TEST(GetTablePagesActionTest, RejectsInvalidRootPageId) {
+// Scenario 5: An absent SpaceMap root means the table has no tuple pages.
+TEST(GetTablePagesActionTest, ReturnsEmptyInventoryWhenRootPageIdIsInvalid) {
   InMemorySpaceMapStore store;
   GetTablePagesAction action(store, store);
 
-  EXPECT_THROW(action.execute(UINT32_MAX), std::runtime_error);
+  EXPECT_TRUE(action.execute(UINT32_MAX).empty());
   EXPECT_TRUE(store.unpinnedPages.empty());
   EXPECT_FALSE(store.hasPinnedPages());
 }
