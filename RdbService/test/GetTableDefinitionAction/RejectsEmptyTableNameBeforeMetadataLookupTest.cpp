@@ -5,8 +5,7 @@
 
 #include <stdexcept>
 
-TEST(GetTableDefinitionActionTest,
-     RejectsEmptyTableNameBeforeMetadataLookup) {
+TEST(GetTableDefinitionActionTest, RejectsEmptyTableNameBeforeMetadataLookup) {
   FakeRdbMetadataPort metadata;
   FakeCatalogTablePort catalog;
   GetTableDefinitionAction action(metadata, catalog);

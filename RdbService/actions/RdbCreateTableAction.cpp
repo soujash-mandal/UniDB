@@ -3,12 +3,12 @@
 #include <stdexcept>
 #include <unordered_set>
 
-RdbCreateTableAction::RdbCreateTableAction(
-    RdbMetadataPort &metadataPort, CatalogTablePort &catalogTablePort)
+RdbCreateTableAction::RdbCreateTableAction(RdbMetadataPort &metadataPort,
+                                           CatalogTablePort &catalogTablePort)
     : metadataPort(metadataPort), catalogTablePort(catalogTablePort) {}
 
-uint32_t RdbCreateTableAction::execute(
-    const std::string &tableName, const std::vector<RdbColumn> &columns) {
+uint32_t RdbCreateTableAction::execute(const std::string &tableName,
+                                       const std::vector<RdbColumn> &columns) {
   if (tableName.empty()) {
     throw std::invalid_argument("Table name cannot be empty");
   }
@@ -26,8 +26,7 @@ uint32_t RdbCreateTableAction::execute(
     }
   }
 
-  const CatalogPageId catalogRootPageId =
-      metadataPort.getCatalogRootPageId();
+  const CatalogPageId catalogRootPageId = metadataPort.getCatalogRootPageId();
   const uint32_t tableId = metadataPort.allocateNextTableId();
 
   RdbTableDefinition table;

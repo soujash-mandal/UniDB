@@ -11,7 +11,6 @@ GetTableDefinitionAction::execute(const std::string &tableName) {
   if (tableName.empty()) {
     throw std::invalid_argument("Table name cannot be empty");
   }
-  const CatalogPageId catalogRootPageId =
-      metadataPort.getCatalogRootPageId();
+  const CatalogPageId catalogRootPageId = metadataPort.getCatalogRootPageId();
   return catalogTablePort.getTableByName(catalogRootPageId, tableName);
 }
