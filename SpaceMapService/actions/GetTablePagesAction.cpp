@@ -31,9 +31,8 @@ GetTablePagesAction::execute(SpaceMapPageId rootSpaceMapPageId) {
                           pageTupleIds.end());
       const SpaceMapPageId nextPageId = page.getNextPageId();
 
-      // Do not retry unpin if the port itself reports an unpin failure.
-      pagePinned = false;
       unpinPagePort.unpinPage(currentPageId);
+      pagePinned = false;
       currentPageId = nextPageId;
     } catch (...) {
       if (pagePinned) {
