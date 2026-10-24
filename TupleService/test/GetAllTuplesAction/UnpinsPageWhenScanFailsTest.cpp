@@ -6,7 +6,8 @@
 #include <cstring>
 #include <stdexcept>
 
-// Scenario 5: Release the fetched page even when tuple-page validation fails.
+ // Scenario 5: Preserve the scan error and release the fetched page even when
+ // unpinning also fails.
 TEST(GetAllTuplesActionTest, UnpinsPageWhenScanFails) {
   GetAllTuplesFetchPort fetch;
   // A valid-format header whose slot count cannot fit before the free-space
@@ -17,9 +18,15 @@ TEST(GetAllTuplesActionTest, UnpinsPageWhenScanFails) {
   std::memcpy(fetch.page.data() + sizeof(uint32_t), &invalidFreeSpaceOffset,
               sizeof(invalidFreeSpaceOffset));
   GetAllTuplesUnpinPort unpin;
+  unpin.failUnpin = true;
   GetAllTuplesAction action(fetch, unpin);
 
-  EXPECT_THROW(action.execute(16), std::runtime_error);
+  try {
+    action.execute(16);
+    FAIL() << "execute should throw";
+  } catch (const std::runtime_error &error) {
+    EXPECT_STREQ(error.what(), "Tuple page slots overlap tuple data");
+  }
   EXPECT_EQ(unpin.calls, 1);
   EXPECT_EQ(unpin.lastPageId, 16);
 }
