@@ -42,8 +42,7 @@ TEST(GetAllTuplesActionReturnsLiveTuplesAndUnpinsPageTest,
   UnpinPort unpin;
   GetAllTuplesAction action(fetch, unpin);
 
-  EXPECT_EQ(action.execute(12),
-            (std::vector<std::vector<char>>{{'a'}, {'d'}}));
+  EXPECT_EQ(action.execute(12), (std::vector<std::vector<char>>{{'a'}, {'d'}}));
   EXPECT_EQ(fetch.calls, 1);
   EXPECT_EQ(unpin.calls, 1);
   EXPECT_EQ(unpin.lastPageId, 12);
