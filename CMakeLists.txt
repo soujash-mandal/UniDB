@@ -85,8 +85,8 @@ set(UNIDB_SOURCES
     RdbService/adapter/GetTupleAdapter.cpp
     RdbService/adapter/GetAllTuplesAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
-    RdbService/adapter/GetCatalogRootPageIdAdapter.cpp
     RdbService/adapter/AllocateNextTableIdAdapter.cpp
+    RdbService/adapter/GetCatalogRootPageIdAdapter.cpp
 
     SQLParser/SqlLexer.cpp
     SQLParser/SqlParserImpl.cpp
