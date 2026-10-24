@@ -4,7 +4,7 @@ struct RdbCreatedTuplePage {
   uint32_t pageId;
   uint32_t freeSpace;
 };
-class CreateTuplePagePort {
+class RdbCreateTuplePagePort {
 public:
   virtual ~CreateTuplePagePort() = default;
   virtual RdbCreatedTuplePage createTuplePage() = 0;
