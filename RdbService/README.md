@@ -19,7 +19,7 @@ translate those contracts to public Actions exposed by lower-level services.
 - `CreateSpaceMapPagePort` — create a table's root space-map page.
 - `FindPageWithSpacePort` — locate a tuple page with sufficient free space.
 - `GetTablePagesPort` — enumerate tuple pages registered for a table.
-- `CreateTuplePagePort` — create and initialize one tuple page.
+- `RdbCreateTuplePagePort` — create and initialize one tuple page.
 - `CreateTuplePort` — insert one row into a tuple page.
 - `GetTuplePort` — retrieve one row by slot.
 - `GetAllTuplesPort` — scan live rows from one tuple page.
