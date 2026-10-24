@@ -7,9 +7,12 @@ translate those contracts to public Actions exposed by lower-level services.
 ## Actions
 
 - `InitializeRdbAction` — initialize relational database metadata and catalog root.
+- `RdbService::CreateTableAction` — validate an RDB-owned table definition, obtain the catalog root and next table ID through RDB-owned ports, and persist the definition through the CatalogService adapter.
 
 ## Ports
 
+- `GetCatalogRootPageIdPort` — retrieve the catalog root reference from RDB metadata.
+- `AllocateNextTableIdPort` — allocate a table ID from RDB metadata.
 - `CreateRdbMetadataPagePort` — create the RDB metadata page.
 - `CreateRootCatalogPagePort` — create the catalog root page.
 - `UpdateRdbMetadataPagePort` — persist the catalog root reference in metadata.
@@ -26,6 +29,8 @@ translate those contracts to public Actions exposed by lower-level services.
 
 ## Adapters
 
+- `GetCatalogRootPageIdAdapter` — delegates only to `GetCatalogRootPageIdAction`.
+- `AllocateNextTableIdAdapter` — delegates only to `AllocateNextTableIdAction`.
 - `CreateRdbMetadataPageAdapter` — delegates metadata-page creation.
 - `CreateRootCatalogPageAdapter` — delegates catalog-root creation.
 - `UpdateRdbMetadataPageAdapter` — delegates metadata updates.
