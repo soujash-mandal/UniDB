@@ -1,7 +1,6 @@
 #include "FindPageWithSpaceActionTestSupport.h"
 
-TEST(FindPageWithSpaceActionTest,
-     ReturnsOwningSpaceMapPageFoundLaterInChain) {
+TEST(FindPageWithSpaceActionTest, ReturnsOwningSpaceMapPageFoundLaterInChain) {
   FindPageWithSpaceTestStore store;
   SpaceMapPage root;
   root.setNextPageId(11);
