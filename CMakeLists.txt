@@ -147,6 +147,7 @@ add_executable(tests
     SpaceMapService/test/FindPageWithSpaceAction/ReturnsTuplePageAndOwningSpaceMapPageWhenSpaceIsAvailableTest.cpp
     SpaceMapService/test/FindPageWithSpaceAction/ReturnsOwningSpaceMapPageFoundLaterInChainTest.cpp
     SpaceMapService/test/FindPageWithSpaceAction/ReturnsOwningSpaceMapPageWhenItCreatesAndRegistersTuplePageTest.cpp
+    SpaceMapService/test/FindPageWithSpaceAction/LeavesNoAllocationPinAfterExtendingFullSpaceMapChainTest.cpp
     SpaceMapService/test/FindPageWithSpaceAction/FindPageWithSpaceActionTestSupport.h
     SpaceMapService/test/GetTablePagesAction/ReturnsTuplePagesFromSingleSpaceMapPageTest.cpp
     SpaceMapService/test/GetTablePagesAction/TraversesChainedSpaceMapPagesTest.cpp
