@@ -20,8 +20,14 @@ translate those contracts to public Actions exposed by lower-level services.
 - `CreateRdbMetadataPageAdapter` — delegates metadata-page creation.
 - `CreateRootCatalogPageAdapter` — delegates catalog-root creation.
 - `UpdateRdbMetadataPageAdapter` — delegates metadata updates.
-- `CatalogTableAdapter` — translates RDB-owned table definitions to and from
-  CatalogService public Actions.
+- `CreateCatalogTableAdapter` — translates RDB table definitions for the public
+  CatalogService create Action; contains one Action dependency.
+- `GetCatalogTableByNameAdapter` — translates CatalogService lookup results to
+  the RDB-owned table model; contains one Action dependency.
+- `UpdateCatalogTableAdapter` — translates RDB table definitions for the public
+  CatalogService update Action; contains one Action dependency.
+- `CatalogTablePortFacade` — composes the three single-Action adapters behind
+  `CatalogTablePort` and contains no direct Action dependencies.
 
 This service must not call BufferPoolManager, FreePageManager, or other services'
 internal ports/adapters directly.
