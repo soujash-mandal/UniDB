@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../port/GetCatalogTableByNamePort.h"
 #include "../../CatalogService/actions/GetTableByNameAction.h"
+#include "../port/GetCatalogTableByNamePort.h"
 
 class GetCatalogTableByNameAdapter final : public GetCatalogTableByNamePort {
 public:

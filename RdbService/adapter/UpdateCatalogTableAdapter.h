@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../port/UpdateCatalogTablePort.h"
 #include "../../CatalogService/actions/UpdateTableAction.h"
+#include "../port/UpdateCatalogTablePort.h"
 
 class UpdateCatalogTableAdapter final : public UpdateCatalogTablePort {
 public:
