@@ -15,8 +15,7 @@ public:
                        const RdbTableDefinition &table) override;
   RdbTableDefinition getTableByName(uint32_t catalogRootPageId,
                                     const std::string &tableName) override;
-  void updateTable(uint32_t catalogRootPageId,
-                   const RdbTableDefinition &table,
+  void updateTable(uint32_t catalogRootPageId, const RdbTableDefinition &table,
                    uint32_t firstSpaceMapPageId) override;
 
 private:

@@ -7,12 +7,18 @@
 namespace {
 DataType toCatalogType(RdbDataType type) {
   switch (type) {
-  case RdbDataType::INT: return DataType::INT;
-  case RdbDataType::BIGINT: return DataType::BIGINT;
-  case RdbDataType::FLOAT: return DataType::FLOAT;
-  case RdbDataType::DOUBLE: return DataType::DOUBLE;
-  case RdbDataType::BOOLEAN: return DataType::BOOLEAN;
-  case RdbDataType::VARCHAR: return DataType::VARCHAR;
+  case RdbDataType::INT:
+    return DataType::INT;
+  case RdbDataType::BIGINT:
+    return DataType::BIGINT;
+  case RdbDataType::FLOAT:
+    return DataType::FLOAT;
+  case RdbDataType::DOUBLE:
+    return DataType::DOUBLE;
+  case RdbDataType::BOOLEAN:
+    return DataType::BOOLEAN;
+  case RdbDataType::VARCHAR:
+    return DataType::VARCHAR;
   }
   throw std::invalid_argument("Unsupported RDB column type");
 }
@@ -34,8 +40,8 @@ Table toCatalogTable(const RdbTableDefinition &table,
 UpdateCatalogTableAdapter::UpdateCatalogTableAdapter(UpdateTableAction &action)
     : action(action) {}
 
-void UpdateCatalogTableAdapter::updateTable(
-    uint32_t catalogRootPageId, const RdbTableDefinition &table,
-    uint32_t firstSpaceMapPageId) {
+void UpdateCatalogTableAdapter::updateTable(uint32_t catalogRootPageId,
+                                            const RdbTableDefinition &table,
+                                            uint32_t firstSpaceMapPageId) {
   action.execute(catalogRootPageId, toCatalogTable(table, firstSpaceMapPageId));
 }
