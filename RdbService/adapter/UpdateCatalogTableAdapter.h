@@ -6,8 +6,8 @@
 class UpdateCatalogTableAdapter final {
 public:
   explicit UpdateCatalogTableAdapter(UpdateTableAction &action);
-  void updateTable(uint32_t catalogRootPageId,
-                   const RdbTableDefinition &table);
+  void updateTable(uint32_t catalogRootPageId, const RdbTableDefinition &table);
+
 private:
   UpdateTableAction &action;
 };

@@ -1,5 +1,5 @@
-#include "../../adapter/CatalogTablePortFacade.h"
 #include "../../../CatalogService/test/CatalogActionTestSupport.h"
+#include "../../adapter/CatalogTablePortFacade.h"
 
 #include <gtest/gtest.h>
 

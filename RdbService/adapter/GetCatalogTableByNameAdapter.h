@@ -10,6 +10,7 @@ public:
   explicit GetCatalogTableByNameAdapter(GetTableByNameAction &action);
   RdbTableDefinition getTableByName(uint32_t catalogRootPageId,
                                     const std::string &tableName);
+
 private:
   GetTableByNameAction &action;
 };
