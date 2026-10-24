@@ -61,6 +61,7 @@ set(UNIDB_SOURCES
     TupleService/actions/CreateTuplePageAction.cpp
     TupleService/actions/CreateTupleAction.cpp
     TupleService/actions/GetTupleAction.cpp
+    TupleService/actions/GetAllTuplesAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
@@ -128,6 +129,7 @@ add_executable(tests
     TupleService/test/GetTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
     TupleService/test/GetTupleAction/RejectsDeletedSlotAndUnpinsPageTest.cpp
     TupleService/test/GetTupleAction/PropagatesFetchFailureWithoutUnpinningTest.cpp
+    TupleService/test/GetAllTuplesAction/ReturnsLiveTuplesAndUnpinsPageTest.cpp
     TupleService/test/DeleteTupleAction/DeletesTupleAndPersistsPageTest.cpp
     TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
     TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
