@@ -135,7 +135,13 @@ add_executable(tests
     TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
     TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
     TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
-    SpaceMapService/test/GetTablePagesAction/EnumeratesTuplePagesAndHandlesFailuresTest.cpp
+    SpaceMapService/test/GetTablePagesAction/ReturnsTuplePagesFromSingleSpaceMapPageTest.cpp
+    SpaceMapService/test/GetTablePagesAction/TraversesChainedSpaceMapPagesTest.cpp
+    SpaceMapService/test/GetTablePagesAction/RejectsCycleWithoutLeakingPinsTest.cpp
+    SpaceMapService/test/GetTablePagesAction/PropagatesFetchFailureWithoutUnpinningMissingPageTest.cpp
+    SpaceMapService/test/GetTablePagesAction/ReturnsEmptyInventoryWhenRootPageIdIsInvalidTest.cpp
+    SpaceMapService/test/GetTablePagesAction/RejectsCorruptEntryCountAndUnpinsPageTest.cpp
+    SpaceMapService/test/GetTablePagesAction/GetTablePagesActionTestSupport.h
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
