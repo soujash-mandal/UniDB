@@ -54,6 +54,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/DropTableAction.cpp
 
     SpaceMapService/domain/SpaceMapPage.cpp
+    SpaceMapService/actions/CreateSpaceMapPageAction.cpp
     SpaceMapService/actions/FindPageWithSpaceAction.cpp
     SpaceMapService/actions/GetTablePagesAction.cpp
 
@@ -73,6 +74,8 @@ set(UNIDB_SOURCES
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CatalogTableAdapter.cpp
+    RdbService/adapter/SpaceMapAdapter.cpp
+    RdbService/adapter/TuplePageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
 
     SQLParser/SqlLexer.cpp
