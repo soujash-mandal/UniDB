@@ -54,7 +54,6 @@ set(UNIDB_SOURCES
     CatalogService/actions/DropTableAction.cpp
 
     SpaceMapService/domain/SpaceMapPage.cpp
-    SpaceMapService/actions/CreateSpaceMapPageAction.cpp
     SpaceMapService/actions/FindPageWithSpaceAction.cpp
     SpaceMapService/actions/GetTablePagesAction.cpp
 
@@ -73,7 +72,9 @@ set(UNIDB_SOURCES
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
-    RdbService/adapter/CatalogTableAdapter.cpp
+    RdbService/adapter/CreateCatalogTableAdapter.cpp
+    RdbService/adapter/GetCatalogTableByNameAdapter.cpp
+    RdbService/adapter/UpdateCatalogTableAdapter.cpp
     RdbService/adapter/SpaceMapAdapter.cpp
     RdbService/adapter/TuplePageAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
@@ -138,7 +139,6 @@ add_executable(tests
     TupleService/test/GetTupleAction/RejectsDeletedSlotAndUnpinsPageTest.cpp
     TupleService/test/GetTupleAction/PropagatesFetchFailureWithoutUnpinningTest.cpp
     TupleService/test/GetAllTuplesAction/ReturnsLiveTuplesAndUnpinsPageTest.cpp
-    RdbService/test/TuplePageAdapter/DelegatesTuplePageAndRowOperationsTest.cpp
     TupleService/test/GetAllTuplesAction/SkipsDeletedTuplesTest.cpp
     TupleService/test/GetAllTuplesAction/ReturnsEmptyForEmptyPageTest.cpp
     TupleService/test/GetAllTuplesAction/DoesNotUnpinWhenFetchFailsTest.cpp
@@ -149,7 +149,6 @@ add_executable(tests
     TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
     TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
     TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
-    RdbService/test/SpaceMapAdapter/DelegatesPageCreationAndTablePageDiscoveryTest.cpp
     SpaceMapService/test/FindPageWithSpaceAction/ReturnsTuplePageAndOwningSpaceMapPageWhenSpaceIsAvailableTest.cpp
     SpaceMapService/test/FindPageWithSpaceAction/ReturnsOwningSpaceMapPageFoundLaterInChainTest.cpp
     SpaceMapService/test/FindPageWithSpaceAction/ReturnsOwningSpaceMapPageWhenItCreatesAndRegistersTuplePageTest.cpp
@@ -168,7 +167,11 @@ add_executable(tests
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
-    RdbService/test/CatalogTableAdapter/CatalogTableAdapterTest.cpp
+    RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
+    RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
+    RdbService/test/UpdateCatalogTableAdapter/PreservesExplicitSpaceMapPageIdWhenUpdatingTest.cpp
+    RdbService/test/SpaceMapAdapter/DelegatesPageCreationAndTablePageDiscoveryTest.cpp
+    RdbService/test/TuplePageAdapter/DelegatesTuplePageAndRowOperationsTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/PropagatesAllocationFailureWithoutPinningTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/UnpinsAllocatedPageWhenWriteFailsTest.cpp
