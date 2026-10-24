@@ -38,9 +38,7 @@ public:
     return nextPageId++;
   }
 
-  CreateTuplePageResult createTuplePage() override {
-    return {300, 7000};
-  }
+  CreateTuplePageResult createTuplePage() override { return {300, 7000}; }
 
   std::map<SpaceMapPageId, SpaceMapPage> pages;
   std::unordered_map<SpaceMapPageId, unsigned int> pinCounts;
