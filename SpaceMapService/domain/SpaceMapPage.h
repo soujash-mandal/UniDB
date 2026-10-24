@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 using SpaceMapPageId = uint32_t;
 using TuplePageId = uint32_t;
@@ -36,6 +37,7 @@ public:
   void setNextPageId(SpaceMapPageId pageId);
 
   SpaceMapPageId findPageWithSpace(uint32_t requiredSpace);
+  std::vector<TuplePageId> getPageIds() const;
   void insert(SpaceMapPageId pageId, uint32_t freeSpace);
   void update(SpaceMapPageId pageId, uint32_t freeSpace);
   bool isFull();
