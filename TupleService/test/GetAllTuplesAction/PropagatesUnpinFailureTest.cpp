@@ -4,7 +4,8 @@
 
 #include <stdexcept>
 
-// Scenario 6: Propagate unpin failure rather than returning an apparently successful scan.
+// Scenario 6: Propagate unpin failure rather than returning an apparently
+// successful scan.
 TEST(GetAllTuplesActionTest, PropagatesUnpinFailure) {
   GetAllTuplesFetchPort fetch;
   fetch.page.insert({'x'});

@@ -14,8 +14,7 @@ TEST(GetAllTuplesActionTest, SkipsDeletedTuples) {
   GetAllTuplesUnpinPort unpin;
   GetAllTuplesAction action(fetch, unpin);
 
-  EXPECT_EQ(action.execute(13),
-            (std::vector<std::vector<char>>{{'a'}, {'c'}}));
+  EXPECT_EQ(action.execute(13), (std::vector<std::vector<char>>{{'a'}, {'c'}}));
   EXPECT_EQ(unpin.calls, 1);
   EXPECT_EQ(unpin.lastPageId, 13);
 }

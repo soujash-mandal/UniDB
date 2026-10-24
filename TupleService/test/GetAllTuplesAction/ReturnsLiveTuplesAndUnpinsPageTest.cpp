@@ -4,7 +4,8 @@
 
 #include <vector>
 
-// Scenario 1: Return live tuples in their original slot order and unpin the page.
+// Scenario 1: Return live tuples in their original slot order and unpin the
+// page.
 TEST(GetAllTuplesActionTest, ReturnsLiveTuplesInSlotOrder) {
   GetAllTuplesFetchPort fetch;
   fetch.page.insert({'a'});

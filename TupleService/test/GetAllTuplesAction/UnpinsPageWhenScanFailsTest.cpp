@@ -9,12 +9,13 @@
 // Scenario 5: Release the fetched page even when tuple-page validation fails.
 TEST(GetAllTuplesActionTest, UnpinsPageWhenScanFails) {
   GetAllTuplesFetchPort fetch;
-  // A valid-format header whose slot count cannot fit before the free-space boundary.
+  // A valid-format header whose slot count cannot fit before the free-space
+  // boundary.
   const uint32_t corruptSlotCount = 0x80000001U;
   const uint32_t invalidFreeSpaceOffset = 8U;
   std::memcpy(fetch.page.data(), &corruptSlotCount, sizeof(corruptSlotCount));
-  std::memcpy(fetch.page.data() + sizeof(uint32_t),
-              &invalidFreeSpaceOffset, sizeof(invalidFreeSpaceOffset));
+  std::memcpy(fetch.page.data() + sizeof(uint32_t), &invalidFreeSpaceOffset,
+              sizeof(invalidFreeSpaceOffset));
   GetAllTuplesUnpinPort unpin;
   GetAllTuplesAction action(fetch, unpin);
 
