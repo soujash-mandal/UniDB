@@ -8,7 +8,7 @@ public:
   explicit UpdateRdbMetadataPageAdapter(
       UpdateRdbMetadataPageAction &updateRdbMetadataPageAction);
 
-  void updateRdbMetadataPage(CatalogPageId pageId,
+  void updateRdbMetadataPage(MetadataPageId pageId,
                              CatalogPageId catalogRootPageId) override;
 
 private:
