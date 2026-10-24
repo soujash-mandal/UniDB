@@ -9,8 +9,7 @@
 #include <vector>
 
 namespace {
-class InMemorySpaceMapStore final : public FetchPagePort,
-                                    public UnpinPagePort {
+class InMemorySpaceMapStore final : public FetchPagePort, public UnpinPagePort {
 public:
   SpaceMapPage fetchPage(SpaceMapPageId pageId) override {
     auto it = pages.find(pageId);
@@ -67,8 +66,7 @@ TEST(GetTablePagesActionTest, TraversesChainedSpaceMapPages) {
   store.seed(11, second);
   GetTablePagesAction action(store, store);
 
-  EXPECT_EQ(action.execute(10),
-            (std::vector<TuplePageId>{100, 200, 201}));
+  EXPECT_EQ(action.execute(10), (std::vector<TuplePageId>{100, 200, 201}));
   EXPECT_EQ(store.unpinnedPages, (std::vector<SpaceMapPageId>{10, 11}));
   EXPECT_FALSE(store.hasPinnedPages());
 }
@@ -90,7 +88,8 @@ TEST(GetTablePagesActionTest, RejectsCycleWithoutLeakingPins) {
 }
 
 // Scenario 4: A failed fetch must not cause an unpin for an unfetched page.
-TEST(GetTablePagesActionTest, PropagatesFetchFailureWithoutUnpinningMissingPage) {
+TEST(GetTablePagesActionTest,
+     PropagatesFetchFailureWithoutUnpinningMissingPage) {
   InMemorySpaceMapStore store;
   GetTablePagesAction action(store, store);
 

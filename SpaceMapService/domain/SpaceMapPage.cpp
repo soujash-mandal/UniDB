@@ -85,8 +85,7 @@ std::vector<TuplePageId> SpaceMapPage::getPageIds() const {
   pageIds.reserve(header.entryCount);
   for (uint32_t i = 0; i < header.entryCount; ++i) {
     Entry entry;
-    std::memcpy(&entry, bytes + HEADER_SIZE + i * sizeof(Entry),
-                sizeof(Entry));
+    std::memcpy(&entry, bytes + HEADER_SIZE + i * sizeof(Entry), sizeof(Entry));
     if (!isValidPage(entry.pageId)) {
       throw std::runtime_error("Invalid tuple page ID in SpaceMapPage");
     }
