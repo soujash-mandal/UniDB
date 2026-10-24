@@ -70,9 +70,11 @@ set(UNIDB_SOURCES
     TupleService/actions/DeleteTupleAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
+    RdbService/domain/RdbRowCodec.cpp
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/actions/RdbCreateTableAction.cpp
     RdbService/actions/GetTableDefinitionAction.cpp
+    RdbService/actions/SelectAllRowsAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CatalogTableAdapter.cpp
@@ -174,6 +176,10 @@ add_executable(tests
     RdbService/test/RdbCreateTableAction/RejectsDuplicateColumnsBeforeAllocatingTableIdTest.cpp
     RdbService/test/GetTableDefinitionAction/ReturnsTableDefinitionFromCatalogPortTest.cpp
     RdbService/test/GetTableDefinitionAction/RejectsEmptyTableNameBeforeMetadataLookupTest.cpp
+    RdbService/test/RdbRowCodec/EncodesAndDecodesIntegerAndTextColumnsTest.cpp
+    RdbService/test/RdbRowCodec/RejectsValueCountThatDoesNotMatchSchemaTest.cpp
+    RdbService/test/SelectAllRowsAction/ReturnsRowsFromEveryTuplePageTest.cpp
+    RdbService/test/SelectAllRowsAction/ReturnsEmptyWhenTableHasNoSpaceMapRootTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CatalogTableAdapter/CatalogTableAdapterTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp

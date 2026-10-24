@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <variant>
 #include <vector>
 
 // RDBService-owned catalog model. Adapters translate this model to and from
@@ -22,3 +23,6 @@ struct RdbTableDefinition {
   std::vector<RdbColumn> columns;
   uint32_t firstSpaceMapPageId = UINT32_MAX;
 };
+
+using RdbValue = std::variant<int64_t, std::string>;
+using RdbRow = std::vector<RdbValue>;
