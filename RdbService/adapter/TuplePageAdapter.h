@@ -16,6 +16,7 @@ public:
   std::vector<char> getTuple(uint32_t tuplePageId,
                              uint32_t tupleSlotId) override;
   std::vector<std::vector<char>> getAllTuples(uint32_t tuplePageId) override;
+
 private:
   CreateTuplePageAction &createTuplePageAction;
   CreateTupleAction &createTupleAction;

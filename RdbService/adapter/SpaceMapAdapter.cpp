@@ -9,8 +9,9 @@ SpaceMapAdapter::SpaceMapAdapter(
 uint32_t SpaceMapAdapter::createSpaceMapPage() {
   return createSpaceMapPageAction.execute();
 }
-RdbFindPageWithSpaceResult SpaceMapAdapter::findPageWithSpace(
-    uint32_t rootSpaceMapPageId, uint32_t requiredSpace) {
+RdbFindPageWithSpaceResult
+SpaceMapAdapter::findPageWithSpace(uint32_t rootSpaceMapPageId,
+                                   uint32_t requiredSpace) {
   const auto result =
       findPageWithSpaceAction.execute(rootSpaceMapPageId, requiredSpace);
   return {result.tuplePageId, result.spaceMapPageId};

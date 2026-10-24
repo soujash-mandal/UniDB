@@ -9,9 +9,10 @@ public:
                   FindPageWithSpaceAction &findPageWithSpaceAction,
                   GetTablePagesAction &getTablePagesAction);
   uint32_t createSpaceMapPage() override;
-  RdbFindPageWithSpaceResult findPageWithSpace(
-      uint32_t rootSpaceMapPageId, uint32_t requiredSpace) override;
+  RdbFindPageWithSpaceResult findPageWithSpace(uint32_t rootSpaceMapPageId,
+                                               uint32_t requiredSpace) override;
   std::vector<uint32_t> getTablePages(uint32_t rootSpaceMapPageId) override;
+
 private:
   CreateSpaceMapPageAction &createSpaceMapPageAction;
   FindPageWithSpaceAction &findPageWithSpaceAction;
