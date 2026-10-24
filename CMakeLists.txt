@@ -72,6 +72,10 @@ set(UNIDB_SOURCES
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
+    RdbService/adapter/CreateCatalogTableAdapter.cpp
+    RdbService/adapter/GetCatalogTableByNameAdapter.cpp
+    RdbService/adapter/UpdateCatalogTableAdapter.cpp
+    RdbService/adapter/CatalogTablePortFacade.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
 
     SQLParser/SqlLexer.cpp
@@ -162,6 +166,7 @@ add_executable(tests
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
+    RdbService/test/CatalogTableAdapter/CatalogTableAdapterTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/PropagatesAllocationFailureWithoutPinningTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/UnpinsAllocatedPageWhenWriteFailsTest.cpp
