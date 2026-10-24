@@ -9,11 +9,11 @@ GetTablePagesAction::GetTablePagesAction(FetchPagePort &fetchPagePort,
 
 std::vector<TuplePageId>
 GetTablePagesAction::execute(SpaceMapPageId rootSpaceMapPageId) {
+  std::vector<TuplePageId> tuplePageIds;
   if (!SpaceMapPage::isValidPage(rootSpaceMapPageId)) {
-    throw std::runtime_error("Invalid root SpaceMap page ID");
+    return tuplePageIds;
   }
 
-  std::vector<TuplePageId> tuplePageIds;
   std::unordered_set<SpaceMapPageId> visitedSpaceMapPages;
   SpaceMapPageId currentPageId = rootSpaceMapPageId;
 
