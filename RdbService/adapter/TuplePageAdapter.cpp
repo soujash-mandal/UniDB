@@ -7,10 +7,10 @@
 
 #include <utility>
 
-TuplePageAdapter::TuplePageAdapter(
-    CreateTuplePageAction &createTuplePageAction,
-    CreateTupleAction &createTupleAction, GetTupleAction &getTupleAction,
-    GetAllTuplesAction &getAllTuplesAction)
+TuplePageAdapter::TuplePageAdapter(CreateTuplePageAction &createTuplePageAction,
+                                   CreateTupleAction &createTupleAction,
+                                   GetTupleAction &getTupleAction,
+                                   GetAllTuplesAction &getAllTuplesAction)
     : createTuplePageAction(createTuplePageAction),
       createTupleAction(createTupleAction), getTupleAction(getTupleAction),
       getAllTuplesAction(getAllTuplesAction) {}

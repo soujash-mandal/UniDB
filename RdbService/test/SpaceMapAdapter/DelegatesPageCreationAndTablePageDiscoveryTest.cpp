@@ -33,9 +33,7 @@ public:
     pages[pageId] = page;
   }
 
-  void unpinPage(SpaceMapPageId pageId) override {
-    unpinned.push_back(pageId);
-  }
+  void unpinPage(SpaceMapPageId pageId) override { unpinned.push_back(pageId); }
 
   SpaceMapPage fetchPage(SpaceMapPageId pageId) override {
     const auto it = pages.find(pageId);
