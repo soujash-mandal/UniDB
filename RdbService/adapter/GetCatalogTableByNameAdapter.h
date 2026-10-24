@@ -1,15 +1,14 @@
 #pragma once
 
+#include "../port/GetCatalogTableByNamePort.h"
 #include "../../CatalogService/actions/GetTableByNameAction.h"
-#include "../domain/RdbTable.h"
 
-#include <string>
-
-class GetCatalogTableByNameAdapter final {
+class GetCatalogTableByNameAdapter final : public GetCatalogTableByNamePort {
 public:
   explicit GetCatalogTableByNameAdapter(GetTableByNameAction &action);
+
   RdbTableDefinition getTableByName(uint32_t catalogRootPageId,
-                                    const std::string &tableName);
+                                    const std::string &tableName) override;
 
 private:
   GetTableByNameAction &action;
