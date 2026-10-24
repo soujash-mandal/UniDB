@@ -54,6 +54,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/DropTableAction.cpp
 
     SpaceMapService/domain/SpaceMapPage.cpp
+    SpaceMapService/actions/CreateSpaceMapPageAction.cpp
     SpaceMapService/actions/FindPageWithSpaceAction.cpp
     SpaceMapService/actions/GetTablePagesAction.cpp
 
