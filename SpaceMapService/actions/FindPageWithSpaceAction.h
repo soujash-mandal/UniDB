@@ -1,10 +1,16 @@
 #pragma once
 
+#include "../domain/SpaceMapPage.h"
 #include "../port/CreateTuplePagePort.h"
 #include "../port/FetchPagePort.h"
 #include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
 #include "../port/WritePagePort.h"
+
+struct FindPageWithSpaceResult {
+  TuplePageId tuplePageId;
+  SpaceMapPageId spaceMapPageId;
+};
 
 class FindPageWithSpaceAction {
 public:
@@ -14,8 +20,8 @@ public:
                           NewPagePort &newPagePort,
                           CreateTuplePagePort &createTuplePagePort);
 
-  TuplePageId execute(SpaceMapPageId rootSpaceMapPageId,
-                      uint32_t requiredSpace);
+  FindPageWithSpaceResult execute(SpaceMapPageId rootSpaceMapPageId,
+                                  uint32_t requiredSpace);
 
 private:
   FetchPagePort &fetchPagePort;
