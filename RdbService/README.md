@@ -9,6 +9,7 @@ translate those contracts to public Actions exposed by lower-level services.
 - `InitializeRdbAction` — initialize relational database metadata and catalog root.
 - `RdbCreateTableAction` — validate and persist a table definition.
 - `GetTableDefinitionAction` — retrieve a table definition by name.
+- `SelectAllRowsAction` — read and decode rows across all tuple pages for a table.
 
 ## Ports
 
@@ -29,6 +30,9 @@ translate those contracts to public Actions exposed by lower-level services.
 - `CatalogTableAdapter` — translates RDB-owned table definitions to and from CatalogService public Actions.
 - `SpaceMapAdapter` — delegates page discovery and SpaceMap operations to SpaceMapService public Actions.
 - `TuplePageAdapter` — delegates tuple-page and row operations to TupleService public Actions.
+
+`RdbRowCodec` owns the V1 row byte format; it supports INT, BIGINT, and VARCHAR
+columns for the current SQL subset. Unsupported types fail explicitly.
 
 This service must not call BufferPoolManager, FreePageManager, or other services'
 internal ports/adapters directly.

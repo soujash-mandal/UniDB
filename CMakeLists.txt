@@ -70,6 +70,7 @@ set(UNIDB_SOURCES
     TupleService/actions/DeleteTupleAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
 
+    RdbService/domain/RdbRowCodec.cpp
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/actions/RdbCreateTableAction.cpp
     RdbService/actions/GetTableDefinitionAction.cpp
