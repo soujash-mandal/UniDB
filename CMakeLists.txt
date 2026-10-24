@@ -54,6 +54,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/DropTableAction.cpp
 
     SpaceMapService/domain/SpaceMapPage.cpp
+    SpaceMapService/actions/FindPageWithSpaceAction.cpp
     SpaceMapService/actions/GetTablePagesAction.cpp
 
     TupleService/domain/TuplePage.cpp
@@ -143,6 +144,11 @@ add_executable(tests
     TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
     TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
     TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
+    SpaceMapService/test/FindPageWithSpaceAction/ReturnsTuplePageAndOwningSpaceMapPageWhenSpaceIsAvailableTest.cpp
+    SpaceMapService/test/FindPageWithSpaceAction/ReturnsOwningSpaceMapPageFoundLaterInChainTest.cpp
+    SpaceMapService/test/FindPageWithSpaceAction/ReturnsOwningSpaceMapPageWhenItCreatesAndRegistersTuplePageTest.cpp
+    SpaceMapService/test/FindPageWithSpaceAction/LeavesNoAllocationPinAfterExtendingFullSpaceMapChainTest.cpp
+    SpaceMapService/test/FindPageWithSpaceAction/FindPageWithSpaceActionTestSupport.h
     SpaceMapService/test/GetTablePagesAction/ReturnsTuplePagesFromSingleSpaceMapPageTest.cpp
     SpaceMapService/test/GetTablePagesAction/TraversesChainedSpaceMapPagesTest.cpp
     SpaceMapService/test/GetTablePagesAction/RejectsCycleWithoutLeakingPinsTest.cpp
