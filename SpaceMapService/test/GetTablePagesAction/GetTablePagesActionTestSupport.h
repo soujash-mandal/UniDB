@@ -24,6 +24,11 @@ public:
   }
 
   void unpinPage(SpaceMapPageId pageId) override {
+    ++unpinCalls;
+    if (failNextUnpinBeforeRelease) {
+      failNextUnpinBeforeRelease = false;
+      throw std::runtime_error("Simulated unpin failure before releasing pin");
+    }
     if (pinnedPages.erase(pageId) != 1) {
       throw std::runtime_error("SpaceMap page was not pinned");
     }
@@ -39,5 +44,7 @@ public:
   std::map<SpaceMapPageId, SpaceMapPage> pages;
   std::set<SpaceMapPageId> pinnedPages;
   std::vector<SpaceMapPageId> unpinnedPages;
+  bool failNextUnpinBeforeRelease = false;
+  int unpinCalls = 0;
 };
 } // namespace
