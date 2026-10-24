@@ -53,6 +53,9 @@ set(UNIDB_SOURCES
     CatalogService/actions/GetTableAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
+    SpaceMapService/domain/SpaceMapPage.cpp
+    SpaceMapService/actions/GetTablePagesAction.cpp
+
     TupleService/domain/TuplePage.cpp
     TupleService/adapter/BufferPoolFetchPageAdapter.cpp
     TupleService/adapter/BufferPoolNewPageAdapter.cpp
@@ -132,6 +135,7 @@ add_executable(tests
     TupleService/test/DeleteTupleAction/RejectsOutOfRangeSlotAndUnpinsPageTest.cpp
     TupleService/test/DeleteTupleAction/UnpinsWhenPageWriteFailsTest.cpp
     TupleService/test/DeleteTupleAction/PropagatesFetchFailureTest.cpp
+    SpaceMapService/test/GetTablePagesAction/EnumeratesTuplePagesAndHandlesFailuresTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
