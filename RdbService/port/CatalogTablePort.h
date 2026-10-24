@@ -13,5 +13,6 @@ public:
   virtual RdbTableDefinition getTableByName(uint32_t catalogRootPageId,
                                             const std::string &tableName) = 0;
   virtual void updateTable(uint32_t catalogRootPageId,
-                           const RdbTableDefinition &table) = 0;
+                           const RdbTableDefinition &table,
+                           uint32_t firstSpaceMapPageId) = 0;
 };
