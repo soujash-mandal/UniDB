@@ -48,6 +48,9 @@ FindPageWithSpaceAction::execute(SpaceMapPageId rootSpaceMapPageId,
     nextSpaceMapPageId = newPagePort.newPage();
     SpaceMapPage newSpaceMapPage;
     writePagePort.writePage(nextSpaceMapPageId, newSpaceMapPage);
+    // newPage() returns a pinned page; release that allocation pin before the
+    // next loop iteration fetches the page and acquires its own pin.
+    unpinPagePort.unpinPage(nextSpaceMapPageId);
 
     spaceMapPage.setNextPageId(nextSpaceMapPageId);
     writePagePort.writePage(spaceMapPageId, spaceMapPage);
