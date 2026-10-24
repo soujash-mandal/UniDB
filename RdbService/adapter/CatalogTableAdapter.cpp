@@ -46,9 +46,8 @@ std::vector<Column> toCatalogColumns(const std::vector<RdbColumn> &columns) {
   std::vector<Column> result;
   result.reserve(columns.size());
   for (const auto &column : columns) {
-    result.push_back(
-        Column{column.name, toCatalogType(column.type), column.size,
-               column.nullable});
+    result.push_back(Column{column.name, toCatalogType(column.type),
+                            column.size, column.nullable});
   }
   return result;
 }
@@ -60,7 +59,8 @@ RdbTableDefinition fromCatalogTable(const Table &table) {
   result.firstSpaceMapPageId = table.firstFreeSpaceMapPageId;
   result.columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
-    result.columns.push_back(RdbColumn{column.name, fromCatalogType(column.type),
+    result.columns.push_back(RdbColumn{column.name,
+                                       fromCatalogType(column.type),
                                        column.size, column.nullable});
   }
   return result;
@@ -84,15 +84,16 @@ CatalogTableAdapter::CatalogTableAdapter(
       getTableByNameAction(getTableByNameAction),
       updateTableAction(updateTableAction) {}
 
-uint32_t CatalogTableAdapter::createTable(
-    uint32_t catalogRootPageId, uint32_t tableId,
-    const RdbTableDefinition &table) {
+uint32_t CatalogTableAdapter::createTable(uint32_t catalogRootPageId,
+                                          uint32_t tableId,
+                                          const RdbTableDefinition &table) {
   return createTableAction.execute(catalogRootPageId, tableId, table.name,
                                    toCatalogColumns(table.columns));
 }
 
-RdbTableDefinition CatalogTableAdapter::getTableByName(
-    uint32_t catalogRootPageId, const std::string &tableName) {
+RdbTableDefinition
+CatalogTableAdapter::getTableByName(uint32_t catalogRootPageId,
+                                    const std::string &tableName) {
   return fromCatalogTable(
       getTableByNameAction.execute(catalogRootPageId, tableName));
 }

@@ -8,8 +8,8 @@
 class CatalogTableAdapter final : public CatalogTablePort {
 public:
   CatalogTableAdapter(CreateTableAction &createTableAction,
-                     GetTableByNameAction &getTableByNameAction,
-                     UpdateTableAction &updateTableAction);
+                      GetTableByNameAction &getTableByNameAction,
+                      UpdateTableAction &updateTableAction);
 
   uint32_t createTable(uint32_t catalogRootPageId, uint32_t tableId,
                        const RdbTableDefinition &table) override;
