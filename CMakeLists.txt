@@ -75,8 +75,13 @@ set(UNIDB_SOURCES
     RdbService/adapter/CreateCatalogTableAdapter.cpp
     RdbService/adapter/GetCatalogTableByNameAdapter.cpp
     RdbService/adapter/UpdateCatalogTableAdapter.cpp
-    RdbService/adapter/SpaceMapAdapter.cpp
-    RdbService/adapter/TuplePageAdapter.cpp
+    RdbService/adapter/CreateSpaceMapPageAdapter.cpp
+    RdbService/adapter/FindPageWithSpaceAdapter.cpp
+    RdbService/adapter/GetTablePagesAdapter.cpp
+    RdbService/adapter/CreateTuplePageAdapter.cpp
+    RdbService/adapter/CreateTupleAdapter.cpp
+    RdbService/adapter/GetTupleAdapter.cpp
+    RdbService/adapter/GetAllTuplesAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
 
     SQLParser/SqlLexer.cpp
@@ -170,8 +175,13 @@ add_executable(tests
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
     RdbService/test/UpdateCatalogTableAdapter/PreservesExplicitSpaceMapPageIdWhenUpdatingTest.cpp
-    RdbService/test/SpaceMapAdapter/DelegatesPageCreationAndTablePageDiscoveryTest.cpp
-    RdbService/test/TuplePageAdapter/DelegatesTuplePageAndRowOperationsTest.cpp
+    RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
+    RdbService/test/FindPageWithSpaceAdapter/DelegatesPageDiscoveryTest.cpp
+    RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp
+    RdbService/test/CreateTuplePageAdapter/DelegatesTuplePageCreationTest.cpp
+    RdbService/test/CreateTupleAdapter/DelegatesTupleInsertionTest.cpp
+    RdbService/test/GetTupleAdapter/DelegatesTupleLookupTest.cpp
+    RdbService/test/GetAllTuplesAdapter/DelegatesTupleScanTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/PropagatesAllocationFailureWithoutPinningTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/UnpinsAllocatedPageWhenWriteFailsTest.cpp
