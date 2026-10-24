@@ -72,7 +72,6 @@ set(UNIDB_SOURCES
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
-    RdbService/adapter/CatalogTableAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
 
     SQLParser/SqlLexer.cpp
