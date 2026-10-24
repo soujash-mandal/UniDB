@@ -5,6 +5,6 @@ UpdateRdbMetadataPageAdapter::UpdateRdbMetadataPageAdapter(
     : updateRdbMetadataPageAction(updateRdbMetadataPageAction) {}
 
 void UpdateRdbMetadataPageAdapter::updateRdbMetadataPage(
-    CatalogPageId pageId, CatalogPageId catalogRootPageId) {
+    MetadataPageId pageId, CatalogPageId catalogRootPageId) {
   updateRdbMetadataPageAction.execute(pageId, catalogRootPageId);
 }
