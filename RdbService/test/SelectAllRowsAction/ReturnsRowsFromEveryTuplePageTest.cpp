@@ -12,8 +12,7 @@ namespace {
 class FakeSpaceMapPort final : public SpaceMapPort {
 public:
   uint32_t createSpaceMapPage() override { throw std::logic_error("unused"); }
-  RdbFindPageWithSpaceResult
-  findPageWithSpace(uint32_t, uint32_t) override {
+  RdbFindPageWithSpaceResult findPageWithSpace(uint32_t, uint32_t) override {
     throw std::logic_error("unused");
   }
   std::vector<uint32_t> getTablePages(uint32_t rootPageId) override {

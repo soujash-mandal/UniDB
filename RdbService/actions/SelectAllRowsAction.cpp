@@ -4,20 +4,19 @@
 
 #include <stdexcept>
 
-SelectAllRowsAction::SelectAllRowsAction(
-    RdbMetadataPort &metadataPort, CatalogTablePort &catalogTablePort,
-    SpaceMapPort &spaceMapPort, TuplePagePort &tuplePagePort)
+SelectAllRowsAction::SelectAllRowsAction(RdbMetadataPort &metadataPort,
+                                         CatalogTablePort &catalogTablePort,
+                                         SpaceMapPort &spaceMapPort,
+                                         TuplePagePort &tuplePagePort)
     : metadataPort(metadataPort), catalogTablePort(catalogTablePort),
       spaceMapPort(spaceMapPort), tuplePagePort(tuplePagePort) {}
 
-std::vector<RdbRow>
-SelectAllRowsAction::execute(const std::string &tableName) {
+std::vector<RdbRow> SelectAllRowsAction::execute(const std::string &tableName) {
   if (tableName.empty()) {
     throw std::invalid_argument("Table name cannot be empty");
   }
 
-  const CatalogPageId catalogRootPageId =
-      metadataPort.getCatalogRootPageId();
+  const CatalogPageId catalogRootPageId = metadataPort.getCatalogRootPageId();
   const RdbTableDefinition table =
       catalogTablePort.getTableByName(catalogRootPageId, tableName);
   if (table.firstSpaceMapPageId == UINT32_MAX) {

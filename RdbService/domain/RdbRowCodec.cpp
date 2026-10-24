@@ -22,8 +22,7 @@ T readLittleEndian(const std::vector<char> &bytes, std::size_t &offset) {
   using Unsigned = std::make_unsigned_t<T>;
   Unsigned bits = 0;
   for (std::size_t i = 0; i < sizeof(T); ++i) {
-    bits |= static_cast<Unsigned>(
-                static_cast<unsigned char>(bytes[offset + i]))
+    bits |= static_cast<Unsigned>(static_cast<unsigned char>(bytes[offset + i]))
             << (i * 8U);
   }
   offset += sizeof(T);
@@ -64,8 +63,7 @@ std::vector<char> RdbRowCodec::encode(const RdbTableDefinition &table,
       if (value->size() > std::numeric_limits<uint32_t>::max()) {
         throw std::length_error("Text value exceeds the V1 row size limit");
       }
-      appendLittleEndian<uint32_t>(bytes,
-                                   static_cast<uint32_t>(value->size()));
+      appendLittleEndian<uint32_t>(bytes, static_cast<uint32_t>(value->size()));
       bytes.insert(bytes.end(), value->begin(), value->end());
     } else {
       throw std::invalid_argument("Unsupported V1 row column type");
@@ -81,8 +79,8 @@ RdbRow RdbRowCodec::decode(const RdbTableDefinition &table,
   std::size_t offset = 0;
   for (const auto &column : table.columns) {
     if (column.type == RdbDataType::INT) {
-      row.emplace_back(static_cast<int64_t>(readLittleEndian<int32_t>(bytes,
-                                                                      offset)));
+      row.emplace_back(
+          static_cast<int64_t>(readLittleEndian<int32_t>(bytes, offset)));
     } else if (column.type == RdbDataType::BIGINT) {
       row.emplace_back(readLittleEndian<int64_t>(bytes, offset));
     } else if (column.type == RdbDataType::VARCHAR) {
@@ -91,10 +89,11 @@ RdbRow RdbRowCodec::decode(const RdbTableDefinition &table,
         throw std::runtime_error("Tuple text value is truncated");
       }
       if (column.size != 0 && length > column.size) {
-        throw std::runtime_error("Tuple text value exceeds VARCHAR column size");
+        throw std::runtime_error(
+            "Tuple text value exceeds VARCHAR column size");
       }
-      row.emplace_back(std::string(bytes.begin() + offset,
-                                   bytes.begin() + offset + length));
+      row.emplace_back(
+          std::string(bytes.begin() + offset, bytes.begin() + offset + length));
       offset += length;
     } else {
       throw std::invalid_argument("Unsupported V1 row column type");

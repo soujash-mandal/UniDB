@@ -13,8 +13,7 @@ class SelectAllRowsAction {
 public:
   SelectAllRowsAction(RdbMetadataPort &metadataPort,
                       CatalogTablePort &catalogTablePort,
-                      SpaceMapPort &spaceMapPort,
-                      TuplePagePort &tuplePagePort);
+                      SpaceMapPort &spaceMapPort, TuplePagePort &tuplePagePort);
 
   std::vector<RdbRow> execute(const std::string &tableName);
 
