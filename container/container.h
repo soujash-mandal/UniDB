@@ -51,9 +51,13 @@
 #include "../TupleService/adapter/BufferPoolWritePageAdapter.h"
 
 #include "../RdbService/actions/InitializeRdbAction.h"
+#include "../RdbService/actions/CreateTableAction.h"
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
 #include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/GetCatalogRootPageIdAdapter.h"
+#include "../RdbService/adapter/AllocateNextTableIdAdapter.h"
+#include "../RdbService/adapter/CreateCatalogTableAdapter.h"
 
 class Container {
 public:
@@ -69,6 +73,7 @@ public:
   WritePageAction &writePageAction() { return writePage; }
   CreateFpmPageAction &createFpmPageAction() { return createFpmPage; }
   InitializeRdbAction &initializeRdbAction() { return initializeRdb; }
+  RdbService::CreateTableAction &rdbCreateTableAction() { return rdbCreateTable; }
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
     return getCatalogRootId;
   }
@@ -135,4 +140,9 @@ private:
 
   InitializeRdbAction initializeRdb;
   GetCatalogRootPageIdAction getCatalogRootId;
+
+  GetCatalogRootPageIdAdapter getCatalogRootPageIdAdapter;
+  AllocateNextTableIdAdapter allocateNextTableIdAdapter;
+  CreateCatalogTableAdapter createCatalogTableAdapter;
+  RdbService::CreateTableAction rdbCreateTable;
 };
