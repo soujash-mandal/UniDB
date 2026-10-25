@@ -2,6 +2,7 @@
 
 #include "../domain/RdbTable.h"
 
+#include <iterator>
 #include <limits>
 #include <stdexcept>
 
