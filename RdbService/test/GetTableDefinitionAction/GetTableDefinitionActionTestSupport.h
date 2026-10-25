@@ -20,7 +20,8 @@ public:
 
 class FakeGetCatalogTableByNamePort final : public GetCatalogTableByNamePort {
 public:
-  RdbTableDefinition result{42, "events",
+  RdbTableDefinition result{42,
+                            "events",
                             {{"event_id", RdbDataType::INT, 4, false},
                              {"description", RdbDataType::VARCHAR, 120, true}},
                             91};

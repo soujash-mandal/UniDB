@@ -2,7 +2,8 @@
 
 #include <gtest/gtest.h>
 
-// Scenario: the requested table name is resolved using the catalog root from metadata.
+// Scenario: the requested table name is resolved using the catalog root from
+// metadata.
 TEST(GetTableDefinitionActionTest, ReturnsDefinitionForRequestedTable) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeGetCatalogTableByNamePort tablePort;
@@ -27,7 +28,8 @@ TEST(GetTableDefinitionActionTest, ReturnsDefinitionForRequestedTable) {
   EXPECT_TRUE(result.columns[1].nullable);
 }
 
-// Scenario: an empty table name is rejected before metadata or catalog dependencies run.
+// Scenario: an empty table name is rejected before metadata or catalog
+// dependencies run.
 TEST(GetTableDefinitionActionTest, RejectsEmptyNameBeforeCallingDependencies) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeGetCatalogTableByNamePort tablePort;
@@ -39,7 +41,8 @@ TEST(GetTableDefinitionActionTest, RejectsEmptyNameBeforeCallingDependencies) {
   EXPECT_EQ(tablePort.calls, 0U);
 }
 
-// Scenario: catalog lookup failures propagate to the caller without being hidden.
+// Scenario: catalog lookup failures propagate to the caller without being
+// hidden.
 TEST(GetTableDefinitionActionTest, PropagatesCatalogLookupFailure) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeGetCatalogTableByNamePort tablePort;

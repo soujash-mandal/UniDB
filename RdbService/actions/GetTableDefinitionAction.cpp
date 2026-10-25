@@ -19,8 +19,7 @@ GetTableDefinitionAction::execute(uint32_t metadataPageId,
 
   const uint32_t catalogRootPageId =
       getCatalogRootPageIdPort.getCatalogRootPageId(metadataPageId);
-  return getCatalogTableByNamePort.getTableByName(catalogRootPageId,
-                                                  tableName);
+  return getCatalogTableByNamePort.getTableByName(catalogRootPageId, tableName);
 }
 
 } // namespace RdbService
