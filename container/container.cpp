@@ -44,7 +44,12 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       updateRdbMetadataPageAdapter(updateRdbMetadataPage),
       initializeRdb(createRdbMetadataPageAdapter, createRootCatalogPageAdapter,
                     updateRdbMetadataPageAdapter),
-      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter) {
+      getCatalogRootId(metadataFetchPageAdapter, metadataUnpinPageAdapter),
+      getCatalogRootPageIdAdapter(getCatalogRootId),
+      allocateNextTableIdAdapter(allocateNextTableId),
+      createCatalogTableAdapter(createTable),
+      rdbCreateTable(getCatalogRootPageIdAdapter, allocateNextTableIdAdapter,
+                     createCatalogTableAdapter) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
