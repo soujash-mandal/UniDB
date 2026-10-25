@@ -10,7 +10,7 @@ translate those contracts to public Actions exposed by lower-level services.
 - `RdbService::CreateTableAction` — validate a table definition, obtain metadata-backed identifiers through RDB-owned boundaries, and persist it through CatalogService.
 - `RdbService::GetTableDefinitionAction` — resolve the catalog root and return a table schema through the RDB-owned catalog lookup boundary.
 - `RdbService::SelectAllRowsAction` — read live rows from every tuple page listed by SpaceMap for a table.
-- `RdbService::InsertRowAction` — initialize a table's SpaceMap root when needed, locate a tuple page with enough space, and insert one encoded row.
+- `RdbService::InsertRowAction` — initialize a table's SpaceMap root when needed, locate a tuple page with enough space, insert one encoded row, and refresh the owning SpaceMap free-space entry.
 
 ## Ports
 
@@ -25,9 +25,9 @@ translate those contracts to public Actions exposed by lower-level services.
 - `GetTablePagesPort` — enumerate tuple pages registered for a table.
 - `RdbCreateTuplePagePort` — create and initialize one tuple page.
 - `CreateTuplePort` — insert one row into a tuple page.
+- `CreateTupleWithFreeSpacePort` — insert one row and return its slot ID plus actual remaining free space from the same page mutation.
 - `CalculateRequiredSpacePort` — calculate the bytes needed for a tuple payload and its slot entry.
 - `UpdateFreeSpacePort` — update a tuple page's recorded free space in SpaceMapService.
-- `GetTuplePageFreeSpacePort` — retrieve a tuple page's actual remaining free space.
 - `GetTuplePort` — retrieve one row by slot.
 - `GetAllTuplesPort` — scan live rows from one tuple page.
 
@@ -44,9 +44,9 @@ translate those contracts to public Actions exposed by lower-level services.
 - `GetTablePagesAdapter` — delegates only to `GetTablePagesAction`.
 - `CreateTuplePageAdapter` — delegates only to `CreateTuplePageAction`.
 - `CreateTupleAdapter` — delegates only to `CreateTupleAction`.
+- `CreateTupleWithFreeSpaceAdapter` — delegates only to `CreateTupleWithFreeSpaceAction`.
 - `CalculateRequiredSpaceAdapter` — delegates only to `CalculateRequiredSpaceAction`.
 - `UpdateFreeSpaceAdapter` — delegates only to `UpdateFreeSpaceAction`.
-- `GetTuplePageFreeSpaceAdapter` — delegates only to `GetTuplePageFreeSpaceAction`.
 - `GetTupleAdapter` — delegates only to `GetTupleAction`.
 - `GetAllTuplesAdapter` — delegates only to `GetAllTuplesAction`.
 
