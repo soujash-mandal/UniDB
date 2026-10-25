@@ -89,7 +89,6 @@ set(UNIDB_SOURCES
     RdbService/adapter/CreateTupleAdapter.cpp
     RdbService/adapter/CalculateRequiredSpaceAdapter.cpp
     RdbService/adapter/UpdateFreeSpaceAdapter.cpp
-    RdbService/adapter/CreateTupleWithFreeSpaceAdapter.cpp
     RdbService/adapter/GetTupleAdapter.cpp
     RdbService/adapter/GetAllTuplesAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
@@ -217,7 +216,6 @@ add_executable(tests
     RdbService/test/CreateTupleAdapter/DelegatesTupleInsertionTest.cpp
     RdbService/test/CalculateRequiredSpaceAdapter/DelegatesRequiredSpaceCalculationTest.cpp
     RdbService/test/UpdateFreeSpaceAdapter/DelegatesFreeSpaceUpdateTest.cpp
-    RdbService/test/CreateTupleWithFreeSpaceAdapter/ReturnsSlotAndRemainingSpaceTest.cpp
     RdbService/test/InsertRowAction/UpdatesSpaceMapFreeSpaceAfterSuccessfulInsertTest.cpp
     RdbService/test/GetTupleAdapter/DelegatesTupleLookupTest.cpp
     RdbService/test/GetAllTuplesAdapter/DelegatesTupleScanTest.cpp
