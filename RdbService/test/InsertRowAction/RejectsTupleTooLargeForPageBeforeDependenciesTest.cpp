@@ -9,11 +9,13 @@ TEST(InsertRowActionTest, RejectsTupleTooLargeForPageBeforeDependencies) {
   FakeInsertTablePort table;
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
+  FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, updateFreeSpace);
+                                     calculateRequiredSpace, findSpace,
+                                     createTuple, updateFreeSpace);
   const std::vector<char> oversizedTuple(8177, 'x');
 
   EXPECT_THROW(action.execute(0, "users", oversizedTuple),
