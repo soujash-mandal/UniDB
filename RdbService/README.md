@@ -10,6 +10,7 @@ translate those contracts to public Actions exposed by lower-level services.
 - `RdbService::CreateTableAction` — validate a table definition, obtain metadata-backed identifiers through RDB-owned boundaries, and persist it through CatalogService.
 - `RdbService::GetTableDefinitionAction` — resolve the catalog root and return a table schema through the RDB-owned catalog lookup boundary.
 - `RdbService::SelectAllRowsAction` — read live rows from every tuple page listed by SpaceMap for a table.
+- `RdbService::InsertRowAction` — initialize a table's SpaceMap root when needed, locate a tuple page with enough space, and insert one encoded row.
 
 ## Ports
 
