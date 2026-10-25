@@ -10,18 +10,16 @@ TEST(InsertRowActionTest, PropagatesPageDiscoveryFailure) {
   table.table = {9, "users", {}, 55};
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
-  FakeInsertTuplePort createTuple;
+  FakeInsertTupleWithFreeSpacePort createTuple;
   class FailingSpaceLookup final : public FindPageWithSpacePort {
   public:
     RdbFindPageWithSpaceResult findPageWithSpace(uint32_t, uint32_t) override {
       throw std::runtime_error("space lookup failed");
     }
   } findSpace;
-  FakeInsertGetFreeSpacePort getFreeSpace;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, getFreeSpace,
-                                     updateFreeSpace);
+                                     findSpace, createTuple, updateFreeSpace);
 
   EXPECT_THROW(action.execute(3, "users", {'x'}), std::runtime_error);
   EXPECT_EQ(createTuple.calls, 0);
