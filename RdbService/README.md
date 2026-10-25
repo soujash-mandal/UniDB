@@ -50,3 +50,5 @@ Port while depending on exactly one corresponding lower-level service public Act
 
 This service must not call BufferPoolManager, FreePageManager, or other services'
 internal ports/adapters directly.
+
+- `UpdateFreeSpacePort` and `UpdateFreeSpaceAdapter` — delegate free-space metadata updates to SpaceMapService.
