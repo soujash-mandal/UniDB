@@ -10,12 +10,10 @@ TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertFindSpacePort findSpace;
-  FakeInsertTuplePort createTuple;
-  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, getFreeSpace,
-                                     updateFreeSpace);
+                                     findSpace, createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'a', 'b'});
 
@@ -29,4 +27,5 @@ TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
   EXPECT_EQ(createTuple.bytes, (std::vector<char>{'a', 'b'}));
   EXPECT_EQ(inserted.tuplePageId, 81);
   EXPECT_EQ(inserted.slotId, 4);
+  EXPECT_EQ(updateFreeSpace.freeSpace, 1234);
 }
