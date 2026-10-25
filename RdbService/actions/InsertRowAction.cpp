@@ -52,13 +52,15 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   const RdbFindPageWithSpaceResult target =
       findPageWithSpacePort.findPageWithSpace(table.firstSpaceMapPageId,
                                               requiredSpace);
-  const uint32_t slotId =
-      createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
-
+  // Persist a newly discovered root only after page discovery succeeds, but
+  // before writing the tuple so a catalog-write failure cannot hide an insert.
   if (createdSpaceMapRoot) {
     updateCatalogTablePort.updateTable(catalogRootPageId, table,
                                        table.firstSpaceMapPageId);
   }
+
+  const uint32_t slotId =
+      createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
   return {target.tuplePageId, slotId};
 }
 
