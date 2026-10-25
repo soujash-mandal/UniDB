@@ -1,6 +1,5 @@
 #include "InsertRowAction.h"
 
-#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -33,8 +32,7 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   if (tableName.empty()) {
     throw std::invalid_argument("Table name must not be empty");
   }
-  if (tupleData.size() >
-      std::numeric_limits<uint32_t>::max() - TUPLE_SLOT_ENTRY_BYTES) {
+  if (tupleData.size() > MAX_TUPLE_BYTES) {
     throw std::invalid_argument("Tuple exceeds the V1 tuple size limit");
   }
 
