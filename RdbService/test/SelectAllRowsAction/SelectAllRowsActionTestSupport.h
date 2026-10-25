@@ -34,9 +34,8 @@ public:
   RdbTableDefinition table;
   bool shouldThrow = false;
 
-  RdbTableDefinition
-  getTableByName(uint32_t requestedRootPageId,
-                 const std::string &requestedTableName) override {
+  RdbTableDefinition getTableByName(uint32_t requestedRootPageId,
+                                    const std::string &requestedTableName) override {
     ++calls;
     catalogRootPageId = requestedRootPageId;
     tableName = requestedTableName;
