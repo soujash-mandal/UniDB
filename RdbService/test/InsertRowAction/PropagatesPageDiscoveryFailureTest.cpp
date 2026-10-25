@@ -10,6 +10,7 @@ TEST(InsertRowActionTest, PropagatesPageDiscoveryFailure) {
   table.table = {9, "users", {}, 55};
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
+  FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertTupleWithFreeSpacePort createTuple;
   class FailingSpaceLookup final : public FindPageWithSpacePort {
   public:
@@ -19,7 +20,8 @@ TEST(InsertRowActionTest, PropagatesPageDiscoveryFailure) {
   } findSpace;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, updateFreeSpace);
+                                     calculateRequiredSpace, findSpace,
+                                     createTuple, updateFreeSpace);
 
   EXPECT_THROW(action.execute(3, "users", {'x'}), std::runtime_error);
   EXPECT_EQ(createTuple.calls, 0);
