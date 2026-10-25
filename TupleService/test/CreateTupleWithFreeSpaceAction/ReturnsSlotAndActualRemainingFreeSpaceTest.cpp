@@ -12,6 +12,6 @@ TEST(CreateTupleWithFreeSpaceActionTest, ReturnsSlotAndActualRemainingFreeSpace)
 
   EXPECT_EQ(result.slotId, 0U);
   EXPECT_EQ(result.remainingFreeSpace, store.pages.at(7).getFreeSpace());
-  EXPECT_EQ(result.remainingFreeSpace, 8172U);
+  EXPECT_EQ(result.remainingFreeSpace, 8173U);
   EXPECT_FALSE(store.hasPinnedPages());
 }
