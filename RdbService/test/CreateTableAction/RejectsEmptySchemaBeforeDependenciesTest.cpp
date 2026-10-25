@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+// Scenario: a table with no columns is rejected before any dependency is called.
 TEST(CreateTableActionTest, RejectsEmptySchemaBeforeCallingDependencies) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeAllocateNextTableIdPort tableIdPort;
