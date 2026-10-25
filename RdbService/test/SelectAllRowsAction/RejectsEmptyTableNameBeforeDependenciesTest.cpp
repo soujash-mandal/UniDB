@@ -17,4 +17,3 @@ TEST(SelectAllRowsActionTest, RejectsEmptyTableNameBeforeDependencies) {
   EXPECT_EQ(pagesPort.calls, 0U);
   EXPECT_EQ(tuplesPort.calls, 0U);
 }
-

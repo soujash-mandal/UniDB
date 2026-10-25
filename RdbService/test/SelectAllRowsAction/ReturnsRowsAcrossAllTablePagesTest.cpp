@@ -28,4 +28,3 @@ TEST(SelectAllRowsActionTest, ReturnsRowsAcrossAllTablePages) {
   EXPECT_EQ(rows[2], (std::vector<char>{'c'}));
   EXPECT_EQ(tuplesPort.requestedPageIds, (std::vector<uint32_t>{101, 202}));
 }
-

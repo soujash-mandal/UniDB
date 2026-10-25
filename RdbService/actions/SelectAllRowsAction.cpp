@@ -11,11 +11,11 @@ namespace RdbService {
 SelectAllRowsAction::SelectAllRowsAction(
     GetCatalogRootPageIdPort &getCatalogRootPageIdPort,
     GetCatalogTableByNamePort &getCatalogTableByNamePort,
-    GetTablePagesPort &getTablePagesPort,
-    GetAllTuplesPort &getAllTuplesPort)
+    GetTablePagesPort &getTablePagesPort, GetAllTuplesPort &getAllTuplesPort)
     : getCatalogRootPageIdPort(getCatalogRootPageIdPort),
       getCatalogTableByNamePort(getCatalogTableByNamePort),
-      getTablePagesPort(getTablePagesPort), getAllTuplesPort(getAllTuplesPort) {}
+      getTablePagesPort(getTablePagesPort), getAllTuplesPort(getAllTuplesPort) {
+}
 
 std::vector<std::vector<char>>
 SelectAllRowsAction::execute(uint32_t metadataPageId,
