@@ -6,8 +6,9 @@ CreateTupleWithFreeSpaceAction::CreateTupleWithFreeSpaceAction(
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
-CreateTupleWithFreeSpaceResult CreateTupleWithFreeSpaceAction::execute(
-    TuplePageId pageId, std::vector<char> tupleData) {
+CreateTupleWithFreeSpaceResult
+CreateTupleWithFreeSpaceAction::execute(TuplePageId pageId,
+                                        std::vector<char> tupleData) {
   TuplePage page = fetchPagePort.fetchPage(pageId);
   TupleSlotId slotId;
   uint32_t remainingFreeSpace;
