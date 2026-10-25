@@ -49,6 +49,9 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
       table.firstSpaceMapPageId == std::numeric_limits<uint32_t>::max();
   if (createdSpaceMapRoot) {
     table.firstSpaceMapPageId = createSpaceMapPagePort.createSpaceMapPage();
+    // Publish the new root before discovery so a discovery failure cannot orphan it.
+    updateCatalogTablePort.updateTable(catalogRootPageId, table,
+                                       table.firstSpaceMapPageId);
   }
 
   const uint32_t requiredSpace =
@@ -56,13 +59,6 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   const RdbFindPageWithSpaceResult target =
       findPageWithSpacePort.findPageWithSpace(table.firstSpaceMapPageId,
                                               requiredSpace);
-  // Persist a newly discovered root only after page discovery succeeds, but
-  // before writing the tuple so a catalog-write failure cannot hide an insert.
-  if (createdSpaceMapRoot) {
-    updateCatalogTablePort.updateTable(catalogRootPageId, table,
-                                       table.firstSpaceMapPageId);
-  }
-
   const uint32_t slotId =
       createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
   const uint32_t remainingFreeSpace =
