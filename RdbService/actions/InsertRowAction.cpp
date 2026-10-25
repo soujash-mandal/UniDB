@@ -1,8 +1,8 @@
 #include "InsertRowAction.h"
 
-#include <limits>
 #include <cstddef>
 #include <exception>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -11,9 +11,8 @@ namespace {
 constexpr std::size_t TUPLE_PAGE_SIZE_BYTES = 8192;
 constexpr std::size_t TUPLE_PAGE_HEADER_BYTES = 8;
 constexpr std::size_t TUPLE_SLOT_ENTRY_BYTES = 8;
-constexpr std::size_t MAX_TUPLE_BYTES = TUPLE_PAGE_SIZE_BYTES -
-                                       TUPLE_PAGE_HEADER_BYTES -
-                                       TUPLE_SLOT_ENTRY_BYTES;
+constexpr std::size_t MAX_TUPLE_BYTES =
+    TUPLE_PAGE_SIZE_BYTES - TUPLE_PAGE_HEADER_BYTES - TUPLE_SLOT_ENTRY_BYTES;
 } // namespace
 
 namespace RdbService {
@@ -122,9 +121,9 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
 
   // Step 10: Return the committed row location and enough metadata to retry
   // the SpaceMap update if spaceMapUpdated is false.
-  return {target.tuplePageId, insertResult.slotId, target.spaceMapPageId,
-          insertResult.remainingFreeSpace, spaceMapUpdated,
-          std::move(spaceMapUpdateError)};
+  return {target.tuplePageId,    insertResult.slotId,
+          target.spaceMapPageId, insertResult.remainingFreeSpace,
+          spaceMapUpdated,       std::move(spaceMapUpdateError)};
 }
 
 } // namespace RdbService

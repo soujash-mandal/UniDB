@@ -2,7 +2,8 @@
 
 #include <gtest/gtest.h>
 
-// Scenario 1: Report the committed row and refresh failure instead of inviting a duplicate retry.
+// Scenario 1: Report the committed row and refresh failure instead of inviting
+// a duplicate retry.
 TEST(InsertRowActionTest, ReturnsCommittedLocationWhenSpaceMapUpdateFails) {
   FakeInsertRootPort root;
   FakeInsertTablePort table;
