@@ -24,7 +24,8 @@ TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
   EXPECT_EQ(update.root, 17);
   EXPECT_EQ(update.spaceMapRoot, 71);
   EXPECT_EQ(calculateRequiredSpace.calls, 1);
-  EXPECT_EQ(calculateRequiredSpace.requestedBytes, (std::vector<char>{'a', 'b'}));
+  EXPECT_EQ(calculateRequiredSpace.requestedBytes,
+            (std::vector<char>{'a', 'b'}));
   EXPECT_EQ(findSpace.root, 71);
   EXPECT_EQ(findSpace.requiredSpace, 10);
   EXPECT_EQ(createTuple.pageId, 81);

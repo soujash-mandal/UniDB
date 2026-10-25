@@ -15,7 +15,8 @@ public:
   virtual ~CreateTupleWithFreeSpacePort() = default;
 
   virtual RdbCreateTupleWithFreeSpaceResult
-  createTupleWithFreeSpace(uint32_t tuplePageId, std::vector<char> tupleData) = 0;
+  createTupleWithFreeSpace(uint32_t tuplePageId,
+                           std::vector<char> tupleData) = 0;
 };
 
 } // namespace RdbService
