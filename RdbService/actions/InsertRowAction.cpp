@@ -4,19 +4,13 @@
 #include <utility>
 
 namespace RdbService {
-namespace {
-constexpr uint32_t TUPLE_SLOT_ENTRY_BYTES = 2 * sizeof(uint32_t);
-constexpr uint32_t TUPLE_PAGE_SIZE_BYTES = 8192;
-constexpr uint32_t TUPLE_PAGE_HEADER_BYTES = 2 * sizeof(uint32_t);
-constexpr uint32_t MAX_TUPLE_BYTES =
-    TUPLE_PAGE_SIZE_BYTES - TUPLE_PAGE_HEADER_BYTES - TUPLE_SLOT_ENTRY_BYTES;
-} // namespace
 
 InsertRowAction::InsertRowAction(
     GetCatalogRootPageIdPort &getCatalogRootPageIdPort,
     GetCatalogTableByNamePort &getCatalogTableByNamePort,
     UpdateCatalogTablePort &updateCatalogTablePort,
     CreateSpaceMapPagePort &createSpaceMapPagePort,
+    CalculateRequiredSpacePort &calculateRequiredSpacePort,
     FindPageWithSpacePort &findPageWithSpacePort,
     CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort,
     UpdateFreeSpacePort &updateFreeSpacePort)
@@ -24,6 +18,7 @@ InsertRowAction::InsertRowAction(
       getCatalogTableByNamePort(getCatalogTableByNamePort),
       updateCatalogTablePort(updateCatalogTablePort),
       createSpaceMapPagePort(createSpaceMapPagePort),
+      calculateRequiredSpacePort(calculateRequiredSpacePort),
       findPageWithSpacePort(findPageWithSpacePort),
       createTupleWithFreeSpacePort(createTupleWithFreeSpacePort),
       updateFreeSpacePort(updateFreeSpacePort) {}
@@ -34,10 +29,9 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   if (tableName.empty()) {
     throw std::invalid_argument("Table name must not be empty");
   }
-  if (tupleData.size() > MAX_TUPLE_BYTES) {
-    throw std::invalid_argument("Tuple exceeds the V1 tuple size limit");
-  }
 
+  const uint32_t requiredSpace =
+      calculateRequiredSpacePort.calculateRequiredSpace(tupleData);
   const uint32_t catalogRootPageId =
       getCatalogRootPageIdPort.getCatalogRootPageId(metadataPageId);
   RdbTableDefinition table =
@@ -52,8 +46,6 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
                                        table.firstSpaceMapPageId);
   }
 
-  const uint32_t requiredSpace =
-      static_cast<uint32_t>(tupleData.size()) + TUPLE_SLOT_ENTRY_BYTES;
   const RdbFindPageWithSpaceResult target =
       findPageWithSpacePort.findPageWithSpace(table.firstSpaceMapPageId,
                                               requiredSpace);
