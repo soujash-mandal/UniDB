@@ -4,7 +4,8 @@
 #include <stdexcept>
 
 TEST(InsertRowActionTest, PropagatesPageDiscoveryFailure) {
-  // Scenario 1: A SpaceMap discovery error is forwarded without attempting tuple insertion.
+  // Scenario 1: A SpaceMap discovery error is forwarded without attempting
+  // tuple insertion.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, 55};

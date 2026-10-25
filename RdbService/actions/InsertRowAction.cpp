@@ -23,14 +23,14 @@ InsertRowAction::InsertRowAction(
       findPageWithSpacePort(findPageWithSpacePort),
       createTuplePort(createTuplePort) {}
 
-InsertedRowLocation InsertRowAction::execute(
-    uint32_t metadataPageId, const std::string &tableName,
-    std::vector<char> tupleData) {
+InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
+                                             const std::string &tableName,
+                                             std::vector<char> tupleData) {
   if (tableName.empty()) {
     throw std::invalid_argument("Table name must not be empty");
   }
-  if (tupleData.size() > std::numeric_limits<uint32_t>::max() -
-                             TUPLE_SLOT_ENTRY_BYTES) {
+  if (tupleData.size() >
+      std::numeric_limits<uint32_t>::max() - TUPLE_SLOT_ENTRY_BYTES) {
     throw std::invalid_argument("Tuple exceeds the V1 tuple size limit");
   }
 

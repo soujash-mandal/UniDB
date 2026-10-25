@@ -23,7 +23,8 @@ public:
   uint32_t requestedRoot = 0;
   std::string requestedName;
   RdbTableDefinition table;
-  RdbTableDefinition getTableByName(uint32_t root, const std::string &name) override {
+  RdbTableDefinition getTableByName(uint32_t root,
+                                    const std::string &name) override {
     ++calls;
     requestedRoot = root;
     requestedName = name;
@@ -60,8 +61,8 @@ public:
   uint32_t root = 0;
   uint32_t requiredSpace = 0;
   RdbFindPageWithSpaceResult result{81, 91};
-  RdbFindPageWithSpaceResult findPageWithSpace(uint32_t requestedRoot,
-                                               uint32_t requestedSpace) override {
+  RdbFindPageWithSpaceResult
+  findPageWithSpace(uint32_t requestedRoot, uint32_t requestedSpace) override {
     ++calls;
     root = requestedRoot;
     requiredSpace = requestedSpace;
@@ -75,7 +76,8 @@ public:
   uint32_t pageId = 0;
   uint32_t slotId = 4;
   std::vector<char> bytes;
-  uint32_t createTuple(uint32_t requestedPageId, std::vector<char> tupleData) override {
+  uint32_t createTuple(uint32_t requestedPageId,
+                       std::vector<char> tupleData) override {
     ++calls;
     pageId = requestedPageId;
     bytes = std::move(tupleData);
