@@ -3,6 +3,7 @@
 #include "../../actions/SelectAllRowsAction.h"
 #include "../../domain/RdbTable.h"
 
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -76,10 +77,10 @@ public:
     return found->second;
   }
 
-  std::vector<std::pair<uint32_t, std::vector<std::vector<char>>>> rowsByPage;
+  std::map<uint32_t, std::vector<std::vector<char>>> rowsByPage;
 };
 
 inline void setRows(FakeSelectAllTuplesPort &port, uint32_t pageId,
                     std::vector<std::vector<char>> rows) {
-  port.rowsByPage.emplace_back(pageId, std::move(rows));
+  port.rowsByPage.emplace(pageId, std::move(rows));
 }
