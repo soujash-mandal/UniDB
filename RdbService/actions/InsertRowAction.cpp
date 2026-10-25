@@ -9,10 +9,9 @@ namespace {
 constexpr uint32_t TUPLE_SLOT_ENTRY_BYTES = 2 * sizeof(uint32_t);
 constexpr uint32_t TUPLE_PAGE_SIZE_BYTES = 8192;
 constexpr uint32_t TUPLE_PAGE_HEADER_BYTES = 2 * sizeof(uint32_t);
-constexpr uint32_t MAX_TUPLE_BYTES = TUPLE_PAGE_SIZE_BYTES -
-                                     TUPLE_PAGE_HEADER_BYTES -
-                                     TUPLE_SLOT_ENTRY_BYTES;
-}
+constexpr uint32_t MAX_TUPLE_BYTES =
+    TUPLE_PAGE_SIZE_BYTES - TUPLE_PAGE_HEADER_BYTES - TUPLE_SLOT_ENTRY_BYTES;
+} // namespace
 
 InsertRowAction::InsertRowAction(
     GetCatalogRootPageIdPort &getCatalogRootPageIdPort,
