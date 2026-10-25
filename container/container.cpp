@@ -48,8 +48,11 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       getCatalogRootPageIdAdapter(getCatalogRootId),
       allocateNextTableIdAdapter(allocateNextTableId),
       createCatalogTableAdapter(createTable),
+      getCatalogTableByNameAdapter(getTableByName),
       rdbCreateTable(getCatalogRootPageIdAdapter, allocateNextTableIdAdapter,
-                     createCatalogTableAdapter) {
+                     createCatalogTableAdapter),
+      rdbGetTableDefinition(getCatalogRootPageIdAdapter,
+                            getCatalogTableByNameAdapter) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
 }
