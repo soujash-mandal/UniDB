@@ -19,6 +19,10 @@ namespace RdbService {
 struct InsertedRowLocation {
   uint32_t tuplePageId;
   uint32_t slotId;
+  uint32_t spaceMapPageId;
+  uint32_t remainingFreeSpace;
+  bool spaceMapUpdated;
+  std::string spaceMapUpdateError;
 };
 
 class InsertRowAction {
