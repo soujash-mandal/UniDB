@@ -200,6 +200,7 @@ add_executable(tests
     RdbService/test/InsertRowAction/CreatesSpaceMapRootForFirstInsertedRowTest.cpp
     RdbService/test/InsertRowAction/UsesExistingSpaceMapRootTest.cpp
     RdbService/test/InsertRowAction/PropagatesPageDiscoveryFailureTest.cpp
+    RdbService/test/InsertRowAction/RejectsTupleTooLargeForPageBeforeDependenciesTest.cpp
     RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
     RdbService/test/FindPageWithSpaceAdapter/DelegatesPageDiscoveryTest.cpp
     RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp
