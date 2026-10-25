@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+// Scenario: an empty table name is rejected before any dependency is called.
 TEST(CreateTableActionTest, RejectsEmptyTableNameBeforeCallingDependencies) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeAllocateNextTableIdPort tableIdPort;
