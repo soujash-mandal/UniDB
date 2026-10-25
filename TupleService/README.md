@@ -4,6 +4,7 @@ TupleService manages tuple-page allocation and tuple-level operations through in
 
 ## Actions
 
+- `CalculateRequiredSpaceAction` — Calculates the exact free-space requirement for inserting tuple bytes, including the new slot entry, and rejects tuples that cannot fit on an empty tuple page.
 - `CreateTuplePageAction` — Allocates a new page, initializes it as a tuple page, persists it, and returns its page ID and available free space.
 - `CreateTupleAction` — Inserts tuple bytes into an existing tuple page, persists the updated page, and returns the allocated slot ID.
 - `GetTupleAction` — Retrieves tuple bytes from a specified page and slot.
