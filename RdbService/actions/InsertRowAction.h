@@ -6,6 +6,8 @@
 #include "../port/FindPageWithSpacePort.h"
 #include "../port/GetCatalogRootPageIdPort.h"
 #include "../port/GetCatalogTableByNamePort.h"
+#include "../port/GetTuplePageFreeSpacePort.h"
+#include "../port/UpdateFreeSpacePort.h"
 #include "../port/UpdateCatalogTablePort.h"
 
 #include <cstdint>
@@ -26,7 +28,9 @@ public:
                   UpdateCatalogTablePort &updateCatalogTablePort,
                   CreateSpaceMapPagePort &createSpaceMapPagePort,
                   FindPageWithSpacePort &findPageWithSpacePort,
-                  CreateTuplePort &createTuplePort);
+                  CreateTuplePort &createTuplePort,
+                  GetTuplePageFreeSpacePort &getTuplePageFreeSpacePort,
+                  UpdateFreeSpacePort &updateFreeSpacePort);
 
   InsertedRowLocation execute(uint32_t metadataPageId,
                               const std::string &tableName,
@@ -39,6 +43,8 @@ private:
   CreateSpaceMapPagePort &createSpaceMapPagePort;
   FindPageWithSpacePort &findPageWithSpacePort;
   CreateTuplePort &createTuplePort;
+  GetTuplePageFreeSpacePort &getTuplePageFreeSpacePort;
+  UpdateFreeSpacePort &updateFreeSpacePort;
 };
 
 } // namespace RdbService
