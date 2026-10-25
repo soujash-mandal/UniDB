@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+// Scenario: valid table creation uses the catalog root and allocated table ID.
 TEST(CreateTableActionTest, CreatesTableWithAllocatedIdAndCatalogRoot) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeAllocateNextTableIdPort tableIdPort;
