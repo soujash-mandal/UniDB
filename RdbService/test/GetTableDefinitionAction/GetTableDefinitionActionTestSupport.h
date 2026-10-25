@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-class FakeGetCatalogRootPageIdPort final : public GetCatalogRootPageIdPort {
+class GetTableDefinitionFakeRootPort final : public GetCatalogRootPageIdPort {
 public:
   uint32_t result = 17;
   uint32_t calls = 0;
@@ -18,7 +18,7 @@ public:
   }
 };
 
-class FakeGetCatalogTableByNamePort final : public GetCatalogTableByNamePort {
+class GetTableDefinitionFakeCatalogPort final : public GetCatalogTableByNamePort {
 public:
   RdbTableDefinition result{42,
                             "events",

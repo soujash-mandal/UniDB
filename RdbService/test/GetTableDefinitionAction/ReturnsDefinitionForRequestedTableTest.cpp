@@ -5,8 +5,8 @@
 // Scenario: the requested table name is resolved using the catalog root from
 // metadata.
 TEST(GetTableDefinitionActionTest, ReturnsDefinitionForRequestedTable) {
-  FakeGetCatalogRootPageIdPort rootPort;
-  FakeGetCatalogTableByNamePort tablePort;
+  GetTableDefinitionFakeRootPort rootPort;
+  GetTableDefinitionFakeCatalogPort tablePort;
   RdbService::GetTableDefinitionAction action(rootPort, tablePort);
 
   const RdbTableDefinition result = action.execute(3, "events");
@@ -31,8 +31,8 @@ TEST(GetTableDefinitionActionTest, ReturnsDefinitionForRequestedTable) {
 // Scenario: an empty table name is rejected before metadata or catalog
 // dependencies run.
 TEST(GetTableDefinitionActionTest, RejectsEmptyNameBeforeCallingDependencies) {
-  FakeGetCatalogRootPageIdPort rootPort;
-  FakeGetCatalogTableByNamePort tablePort;
+  GetTableDefinitionFakeRootPort rootPort;
+  GetTableDefinitionFakeCatalogPort tablePort;
   RdbService::GetTableDefinitionAction action(rootPort, tablePort);
 
   EXPECT_THROW(action.execute(3, ""), std::invalid_argument);
@@ -44,8 +44,8 @@ TEST(GetTableDefinitionActionTest, RejectsEmptyNameBeforeCallingDependencies) {
 // Scenario: catalog lookup failures propagate to the caller without being
 // hidden.
 TEST(GetTableDefinitionActionTest, PropagatesCatalogLookupFailure) {
-  FakeGetCatalogRootPageIdPort rootPort;
-  FakeGetCatalogTableByNamePort tablePort;
+  GetTableDefinitionFakeRootPort rootPort;
+  GetTableDefinitionFakeCatalogPort tablePort;
   tablePort.shouldThrow = true;
   RdbService::GetTableDefinitionAction action(rootPort, tablePort);
 
