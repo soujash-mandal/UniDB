@@ -41,12 +41,10 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   RdbTableDefinition table =
       getCatalogTableByNamePort.getTableByName(catalogRootPageId, tableName);
 
-  if (table.firstSpaceMapPageId == std::numeric_limits<uint32_t>::max()) {
-    const uint32_t rootSpaceMapPageId =
-        createSpaceMapPagePort.createSpaceMapPage();
-    updateCatalogTablePort.updateTable(catalogRootPageId, table,
-                                       rootSpaceMapPageId);
-    table.firstSpaceMapPageId = rootSpaceMapPageId;
+  const bool createdSpaceMapRoot =
+      table.firstSpaceMapPageId == std::numeric_limits<uint32_t>::max();
+  if (createdSpaceMapRoot) {
+    table.firstSpaceMapPageId = createSpaceMapPagePort.createSpaceMapPage();
   }
 
   const uint32_t requiredSpace =
@@ -56,6 +54,11 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
                                               requiredSpace);
   const uint32_t slotId =
       createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
+
+  if (createdSpaceMapRoot) {
+    updateCatalogTablePort.updateTable(catalogRootPageId, table,
+                                       table.firstSpaceMapPageId);
+  }
   return {target.tuplePageId, slotId};
 }
 
