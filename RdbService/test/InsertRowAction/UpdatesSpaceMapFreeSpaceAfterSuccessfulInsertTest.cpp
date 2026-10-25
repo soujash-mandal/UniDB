@@ -9,12 +9,14 @@ TEST(InsertRowActionTest, UpdatesSpaceMapFreeSpaceAfterSuccessfulInsert) {
   table.table = {9, "users", {}, 55};
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
+  FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   createTuple.remainingFreeSpace = 7654;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, updateFreeSpace);
+                                     calculateRequiredSpace, findSpace,
+                                     createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'x'});
 
