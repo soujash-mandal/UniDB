@@ -20,7 +20,7 @@ public:
                                  TupleUnpinPagePort &unpinPagePort);
 
   CreateTupleWithFreeSpaceActionResult execute(TuplePageId pageId,
-                                                std::vector<char> tupleData);
+                                               std::vector<char> tupleData);
 
 private:
   TupleFetchPagePort &fetchPagePort;

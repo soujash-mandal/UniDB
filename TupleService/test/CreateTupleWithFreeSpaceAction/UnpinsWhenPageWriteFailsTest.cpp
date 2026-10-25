@@ -5,7 +5,8 @@
 
 #include <stdexcept>
 
-// Scenario 1: Release the page pin and preserve the write error if persistence fails.
+// Scenario 1: Release the page pin and preserve the write error if persistence
+// fails.
 TEST(CreateTupleWithFreeSpaceActionTest, UnpinsWhenPageWriteFails) {
   InMemoryTuplePageStore store;
   store.seed(7, TuplePage{});

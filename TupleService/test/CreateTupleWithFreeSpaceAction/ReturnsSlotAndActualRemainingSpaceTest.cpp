@@ -3,7 +3,8 @@
 
 #include <gtest/gtest.h>
 
-// Scenario 1: Return the slot and actual remaining free space from the inserted page.
+// Scenario 1: Return the slot and actual remaining free space from the inserted
+// page.
 TEST(CreateTupleWithFreeSpaceActionTest, ReturnsSlotAndActualRemainingSpace) {
   InMemoryTuplePageStore store;
   store.seed(7, TuplePage{});

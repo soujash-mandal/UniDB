@@ -6,7 +6,8 @@
 #include <stdexcept>
 
 // Scenario 1: Do not unpin when fetching fails before a page was acquired.
-TEST(CreateTupleWithFreeSpaceActionTest, PropagatesFetchFailureWithoutUnpinning) {
+TEST(CreateTupleWithFreeSpaceActionTest,
+     PropagatesFetchFailureWithoutUnpinning) {
   InMemoryTuplePageStore store;
   store.failFetch = true;
   CreateTupleWithFreeSpaceAction action(store, store, store);
