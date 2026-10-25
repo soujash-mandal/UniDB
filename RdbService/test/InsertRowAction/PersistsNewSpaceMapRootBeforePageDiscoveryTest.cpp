@@ -16,12 +16,10 @@ TEST(InsertRowActionTest, PersistsNewSpaceMapRootBeforePageDiscovery) {
       throw std::runtime_error("space lookup failed");
     }
   } findSpace;
-  FakeInsertTuplePort createTuple;
-  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, getFreeSpace,
-                                     updateFreeSpace);
+                                     findSpace, createTuple, updateFreeSpace);
 
   EXPECT_THROW(action.execute(3, "users", {'x'}), std::runtime_error);
   EXPECT_EQ(createSpaceMap.calls, 1);
@@ -29,6 +27,5 @@ TEST(InsertRowActionTest, PersistsNewSpaceMapRootBeforePageDiscovery) {
   EXPECT_EQ(update.root, 17);
   EXPECT_EQ(update.spaceMapRoot, 71);
   EXPECT_EQ(createTuple.calls, 0);
-  EXPECT_EQ(getFreeSpace.calls, 0);
   EXPECT_EQ(updateFreeSpace.calls, 0);
 }
