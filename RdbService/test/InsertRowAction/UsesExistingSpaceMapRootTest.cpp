@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(InsertRowActionTest, UsesExistingSpaceMapRoot) {
-  // Scenario 1: Existing table storage is reused without creating or updating
-  // its SpaceMap root.
+  // Scenario 1: Existing table storage is reused without creating or updating its SpaceMap root.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, 55};
@@ -12,8 +11,11 @@ TEST(InsertRowActionTest, UsesExistingSpaceMapRoot) {
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
+  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple);
+                                     findSpace, createTuple, getFreeSpace,
+                                     updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'x'});
 
