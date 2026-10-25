@@ -9,11 +9,13 @@ TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
   table.table = {9, "users", {}, std::numeric_limits<uint32_t>::max()};
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
+  FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, updateFreeSpace);
+                                     calculateRequiredSpace, findSpace,
+                                     createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'a', 'b'});
 
