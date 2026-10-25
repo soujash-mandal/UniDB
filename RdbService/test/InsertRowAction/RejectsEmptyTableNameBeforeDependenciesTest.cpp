@@ -4,16 +4,18 @@
 #include <stdexcept>
 
 TEST(InsertRowActionTest, RejectsEmptyTableNameBeforeDependencies) {
-  // Scenario 1: Empty table names are rejected before any storage dependency is
-  // called.
+  // Scenario 1: Empty table names are rejected before any storage dependency is called.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
+  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple);
+                                     findSpace, createTuple, getFreeSpace,
+                                     updateFreeSpace);
 
   EXPECT_THROW(action.execute(0, "", {'x'}), std::invalid_argument);
   EXPECT_EQ(root.calls, 0);
