@@ -116,10 +116,14 @@ public:
   uint32_t spaceMapPageId = 0;
   uint32_t tuplePageId = 0;
   uint32_t freeSpace = 0;
+  bool failUpdate = false;
   void updateFreeSpace(uint32_t requestedSpaceMapPageId,
                        uint32_t requestedTuplePageId,
                        uint32_t requestedFreeSpace) override {
     ++calls;
+    if (failUpdate) {
+      throw std::runtime_error("SpaceMap update failed");
+    }
     spaceMapPageId = requestedSpaceMapPageId;
     tuplePageId = requestedTuplePageId;
     freeSpace = requestedFreeSpace;
