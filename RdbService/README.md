@@ -24,6 +24,7 @@ translate those contracts to public Actions exposed by lower-level services.
 - `GetTablePagesPort` — enumerate tuple pages registered for a table.
 - `RdbCreateTuplePagePort` — create and initialize one tuple page.
 - `CreateTuplePort` — insert one row into a tuple page.
+- `CalculateRequiredSpacePort` — calculate the bytes needed for a tuple payload and its slot entry.
 - `GetTuplePort` — retrieve one row by slot.
 - `GetAllTuplesPort` — scan live rows from one tuple page.
 
@@ -40,6 +41,7 @@ translate those contracts to public Actions exposed by lower-level services.
 - `GetTablePagesAdapter` — delegates only to `GetTablePagesAction`.
 - `CreateTuplePageAdapter` — delegates only to `CreateTuplePageAction`.
 - `CreateTupleAdapter` — delegates only to `CreateTupleAction`.
+- `CalculateRequiredSpaceAdapter` — delegates only to `CalculateRequiredSpaceAction`.
 - `GetTupleAdapter` — delegates only to `GetTupleAction`.
 - `GetAllTuplesAdapter` — delegates only to `GetAllTuplesAction`.
 
