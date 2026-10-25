@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(InsertRowActionTest, UpdatesSpaceMapFreeSpaceAfterSuccessfulInsert) {
-  // Scenario 1: The post-insert remaining free space is stored for the owning SpaceMap entry.
+  // Scenario 1: The actual remaining free space is stored in the owning SpaceMap entry.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, 55};
