@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../actions/InsertRowAction.h"
-#include "../../port/GetTuplePageFreeSpacePort.h"
+#include "../../port/CreateTupleWithFreeSpacePort.h"
 #include "../../port/UpdateFreeSpacePort.h"
 
 #include <limits>
@@ -72,31 +72,21 @@ public:
   }
 };
 
-class FakeInsertTuplePort final : public CreateTuplePort {
+class FakeInsertTupleWithFreeSpacePort final
+    : public RdbService::CreateTupleWithFreeSpacePort {
 public:
   uint32_t calls = 0;
   uint32_t pageId = 0;
   uint32_t slotId = 4;
+  uint32_t remainingFreeSpace = 1234;
   std::vector<char> bytes;
-  uint32_t createTuple(uint32_t requestedPageId,
-                       std::vector<char> tupleData) override {
+  RdbService::RdbCreateTupleWithFreeSpaceResult
+  createTupleWithFreeSpace(uint32_t requestedPageId,
+                           std::vector<char> tupleData) override {
     ++calls;
     pageId = requestedPageId;
     bytes = std::move(tupleData);
-    return slotId;
-  }
-};
-
-class FakeInsertGetFreeSpacePort final
-    : public RdbService::GetTuplePageFreeSpacePort {
-public:
-  uint32_t calls = 0;
-  uint32_t pageId = 0;
-  uint32_t freeSpace = 1234;
-  uint32_t getFreeSpace(uint32_t requestedPageId) override {
-    ++calls;
-    pageId = requestedPageId;
-    return freeSpace;
+    return {slotId, remainingFreeSpace};
   }
 };
 
