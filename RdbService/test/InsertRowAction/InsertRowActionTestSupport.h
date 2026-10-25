@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../../actions/InsertRowAction.h"
+#include "../../port/GetTuplePageFreeSpacePort.h"
+#include "../../port/UpdateFreeSpacePort.h"
 
 #include <limits>
 #include <string>
@@ -82,5 +84,34 @@ public:
     pageId = requestedPageId;
     bytes = std::move(tupleData);
     return slotId;
+  }
+};
+
+class FakeInsertGetFreeSpacePort final
+    : public RdbService::GetTuplePageFreeSpacePort {
+public:
+  uint32_t calls = 0;
+  uint32_t pageId = 0;
+  uint32_t freeSpace = 1234;
+  uint32_t getFreeSpace(uint32_t requestedPageId) override {
+    ++calls;
+    pageId = requestedPageId;
+    return freeSpace;
+  }
+};
+
+class FakeInsertUpdateFreeSpacePort final : public RdbService::UpdateFreeSpacePort {
+public:
+  uint32_t calls = 0;
+  uint32_t spaceMapPageId = 0;
+  uint32_t tuplePageId = 0;
+  uint32_t freeSpace = 0;
+  void updateFreeSpace(uint32_t requestedSpaceMapPageId,
+                       uint32_t requestedTuplePageId,
+                       uint32_t requestedFreeSpace) override {
+    ++calls;
+    spaceMapPageId = requestedSpaceMapPageId;
+    tuplePageId = requestedTuplePageId;
+    freeSpace = requestedFreeSpace;
   }
 };
