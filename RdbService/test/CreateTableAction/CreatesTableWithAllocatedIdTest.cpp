@@ -21,4 +21,13 @@ TEST(CreateTableActionTest, CreatesTableWithAllocatedIdAndCatalogRoot) {
   EXPECT_EQ(catalogPort.receivedTableId, 42U);
   EXPECT_EQ(catalogPort.receivedTable.tableId, 42U);
   EXPECT_EQ(catalogPort.receivedTable.name, "events");
+  ASSERT_EQ(catalogPort.receivedTable.columns.size(), 2U);
+  EXPECT_EQ(catalogPort.receivedTable.columns[0].name, "event_id");
+  EXPECT_EQ(catalogPort.receivedTable.columns[0].type, RdbDataType::INT);
+  EXPECT_EQ(catalogPort.receivedTable.columns[0].size, 4U);
+  EXPECT_FALSE(catalogPort.receivedTable.columns[0].nullable);
+  EXPECT_EQ(catalogPort.receivedTable.columns[1].name, "description");
+  EXPECT_EQ(catalogPort.receivedTable.columns[1].type, RdbDataType::VARCHAR);
+  EXPECT_EQ(catalogPort.receivedTable.columns[1].size, 120U);
+  EXPECT_TRUE(catalogPort.receivedTable.columns[1].nullable);
 }
