@@ -1,5 +1,6 @@
 #include "InsertRowAction.h"
 
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
