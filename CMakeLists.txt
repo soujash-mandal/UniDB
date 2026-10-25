@@ -183,6 +183,8 @@ add_executable(tests
     RdbService/test/CreateTableAction/RejectsEmptyTableNameBeforeDependenciesTest.cpp
     RdbService/test/CreateTableAction/RejectsEmptySchemaBeforeDependenciesTest.cpp
     RdbService/test/CreateTableAction/RejectsDuplicateColumnNamesBeforeDependenciesTest.cpp
+    RdbService/test/CreateTableAction/RejectsEmptyColumnNameBeforeDependenciesTest.cpp
+    RdbService/test/CreateTableAction/RejectsZeroSizedVarcharBeforeDependenciesTest.cpp
     RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
     RdbService/test/FindPageWithSpaceAdapter/DelegatesPageDiscoveryTest.cpp
     RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp
