@@ -72,6 +72,7 @@ set(UNIDB_SOURCES
 
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/actions/CreateTableAction.cpp
+    RdbService/actions/GetTableDefinitionAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CreateCatalogTableAdapter.cpp
@@ -185,6 +186,9 @@ add_executable(tests
     RdbService/test/CreateTableAction/RejectsDuplicateColumnNamesBeforeDependenciesTest.cpp
     RdbService/test/CreateTableAction/RejectsEmptyColumnNameBeforeDependenciesTest.cpp
     RdbService/test/CreateTableAction/RejectsZeroSizedVarcharBeforeDependenciesTest.cpp
+    RdbService/test/GetTableDefinitionAction/ReturnsDefinitionForExistingTableTest.cpp
+    RdbService/test/GetTableDefinitionAction/RejectsEmptyTableNameBeforeDependenciesTest.cpp
+    RdbService/test/GetTableDefinitionAction/PropagatesLookupFailureTest.cpp
     RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
     RdbService/test/FindPageWithSpaceAdapter/DelegatesPageDiscoveryTest.cpp
     RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp

@@ -8,6 +8,7 @@ translate those contracts to public Actions exposed by lower-level services.
 
 - `InitializeRdbAction` — initialize relational database metadata and catalog root.
 - `RdbService::CreateTableAction` — validate a table definition, obtain metadata-backed identifiers through RDB-owned boundaries, and persist it through CatalogService.
+- `RdbService::GetTableDefinitionAction` — resolve the catalog root and return a table schema through the RDB-owned catalog lookup boundary.
 
 ## Ports
 
