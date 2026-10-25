@@ -4,8 +4,8 @@
 
 #include <stdexcept>
 
-uint32_t
-CalculateRequiredSpaceAction::execute(const std::vector<char> &tupleData) const {
+uint32_t CalculateRequiredSpaceAction::execute(
+    const std::vector<char> &tupleData) const {
   constexpr std::size_t MAX_TUPLE_BYTES =
       TUPLE_PAGE_SIZE - sizeof(TuplePageHeader) - sizeof(TupleSlotEntry);
   if (tupleData.size() > MAX_TUPLE_BYTES) {
