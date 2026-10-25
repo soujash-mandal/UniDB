@@ -18,13 +18,17 @@ InsertRowAction::InsertRowAction(
     UpdateCatalogTablePort &updateCatalogTablePort,
     CreateSpaceMapPagePort &createSpaceMapPagePort,
     FindPageWithSpacePort &findPageWithSpacePort,
-    CreateTuplePort &createTuplePort)
+    CreateTuplePort &createTuplePort,
+    GetTuplePageFreeSpacePort &getTuplePageFreeSpacePort,
+    UpdateFreeSpacePort &updateFreeSpacePort)
     : getCatalogRootPageIdPort(getCatalogRootPageIdPort),
       getCatalogTableByNamePort(getCatalogTableByNamePort),
       updateCatalogTablePort(updateCatalogTablePort),
       createSpaceMapPagePort(createSpaceMapPagePort),
       findPageWithSpacePort(findPageWithSpacePort),
-      createTuplePort(createTuplePort) {}
+      createTuplePort(createTuplePort),
+      getTuplePageFreeSpacePort(getTuplePageFreeSpacePort),
+      updateFreeSpacePort(updateFreeSpacePort) {}
 
 InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
                                              const std::string &tableName,
@@ -61,6 +65,10 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
 
   const uint32_t slotId =
       createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
+  const uint32_t remainingFreeSpace =
+      getTuplePageFreeSpacePort.getFreeSpace(target.tuplePageId);
+  updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId,
+                                      target.tuplePageId, remainingFreeSpace);
   return {target.tuplePageId, slotId};
 }
 
