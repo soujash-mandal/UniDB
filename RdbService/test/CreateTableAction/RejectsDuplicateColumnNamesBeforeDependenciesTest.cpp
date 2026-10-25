@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+// Scenario: duplicate column names are rejected before any dependency is called.
 TEST(CreateTableActionTest,
      RejectsDuplicateColumnNamesBeforeCallingDependencies) {
   FakeGetCatalogRootPageIdPort rootPort;
