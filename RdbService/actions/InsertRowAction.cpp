@@ -27,7 +27,8 @@ InsertRowAction::InsertRowAction(
       createTupleWithFreeSpacePort(createTupleWithFreeSpacePort),
       updateFreeSpacePort(updateFreeSpacePort) {}
 
-// Insert one encoded row into the named table and return its page/slot location.
+// Insert one encoded row into the named table and return its page/slot
+// location.
 InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
                                              const std::string &tableName,
                                              std::vector<char> tupleData) {
@@ -59,8 +60,9 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
     // Step 6.1 (TRUE branch): No SpaceMap root exists, so create the first one.
     table.firstSpaceMapPageId = createSpaceMapPagePort.createSpaceMapPage();
 
-    // Step 6.2: Save the newly created root ID in the catalog before proceeding.
-    // This way, if page discovery fails later, the catalog still records the root.
+    // Step 6.2: Save the newly created root ID in the catalog before
+    // proceeding. This way, if page discovery fails later, the catalog still
+    // records the root.
     updateCatalogTablePort.updateTable(catalogRootPageId, table,
                                        table.firstSpaceMapPageId);
   } else {
