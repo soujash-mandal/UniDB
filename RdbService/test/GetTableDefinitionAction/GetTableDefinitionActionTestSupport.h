@@ -18,7 +18,8 @@ public:
   }
 };
 
-class GetTableDefinitionFakeCatalogPort final : public GetCatalogTableByNamePort {
+class GetTableDefinitionFakeCatalogPort final
+    : public GetCatalogTableByNamePort {
 public:
   RdbTableDefinition result{42,
                             "events",
