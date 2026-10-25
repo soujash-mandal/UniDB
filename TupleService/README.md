@@ -8,6 +8,7 @@ TupleService manages tuple-page allocation and tuple-level operations through in
 - `CreateTuplePageAction` — Allocates a new page, initializes it as a tuple page, persists it, and returns its page ID and available free space.
 - `CreateTupleAction` — Inserts tuple bytes into an existing tuple page, persists the updated page, and returns the allocated slot ID.
 - `GetTupleAction` — Retrieves tuple bytes from a specified page and slot.
+- `GetTuplePageFreeSpaceAction` — Returns the actual remaining free space on a specified tuple page and unpins it.
 - `GetAllTuplesAction` — Retrieves all live tuples from one specified tuple page in slot order and unpins the page; it does not discover table pages.
 - `DeleteTupleAction` — Marks the specified tuple slot as deleted and persists the updated page.
 
