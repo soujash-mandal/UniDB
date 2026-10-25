@@ -10,12 +10,10 @@ TEST(InsertRowActionTest, RejectsEmptyTableNameBeforeDependencies) {
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertFindSpacePort findSpace;
-  FakeInsertTuplePort createTuple;
-  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, getFreeSpace,
-                                     updateFreeSpace);
+                                     findSpace, createTuple, updateFreeSpace);
 
   EXPECT_THROW(action.execute(0, "", {'x'}), std::invalid_argument);
   EXPECT_EQ(root.calls, 0);
