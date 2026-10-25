@@ -10,6 +10,7 @@ TEST(InsertRowActionTest, PersistsNewSpaceMapRootBeforePageDiscovery) {
   table.table = {9, "users", {}, std::numeric_limits<uint32_t>::max()};
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
+  FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   class FailingSpaceLookup final : public FindPageWithSpacePort {
   public:
     RdbFindPageWithSpaceResult findPageWithSpace(uint32_t, uint32_t) override {
@@ -19,7 +20,8 @@ TEST(InsertRowActionTest, PersistsNewSpaceMapRootBeforePageDiscovery) {
   FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, updateFreeSpace);
+                                     calculateRequiredSpace, findSpace,
+                                     createTuple, updateFreeSpace);
 
   EXPECT_THROW(action.execute(3, "users", {'x'}), std::runtime_error);
   EXPECT_EQ(createSpaceMap.calls, 1);
