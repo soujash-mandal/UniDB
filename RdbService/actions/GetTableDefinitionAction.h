@@ -11,8 +11,9 @@ namespace RdbService {
 
 class GetTableDefinitionAction {
 public:
-  GetTableDefinitionAction(GetCatalogRootPageIdPort &getCatalogRootPageIdPort,
-                           GetCatalogTableByNamePort &getCatalogTableByNamePort);
+  GetTableDefinitionAction(
+      GetCatalogRootPageIdPort &getCatalogRootPageIdPort,
+      GetCatalogTableByNamePort &getCatalogTableByNamePort);
 
   RdbTableDefinition execute(uint32_t metadataPageId,
                              const std::string &tableName);

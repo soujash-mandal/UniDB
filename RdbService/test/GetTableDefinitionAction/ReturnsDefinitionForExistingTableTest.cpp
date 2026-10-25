@@ -3,7 +3,8 @@
 #include <gtest/gtest.h>
 
 TEST(GetTableDefinitionActionTest, ReturnsDefinitionForExistingTable) {
-  // Covers forwarding the metadata root and returning the complete table schema.
+  // Covers forwarding the metadata root and returning the complete table
+  // schema.
   FakeDefinitionRootPagePort rootPort;
   FakeDefinitionTableLookupPort tablePort;
   tablePort.result = validDefinitionForLookup();

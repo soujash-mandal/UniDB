@@ -27,7 +27,7 @@ public:
   bool shouldThrow = false;
 
   RdbTableDefinition getTableByName(uint32_t catalogRootPageId,
-                                   const std::string &tableName) override {
+                                    const std::string &tableName) override {
     ++calls;
     receivedRootPageId = catalogRootPageId;
     receivedTableName = tableName;

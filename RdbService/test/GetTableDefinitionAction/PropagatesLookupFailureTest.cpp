@@ -9,8 +9,7 @@ TEST(GetTableDefinitionActionTest, PropagatesLookupFailureAfterResolvingRoot) {
   tablePort.shouldThrow = true;
   RdbService::GetTableDefinitionAction action(rootPort, tablePort);
 
-  EXPECT_THROW(action.execute(3, "events"),
-               std::runtime_error);
+  EXPECT_THROW(action.execute(3, "events"), std::runtime_error);
   EXPECT_EQ(rootPort.calls, 1U);
   EXPECT_EQ(tablePort.calls, 1U);
 }
