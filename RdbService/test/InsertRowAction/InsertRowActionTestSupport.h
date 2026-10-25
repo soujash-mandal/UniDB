@@ -1,0 +1,84 @@
+#pragma once
+
+#include "../../actions/InsertRowAction.h"
+
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
+
+class FakeInsertRootPort final : public GetCatalogRootPageIdPort {
+public:
+  uint32_t calls = 0;
+  uint32_t rootPageId = 17;
+  uint32_t getCatalogRootPageId(uint32_t) override {
+    ++calls;
+    return rootPageId;
+  }
+};
+
+class FakeInsertTablePort final : public GetCatalogTableByNamePort {
+public:
+  uint32_t calls = 0;
+  uint32_t requestedRoot = 0;
+  std::string requestedName;
+  RdbTableDefinition table;
+  RdbTableDefinition getTableByName(uint32_t root, const std::string &name) override {
+    ++calls;
+    requestedRoot = root;
+    requestedName = name;
+    return table;
+  }
+};
+
+class FakeInsertUpdateTablePort final : public UpdateCatalogTablePort {
+public:
+  uint32_t calls = 0;
+  uint32_t root = 0;
+  uint32_t spaceMapRoot = 0;
+  void updateTable(uint32_t requestedRoot, const RdbTableDefinition &,
+                   uint32_t requestedSpaceMapRoot) override {
+    ++calls;
+    root = requestedRoot;
+    spaceMapRoot = requestedSpaceMapRoot;
+  }
+};
+
+class FakeInsertCreateSpaceMapPort final : public CreateSpaceMapPagePort {
+public:
+  uint32_t calls = 0;
+  uint32_t pageId = 71;
+  uint32_t createSpaceMapPage() override {
+    ++calls;
+    return pageId;
+  }
+};
+
+class FakeInsertFindSpacePort final : public FindPageWithSpacePort {
+public:
+  uint32_t calls = 0;
+  uint32_t root = 0;
+  uint32_t requiredSpace = 0;
+  RdbFindPageWithSpaceResult result{81, 91};
+  RdbFindPageWithSpaceResult findPageWithSpace(uint32_t requestedRoot,
+                                               uint32_t requestedSpace) override {
+    ++calls;
+    root = requestedRoot;
+    requiredSpace = requestedSpace;
+    return result;
+  }
+};
+
+class FakeInsertTuplePort final : public CreateTuplePort {
+public:
+  uint32_t calls = 0;
+  uint32_t pageId = 0;
+  uint32_t slotId = 4;
+  std::vector<char> bytes;
+  uint32_t createTuple(uint32_t requestedPageId, std::vector<char> tupleData) override {
+    ++calls;
+    pageId = requestedPageId;
+    bytes = std::move(tupleData);
+    return slotId;
+  }
+};
