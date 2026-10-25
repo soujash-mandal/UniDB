@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
-  // Scenario 1: The first insert creates and persists a SpaceMap root before
-  // writing the row.
+  // Scenario 1: The first insert creates and persists a SpaceMap root before writing the row.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, std::numeric_limits<uint32_t>::max()};
@@ -12,8 +11,11 @@ TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
+  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple);
+                                     findSpace, createTuple, getFreeSpace,
+                                     updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'a', 'b'});
 
