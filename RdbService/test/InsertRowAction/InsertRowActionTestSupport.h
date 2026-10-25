@@ -100,7 +100,8 @@ public:
   }
 };
 
-class FakeInsertUpdateFreeSpacePort final : public RdbService::UpdateFreeSpacePort {
+class FakeInsertUpdateFreeSpacePort final
+    : public RdbService::UpdateFreeSpacePort {
 public:
   uint32_t calls = 0;
   uint32_t spaceMapPageId = 0;
