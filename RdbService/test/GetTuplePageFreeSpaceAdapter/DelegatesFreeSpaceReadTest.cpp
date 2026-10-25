@@ -1,5 +1,5 @@
-#include "../../adapter/GetTuplePageFreeSpaceAdapter.h"
 #include "../../../TupleService/actions/GetTuplePageFreeSpaceAction.h"
+#include "../../adapter/GetTuplePageFreeSpaceAdapter.h"
 
 #include <gtest/gtest.h>
 

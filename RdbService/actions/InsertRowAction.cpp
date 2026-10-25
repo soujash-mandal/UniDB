@@ -63,8 +63,8 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
       createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
   const uint32_t remainingFreeSpace =
       getTuplePageFreeSpacePort.getFreeSpace(target.tuplePageId);
-  updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId,
-                                      target.tuplePageId, remainingFreeSpace);
+  updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId, target.tuplePageId,
+                                      remainingFreeSpace);
   return {target.tuplePageId, slotId};
 }
 

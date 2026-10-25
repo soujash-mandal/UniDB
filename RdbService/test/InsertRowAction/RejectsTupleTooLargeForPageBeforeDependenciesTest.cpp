@@ -4,7 +4,8 @@
 #include <stdexcept>
 
 TEST(InsertRowActionTest, RejectsTupleTooLargeForPageBeforeDependencies) {
-  // Scenario 1: A row larger than one tuple page is rejected before storage changes.
+  // Scenario 1: A row larger than one tuple page is rejected before storage
+  // changes.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   FakeInsertUpdateTablePort update;

@@ -7,8 +7,8 @@
 #include "../port/GetCatalogRootPageIdPort.h"
 #include "../port/GetCatalogTableByNamePort.h"
 #include "../port/GetTuplePageFreeSpacePort.h"
-#include "../port/UpdateFreeSpacePort.h"
 #include "../port/UpdateCatalogTablePort.h"
+#include "../port/UpdateFreeSpacePort.h"
 
 #include <cstdint>
 #include <string>
