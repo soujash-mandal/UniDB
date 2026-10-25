@@ -77,6 +77,7 @@ set(UNIDB_SOURCES
     RdbService/actions/GetTableDefinitionAction.cpp
     RdbService/actions/SelectAllRowsAction.cpp
     RdbService/actions/InsertRowAction.cpp
+    RdbService/adapter/CreateTupleWithFreeSpaceAdapter.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CreateCatalogTableAdapter.cpp
@@ -209,6 +210,7 @@ add_executable(tests
     RdbService/test/InsertRowAction/PropagatesPageDiscoveryFailureTest.cpp
     RdbService/test/InsertRowAction/PersistsNewSpaceMapRootBeforePageDiscoveryTest.cpp
     RdbService/test/InsertRowAction/RejectsTupleTooLargeForPageBeforeDependenciesTest.cpp
+    RdbService/test/InsertRowAction/ReturnsCommittedLocationWhenSpaceMapUpdateFailsTest.cpp
     RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
     RdbService/test/FindPageWithSpaceAdapter/DelegatesPageDiscoveryTest.cpp
     RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp
