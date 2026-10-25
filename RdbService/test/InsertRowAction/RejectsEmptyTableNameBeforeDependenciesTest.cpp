@@ -4,8 +4,7 @@
 #include <stdexcept>
 
 TEST(InsertRowActionTest, RejectsEmptyTableNameBeforeDependencies) {
-  // Scenario 1: Empty table names are rejected before any storage dependency is
-  // called.
+  // Scenario 1: Empty table names fail before storage calls.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   FakeInsertUpdateTablePort update;
