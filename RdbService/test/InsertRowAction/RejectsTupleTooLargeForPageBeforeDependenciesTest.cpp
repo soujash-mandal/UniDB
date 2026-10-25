@@ -20,6 +20,7 @@ TEST(InsertRowActionTest, RejectsTupleTooLargeForPageBeforeDependencies) {
 
   EXPECT_THROW(action.execute(0, "users", oversizedTuple),
                std::invalid_argument);
+  EXPECT_EQ(calculateRequiredSpace.calls, 0);
   EXPECT_EQ(root.calls, 0);
   EXPECT_EQ(createSpaceMap.calls, 0);
   EXPECT_EQ(createTuple.calls, 0);
