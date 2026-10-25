@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(InsertRowActionTest, UsesExistingSpaceMapRoot) {
-  // Scenario 1: Existing table storage is reused without creating or updating
-  // its SpaceMap root.
+  // Scenario 1: Existing SpaceMap roots are reused without recreation.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, 55};
