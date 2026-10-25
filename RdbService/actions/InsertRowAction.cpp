@@ -49,7 +49,7 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
       table.firstSpaceMapPageId == std::numeric_limits<uint32_t>::max();
   if (createdSpaceMapRoot) {
     table.firstSpaceMapPageId = createSpaceMapPagePort.createSpaceMapPage();
-    // Publish the new root before discovery so a discovery failure cannot orphan it.
+    // Publish the root first so failed discovery cannot orphan the page.
     updateCatalogTablePort.updateTable(catalogRootPageId, table,
                                        table.firstSpaceMapPageId);
   }
