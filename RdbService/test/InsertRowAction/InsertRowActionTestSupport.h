@@ -1,10 +1,12 @@
 #pragma once
 
 #include "../../actions/InsertRowAction.h"
+#include "../../port/CalculateRequiredSpacePort.h"
 #include "../../port/CreateTupleWithFreeSpacePort.h"
 #include "../../port/UpdateFreeSpacePort.h"
 
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -54,6 +56,23 @@ public:
   uint32_t createSpaceMapPage() override {
     ++calls;
     return pageId;
+  }
+};
+
+class FakeInsertCalculateRequiredSpacePort final
+    : public RdbService::CalculateRequiredSpacePort {
+public:
+  uint32_t calls = 0;
+  std::vector<char> requestedBytes;
+  uint32_t requiredSpace = 0;
+  uint32_t calculateRequiredSpace(const std::vector<char> &tupleData) override {
+    ++calls;
+    requestedBytes = tupleData;
+    if (tupleData.size() > 8176) {
+      throw std::invalid_argument("Tuple exceeds the V1 tuple size limit");
+    }
+    requiredSpace = static_cast<uint32_t>(tupleData.size()) + 8;
+    return requiredSpace;
   }
 };
 
