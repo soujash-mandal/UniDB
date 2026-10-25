@@ -66,6 +66,7 @@ set(UNIDB_SOURCES
     TupleService/adapter/BufferPoolWritePageAdapter.cpp
     TupleService/actions/CreateTuplePageAction.cpp
     TupleService/actions/CreateTupleAction.cpp
+    TupleService/actions/CreateTupleWithFreeSpaceAction.cpp
     TupleService/actions/CalculateRequiredSpaceAction.cpp
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/GetAllTuplesAction.cpp
@@ -149,6 +150,9 @@ add_executable(tests
     TupleService/test/CreateTupleAction/RejectsTupleThatCannotFitAndUnpinsTest.cpp
     TupleService/test/CreateTupleAction/UnpinsWhenPageWriteFailsTest.cpp
     TupleService/test/CreateTupleAction/PropagatesFetchFailureTest.cpp
+    TupleService/test/CreateTupleWithFreeSpaceAction/ReturnsSlotAndActualRemainingSpaceTest.cpp
+    TupleService/test/CreateTupleWithFreeSpaceAction/UnpinsWhenPageWriteFailsTest.cpp
+    TupleService/test/CreateTupleWithFreeSpaceAction/PropagatesFetchFailureWithoutUnpinningTest.cpp
     TupleService/test/CalculateRequiredSpaceAction/ReturnsPayloadPlusSlotEntryBytesTest.cpp
     TupleService/test/CalculateRequiredSpaceAction/RejectsTupleTooLargeForEmptyPageTest.cpp
     TupleService/test/CalculateRequiredSpaceAction/ReturnsMaximumTupleSpaceTest.cpp
