@@ -10,12 +10,10 @@ TEST(InsertRowActionTest, UsesExistingSpaceMapRoot) {
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertFindSpacePort findSpace;
-  FakeInsertTuplePort createTuple;
-  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertTupleWithFreeSpacePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple, getFreeSpace,
-                                     updateFreeSpace);
+                                     findSpace, createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'x'});
 
