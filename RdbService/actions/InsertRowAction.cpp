@@ -6,6 +6,10 @@
 #include <string>
 #include <utility>
 
+namespace {
+constexpr std::size_t MAX_TUPLE_BYTES = 8176;
+} // namespace
+
 namespace RdbService {
 
 // Step 1: Receive and keep references to the Ports this Action needs.
@@ -39,7 +43,12 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
     // Step 2.1: Stop immediately for an empty name; no Port has been called.
     throw std::invalid_argument("Table name must not be empty");
   }
-  // Step 2.2: If the name is valid, continue with space calculation.
+  // Step 2.2: If the name is valid, continue with input validation.
+  // Step 2.3: Reject payloads larger than one empty tuple page can hold,
+  // before calling any Port. V1 uses an 8-byte page header and 8-byte slot.
+  if (tupleData.size() > MAX_TUPLE_BYTES) {
+    throw std::invalid_argument("Tuple exceeds the V1 tuple size limit");
+  }
 
   // Step 3: Calculate how much free space the row needs, including its slot
   // entry. SpaceMap uses this value to choose a page that can fit the row.
