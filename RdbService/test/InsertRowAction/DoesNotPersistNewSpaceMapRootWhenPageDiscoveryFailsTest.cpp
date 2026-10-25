@@ -17,8 +17,11 @@ TEST(InsertRowActionTest, DoesNotPersistNewSpaceMapRootWhenPageDiscoveryFails) {
     }
   } findSpace;
   FakeInsertTuplePort createTuple;
+  FakeInsertGetFreeSpacePort getFreeSpace;
+  FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
-                                     findSpace, createTuple);
+                                     findSpace, createTuple, getFreeSpace,
+                                     updateFreeSpace);
 
   EXPECT_THROW(action.execute(3, "users", {'x'}), std::runtime_error);
   EXPECT_EQ(createSpaceMap.calls, 1);
