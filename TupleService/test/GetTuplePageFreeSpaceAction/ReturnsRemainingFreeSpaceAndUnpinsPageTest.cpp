@@ -24,9 +24,9 @@ public:
 };
 } // namespace
 
-TEST(GetTuplePageFreeSpaceActionTest,
-     ReturnsRemainingFreeSpaceAndUnpinsPage) {
-  // Scenario 1: Reports actual remaining free space from the fetched tuple page.
+TEST(GetTuplePageFreeSpaceActionTest, ReturnsRemainingFreeSpaceAndUnpinsPage) {
+  // Scenario 1: Reports actual remaining free space from the fetched tuple
+  // page.
   Fetch fetch;
   fetch.page.insert({'a', 'b'});
   Unpin unpin;
