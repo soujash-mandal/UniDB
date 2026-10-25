@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(InsertRowActionTest, CreatesSpaceMapRootForFirstInsertedRow) {
-  // Scenario 1: The first insert creates and persists a SpaceMap root before
-  // writing the row.
+  // Scenario 1: First insert creates the SpaceMap root and writes the row.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, std::numeric_limits<uint32_t>::max()};
