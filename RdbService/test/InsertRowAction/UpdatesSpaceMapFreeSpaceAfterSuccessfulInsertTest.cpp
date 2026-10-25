@@ -22,6 +22,10 @@ TEST(InsertRowActionTest, UpdatesSpaceMapFreeSpaceAfterSuccessfulInsert) {
 
   EXPECT_EQ(inserted.tuplePageId, 81);
   EXPECT_EQ(inserted.slotId, 4);
+  EXPECT_TRUE(inserted.spaceMapUpdated);
+  EXPECT_TRUE(inserted.spaceMapUpdateError.empty());
+  EXPECT_EQ(inserted.spaceMapPageId, 91);
+  EXPECT_EQ(inserted.remainingFreeSpace, 7654);
   EXPECT_EQ(createTuple.calls, 1);
   EXPECT_EQ(createTuple.pageId, 81);
   EXPECT_EQ(updateFreeSpace.calls, 1);
