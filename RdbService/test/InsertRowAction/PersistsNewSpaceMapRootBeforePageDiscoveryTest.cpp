@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 TEST(InsertRowActionTest, PersistsNewSpaceMapRootBeforePageDiscovery) {
-  // Scenario 1: A newly allocated root stays catalog-owned when page discovery fails.
+  // Scenario 1: A new root remains catalog-owned when discovery fails.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
   table.table = {9, "users", {}, std::numeric_limits<uint32_t>::max()};
