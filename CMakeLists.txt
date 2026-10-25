@@ -85,6 +85,7 @@ set(UNIDB_SOURCES
     RdbService/adapter/GetTablePagesAdapter.cpp
     RdbService/adapter/CreateTuplePageAdapter.cpp
     RdbService/adapter/CreateTupleAdapter.cpp
+    RdbService/adapter/CalculateRequiredSpaceAdapter.cpp
     RdbService/adapter/GetTupleAdapter.cpp
     RdbService/adapter/GetAllTuplesAdapter.cpp
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
@@ -204,6 +205,7 @@ add_executable(tests
     RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp
     RdbService/test/CreateTuplePageAdapter/DelegatesTuplePageCreationTest.cpp
     RdbService/test/CreateTupleAdapter/DelegatesTupleInsertionTest.cpp
+    RdbService/test/CalculateRequiredSpaceAdapter/DelegatesRequiredSpaceCalculationTest.cpp
     RdbService/test/GetTupleAdapter/DelegatesTupleLookupTest.cpp
     RdbService/test/GetAllTuplesAdapter/DelegatesTupleScanTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
