@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../domain/RdbTable.h"
+#include "../port/CalculateRequiredSpacePort.h"
 #include "../port/CreateSpaceMapPagePort.h"
 #include "../port/CreateTupleWithFreeSpacePort.h"
 #include "../port/FindPageWithSpacePort.h"
@@ -26,6 +27,7 @@ public:
                   GetCatalogTableByNamePort &getCatalogTableByNamePort,
                   UpdateCatalogTablePort &updateCatalogTablePort,
                   CreateSpaceMapPagePort &createSpaceMapPagePort,
+                  CalculateRequiredSpacePort &calculateRequiredSpacePort,
                   FindPageWithSpacePort &findPageWithSpacePort,
                   CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort,
                   UpdateFreeSpacePort &updateFreeSpacePort);
@@ -39,6 +41,7 @@ private:
   GetCatalogTableByNamePort &getCatalogTableByNamePort;
   UpdateCatalogTablePort &updateCatalogTablePort;
   CreateSpaceMapPagePort &createSpaceMapPagePort;
+  CalculateRequiredSpacePort &calculateRequiredSpacePort;
   FindPageWithSpacePort &findPageWithSpacePort;
   CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort;
   UpdateFreeSpacePort &updateFreeSpacePort;
