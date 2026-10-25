@@ -1,5 +1,5 @@
-#include "../../adapter/UpdateFreeSpaceAdapter.h"
 #include "../../../SpaceMapService/actions/UpdateFreeSpaceAction.h"
+#include "../../adapter/UpdateFreeSpaceAdapter.h"
 #include <gtest/gtest.h>
 
 namespace {
@@ -21,7 +21,7 @@ public:
   void unpinPage(SpaceMapPageId) override { ++calls; }
   int calls = 0;
 };
-}
+} // namespace
 
 TEST(UpdateFreeSpaceAdapterTest, DelegatesFreeSpaceUpdate) {
   // Scenario 1: forwards page IDs and free-space update to SpaceMapService.
