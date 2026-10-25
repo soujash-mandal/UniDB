@@ -1,7 +1,9 @@
 #include "InsertRowAction.h"
 
 #include <limits>
+#include <exception>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace RdbService {
@@ -86,11 +88,28 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
 
   // Step 9: Refresh SpaceMap's recorded free-space value using the actual
   // post-insert value, not the estimate calculated in Step 3.
-  updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId, target.tuplePageId,
-                                      insertResult.remainingFreeSpace);
+  bool spaceMapUpdated = true;
+  std::string spaceMapUpdateError;
+  try {
+    updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId,
+                                        target.tuplePageId,
+                                        insertResult.remainingFreeSpace);
+  } catch (const std::exception &error) {
+    // The tuple is already persisted. Return its committed location instead
+    // of throwing an error that could cause the caller to insert it again.
+    spaceMapUpdated = false;
+    spaceMapUpdateError = error.what();
+  } catch (...) {
+    // Preserve the committed outcome even for a non-standard adapter error.
+    spaceMapUpdated = false;
+    spaceMapUpdateError = "Unknown SpaceMap free-space update failure";
+  }
 
-  // Step 10: Return the physical location of the inserted row to the caller.
-  return {target.tuplePageId, insertResult.slotId};
+  // Step 10: Return the committed row location and enough metadata to retry
+  // the SpaceMap update if spaceMapUpdated is false.
+  return {target.tuplePageId, insertResult.slotId, target.spaceMapPageId,
+          insertResult.remainingFreeSpace, spaceMapUpdated,
+          std::move(spaceMapUpdateError)};
 }
 
 } // namespace RdbService
