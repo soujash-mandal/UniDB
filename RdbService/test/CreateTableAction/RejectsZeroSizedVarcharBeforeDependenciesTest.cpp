@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 // Scenario: a zero-sized VARCHAR column is rejected before dependencies run.
-TEST(CreateTableActionTest,
-     RejectsZeroSizedVarcharBeforeCallingDependencies) {
+TEST(CreateTableActionTest, RejectsZeroSizedVarcharBeforeCallingDependencies) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeAllocateNextTableIdPort tableIdPort;
   FakeCreateCatalogTablePort catalogPort;

@@ -3,8 +3,7 @@
 #include <gtest/gtest.h>
 
 // Scenario: an empty column name is rejected before any dependency is called.
-TEST(CreateTableActionTest,
-     RejectsEmptyColumnNameBeforeCallingDependencies) {
+TEST(CreateTableActionTest, RejectsEmptyColumnNameBeforeCallingDependencies) {
   FakeGetCatalogRootPageIdPort rootPort;
   FakeAllocateNextTableIdPort tableIdPort;
   FakeCreateCatalogTablePort catalogPort;
