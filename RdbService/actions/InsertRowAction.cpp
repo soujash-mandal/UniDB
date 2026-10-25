@@ -18,16 +18,14 @@ InsertRowAction::InsertRowAction(
     UpdateCatalogTablePort &updateCatalogTablePort,
     CreateSpaceMapPagePort &createSpaceMapPagePort,
     FindPageWithSpacePort &findPageWithSpacePort,
-    CreateTuplePort &createTuplePort,
-    GetTuplePageFreeSpacePort &getTuplePageFreeSpacePort,
+    CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort,
     UpdateFreeSpacePort &updateFreeSpacePort)
     : getCatalogRootPageIdPort(getCatalogRootPageIdPort),
       getCatalogTableByNamePort(getCatalogTableByNamePort),
       updateCatalogTablePort(updateCatalogTablePort),
       createSpaceMapPagePort(createSpaceMapPagePort),
       findPageWithSpacePort(findPageWithSpacePort),
-      createTuplePort(createTuplePort),
-      getTuplePageFreeSpacePort(getTuplePageFreeSpacePort),
+      createTupleWithFreeSpacePort(createTupleWithFreeSpacePort),
       updateFreeSpacePort(updateFreeSpacePort) {}
 
 InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
@@ -59,13 +57,12 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   const RdbFindPageWithSpaceResult target =
       findPageWithSpacePort.findPageWithSpace(table.firstSpaceMapPageId,
                                               requiredSpace);
-  const uint32_t slotId =
-      createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
-  const uint32_t remainingFreeSpace =
-      getTuplePageFreeSpacePort.getFreeSpace(target.tuplePageId);
+  const RdbCreateTupleWithFreeSpaceResult insertResult =
+      createTupleWithFreeSpacePort.createTupleWithFreeSpace(
+          target.tuplePageId, std::move(tupleData));
   updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId, target.tuplePageId,
-                                      remainingFreeSpace);
-  return {target.tuplePageId, slotId};
+                                      insertResult.remainingFreeSpace);
+  return {target.tuplePageId, insertResult.slotId};
 }
 
 } // namespace RdbService
