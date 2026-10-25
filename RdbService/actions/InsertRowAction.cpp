@@ -1,13 +1,19 @@
 #include "InsertRowAction.h"
 
 #include <limits>
+#include <cstddef>
 #include <exception>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace {
-constexpr std::size_t MAX_TUPLE_BYTES = 8176;
+constexpr std::size_t TUPLE_PAGE_SIZE_BYTES = 8192;
+constexpr std::size_t TUPLE_PAGE_HEADER_BYTES = 8;
+constexpr std::size_t TUPLE_SLOT_ENTRY_BYTES = 8;
+constexpr std::size_t MAX_TUPLE_BYTES = TUPLE_PAGE_SIZE_BYTES -
+                                       TUPLE_PAGE_HEADER_BYTES -
+                                       TUPLE_SLOT_ENTRY_BYTES;
 } // namespace
 
 namespace RdbService {
