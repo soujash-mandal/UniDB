@@ -190,6 +190,7 @@ add_executable(tests
     RdbService/test/GetTableDefinitionAction/ReturnsDefinitionForExistingTableTest.cpp
     RdbService/test/GetTableDefinitionAction/RejectsEmptyTableNameBeforeDependenciesTest.cpp
     RdbService/test/GetTableDefinitionAction/PropagatesLookupFailureTest.cpp
+    RdbService/test/SelectAllRowsAction/SelectAllRowsActionTestSupport.h
     RdbService/test/SelectAllRowsAction/ReturnsRowsAcrossAllTablePagesTest.cpp
     RdbService/test/SelectAllRowsAction/ReturnsEmptyForTableWithoutSpaceMapRootTest.cpp
     RdbService/test/SelectAllRowsAction/RejectsEmptyTableNameBeforeDependenciesTest.cpp
