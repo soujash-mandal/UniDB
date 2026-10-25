@@ -8,11 +8,9 @@ namespace RdbService {
 
 class CalculateRequiredSpaceAdapter final : public CalculateRequiredSpacePort {
 public:
-  explicit CalculateRequiredSpaceAdapter(
-      CalculateRequiredSpaceAction &action);
+  explicit CalculateRequiredSpaceAdapter(CalculateRequiredSpaceAction &action);
 
-  uint32_t calculateRequiredSpace(
-      const std::vector<char> &tupleData) override;
+  uint32_t calculateRequiredSpace(const std::vector<char> &tupleData) override;
 
 private:
   CalculateRequiredSpaceAction &action;
