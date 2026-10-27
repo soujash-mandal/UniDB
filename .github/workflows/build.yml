@@ -23,12 +23,12 @@ jobs:
         run: brew install ccache googletest
 
       - name: Restore compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .ccache
           key: ${{ runner.os }}-ccache-build-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-ccache-build-
+            ${{ runner.os }}-ccache-
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
@@ -36,7 +36,11 @@ jobs:
       - name: Build
         run: cmake --build build --parallel 3
 
+      - name: Save compiler cache
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-build-${{ github.sha }}
+
       - name: Show compiler cache statistics
         run: ccache --show-stats
-
-# Temporary no-op comment to trigger a fresh CI run; remove after validation.
