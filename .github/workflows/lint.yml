@@ -18,13 +18,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install clang-format
-        run: brew install clang-format
+        run: |
+          start=$SECONDS
+          brew install clang-format
+          duration=$((SECONDS - start))
+          echo "- clang-format installation: ${duration}s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check formatting
         run: |
+          start=$SECONDS
           files=$(find . -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
             -not -path "./build/*")
 
           for file in $files; do
             clang-format --dry-run --Werror "$file"
           done
+
+          duration=$((SECONDS - start))
+          echo "- Formatting check: ${duration}s" >> "$GITHUB_STEP_SUMMARY"
