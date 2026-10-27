@@ -20,7 +20,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build dependencies
-        run: brew install ccache googletest
+        run: |
+          start=$SECONDS
+          brew install ccache googletest
+          duration=$((SECONDS - start))
+          echo "- Dependency installation: ${duration}s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Restore compiler cache
         uses: actions/cache/restore@v4
@@ -31,10 +35,18 @@ jobs:
             ${{ runner.os }}-ccache-
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        run: |
+          start=$SECONDS
+          cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          duration=$((SECONDS - start))
+          echo "- CMake configure: ${duration}s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
-        run: cmake --build build --parallel 3
+        run: |
+          start=$SECONDS
+          cmake --build build --parallel 3
+          duration=$((SECONDS - start))
+          echo "- Compile/link: ${duration}s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save compiler cache
         uses: actions/cache/save@v4
