@@ -11,16 +11,26 @@ on:
 jobs:
   test:
     runs-on: macos-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install GoogleTest
-        run: brew install googletest
+      - name: Install build dependencies
+        run: brew install ccache googletest
+
+      - name: Restore compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
 
       - name: Configure
-        run: cmake -S . -B build
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --parallel 3
@@ -33,3 +43,6 @@ jobs:
 
       - name: Check service graph consistency
         run: python3 architecture/serviceGraphValidationTest.py
+
+      - name: Show compiler cache statistics
+        run: ccache --show-stats
