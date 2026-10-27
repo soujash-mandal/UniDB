@@ -3,6 +3,6 @@
 set -e
 
 cmake -S . -B build
-cmake --build build --parallel 2
+cmake --build build --parallel 3
 
 ctest --test-dir build --output-on-failure
