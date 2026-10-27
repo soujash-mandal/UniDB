@@ -38,3 +38,5 @@ jobs:
 
       - name: Show compiler cache statistics
         run: ccache --show-stats
+
+# Temporary no-op comment to trigger a fresh CI run; remove after validation.
