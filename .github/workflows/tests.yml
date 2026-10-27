@@ -25,9 +25,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          key: ${{ runner.os }}-ccache-tests-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-ccache-
+            ${{ runner.os }}-ccache-tests-
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
