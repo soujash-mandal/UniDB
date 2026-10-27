@@ -22,18 +22,24 @@ jobs:
         run: brew install ccache googletest
 
       - name: Restore compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: .ccache
           key: ${{ runner.os }}-ccache-tests-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-ccache-tests-
+            ${{ runner.os }}-ccache-
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --parallel 3
+
+      - name: Save compiler cache
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-tests-${{ github.sha }}
 
       - name: Run tests
         run: ctest --test-dir build --output-on-failure
