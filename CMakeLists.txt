@@ -100,15 +100,19 @@ set(UNIDB_SOURCES
     CatalogService/actions/UpdateTableAction.cpp
 )
 
-add_executable(unidb
-    main.cpp
+# Compile production translation units once and share them between the
+# server executable and the test executable.
+add_library(unidb_core STATIC
     DatabaseStartup.cpp
     ${UNIDB_SOURCES}
 )
 
+add_executable(unidb
+    main.cpp
+)
+target_link_libraries(unidb PRIVATE unidb_core)
+
 add_executable(tests
-    DatabaseStartup.cpp
-    ${UNIDB_SOURCES}
 
     DiskManager/test/DiskManagerE2ETest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
@@ -251,6 +255,8 @@ add_executable(tests
 )
 
 target_link_libraries(tests
+    PRIVATE
+    unidb_core
     GTest::gtest
     GTest::gtest_main
 )
