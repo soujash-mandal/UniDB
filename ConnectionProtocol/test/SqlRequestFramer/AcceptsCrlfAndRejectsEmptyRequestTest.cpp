@@ -2,17 +2,33 @@
 
 #include <gtest/gtest.h>
 
-#include <stdexcept>
+#include <string>
 
 TEST(SqlRequestFramerTest, AcceptsCrLfLineEndings) {
   ConnectionProtocol::SqlRequestFramer framer;
-  const auto requests = framer.append("SELECT * FROM people;\r\n");
+  const auto result = framer.append("SELECT * FROM people;\r\n");
 
-  ASSERT_EQ(requests.size(), 1U);
-  EXPECT_EQ(requests.front(), "SELECT * FROM people;");
+  ASSERT_FALSE(result.error.has_value());
+  ASSERT_EQ(result.requests.size(), 1U);
+  EXPECT_EQ(result.requests.front(), "SELECT * FROM people;");
 }
 
-TEST(SqlRequestFramerTest, RejectsEmptyRequest) {
+TEST(SqlRequestFramerTest, ReturnsEarlierRequestsAlongsideEmptyRequestError) {
   ConnectionProtocol::SqlRequestFramer framer;
-  EXPECT_THROW(framer.append("\n"), std::invalid_argument);
+  const auto result = framer.append("SELECT 1;\n\nSELECT 2;\n");
+
+  ASSERT_EQ(result.requests.size(), 1U);
+  EXPECT_EQ(result.requests.front(), "SELECT 1;");
+  ASSERT_TRUE(result.error.has_value());
+  EXPECT_EQ(*result.error, "SQL request must not be empty");
+}
+
+TEST(SqlRequestFramerTest, AcceptsMaximumLengthRequestWithCrLf) {
+  ConnectionProtocol::SqlRequestFramer framer;
+  const std::string sql(ConnectionProtocol::MAX_REQUEST_BYTES, 'x');
+  const auto result = framer.append(sql + "\r\n");
+
+  ASSERT_FALSE(result.error.has_value());
+  ASSERT_EQ(result.requests.size(), 1U);
+  EXPECT_EQ(result.requests.front(), sql);
 }
