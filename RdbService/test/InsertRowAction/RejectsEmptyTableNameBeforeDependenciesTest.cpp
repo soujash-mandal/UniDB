@@ -11,7 +11,7 @@ TEST(InsertRowActionTest, RejectsEmptyTableNameBeforeDependencies) {
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertFindSpacePort findSpace;
-  FakeInsertTupleWithFreeSpacePort createTuple;
+  FakeInsertTuplePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
                                      calculateRequiredSpace, findSpace,
