@@ -26,6 +26,7 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/file.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -45,6 +46,34 @@ std::string pidFilePath(std::string_view databasePath) {
 std::string logFilePath(std::string_view databasePath) {
   return std::string(databasePath) + ".log";
 }
+
+// Serialize lifecycle operations for a database path across processes.
+class LifecycleLock {
+public:
+  explicit LifecycleLock(std::string_view databasePath) {
+    const std::string lockPath = std::string(databasePath) + ".lifecycle.lock";
+    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR, 0644);
+    if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX) != 0) {
+      ::close(descriptor_);
+      descriptor_ = -1;
+    }
+  }
+
+  ~LifecycleLock() {
+    if (descriptor_ >= 0) {
+      ::flock(descriptor_, LOCK_UN);
+      ::close(descriptor_);
+    }
+  }
+
+  LifecycleLock(const LifecycleLock &) = delete;
+  LifecycleLock &operator=(const LifecycleLock &) = delete;
+
+  bool acquired() const { return descriptor_ >= 0; }
+
+private:
+  int descriptor_ = -1;
+};
 
 // Return a process-start token so a reused PID cannot identify another process.
 std::string processIdentity(pid_t pid) {
@@ -134,6 +163,19 @@ int connectToServer(unsigned int port) {
 
 int startServer(const char *executable, std::string_view databasePath,
                 unsigned int port) {
+#if !defined(__APPLE__) && !defined(__linux__)
+  (void)executable;
+  (void)databasePath;
+  (void)port;
+  std::cerr << "The 'start' command currently supports macOS and Linux only.\n";
+  return 1;
+#else
+  LifecycleLock lifecycleLock(databasePath);
+  if (!lifecycleLock.acquired()) {
+    std::cerr << "Could not acquire UniDB lifecycle lock for database: "
+              << databasePath << '\n';
+    return 1;
+  }
   const std::string pidPath = pidFilePath(databasePath);
   const std::string logPath = logFilePath(databasePath);
 
@@ -216,10 +258,15 @@ int startServer(const char *executable, std::string_view databasePath,
   {
     const std::string identity = processIdentity(child);
     std::ofstream pidFile(pidPath, std::ios::trunc);
-    if (identity.empty() || !pidFile ||
-        !(pidFile << child << '\n'
-                  << port << '\n'
-                  << identity << '\n')) {
+    bool pidFileWritten = !identity.empty() && static_cast<bool>(pidFile);
+    if (pidFileWritten) {
+      pidFile << child << '\n' << port << '\n' << identity << '\n';
+      pidFile.flush();
+      pidFileWritten = static_cast<bool>(pidFile);
+      pidFile.close();
+      pidFileWritten = pidFileWritten && !pidFile.fail();
+    }
+    if (!pidFileWritten) {
       std::cerr << "Could not write PID file with process identity: " << pidPath
                 << '\n';
       ::kill(child, SIGTERM);
@@ -269,6 +316,7 @@ int startServer(const char *executable, std::string_view databasePath,
   ::waitpid(child, nullptr, 0);
   std::remove(pidPath.c_str());
   return 1;
+#endif
 }
 
 int stopServer(std::string_view databasePath, unsigned int port) {
