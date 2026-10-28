@@ -244,14 +244,14 @@ int stopServer(std::string_view databasePath, unsigned int port) {
     return 1;
   }
   const auto pid = static_cast<pid_t>(rawPid);
-  if (recordedPort != port || !isPortReachable(recordedPort)) {
-    std::cerr << "PID file does not match a reachable UniDB listener on port "
-              << recordedPort << "; refusing to signal PID " << rawPid << ".\n";
-    return 1;
-  }
   if (::kill(pid, 0) != 0 && errno == ESRCH) {
     std::remove(pidPath.c_str());
     std::cerr << "Removed stale PID file; UniDB is not running.\n";
+    return 1;
+  }
+  if (recordedPort != port || !isPortReachable(recordedPort)) {
+    std::cerr << "PID file does not match a reachable UniDB listener on port "
+              << recordedPort << "; refusing to signal PID " << rawPid << ".\n";
     return 1;
   }
   if (::kill(pid, SIGTERM) != 0) {
