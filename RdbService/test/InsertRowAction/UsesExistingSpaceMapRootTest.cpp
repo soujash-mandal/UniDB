@@ -14,9 +14,9 @@ TEST(InsertRowActionTest, UsesExistingSpaceMapRoot) {
   FakeInsertTuplePort createTuple;
   FakeInsertReclaimPagePort reclaimPage;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
-  RdbService::InsertRowAction action(root, table, update, createSpaceMap, reclaimPage,
-                                     calculateRequiredSpace, findSpace,
-                                     createTuple, updateFreeSpace);
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+                                     reclaimPage, calculateRequiredSpace,
+                                     findSpace, createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'x'});
 

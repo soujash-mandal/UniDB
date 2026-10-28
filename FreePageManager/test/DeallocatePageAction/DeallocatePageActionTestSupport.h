@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 class DeallocateMetadataStore final : public ReadFreePageMetadataPort,
-                                     public WriteFreePageMetadataPort {
+                                      public WriteFreePageMetadataPort {
 public:
   std::unordered_map<MetadataPageId, MetadataPage> pages;
   bool failWrites = false;

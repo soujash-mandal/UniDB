@@ -8,7 +8,8 @@
 DeallocatePageAction::DeallocatePageAction(
     ReadFreePageMetadataPort &readMetadataPort,
     WriteFreePageMetadataPort &writeMetadataPort)
-    : readMetadataPort(readMetadataPort), writeMetadataPort(writeMetadataPort) {}
+    : readMetadataPort(readMetadataPort), writeMetadataPort(writeMetadataPort) {
+}
 
 void DeallocatePageAction::execute(uint32_t pageId) {
   // Step 1: Reject reserved and invalid page IDs before touching metadata.

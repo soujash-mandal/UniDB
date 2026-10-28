@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../actions/DeletePageAction.h"
 #include "../../../EvictionPolicy/FIFOEvictionPolicy.h"
+#include "../../actions/DeletePageAction.h"
 
 #include <stdexcept>
 

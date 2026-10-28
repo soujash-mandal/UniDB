@@ -16,9 +16,9 @@ TEST(InsertRowActionTest, ReportsCommittedLocationWhenSpaceMapUpdateFails) {
   FakeInsertReclaimPagePort reclaimPage;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   updateFreeSpace.failUpdate = true;
-  RdbService::InsertRowAction action(root, table, update, createSpaceMap, reclaimPage,
-                                     calculateRequiredSpace, findSpace,
-                                     createTuple, updateFreeSpace);
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+                                     reclaimPage, calculateRequiredSpace,
+                                     findSpace, createTuple, updateFreeSpace);
 
   bool caughtCommittedInsert = false;
   try {

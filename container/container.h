@@ -11,8 +11,8 @@
 #include "../EvictionPolicy/EvictionPolicy.h"
 #include "../EvictionPolicy/EvictionPolicyType.h"
 
-#include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/DeletePageAction.h"
+#include "../BufferPoolManager/actions/FetchPageAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
 #include "../BufferPoolManager/actions/NewPageAction.h"
 #include "../BufferPoolManager/actions/UnpinPageAction.h"
@@ -25,8 +25,8 @@
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
 #include "../FreePageManager/actions/AllocatePageAction.h"
-#include "../FreePageManager/actions/DeallocatePageAction.h"
 #include "../FreePageManager/actions/CreateFpmPageAction.h"
+#include "../FreePageManager/actions/DeallocatePageAction.h"
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
 
@@ -62,8 +62,8 @@
 #include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
 #include "../RdbService/adapter/GetCatalogRootPageIdAdapter.h"
 #include "../RdbService/adapter/GetCatalogTableByNameAdapter.h"
-#include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/ReclaimPageAdapter.h"
+#include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
 
 class Container {
 public:

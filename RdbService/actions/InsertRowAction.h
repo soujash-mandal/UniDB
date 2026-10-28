@@ -7,9 +7,9 @@
 #include "../port/FindPageWithSpacePort.h"
 #include "../port/GetCatalogRootPageIdPort.h"
 #include "../port/GetCatalogTableByNamePort.h"
+#include "../port/ReclaimPagePort.h"
 #include "../port/UpdateCatalogTablePort.h"
 #include "../port/UpdateFreeSpacePort.h"
-#include "../port/ReclaimPagePort.h"
 
 #include <cstdint>
 #include <stdexcept>

@@ -8,7 +8,7 @@
 class DeallocatePageAction {
 public:
   DeallocatePageAction(ReadFreePageMetadataPort &readMetadataPort,
-                      WriteFreePageMetadataPort &writeMetadataPort);
+                       WriteFreePageMetadataPort &writeMetadataPort);
   void execute(uint32_t pageId);
 
 private:

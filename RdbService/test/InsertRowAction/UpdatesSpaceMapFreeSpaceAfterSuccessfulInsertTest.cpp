@@ -15,9 +15,9 @@ TEST(InsertRowActionTest, UpdatesSpaceMapFreeSpaceAfterSuccessfulInsert) {
   FakeInsertReclaimPagePort reclaimPage;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   createTuple.remainingFreeSpace = 7654;
-  RdbService::InsertRowAction action(root, table, update, createSpaceMap, reclaimPage,
-                                     calculateRequiredSpace, findSpace,
-                                     createTuple, updateFreeSpace);
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+                                     reclaimPage, calculateRequiredSpace,
+                                     findSpace, createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'x'});
 
