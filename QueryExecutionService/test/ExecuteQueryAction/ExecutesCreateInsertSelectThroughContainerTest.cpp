@@ -15,7 +15,7 @@ TEST(ExecuteQueryActionIntegrationTest,
   std::filesystem::remove(databaseFile);
 
   {
-    Container container(databaseFile.string(), 2, EvictionPolicyType::FIFO);
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
     ASSERT_TRUE(DatabaseStartup::execute(container));
 
     const auto created = container.executeQueryAction().execute(
@@ -47,7 +47,7 @@ TEST(ExecuteQueryActionIntegrationTest,
   }
 
   {
-    Container reopened(databaseFile.string(), 2, EvictionPolicyType::FIFO);
+    Container reopened(databaseFile.string(), 4, EvictionPolicyType::FIFO);
     ASSERT_FALSE(DatabaseStartup::execute(reopened));
     const auto selected =
         reopened.executeQueryAction().execute("SELECT * FROM people;");
