@@ -1,4 +1,5 @@
 #include "DatabaseStartup.h"
+#include "cli/SqlShell.h"
 #include "container/container.h"
 
 #include <exception>
@@ -14,8 +15,13 @@ int main() {
     } else {
       std::cout << "Validated existing UniDB database.\n";
     }
+
+    SqlShell shell(container.executeQueryAction(), std::cin, std::cout,
+                   std::cerr);
+    shell.run();
+    container.flushDirtyPages();
   } catch (const std::exception &error) {
-    std::cerr << "UniDB startup failed: " << error.what() << '\n';
+    std::cerr << "UniDB failed: " << error.what() << '\n';
     return 1;
   }
 

@@ -15,7 +15,7 @@ TEST(ExecuteQueryActionIntegrationTest,
   std::filesystem::remove(databaseFile);
 
   {
-    Container container(databaseFile.string(), 2, EvictionPolicyType::FIFO);
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
     ASSERT_TRUE(DatabaseStartup::execute(container));
 
     const auto created = container.executeQueryAction().execute(
@@ -39,6 +39,24 @@ TEST(ExecuteQueryActionIntegrationTest,
         std::get<QueryExecutionService::QueryExecutionResult>(selected);
     ASSERT_EQ(result.rows.size(), 1U);
     ASSERT_EQ(result.rows[0].size(), 2U);
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 7);
+    EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "Ada");
+
+    // Scenario 2: Dirty pages are durable after an explicit shutdown flush.
+    container.flushDirtyPages();
+  }
+
+  {
+    Container reopened(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_FALSE(DatabaseStartup::execute(reopened));
+    const auto selected =
+        reopened.executeQueryAction().execute("SELECT * FROM people;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    ASSERT_EQ(result.rows.size(), 1U);
     EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 7);
     EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "Ada");
   }

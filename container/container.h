@@ -113,6 +113,8 @@ public:
   QueryExecutionService::ExecuteQueryAction &executeQueryAction() {
     return executeQuery;
   }
+  // Writes every dirty resident page to disk; throws if any write fails.
+  void flushDirtyPages();
 
   static constexpr uint32_t RDB_METADATA_PAGE_ID = 1;
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
