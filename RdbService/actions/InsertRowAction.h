@@ -11,6 +11,7 @@
 #include "../port/UpdateFreeSpacePort.h"
 
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -19,10 +20,22 @@ namespace RdbService {
 struct InsertedRowLocation {
   uint32_t tuplePageId;
   uint32_t slotId;
-  uint32_t spaceMapPageId;
-  uint32_t remainingFreeSpace;
-  bool spaceMapUpdated;
-  std::string spaceMapUpdateError;
+};
+
+// Signals that the row was committed, but its SpaceMap free-space entry could
+// not be refreshed. Callers can inspect the location without retrying INSERT.
+class SpaceMapUpdateFailedAfterInsert : public std::runtime_error {
+public:
+  SpaceMapUpdateFailedAfterInsert(InsertedRowLocation insertedRowLocation,
+                                  const std::string &message)
+      : std::runtime_error(message), insertedRowLocation(insertedRowLocation) {}
+
+  const InsertedRowLocation &getInsertedRowLocation() const noexcept {
+    return insertedRowLocation;
+  }
+
+private:
+  InsertedRowLocation insertedRowLocation;
 };
 
 class InsertRowAction {
