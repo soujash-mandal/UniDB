@@ -209,8 +209,8 @@ private:
   FindPageWithSpaceAdapter findPageWithSpaceAdapter;
   GetTablePagesAdapter getTablePagesAdapter;
   CreateTupleAdapter createTupleAdapter;
-  CalculateRequiredSpaceAdapter calculateRequiredSpaceAdapter;
-  UpdateFreeSpaceAdapter updateFreeSpaceAdapter;
+  RdbService::CalculateRequiredSpaceAdapter calculateRequiredSpaceAdapter;
+  RdbService::UpdateFreeSpaceAdapter updateFreeSpaceAdapter;
   GetAllTuplesAdapter getAllTuplesAdapter;
   UpdateCatalogTableAdapter updateCatalogTableAdapter;
 
