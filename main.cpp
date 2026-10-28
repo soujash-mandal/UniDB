@@ -325,7 +325,7 @@ int stopServer(std::string_view databasePath, unsigned int port) {
   LifecycleLock lifecycleLock(databasePath);
   if (!lifecycleLock.acquired()) {
     std::cerr << "Could not acquire UniDB lifecycle lock for database: "
-              << databasePath << '\\n';
+              << databasePath << '\n';
     return 1;
   }
 
