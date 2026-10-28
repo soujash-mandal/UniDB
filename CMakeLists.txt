@@ -212,6 +212,9 @@ add_executable(tests
     RdbService/test/InsertRowAction/UsesExistingSpaceMapRootTest.cpp
     RdbService/test/InsertRowAction/PropagatesPageDiscoveryFailureTest.cpp
     RdbService/test/InsertRowAction/PersistsNewSpaceMapRootBeforePageDiscoveryTest.cpp
+    RdbService/test/InsertRowAction/ReclaimsNewSpaceMapRootWhenCatalogPublicationFailsTest.cpp
+    RdbService/test/InsertRowAction/PreservesCatalogExceptionWhenRootReclamationFailsTest.cpp
+    RdbService/test/InsertRowAction/DoesNotReclaimSpaceMapRootWhenCatalogPublicationSucceedsTest.cpp
     RdbService/test/InsertRowAction/RejectsTupleTooLargeForPageBeforeDependenciesTest.cpp
     RdbService/test/InsertRowAction/ReturnsCommittedLocationWhenSpaceMapUpdateFailsTest.cpp
     RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
