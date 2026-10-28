@@ -15,7 +15,7 @@
 #include <vector>
 
 class FakeSpaceMapStore final : public NewPagePort,
-                                public WritePagePort,
+                                public SpaceMapWritePagePort,
                                 public UnpinPagePort,
                                 public FetchPagePort,
                                 public CreateTuplePagePort {
