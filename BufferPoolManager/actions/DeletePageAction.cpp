@@ -55,7 +55,6 @@ void DeletePageAction::execute(BufferPoolPageId pageId) {
   if (residentFrame != nullptr) {
     residentFrame->setPage(BufferPoolPage{});
     residentFrame->setPageId(0);
-    residentFrame->setPinCountForDelete(0);
     residentFrame->setDirty(false);
     residentFrame->setOccupied(false);
   }
