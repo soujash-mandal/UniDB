@@ -140,8 +140,7 @@ int startServer(const char *executable, std::string_view databasePath,
                   sizeof(existingAddress)) == 0;
     ::close(existingListener);
     if (portInUse) {
-      std::cerr << "Port " << port
-                << " is already in use on 127.0.0.1.\n";
+      std::cerr << "Port " << port << " is already in use on 127.0.0.1.\n";
       return 1;
     }
   }
@@ -213,7 +212,8 @@ int startServer(const char *executable, std::string_view databasePath,
       }
       if (childState == child) {
         std::remove(pidPath.c_str());
-        std::cerr << "UniDB failed to start. Check the log: " << logPath << '\n';
+        std::cerr << "UniDB failed to start. Check the log: " << logPath
+                  << '\n';
         return 1;
       }
     }
