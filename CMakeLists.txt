@@ -117,6 +117,7 @@ add_library(unidb_core STATIC
 
 add_executable(unidb
     main.cpp
+    cli/SqlShell.cpp
 )
 target_link_libraries(unidb PRIVATE unidb_core)
 
