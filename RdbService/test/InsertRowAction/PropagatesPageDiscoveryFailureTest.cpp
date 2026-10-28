@@ -11,7 +11,7 @@ TEST(InsertRowActionTest, PropagatesPageDiscoveryFailure) {
   FakeInsertUpdateTablePort update;
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
-  FakeInsertTupleWithFreeSpacePort createTuple;
+  FakeInsertTuplePort createTuple;
   class FailingSpaceLookup final : public FindPageWithSpacePort {
   public:
     RdbFindPageWithSpaceResult findPageWithSpace(uint32_t, uint32_t) override {
