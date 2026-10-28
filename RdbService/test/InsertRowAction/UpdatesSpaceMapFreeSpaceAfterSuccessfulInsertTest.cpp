@@ -11,7 +11,7 @@ TEST(InsertRowActionTest, UpdatesSpaceMapFreeSpaceAfterSuccessfulInsert) {
   FakeInsertCreateSpaceMapPort createSpaceMap;
   FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertFindSpacePort findSpace;
-  FakeInsertTupleWithFreeSpacePort createTuple;
+  FakeInsertTuplePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   createTuple.remainingFreeSpace = 7654;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
