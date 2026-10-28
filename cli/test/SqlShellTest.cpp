@@ -92,7 +92,7 @@ TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
       {std::int64_t{10}, std::string("👩‍💻")}));
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
-  std::istringstream input("SELECT * FROM people;\\nquit\\n");
+  std::istringstream input("SELECT * FROM people;\nquit\n");
   std::ostringstream output;
   std::ostringstream error;
   SqlShell shell(action, input, output, error);
