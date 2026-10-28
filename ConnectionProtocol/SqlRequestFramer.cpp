@@ -1,26 +1,28 @@
 #include "SqlRequestFramer.h"
 
-#include <stdexcept>
-#include <utility>
-
 namespace ConnectionProtocol {
 
-std::vector<std::string> SqlRequestFramer::append(std::string_view bytes) {
-  std::vector<std::string> requests;
+SqlRequestFramingResult SqlRequestFramer::append(std::string_view bytes) {
+  SqlRequestFramingResult result;
 
   std::size_t start = 0;
   while (start < bytes.size()) {
     const auto newline = bytes.find('\n', start);
     const auto end = newline == std::string_view::npos ? bytes.size() : newline;
-    const auto segment = bytes.substr(start, end - start);
+    auto segment = bytes.substr(start, end - start);
 
-    if (segment.size() > MAX_REQUEST_BYTES - (pending.size() > MAX_REQUEST_BYTES
-                                                  ? MAX_REQUEST_BYTES
-                                                  : pending.size())) {
-      throw std::length_error("SQL request exceeds 64 KiB limit");
+    // CRLF's carriage return is a line terminator, not part of the SQL frame.
+    const bool hasCrLf = newline != std::string_view::npos && !segment.empty() &&
+                         segment.back() == '\r';
+    const auto segmentSize = segment.size() - (hasCrLf ? 1U : 0U);
+    if (pending.size() > MAX_REQUEST_BYTES ||
+        segmentSize > MAX_REQUEST_BYTES - pending.size()) {
+      pending.clear();
+      result.error = "SQL request exceeds 64 KiB limit";
+      return result;
     }
-    pending.append(segment);
 
+    pending.append(segment);
     if (newline == std::string_view::npos) {
       break;
     }
@@ -29,20 +31,16 @@ std::vector<std::string> SqlRequestFramer::append(std::string_view bytes) {
       pending.pop_back();
     }
     if (pending.empty()) {
-      throw std::invalid_argument("SQL request must not be empty");
+      result.error = "SQL request must not be empty";
+      return result;
     }
-    requests.push_back(std::move(pending));
+
+    result.requests.push_back(std::move(pending));
     pending.clear();
     start = newline + 1;
   }
 
-  if (bytes.empty() && pending.size() > MAX_REQUEST_BYTES) {
-    throw std::length_error("SQL request exceeds 64 KiB limit");
-  }
-  if (pending.size() > MAX_REQUEST_BYTES) {
-    throw std::length_error("SQL request exceeds 64 KiB limit");
-  }
-  return requests;
+  return result;
 }
 
 } // namespace ConnectionProtocol
