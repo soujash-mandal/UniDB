@@ -42,6 +42,16 @@ std::string escapeTerminalText(const std::string &value) {
 
   for (std::size_t index = 0; index < value.size();) {
     const auto first = static_cast<unsigned char>(value[index]);
+    if (first == '\\') {
+      escaped += "\\\\";
+      ++index;
+      continue;
+    }
+    if (first == '|') {
+      escaped += "\\\\|";
+      ++index;
+      continue;
+    }
     if (first < 0x20 || first == 0x7f) {
       switch (first) {
       case '\t':
