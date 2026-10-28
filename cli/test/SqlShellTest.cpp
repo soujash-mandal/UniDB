@@ -167,7 +167,6 @@ TEST(SqlShellTest, ExitsCleanlyOnEndOfInput) {
   EXPECT_TRUE(error.str().empty());
 }
 
-
 TEST(SqlShellTest, ClearsScreenWithClsAndContinuesProcessingCommands) {
   // Scenario 8: cls clears visible terminal output without exiting the shell.
   FakeQesRdbServicePort port;
