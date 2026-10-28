@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../BufferPoolManager/actions/WritePageAction.h"
-#include "../port/SpaceMapWritePagePort.h"
+#include "../port/WritePagePort.h"
 
 class SpaceMapBufferPoolWritePageAdapter : public SpaceMapWritePagePort {
 public:
