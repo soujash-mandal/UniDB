@@ -12,8 +12,9 @@ TEST(InsertRowActionTest, UsesExistingSpaceMapRoot) {
   FakeInsertCalculateRequiredSpacePort calculateRequiredSpace;
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
+  FakeInsertReclaimPagePort reclaimPage;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
-  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap, reclaimPage,
                                      calculateRequiredSpace, findSpace,
                                      createTuple, updateFreeSpace);
 
