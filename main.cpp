@@ -287,6 +287,8 @@ int connectInteractive(unsigned int port) {
   pollfd descriptors[2] = {{STDIN_FILENO, POLLIN, 0}, {socket, POLLIN, 0}};
   char buffer[4096];
   bool stdinOpen = true;
+  bool sentInput = false;
+  bool inputEndsWithNewline = false;
   while (true) {
     descriptors[0].fd = stdinOpen ? STDIN_FILENO : -1;
     const int ready = ::poll(descriptors, 2, -1);
@@ -301,11 +303,22 @@ int connectInteractive(unsigned int port) {
       const auto count = ::read(STDIN_FILENO, buffer, sizeof(buffer));
       if (count <= 0) {
         stdinOpen = false;
+        if (sentInput && !inputEndsWithNewline) {
+          const char newline = '\n';
+          if (!sendAll(socket, &newline, 1)) {
+            std::cerr << "Failed to terminate SQL input.\n";
+            ::close(socket);
+            return 1;
+          }
+        }
         ::shutdown(socket, SHUT_WR);
       } else if (!sendAll(socket, buffer, static_cast<std::size_t>(count))) {
         std::cerr << "Failed to send SQL to UniDB.\n";
         ::close(socket);
         return 1;
+      } else {
+        sentInput = true;
+        inputEndsWithNewline = buffer[count - 1] == '\n';
       }
     }
     if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR)) {
@@ -315,8 +328,6 @@ int connectInteractive(unsigned int port) {
       std::cout.write(buffer, count);
       std::cout.flush();
     }
-    if (!stdinOpen && (descriptors[1].revents & (POLLHUP | POLLERR)))
-      break;
   }
   ::close(socket);
   return 0;
