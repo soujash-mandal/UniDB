@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -88,14 +89,10 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
         output << ' ';
         if (columnIndex < formattedRows[rowIndex].size()) {
           const auto &value = formattedRows[rowIndex][columnIndex];
-          const bool isText =
-              std::holds_alternative<std::string>(result.rows[rowIndex][columnIndex]);
-          if (isText) {
-            output << std::left;
-          } else {
-            output << std::right;
-          }
-          output << std::setw(static_cast<int>(widths[columnIndex])) << value;
+          const bool isText = std::holds_alternative<std::string>(
+              result.rows[rowIndex][columnIndex]);
+          output << (isText ? std::left : std::right)
+                 << std::setw(static_cast<int>(widths[columnIndex])) << value;
         } else {
           output << std::setw(static_cast<int>(widths[columnIndex])) << "";
         }
