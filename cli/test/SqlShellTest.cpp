@@ -109,7 +109,7 @@ TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
   shell.run();
 
   EXPECT_NE(output.str().find("bad \\xFF"), std::string::npos);
-  EXPECT_NE(output.str().find("| 10 | 👩‍💻       |"), std::string::npos);
+  EXPECT_NE(output.str().find("| 10 | 👩‍💻      |"), std::string::npos);
   EXPECT_NE(output.str().find("C1 \\u009B"), std::string::npos);
   EXPECT_NE(output.str().find("a \\| b"), std::string::npos);
   EXPECT_NE(output.str().find("\\\\t"), std::string::npos);
