@@ -429,18 +429,18 @@ int stopServer(std::string_view databasePath, unsigned int port) {
     // the record unless the kernel confirms that the process no longer exists.
     if (::kill(pid, 0) != 0 && errno == ESRCH) {
       std::remove(pidPath.c_str());
-      std::cerr << "Removed stale PID file; UniDB is not running.\\n";
+      std::cerr << "Removed stale PID file; UniDB is not running.\n";
       return 1;
     }
     std::cerr << "Could not verify the process identity in " << pidPath
-              << "; refusing to signal or remove the PID file.\\n";
+              << "; refusing to signal or remove the PID file.\n";
     return 1;
   }
   if (currentIdentity != recordedIdentity) {
     std::remove(pidPath.c_str());
     std::cerr
         << "PID no longer identifies the UniDB process; removed stale PID "
-           "file without sending a signal.\\n";
+           "file without sending a signal.\n";
     return 1;
   }
   if (recordedPort != port || !isPortReachable(recordedPort)) {
@@ -479,13 +479,13 @@ int connectInteractive(unsigned int port) {
   if (socketFlags < 0 ||
       ::fcntl(socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
     std::cerr << "Could not make the UniDB client socket nonblocking: "
-              << std::strerror(errno) << '\\n';
+              << std::strerror(errno) << '\n';
     ::close(socket);
     return 1;
   }
 
   std::cout << "Connected to UniDB at 127.0.0.1:" << port
-            << ". Enter one SQL statement per line; Ctrl+D disconnects.\\n";
+            << ". Enter one SQL statement per line; Ctrl+D disconnects.\n";
 
   constexpr std::size_t kMaxPendingInput = 64 * 1024;
   pollfd descriptors[2] = {};
@@ -512,7 +512,7 @@ int connectInteractive(unsigned int port) {
     if (ready < 0) {
       if (errno == EINTR)
         continue;
-      std::cerr << "Client poll failed: " << std::strerror(errno) << '\\n';
+      std::cerr << "Client poll failed: " << std::strerror(errno) << '\n';
       ::close(socket);
       return 1;
     }
@@ -524,20 +524,20 @@ int connectInteractive(unsigned int port) {
       if (count == 0) {
         stdinOpen = false;
         if (sentInput && !inputEndsWithNewline) {
-          pendingInput.push_back('\\n');
+          pendingInput.push_back('\n');
           inputEndsWithNewline = true;
         }
       } else if (count < 0) {
         if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
           std::cerr << "Failed to read SQL input: " << std::strerror(errno)
-                    << '\\n';
+                    << '\n';
           ::close(socket);
           return 1;
         }
       } else {
         pendingInput.append(buffer, static_cast<std::size_t>(count));
         sentInput = true;
-        inputEndsWithNewline = buffer[count - 1] == '\\n';
+        inputEndsWithNewline = buffer[count - 1] == '\n';
       }
     }
 
@@ -558,7 +558,7 @@ int connectInteractive(unsigned int port) {
         } else if (count < 0 && errno != EINTR && errno != EAGAIN &&
                    errno != EWOULDBLOCK) {
           std::cerr << "Failed to send SQL to UniDB: " << std::strerror(errno)
-                    << '\\n';
+                    << '\n';
           ::close(socket);
           return 1;
         }
@@ -582,7 +582,7 @@ int connectInteractive(unsigned int port) {
       } else if (errno != EINTR && errno != EAGAIN &&
                  errno != EWOULDBLOCK) {
         std::cerr << "Failed to receive response from UniDB: "
-                  << std::strerror(errno) << '\\n';
+                  << std::strerror(errno) << '\n';
         ::close(socket);
         return 1;
       }
