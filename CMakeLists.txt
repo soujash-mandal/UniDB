@@ -19,6 +19,7 @@ set(UNIDB_SOURCES
     FreePageManager/adapter/WriteFreePageMetadataAdapter.cpp
     FreePageManager/domain/MetadataPage.cpp
     FreePageManager/actions/AllocatePageAction.cpp
+    FreePageManager/actions/DeallocatePageAction.cpp
     FreePageManager/actions/CreateFpmPageAction.cpp
 
     EvictionPolicy/EvictionPolicyFactory.cpp
@@ -27,11 +28,13 @@ set(UNIDB_SOURCES
     BufferPoolManager/adapter/ReadPageAdapter.cpp
     BufferPoolManager/adapter/WritePageAdapter.cpp
     BufferPoolManager/adapter/AllocatePageAdapter.cpp
+    BufferPoolManager/adapter/DeallocatePageAdapter.cpp
     BufferPoolManager/actions/FetchPageAction.cpp
     BufferPoolManager/actions/WritePageAction.cpp
     BufferPoolManager/actions/FlushPageAction.cpp
     BufferPoolManager/actions/NewPageAction.cpp
     BufferPoolManager/actions/UnpinPageAction.cpp
+    BufferPoolManager/actions/DeletePageAction.cpp
 
     RdbMetadataService/domain/RdbMetadataPage.cpp
     RdbMetadataService/adapter/BufferPoolFetchPageAdapter.cpp
@@ -94,6 +97,7 @@ set(UNIDB_SOURCES
     RdbService/adapter/UpdateRdbMetadataPageAdapter.cpp
     RdbService/adapter/AllocateNextTableIdAdapter.cpp
     RdbService/adapter/GetCatalogRootPageIdAdapter.cpp
+    RdbService/adapter/ReclaimPageAdapter.cpp
 
     SQLParser/SqlLexer.cpp
     SQLParser/SqlParserImpl.cpp
