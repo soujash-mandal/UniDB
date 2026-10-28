@@ -24,6 +24,7 @@ InsertRowAction::InsertRowAction(
     GetCatalogTableByNamePort &getCatalogTableByNamePort,
     UpdateCatalogTablePort &updateCatalogTablePort,
     CreateSpaceMapPagePort &createSpaceMapPagePort,
+    ReclaimPagePort &reclaimPagePort,
     CalculateRequiredSpacePort &calculateRequiredSpacePort,
     FindPageWithSpacePort &findPageWithSpacePort,
     CreateTuplePort &createTuplePort, UpdateFreeSpacePort &updateFreeSpacePort)
@@ -31,6 +32,7 @@ InsertRowAction::InsertRowAction(
       getCatalogTableByNamePort(getCatalogTableByNamePort),
       updateCatalogTablePort(updateCatalogTablePort),
       createSpaceMapPagePort(createSpaceMapPagePort),
+      reclaimPagePort(reclaimPagePort),
       calculateRequiredSpacePort(calculateRequiredSpacePort),
       findPageWithSpacePort(findPageWithSpacePort),
       createTuplePort(createTuplePort),
@@ -77,8 +79,19 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
     // Step 5.2: Save the newly created root ID in the catalog before
     // proceeding. This way, if page discovery fails later, the catalog still
     // records the root.
-    updateCatalogTablePort.updateTable(catalogRootPageId, table,
-                                       table.firstSpaceMapPageId);
+    try {
+      updateCatalogTablePort.updateTable(catalogRootPageId, table,
+                                         table.firstSpaceMapPageId);
+    } catch (...) {
+      // Step 5.2.1: The Catalog did not publish ownership of the new root.
+      // Reclaim it, but never let a cleanup error mask the Catalog failure.
+      const std::exception_ptr publicationError = std::current_exception();
+      try {
+        reclaimPagePort.reclaimPage(table.firstSpaceMapPageId);
+      } catch (...) {
+      }
+      std::rethrow_exception(publicationError);
+    }
   } else {
     // Step 5.3 (FALSE branch): A root already exists; reuse it without creating
     // a page or updating the catalog root field.
