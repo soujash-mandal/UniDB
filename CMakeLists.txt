@@ -10,6 +10,8 @@ find_package(GTest REQUIRED)
 
 set(UNIDB_SOURCES
     container/container.cpp
+    ConnectionProtocol/SqlRequestFramer.cpp
+    ConnectionProtocol/SqlConnectionServer.cpp
 
     DiskManager/adapter/FileDiskManagerAdapter.cpp
     DiskManager/actions/ReadDiskPageAction.cpp
@@ -193,6 +195,9 @@ add_executable(tests
     SpaceMapService/test/GetTablePagesAction/ReturnsEmptyInventoryWhenRootPageIdIsInvalidTest.cpp
     SpaceMapService/test/GetTablePagesAction/RejectsCorruptEntryCountAndUnpinsPageTest.cpp
     SpaceMapService/test/GetTablePagesAction/GetTablePagesActionTestSupport.h
+    ConnectionProtocol/test/SqlRequestFramer/ExtractsCompleteRequestsAcrossChunksTest.cpp
+    ConnectionProtocol/test/SqlRequestFramer/AcceptsCrlfAndRejectsEmptyRequestTest.cpp
+    ConnectionProtocol/test/SqlRequestFramer/RejectsOversizedRequestTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp

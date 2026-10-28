@@ -1,71 +1,50 @@
+#include "ConnectionProtocol/SqlConnectionServer.h"
 #include "DatabaseStartup.h"
 #include "cli/SqlShell.h"
 #include "container/container.h"
 
-#include <chrono>
-#include <csignal>
+#include <cstdint>
 #include <exception>
 #include <iostream>
+#include <string>
 #include <string_view>
-#include <thread>
-
-namespace {
-
-// Signal handlers may only perform async-signal-safe operations. sig_atomic_t
-// is used to communicate the shutdown request to the main thread.
-volatile std::sig_atomic_t shutdownRequested = 0;
-
-extern "C" void requestShutdown(int) { shutdownRequested = 1; }
-
-bool installShutdownHandlers() {
-  struct sigaction action{};
-  action.sa_handler = requestShutdown;
-  sigemptyset(&action.sa_mask);
-  action.sa_flags = 0;
-
-  return sigaction(SIGINT, &action, nullptr) == 0 &&
-         sigaction(SIGTERM, &action, nullptr) == 0;
-}
-
-int runServer(Container &container) {
-  if (!installShutdownHandlers()) {
-    std::cerr << "UniDB failed: could not install shutdown signal handlers\n";
-    return 1;
-  }
-
-  std::cout
-      << "UniDB server lifecycle started. Waiting for SIGINT or SIGTERM.\n";
-  while (shutdownRequested == 0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  std::cout << "UniDB server shutting down; flushing dirty pages.\n";
-  container.flushDirtyPages();
-  std::cout << "UniDB server shutdown complete.\n";
-  return 0;
-}
-
-} // namespace
 
 int main(int argc, char *argv[]) {
   bool serverMode = false;
   std::string_view databasePath = "database.db";
+  unsigned int port = 7432;
 
   for (int index = 1; index < argc; ++index) {
     const std::string_view argument(argv[index]);
     if (argument == "--server") {
       serverMode = true;
+    } else if (argument == "--port") {
+      if (index + 1 >= argc) {
+        std::cerr << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n";
+        return 2;
+      }
+      try {
+        const auto parsed = std::stoul(argv[++index]);
+        if (parsed == 0 || parsed > 65535)
+          throw std::out_of_range("port");
+        port = static_cast<unsigned int>(parsed);
+      } catch (const std::exception &) {
+        std::cerr << "Invalid TCP port. Expected a number from 1 to 65535.\n";
+        return 2;
+      }
     } else if (argument == "--db-path") {
       if (index + 1 >= argc) {
-        std::cerr << "Usage: unidb [--server] [--db-path PATH]\n";
+        std::cerr << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n";
         return 2;
       }
       databasePath = argv[++index];
     } else if (argument == "--help") {
       std::cout
-          << "Usage: unidb [--server] [--db-path PATH]\n"
-             "  --server       Run without the interactive SQL shell.\n"
-             "  --db-path PATH Database file path (default: database.db).\n";
+          << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n"
+             "  --server       Accept newline-delimited SQL over loopback "
+             "TCP.\n"
+             "  --db-path PATH Database file path (default: database.db).\n"
+             "  --port PORT    TCP port (default: 7432; loopback only).\n";
       return 0;
     } else {
       std::cerr << "Unknown argument: " << argument << '\n'
@@ -85,7 +64,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (serverMode) {
-      return runServer(container);
+      ConnectionProtocol::SqlConnectionServer server(
+          container, static_cast<std::uint16_t>(port));
+      return server.run();
     }
 
     SqlShell shell(container.executeQueryAction(), std::cin, std::cout,
