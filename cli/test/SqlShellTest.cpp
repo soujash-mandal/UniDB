@@ -1,6 +1,6 @@
-#include "ExecuteQueryActionTestSupport.h"
-#include "../../../cli/SqlShell.h"
-#include "../../adapter/SqlTupleCodec.h"
+#include "../../QueryExecutionService/test/ExecuteQueryAction/ExecuteQueryActionTestSupport.h"
+#include "../SqlShell.h"
+#include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
 
 #include <gtest/gtest.h>
 
