@@ -18,6 +18,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <string_view>
 #include <thread>
 #include <vector>
@@ -60,7 +61,8 @@ std::string logFilePath(std::string_view databasePath) {
 class LifecycleLock {
 public:
   explicit LifecycleLock(std::string_view databasePath) {
-    const std::string lockPath = lifecycleKey(databasePath) + ".lifecycle.lock";
+    const std::string lockPath =
+        lifecycleKey(databasePath) + ".lifecycle.lock";
     descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
     if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX) != 0) {
       ::close(descriptor_);
@@ -208,8 +210,8 @@ int startServer(const char *executable, std::string_view databasePath,
         }
         const std::string currentIdentity = processIdentity(existingProcess);
         if (currentIdentity.empty()) {
-          std::cerr << "Could not verify the live process identity in " << pidPath
-                    << "; refusing to remove the PID file.\n";
+          std::cerr << "Could not verify the live process identity in "
+                    << pidPath << "; refusing to remove the PID file.\n";
           return 1;
         }
         if (currentIdentity == recordedIdentity) {
