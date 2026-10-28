@@ -4,6 +4,7 @@
 #include "../../port/CalculateRequiredSpacePort.h"
 #include "../../port/CreateTuplePort.h"
 #include "../../port/UpdateFreeSpacePort.h"
+#include "../../port/ReclaimPagePort.h"
 
 #include <limits>
 #include <stdexcept>
@@ -41,11 +42,30 @@ public:
   uint32_t calls = 0;
   uint32_t root = 0;
   uint32_t spaceMapRoot = 0;
+  bool failUpdate = false;
+  std::string failureMessage = "catalog publication failed";
   void updateTable(uint32_t requestedRoot, const RdbTableDefinition &,
                    uint32_t requestedSpaceMapRoot) override {
     ++calls;
     root = requestedRoot;
     spaceMapRoot = requestedSpaceMapRoot;
+    if (failUpdate) {
+      throw std::runtime_error(failureMessage);
+    }
+  }
+};
+
+class FakeInsertReclaimPagePort final : public RdbService::ReclaimPagePort {
+public:
+  uint32_t calls = 0;
+  uint32_t pageId = 0;
+  bool failReclaim = false;
+  void reclaimPage(uint32_t requestedPageId) override {
+    ++calls;
+    pageId = requestedPageId;
+    if (failReclaim) {
+      throw std::runtime_error("page reclamation failed");
+    }
   }
 };
 
