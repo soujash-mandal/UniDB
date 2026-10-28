@@ -62,10 +62,9 @@ int main(int argc, char *argv[]) {
       }
       databasePath = argv[++index];
     } else if (argument == "--help") {
-      std::cout
-          << "Usage: unidb [--server] [--db-path PATH]\n"
-             "  --server       Run without the interactive SQL shell.\n"
-             "  --db-path PATH Database file path (default: database.db).\n";
+      std::cout << "Usage: unidb [--server] [--db-path PATH]\n"
+                   "  --server       Run without the interactive SQL shell.\n"
+                   "  --db-path PATH Database file path (default: database.db).\n";
       return 0;
     } else {
       std::cerr << "Unknown argument: " << argument << '\n'
@@ -75,7 +74,8 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    Container container(std::string(databasePath), 2, EvictionPolicyType::FIFO);
+    Container container(std::string(databasePath), 2,
+                        EvictionPolicyType::FIFO);
 
     const bool initializedNewDatabase = DatabaseStartup::execute(container);
     if (initializedNewDatabase) {
