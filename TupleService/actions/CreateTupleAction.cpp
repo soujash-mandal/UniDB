@@ -6,12 +6,14 @@ CreateTupleAction::CreateTupleAction(TupleFetchPagePort &fetchPagePort,
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 
-TupleSlotId CreateTupleAction::execute(TuplePageId pageId,
-                                       std::vector<char> tupleData) {
+CreateTupleActionResult
+CreateTupleAction::execute(TuplePageId pageId, std::vector<char> tupleData) {
   TuplePage page = fetchPagePort.fetchPage(pageId);
   TupleSlotId slotId;
+  uint32_t freeSpace;
   try {
     slotId = page.insert(tupleData);
+    freeSpace = page.getFreeSpace();
     writePagePort.writePage(pageId, page);
   } catch (...) {
     try {
@@ -23,5 +25,5 @@ TupleSlotId CreateTupleAction::execute(TuplePageId pageId,
   }
 
   unpinPagePort.unpinPage(pageId);
-  return slotId;
+  return {slotId, freeSpace};
 }

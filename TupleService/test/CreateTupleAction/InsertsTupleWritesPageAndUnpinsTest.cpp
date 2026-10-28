@@ -10,7 +10,9 @@ TEST(CreateTupleActionTest, InsertsTupleWritesPageAndUnpins) {
   store.seed(7, TuplePage{});
   CreateTupleAction action(store, store, store);
 
-  EXPECT_EQ(action.execute(7, {'a', 'b'}), 0U);
+  const auto result = action.execute(7, {'a', 'b'});
+  EXPECT_EQ(result.slotId, 0U);
+  EXPECT_EQ(result.freeSpace, 8174U);
   EXPECT_EQ(store.pages.at(7).get(0), (std::vector<char>{'a', 'b'}));
   EXPECT_FALSE(store.hasPinnedPages());
 }
