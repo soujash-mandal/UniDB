@@ -79,7 +79,7 @@ page-selection and page-creation responsibilities are refactored.
 Build the project first:
 
 ```bash
-./scripts/run.sh
+cmake -S . -B build && cmake --build build
 ```
 
 The executable supports lifecycle subcommands. Run them from the repository root (or use the path to your built executable):
