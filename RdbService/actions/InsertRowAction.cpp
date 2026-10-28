@@ -98,7 +98,7 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
       createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
 
   // Step 8: Refresh SpaceMap's recorded free-space value using the actual
-  // post-insert value, not the estimate calculated in Step 3.
+  // post-insert value, not the estimate calculated in Step 2.
   bool spaceMapUpdated = true;
   std::string spaceMapUpdateError;
   try {
