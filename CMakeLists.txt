@@ -201,6 +201,8 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/RejectsUnsupportedSelectFormsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp
+    cli/test/SqlShellTest.cpp
+    cli/SqlShell.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
