@@ -147,8 +147,8 @@ void serveClient(int client, Container &container) {
     }
     if (framing.error) {
       const std::string response =
-          "{\\"ok\\":false,\\"error\\":{\\"code\\":\\"invalid_request\\",\\"message\\":" +
-          jsonString(*framing.error) + "}}\\n";
+          "{\"ok\":false,\"error\":{\"code\":\"invalid_request\",\"message\":" +
+          jsonString(*framing.error) + "}}\n";
       sendAll(client, response);
       break;
     }
@@ -197,6 +197,7 @@ int SqlConnectionServer::run() {
   }
 
   std::cout << "UniDB SQL protocol listening on 127.0.0.1:" << port << '\n';
+  bool acceptFailed = false;
   while (!stopRequested) {
     const int client = ::accept(listener, nullptr, nullptr);
     if (client < 0) {
@@ -204,7 +205,7 @@ int SqlConnectionServer::run() {
         break;
       if (errno == EINTR || errno == ECONNABORTED)
         continue;
-      std::cerr << "UniDB accept failed: " << std::strerror(errno) << '\\n';
+      std::cerr << "UniDB accept failed: " << std::strerror(errno) << '\n';
       acceptFailed = true;
       break;
     }
@@ -216,7 +217,7 @@ int SqlConnectionServer::run() {
   std::cout << "UniDB server shutting down; flushing dirty pages.\n";
   container.flushDirtyPages();
   std::cout << "UniDB server shutdown complete.\n";
-  return 0;
+  return acceptFailed ? 1 : 0;
 }
 
 } // namespace ConnectionProtocol
