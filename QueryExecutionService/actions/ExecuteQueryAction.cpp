@@ -22,8 +22,7 @@ QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
 
-std::vector<SqlType>
-schemaTypes(const std::vector<ColumnDefinition> &schema) {
+std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
   std::vector<SqlType> types;
   types.reserve(schema.size());
   for (const auto &column : schema) {
@@ -46,18 +45,17 @@ QueryExecutionResult commandResult(std::string message,
 
 } // namespace
 
-ExecuteQueryAction::ExecuteQueryAction(
-    RdbServicePort &rdbServicePort, const unidb::sql::SqlParser &sqlParser)
+ExecuteQueryAction::ExecuteQueryAction(RdbServicePort &rdbServicePort,
+                                       const unidb::sql::SqlParser &sqlParser)
     : rdbServicePort(rdbServicePort), sqlParser(sqlParser) {}
 
-QueryExecutionOutcome
-ExecuteQueryAction::execute(std::string_view sql) const {
+QueryExecutionOutcome ExecuteQueryAction::execute(std::string_view sql) const {
   const unidb::sql::SqlParseResult parseResult = sqlParser.parse(sql);
-  if (const auto *error = std::get_if<unidb::sql::SqlParseError>(&parseResult)) {
-    const auto code =
-        error->code == unidb::sql::SqlParseErrorCode::SyntaxError
-            ? QueryExecutionErrorCode::SyntaxError
-            : QueryExecutionErrorCode::UnsupportedStatement;
+  if (const auto *error =
+          std::get_if<unidb::sql::SqlParseError>(&parseResult)) {
+    const auto code = error->code == unidb::sql::SqlParseErrorCode::SyntaxError
+                          ? QueryExecutionErrorCode::SyntaxError
+                          : QueryExecutionErrorCode::UnsupportedStatement;
     return QueryExecutionError{code, error->message};
   }
 
@@ -70,8 +68,8 @@ ExecuteQueryAction::execute(std::string_view sql) const {
   }
 }
 
-QueryExecutionOutcome ExecuteQueryAction::executeStatement(
-    const SqlStatement &statement) const {
+QueryExecutionOutcome
+ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   if (const auto *create = std::get_if<CreateTableStatement>(&statement)) {
     if (create->columns.empty()) {
       throw std::invalid_argument("CREATE TABLE requires at least one column");
@@ -83,8 +81,7 @@ QueryExecutionOutcome ExecuteQueryAction::executeStatement(
             "Column names must be non-empty and unique");
       }
       if (column.type != SqlType::Int && column.type != SqlType::Text) {
-        throw std::invalid_argument(
-            "Column type is outside the V1 SQL subset");
+        throw std::invalid_argument("Column type is outside the V1 SQL subset");
       }
     }
     rdbServicePort.createTable(*create);
@@ -100,8 +97,8 @@ QueryExecutionOutcome ExecuteQueryAction::executeStatement(
 
     std::vector<SqlValue> orderedValues(schema.size());
     std::vector<bool> assigned(schema.size(), false);
-    for (std::size_t inputIndex = 0;
-         inputIndex < insert->columnNames.size(); ++inputIndex) {
+    for (std::size_t inputIndex = 0; inputIndex < insert->columnNames.size();
+         ++inputIndex) {
       const auto found =
           std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
             return column.name == insert->columnNames[inputIndex];
@@ -119,8 +116,8 @@ QueryExecutionOutcome ExecuteQueryAction::executeStatement(
       const bool valueIsInt =
           std::holds_alternative<std::int64_t>(insert->values[inputIndex]);
       if ((types[schemaIndex] == SqlType::Int) != valueIsInt) {
-        throw std::invalid_argument("INSERT value type does not match column: " +
-                                    found->name);
+        throw std::invalid_argument(
+            "INSERT value type does not match column: " + found->name);
       }
       orderedValues[schemaIndex] = insert->values[inputIndex];
       assigned[schemaIndex] = true;
@@ -139,9 +136,8 @@ QueryExecutionOutcome ExecuteQueryAction::executeStatement(
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
     if (!select->selectAll ||
         !std::holds_alternative<std::monostate>(select->where)) {
-      return QueryExecutionError{
-          QueryExecutionErrorCode::UnsupportedStatement,
-          "V1 supports only SELECT * FROM table"};
+      return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
+                                 "V1 supports only SELECT * FROM table"};
     }
 
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);

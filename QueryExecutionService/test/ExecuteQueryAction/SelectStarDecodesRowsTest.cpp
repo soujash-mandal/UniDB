@@ -1,5 +1,5 @@
-#include "ExecuteQueryActionTestSupport.h"
 #include "../../adapter/SqlTupleCodec.h"
+#include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
 
@@ -14,8 +14,9 @@ TEST(ExecuteQueryActionTest, SelectStarDecodesRows) {
 
   const auto outcome = action.execute("SELECT * FROM people;");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   EXPECT_EQ(result.kind, QueryExecutionService::QueryExecutionResultKind::Rows);

@@ -1,5 +1,5 @@
-#include "ExecuteQueryActionTestSupport.h"
 #include "../../adapter/SqlTupleCodec.h"
+#include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
 
@@ -12,8 +12,9 @@ TEST(ExecuteQueryActionTest, InsertsValuesInSchemaOrder) {
   const auto outcome =
       action.execute("INSERT INTO people (name, id) VALUES ('Ada', 7);");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto decoded = SqlTupleCodec::decode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
       port.insertedBytes);

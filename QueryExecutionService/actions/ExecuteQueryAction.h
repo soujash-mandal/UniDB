@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../port/RdbServicePort.h"
 #include "../../SQLParserContract/sqlParser.h"
+#include "../port/RdbServicePort.h"
 
 #include <string>
 #include <string_view>
@@ -42,8 +42,8 @@ public:
   QueryExecutionOutcome execute(std::string_view sql) const;
 
 private:
-  QueryExecutionOutcome executeStatement(
-      const unidb::sql::SqlStatement &statement) const;
+  QueryExecutionOutcome
+  executeStatement(const unidb::sql::SqlStatement &statement) const;
 
   RdbServicePort &rdbServicePort;
   const unidb::sql::SqlParser &sqlParser;

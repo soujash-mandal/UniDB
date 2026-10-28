@@ -40,8 +40,8 @@ RdbServiceAdapter::RdbServiceAdapter(
     RdbService::SelectAllRowsAction &selectAllRowsAction)
     : metadataPageId(metadataPageId), createTableAction(createTableAction),
       getTableDefinitionAction(getTableDefinitionAction),
-      insertRowAction(insertRowAction), selectAllRowsAction(selectAllRowsAction) {
-}
+      insertRowAction(insertRowAction),
+      selectAllRowsAction(selectAllRowsAction) {}
 
 uint32_t RdbServiceAdapter::createTable(
     const unidb::sql::CreateTableStatement &statement) {
@@ -51,9 +51,7 @@ uint32_t RdbServiceAdapter::createTable(
   for (const auto &column : statement.columns) {
     const auto type = toRdbType(column.type);
     const uint16_t size =
-        type == RdbDataType::VARCHAR
-            ? std::numeric_limits<uint16_t>::max()
-            : 0;
+        type == RdbDataType::VARCHAR ? std::numeric_limits<uint16_t>::max() : 0;
     table.columns.push_back(RdbColumn{column.name, type, size, false});
   }
   return createTableAction.execute(metadataPageId, std::move(table));

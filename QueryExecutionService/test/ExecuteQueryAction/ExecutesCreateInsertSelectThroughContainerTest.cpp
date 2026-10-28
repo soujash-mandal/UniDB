@@ -20,18 +20,21 @@ TEST(ExecuteQueryActionIntegrationTest,
 
     const auto created = container.executeQueryAction().execute(
         "CREATE TABLE people (id INT, name TEXT);");
-    ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-        created));
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created));
 
     const auto inserted = container.executeQueryAction().execute(
         "INSERT INTO people (id, name) VALUES (7, 'Ada');");
-    ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-        inserted));
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            inserted));
 
     const auto selected =
         container.executeQueryAction().execute("SELECT * FROM people;");
-    ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-        selected));
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
     const auto &result =
         std::get<QueryExecutionService::QueryExecutionResult>(selected);
     ASSERT_EQ(result.rows.size(), 1U);

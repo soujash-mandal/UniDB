@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../../../SQLParser/SqlParserImpl.h"
 #include "../../actions/ExecuteQueryAction.h"
 #include "../../port/RdbServicePort.h"
-#include "../../../SQLParser/SqlParserImpl.h"
 
 #include <stdexcept>
 #include <string>
@@ -12,8 +12,7 @@ class FakeQesRdbServicePort final
     : public QueryExecutionService::RdbServicePort {
 public:
   std::vector<unidb::sql::ColumnDefinition> schema{
-      {"id", unidb::sql::SqlType::Int},
-      {"name", unidb::sql::SqlType::Text}};
+      {"id", unidb::sql::SqlType::Int}, {"name", unidb::sql::SqlType::Text}};
   uint32_t createTableCalls = 0;
   uint32_t getSchemaCalls = 0;
   uint32_t insertCalls = 0;
@@ -24,8 +23,8 @@ public:
   std::vector<std::vector<char>> rows;
   bool fail = false;
 
-  uint32_t createTable(
-      const unidb::sql::CreateTableStatement &statement) override {
+  uint32_t
+  createTable(const unidb::sql::CreateTableStatement &statement) override {
     ++createTableCalls;
     tableName = statement.tableName;
     createdColumns = statement.columns;
@@ -66,7 +65,7 @@ public:
   }
 };
 
-inline QueryExecutionService::ExecuteQueryAction makeQesAction(
-    FakeQesRdbServicePort &port, unidb::sql::SqlParserImpl &parser) {
+inline QueryExecutionService::ExecuteQueryAction
+makeQesAction(FakeQesRdbServicePort &port, unidb::sql::SqlParserImpl &parser) {
   return QueryExecutionService::ExecuteQueryAction(port, parser);
 }

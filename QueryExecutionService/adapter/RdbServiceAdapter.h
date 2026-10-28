@@ -1,20 +1,20 @@
 #pragma once
 
-#include "../port/RdbServicePort.h"
 #include "../../RdbService/actions/CreateTableAction.h"
 #include "../../RdbService/actions/GetTableDefinitionAction.h"
 #include "../../RdbService/actions/InsertRowAction.h"
 #include "../../RdbService/actions/SelectAllRowsAction.h"
+#include "../port/RdbServicePort.h"
 
 namespace QueryExecutionService {
 
 class RdbServiceAdapter final : public RdbServicePort {
 public:
-  RdbServiceAdapter(uint32_t metadataPageId,
-                    RdbService::CreateTableAction &createTableAction,
-                    RdbService::GetTableDefinitionAction &getTableDefinitionAction,
-                    RdbService::InsertRowAction &insertRowAction,
-                    RdbService::SelectAllRowsAction &selectAllRowsAction);
+  RdbServiceAdapter(
+      uint32_t metadataPageId, RdbService::CreateTableAction &createTableAction,
+      RdbService::GetTableDefinitionAction &getTableDefinitionAction,
+      RdbService::InsertRowAction &insertRowAction,
+      RdbService::SelectAllRowsAction &selectAllRowsAction);
 
   uint32_t
   createTable(const unidb::sql::CreateTableStatement &statement) override;
