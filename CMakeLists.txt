@@ -76,6 +76,7 @@ set(UNIDB_SOURCES
     RdbService/actions/CreateTableAction.cpp
     RdbService/actions/GetTableDefinitionAction.cpp
     RdbService/actions/SelectAllRowsAction.cpp
+    RdbService/actions/InsertRowAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CreateCatalogTableAdapter.cpp
@@ -206,6 +207,13 @@ add_executable(tests
     RdbService/test/SelectAllRowsAction/ReturnsEmptyForTableWithoutSpaceMapRootTest.cpp
     RdbService/test/SelectAllRowsAction/RejectsEmptyTableNameBeforeDependenciesTest.cpp
     RdbService/test/SelectAllRowsAction/PropagatesPageEnumerationFailureTest.cpp
+    RdbService/test/InsertRowAction/RejectsEmptyTableNameBeforeDependenciesTest.cpp
+    RdbService/test/InsertRowAction/CreatesSpaceMapRootForFirstInsertedRowTest.cpp
+    RdbService/test/InsertRowAction/UsesExistingSpaceMapRootTest.cpp
+    RdbService/test/InsertRowAction/PropagatesPageDiscoveryFailureTest.cpp
+    RdbService/test/InsertRowAction/PersistsNewSpaceMapRootBeforePageDiscoveryTest.cpp
+    RdbService/test/InsertRowAction/RejectsTupleTooLargeForPageBeforeDependenciesTest.cpp
+    RdbService/test/InsertRowAction/ReturnsCommittedLocationWhenSpaceMapUpdateFailsTest.cpp
     RdbService/test/CreateSpaceMapPageAdapter/DelegatesPageCreationTest.cpp
     RdbService/test/FindPageWithSpaceAdapter/DelegatesPageDiscoveryTest.cpp
     RdbService/test/GetTablePagesAdapter/DelegatesTablePageEnumerationTest.cpp
@@ -213,6 +221,7 @@ add_executable(tests
     RdbService/test/CreateTupleAdapter/DelegatesTupleInsertionTest.cpp
     RdbService/test/CalculateRequiredSpaceAdapter/DelegatesRequiredSpaceCalculationTest.cpp
     RdbService/test/UpdateFreeSpaceAdapter/DelegatesFreeSpaceUpdateTest.cpp
+    RdbService/test/InsertRowAction/UpdatesSpaceMapFreeSpaceAfterSuccessfulInsertTest.cpp
     RdbService/test/GetTupleAdapter/DelegatesTupleLookupTest.cpp
     RdbService/test/GetAllTuplesAdapter/DelegatesTupleScanTest.cpp
     CatalogService/test/CreateRootCatalogPageAction/CreatesWritesAndUnpinsRootPageTest.cpp
