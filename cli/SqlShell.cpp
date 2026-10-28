@@ -10,25 +10,23 @@
 namespace {
 
 std::string trim(std::string value) {
-  const auto first = std::find_if_not(value.begin(), value.end(),
-                                      [](unsigned char ch) {
-                                        return std::isspace(ch) != 0;
-                                      });
+  const auto first =
+      std::find_if_not(value.begin(), value.end(),
+                       [](unsigned char ch) { return std::isspace(ch) != 0; });
   if (first == value.end()) {
     return {};
   }
-  const auto last = std::find_if_not(value.rbegin(), value.rend(),
-                                     [](unsigned char ch) {
-                                       return std::isspace(ch) != 0;
-                                     }).base();
+  const auto last =
+      std::find_if_not(value.rbegin(), value.rend(), [](unsigned char ch) {
+        return std::isspace(ch) != 0;
+      }).base();
   return std::string(first, last);
 }
 
 std::string lower(std::string value) {
-  std::transform(value.begin(), value.end(), value.begin(),
-                 [](unsigned char ch) {
-                   return static_cast<char>(std::tolower(ch));
-                 });
+  std::transform(
+      value.begin(), value.end(), value.begin(),
+      [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
   return value;
 }
 

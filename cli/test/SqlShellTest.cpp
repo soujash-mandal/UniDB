@@ -1,6 +1,6 @@
-#include "../../QueryExecutionService/test/ExecuteQueryAction/ExecuteQueryActionTestSupport.h"
 #include "../SqlShell.h"
 #include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
+#include "../../QueryExecutionService/test/ExecuteQueryAction/ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
 
@@ -12,10 +12,9 @@ TEST(SqlShellTest, PrintsCommandSuccessAndContinuesUntilQuit) {
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
-  std::istringstream input(
-      "CREATE TABLE people (id INT, name TEXT);\n"
-      "INSERT INTO people (id, name) VALUES (7, 'Ada');\n"
-      "quit\n");
+  std::istringstream input("CREATE TABLE people (id INT, name TEXT);\n"
+                           "INSERT INTO people (id, name) VALUES (7, 'Ada');\n"
+                           "quit\n");
   std::ostringstream output;
   std::ostringstream error;
   SqlShell shell(action, input, output, error);
