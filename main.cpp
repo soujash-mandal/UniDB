@@ -5,17 +5,17 @@
 
 #include <cerrno>
 #include <chrono>
-#include <cstdio>
-#include <cstdlib>
 #include <csignal>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
-#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -104,7 +104,8 @@ int startServer(const char *executable, std::string_view databasePath,
   if (child == 0) {
     if (::setsid() < 0)
       _exit(126);
-    const int logFd = ::open(logPath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+    const int logFd =
+        ::open(logPath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
     if (logFd < 0)
       _exit(126);
     ::dup2(logFd, STDOUT_FILENO);
@@ -119,7 +120,8 @@ int startServer(const char *executable, std::string_view databasePath,
                           const_cast<char *>("--db-path"),
                           const_cast<char *>(databaseArg.c_str()),
                           const_cast<char *>("--port"),
-                          const_cast<char *>(portArg.c_str()), nullptr};
+                          const_cast<char *>(portArg.c_str()),
+                          nullptr};
     ::execvp(executable, args);
     _exit(127);
   }
@@ -153,8 +155,8 @@ int startServer(const char *executable, std::string_view databasePath,
                     sizeof(address)) == 0;
       ::close(probe);
       if (ready) {
-        std::cout << "UniDB started (PID " << child << ") on 127.0.0.1:"
-                  << port << "\nLog: " << logPath << '\n';
+        std::cout << "UniDB started (PID " << child << ") on 127.0.0.1:" << port
+                  << "\nLog: " << logPath << '\n';
         return 0;
       }
     }
@@ -270,7 +272,8 @@ int main(int argc, char *argv[]) {
       serverMode = true;
     } else if (argument == "--port") {
       if (index + 1 >= argc) {
-        std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] [--port PORT]\n";
+        std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] "
+                     "[--port PORT]\n";
         return 2;
       }
       try {
@@ -284,17 +287,22 @@ int main(int argc, char *argv[]) {
       }
     } else if (argument == "--db-path") {
       if (index + 1 >= argc) {
-        std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] [--port PORT]\n";
+        std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] "
+                     "[--port PORT]\n";
         return 2;
       }
       databasePath = argv[++index];
     } else if (argument == "--help") {
       std::cout
-          << "Usage: unidb [start|connect|stop] [--server] [--db-path PATH] [--port PORT]\n"
-             "  start          Start a background server and write a PID/log file.\n"
-             "  connect        Open an interactive SQL connection to the server.\n"
+          << "Usage: unidb [start|connect|stop] [--server] [--db-path PATH] "
+             "[--port PORT]\n"
+             "  start          Start a background server and write a PID/log "
+             "file.\n"
+             "  connect        Open an interactive SQL connection to the "
+             "server.\n"
              "  stop           Request graceful shutdown and wait for exit.\n"
-             "  --server       Run the TCP server in the foreground (legacy mode).\n"
+             "  --server       Run the TCP server in the foreground (legacy "
+             "mode).\n"
              "  --db-path PATH Database file path (default: database.db).\n"
              "  --port PORT    TCP port (default: 7432; loopback only).\n";
       return 0;
