@@ -138,18 +138,17 @@ void serveClient(int client, Container &container) {
       break;
     }
 
-    try {
-      const auto requests = framer.append(
-          std::string_view(buffer, static_cast<std::size_t>(received)));
-      for (const auto &sql : requests) {
-        const auto result = container.executeQueryAction().execute(sql);
-        if (!sendAll(client, responseJson(result)))
-          return;
-      }
-    } catch (const std::exception &error) {
+    auto framing = framer.append(
+        std::string_view(buffer, static_cast<std::size_t>(received)));
+    for (const auto &sql : framing.requests) {
+      const auto result = container.executeQueryAction().execute(sql);
+      if (!sendAll(client, responseJson(result)))
+        return;
+    }
+    if (framing.error) {
       const std::string response =
-          "{\"ok\":false,\"error\":{\"code\":\"invalid_request\",\"message\":" +
-          jsonString(error.what()) + "}}\n";
+          "{\\"ok\\":false,\\"error\\":{\\"code\\":\\"invalid_request\\",\\"message\\":" +
+          jsonString(*framing.error) + "}}\\n";
       sendAll(client, response);
       break;
     }
@@ -203,11 +202,11 @@ int SqlConnectionServer::run() {
     if (client < 0) {
       if (errno == EINTR && stopRequested)
         break;
-      if (errno == EINTR)
+      if (errno == EINTR || errno == ECONNABORTED)
         continue;
-      std::cerr << "UniDB accept failed: " << std::strerror(errno) << '\n';
-      ::close(listener);
-      return 1;
+      std::cerr << "UniDB accept failed: " << std::strerror(errno) << '\\n';
+      acceptFailed = true;
+      break;
     }
     serveClient(client, container);
     ::close(client);
