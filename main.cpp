@@ -57,6 +57,21 @@ bool sendAll(int socket, const char *data, std::size_t size) {
   return true;
 }
 
+bool isPortReachable(unsigned int port) {
+  const int probe = ::socket(AF_INET, SOCK_STREAM, 0);
+  if (probe < 0)
+    return false;
+  sockaddr_in address{};
+  address.sin_family = AF_INET;
+  address.sin_port = htons(static_cast<std::uint16_t>(port));
+  address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  const bool reachable =
+      ::connect(probe, reinterpret_cast<sockaddr *>(&address),
+                sizeof(address)) == 0;
+  ::close(probe);
+  return reachable;
+}
+
 int connectToServer(unsigned int port) {
   const int socket = ::socket(AF_INET, SOCK_STREAM, 0);
   if (socket < 0) {
@@ -87,16 +102,27 @@ int startServer(const char *executable, std::string_view databasePath,
   {
     std::ifstream pidFile(pidPath);
     long existingPid = 0;
-    if (pidFile >> existingPid) {
+    unsigned int recordedPort = 0;
+    if (pidFile >> existingPid >> recordedPort) {
       const bool validPid =
           existingPid > 1 &&
           existingPid <= static_cast<long>(std::numeric_limits<pid_t>::max());
       if (validPid &&
-          (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM)) {
+          (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM) &&
+          recordedPort == port && isPortReachable(recordedPort)) {
         std::cerr << "UniDB may already be running (PID " << existingPid
                   << "). Use 'unidb stop' before starting it again.\n";
         return 1;
       }
+      if (validPid &&
+          (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM) &&
+          recordedPort != 0 && isPortReachable(recordedPort)) {
+        std::cerr << "PID file points to a live process and listening port; "
+                     "refusing to remove it automatically.\n";
+        return 1;
+      }
+      std::remove(pidPath.c_str());
+    } else {
       std::remove(pidPath.c_str());
     }
   }
@@ -152,7 +178,7 @@ int startServer(const char *executable, std::string_view databasePath,
 
   {
     std::ofstream pidFile(pidPath, std::ios::trunc);
-    if (!pidFile || !(pidFile << child << '\n')) {
+    if (!pidFile || !(pidFile << child << '\n' << port << '\n')) {
       std::cerr << "Could not write PID file: " << pidPath << '\n';
       ::kill(child, SIGTERM);
       ::waitpid(child, nullptr, 0);
@@ -202,11 +228,13 @@ int startServer(const char *executable, std::string_view databasePath,
   return 1;
 }
 
-int stopServer(std::string_view databasePath) {
+int stopServer(std::string_view databasePath, unsigned int port) {
   const std::string pidPath = pidFilePath(databasePath);
   std::ifstream pidFile(pidPath);
   long rawPid = 0;
-  if (!(pidFile >> rawPid) || rawPid <= 1) {
+  unsigned int recordedPort = 0;
+  if (!(pidFile >> rawPid >> recordedPort) || rawPid <= 1 ||
+      recordedPort == 0 || recordedPort > 65535) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
     return 1;
   }
@@ -216,6 +244,11 @@ int stopServer(std::string_view databasePath) {
     return 1;
   }
   const auto pid = static_cast<pid_t>(rawPid);
+  if (recordedPort != port || !isPortReachable(recordedPort)) {
+    std::cerr << "PID file does not match a reachable UniDB listener on port "
+              << recordedPort << "; refusing to signal PID " << rawPid << ".\n";
+    return 1;
+  }
   if (::kill(pid, 0) != 0 && errno == ESRCH) {
     std::remove(pidPath.c_str());
     std::cerr << "Removed stale PID file; UniDB is not running.\n";
@@ -357,7 +390,7 @@ int main(int argc, char *argv[]) {
   if (command == "connect")
     return connectInteractive(port);
   if (command == "stop")
-    return stopServer(databasePath);
+    return stopServer(databasePath, port);
 
   try {
     Container container(std::string(databasePath), 2, EvictionPolicyType::FIFO);
