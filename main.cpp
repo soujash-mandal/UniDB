@@ -18,7 +18,7 @@ volatile std::sig_atomic_t shutdownRequested = 0;
 extern "C" void requestShutdown(int) { shutdownRequested = 1; }
 
 bool installShutdownHandlers() {
-  struct sigaction action {};
+  struct sigaction action{};
   action.sa_handler = requestShutdown;
   sigemptyset(&action.sa_mask);
   action.sa_flags = 0;
@@ -33,7 +33,8 @@ int runServer(Container &container) {
     return 1;
   }
 
-  std::cout << "UniDB server lifecycle started. Waiting for SIGINT or SIGTERM.\n";
+  std::cout
+      << "UniDB server lifecycle started. Waiting for SIGINT or SIGTERM.\n";
   while (shutdownRequested == 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -61,9 +62,10 @@ int main(int argc, char *argv[]) {
       }
       databasePath = argv[++index];
     } else if (argument == "--help") {
-      std::cout << "Usage: unidb [--server] [--db-path PATH]\n"
-                   "  --server       Run without the interactive SQL shell.\n"
-                   "  --db-path PATH Database file path (default: database.db).\n";
+      std::cout
+          << "Usage: unidb [--server] [--db-path PATH]\n"
+             "  --server       Run without the interactive SQL shell.\n"
+             "  --db-path PATH Database file path (default: database.db).\n";
       return 0;
     } else {
       std::cerr << "Unknown argument: " << argument << '\n'
@@ -73,8 +75,7 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    Container container(std::string(databasePath), 2,
-                        EvictionPolicyType::FIFO);
+    Container container(std::string(databasePath), 2, EvictionPolicyType::FIFO);
 
     const bool initializedNewDatabase = DatabaseStartup::execute(container);
     if (initializedNewDatabase) {
