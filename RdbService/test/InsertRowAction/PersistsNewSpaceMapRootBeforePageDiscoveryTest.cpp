@@ -17,7 +17,7 @@ TEST(InsertRowActionTest, PersistsNewSpaceMapRootBeforePageDiscovery) {
       throw std::runtime_error("space lookup failed");
     }
   } findSpace;
-  FakeInsertTupleWithFreeSpacePort createTuple;
+  FakeInsertTuplePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
   RdbService::InsertRowAction action(root, table, update, createSpaceMap,
                                      calculateRequiredSpace, findSpace,
