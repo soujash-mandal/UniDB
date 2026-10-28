@@ -60,13 +60,13 @@ TEST(SqlShellTest, EscapesControlCharactersAndAlignsUtf8Text) {
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      {std::int64_t{7}, std::string("A\\tB")}));
+      {std::int64_t{7}, std::string("A\tB")}));
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
       {std::int64_t{8}, std::string("Renée")}));
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
-  std::istringstream input("SELECT * FROM people;\\nquit\\n");
+  std::istringstream input("SELECT * FROM people;\nquit\n");
   std::ostringstream output;
   std::ostringstream error;
   SqlShell shell(action, input, output, error);
@@ -75,7 +75,7 @@ TEST(SqlShellTest, EscapesControlCharactersAndAlignsUtf8Text) {
 
   EXPECT_NE(output.str().find("+----+-------+"), std::string::npos);
   EXPECT_NE(output.str().find("| id | name  |"), std::string::npos);
-  EXPECT_NE(output.str().find("|  7 | A\\\\tB  |"), std::string::npos);
+  EXPECT_NE(output.str().find("|  7 | A\\tB  |"), std::string::npos);
   EXPECT_NE(output.str().find("|  8 | Renée |"), std::string::npos);
   EXPECT_TRUE(error.str().empty());
 }
