@@ -1,7 +1,7 @@
 #include "UpdateFreeSpaceAction.h"
 
 UpdateFreeSpaceAction::UpdateFreeSpaceAction(FetchPagePort &fetchPagePort,
-                                             WritePagePort &writePagePort,
+                                             SpaceMapWritePagePort &writePagePort,
                                              UnpinPagePort &unpinPagePort)
     : fetchPagePort(fetchPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
