@@ -92,7 +92,6 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
   diskManager.fileName = databaseFileName;
 }
 
-
 void Container::flushDirtyPages() {
   // Iterate frames without holding the pool mutex while FlushPageAction writes.
   for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
