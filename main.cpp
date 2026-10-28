@@ -5,6 +5,8 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <csignal>
 #include <cstdint>
 #include <cstring>
@@ -13,6 +15,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
