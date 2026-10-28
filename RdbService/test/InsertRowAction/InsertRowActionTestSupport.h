@@ -2,7 +2,7 @@
 
 #include "../../actions/InsertRowAction.h"
 #include "../../port/CalculateRequiredSpacePort.h"
-#include "../../port/CreateTupleWithFreeSpacePort.h"
+#include "../../port/CreateTuplePort.h"
 #include "../../port/UpdateFreeSpacePort.h"
 
 #include <limits>
@@ -91,16 +91,16 @@ public:
   }
 };
 
-class FakeInsertTupleWithFreeSpacePort final
-    : public RdbService::CreateTupleWithFreeSpacePort {
+class FakeInsertTuplePort final
+    : public CreateTuplePort {
 public:
   uint32_t calls = 0;
   uint32_t pageId = 0;
   uint32_t slotId = 4;
   uint32_t remainingFreeSpace = 1234;
   std::vector<char> bytes;
-  RdbService::RdbCreateTupleWithFreeSpaceResult
-  createTupleWithFreeSpace(uint32_t requestedPageId,
+  CreateTupleResult
+  createTuple(uint32_t requestedPageId,
                            std::vector<char> tupleData) override {
     ++calls;
     pageId = requestedPageId;
