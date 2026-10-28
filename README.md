@@ -95,6 +95,6 @@ The executable supports lifecycle subcommands. Run them from the repository root
 - `stop` sends a graceful shutdown signal and waits for the server process to exit so it can flush dirty pages.
 - The default database path is `database.db`; the default port is `7432`. Use the same database path for `start` and `stop`.
 - The PID file is stored as `<database-path>.pid`, the lifecycle lock as `<database-path>.lifecycle.lock`, and the server log as `<database-path>.log`. If startup fails, inspect the log.
-- Concurrent `start` commands using the same database path are serialized with a lifecycle lock so a losing startup cannot overwrite or remove the successful server's PID file.
+- `start` and `stop` commands using the same database path are serialized with a lifecycle lock so concurrent startup or stale-PID cleanup cannot overwrite or remove a replacement server's PID file.
 - The background `start` command currently supports macOS and Linux; other platforms receive an explicit error before a child process is launched. The foreground `--server` mode remains available.
 - PID-file writes are flushed and closed, and both operations are checked before startup can report success.
