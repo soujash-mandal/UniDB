@@ -692,8 +692,8 @@ int main(int argc, char *argv[]) {
   DatabaseOwnershipLock databaseOwnershipLock(databasePath);
   if (!databaseOwnershipLock.acquired()) {
     std::cerr << "Another UniDB process already owns this database: "
-              << databasePath << '\\n'
-              << "Stop the other process before opening this database again.\\n";
+              << databasePath << '\n'
+              << "Stop the other process before opening this database again.\n";
     return 1;
   }
 
