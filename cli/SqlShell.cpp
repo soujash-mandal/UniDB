@@ -119,6 +119,13 @@ std::string escapeTerminalText(const std::string &value) {
       ++index;
       continue;
     }
+    if (length == 2 && codePoint >= 0x80 && codePoint <= 0x9f) {
+      escaped += "\\u00";
+      escaped += hex[codePoint >> 4];
+      escaped += hex[codePoint & 0x0f];
+      index += length;
+      continue;
+    }
     escaped.append(value, index, length);
     index += length;
   }
