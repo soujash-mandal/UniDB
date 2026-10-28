@@ -23,6 +23,8 @@
 #include <thread>
 #include <vector>
 
+#include <algorithm>
+
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -422,11 +424,23 @@ int stopServer(std::string_view databasePath, unsigned int port) {
     return 1;
   }
   const std::string currentIdentity = processIdentity(pid);
-  if (currentIdentity.empty() || currentIdentity != recordedIdentity) {
+  if (currentIdentity.empty()) {
+    // An unavailable identity does not prove that the PID is stale. Preserve
+    // the record unless the kernel confirms that the process no longer exists.
+    if (::kill(pid, 0) != 0 && errno == ESRCH) {
+      std::remove(pidPath.c_str());
+      std::cerr << "Removed stale PID file; UniDB is not running.\\n";
+      return 1;
+    }
+    std::cerr << "Could not verify the process identity in " << pidPath
+              << "; refusing to signal or remove the PID file.\\n";
+    return 1;
+  }
+  if (currentIdentity != recordedIdentity) {
     std::remove(pidPath.c_str());
     std::cerr
         << "PID no longer identifies the UniDB process; removed stale PID "
-           "file without sending a signal.\n";
+           "file without sending a signal.\\n";
     return 1;
   }
   if (recordedPort != port || !isPortReachable(recordedPort)) {
@@ -455,60 +469,126 @@ int stopServer(std::string_view databasePath, unsigned int port) {
 }
 
 int connectInteractive(unsigned int port) {
-  // A server may close the socket while input is still being forwarded.
-  // Ignore SIGPIPE so sendAll can report EPIPE through its normal error path.
+  // Ignore SIGPIPE so a disconnected server is handled through send errors.
   std::signal(SIGPIPE, SIG_IGN);
   const int socket = connectToServer(port);
   if (socket < 0)
     return 1;
-  std::cout << "Connected to UniDB at 127.0.0.1:" << port
-            << ". Enter one SQL statement per line; Ctrl+D disconnects.\n";
 
-  pollfd descriptors[2] = {{STDIN_FILENO, POLLIN, 0}, {socket, POLLIN, 0}};
+  const int socketFlags = ::fcntl(socket, F_GETFL, 0);
+  if (socketFlags < 0 ||
+      ::fcntl(socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
+    std::cerr << "Could not make the UniDB client socket nonblocking: "
+              << std::strerror(errno) << '\\n';
+    ::close(socket);
+    return 1;
+  }
+
+  std::cout << "Connected to UniDB at 127.0.0.1:" << port
+            << ". Enter one SQL statement per line; Ctrl+D disconnects.\\n";
+
+  constexpr std::size_t kMaxPendingInput = 64 * 1024;
+  pollfd descriptors[2] = {};
   char buffer[4096];
+  std::string pendingInput;
+  std::size_t pendingOffset = 0;
   bool stdinOpen = true;
   bool sentInput = false;
   bool inputEndsWithNewline = false;
+  bool writeShutdown = false;
+
   while (true) {
-    descriptors[0].fd = stdinOpen ? STDIN_FILENO : -1;
+    const std::size_t pendingBytes = pendingInput.size() - pendingOffset;
+    descriptors[0] = {stdinOpen && pendingBytes < kMaxPendingInput
+                          ? STDIN_FILENO
+                          : -1,
+                      POLLIN, 0};
+    descriptors[1] = {socket,
+                      static_cast<short>(POLLIN |
+                                         (pendingBytes > 0 ? POLLOUT : 0)),
+                      0};
+
     const int ready = ::poll(descriptors, 2, -1);
     if (ready < 0) {
       if (errno == EINTR)
         continue;
-      std::cerr << "Client poll failed: " << std::strerror(errno) << '\n';
+      std::cerr << "Client poll failed: " << std::strerror(errno) << '\\n';
       ::close(socket);
       return 1;
     }
+
     if (stdinOpen && (descriptors[0].revents & (POLLIN | POLLHUP))) {
-      const auto count = ::read(STDIN_FILENO, buffer, sizeof(buffer));
-      if (count <= 0) {
+      const std::size_t available = kMaxPendingInput - pendingBytes;
+      const auto requested = std::min(sizeof(buffer), available);
+      const auto count = ::read(STDIN_FILENO, buffer, requested);
+      if (count == 0) {
         stdinOpen = false;
         if (sentInput && !inputEndsWithNewline) {
-          const char newline = '\n';
-          if (!sendAll(socket, &newline, 1)) {
-            std::cerr << "Failed to terminate SQL input.\n";
-            ::close(socket);
-            return 1;
-          }
+          pendingInput.push_back('\\n');
+          inputEndsWithNewline = true;
         }
-        ::shutdown(socket, SHUT_WR);
-      } else if (!sendAll(socket, buffer, static_cast<std::size_t>(count))) {
-        std::cerr << "Failed to send SQL to UniDB.\n";
-        ::close(socket);
-        return 1;
+      } else if (count < 0) {
+        if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+          std::cerr << "Failed to read SQL input: " << std::strerror(errno)
+                    << '\\n';
+          ::close(socket);
+          return 1;
+        }
       } else {
+        pendingInput.append(buffer, static_cast<std::size_t>(count));
         sentInput = true;
-        inputEndsWithNewline = buffer[count - 1] == '\n';
+        inputEndsWithNewline = buffer[count - 1] == '\\n';
       }
     }
-    if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR)) {
+
+    if (descriptors[1].revents & POLLOUT) {
+      const auto pendingBytesNow = pendingInput.size() - pendingOffset;
+      if (pendingBytesNow > 0) {
+        const auto count = ::send(socket, pendingInput.data() + pendingOffset,
+                                  pendingBytesNow, 0);
+        if (count > 0) {
+          pendingOffset += static_cast<std::size_t>(count);
+          if (pendingOffset == pendingInput.size()) {
+            pendingInput.clear();
+            pendingOffset = 0;
+          } else if (pendingOffset >= kMaxPendingInput / 2) {
+            pendingInput.erase(0, pendingOffset);
+            pendingOffset = 0;
+          }
+        } else if (count < 0 && errno != EINTR && errno != EAGAIN &&
+                   errno != EWOULDBLOCK) {
+          std::cerr << "Failed to send SQL to UniDB: " << std::strerror(errno)
+                    << '\\n';
+          ::close(socket);
+          return 1;
+        }
+      }
+    }
+
+    // Half-close only after every queued byte (including the final newline)
+    // has been sent, so EOF cannot discard pending SQL.
+    if (!stdinOpen && pendingInput.empty() && !writeShutdown) {
+      ::shutdown(socket, SHUT_WR);
+      writeShutdown = true;
+    }
+
+    if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)) {
       const auto count = ::recv(socket, buffer, sizeof(buffer), 0);
-      if (count <= 0)
+      if (count > 0) {
+        std::cout.write(buffer, count);
+        std::cout.flush();
+      } else if (count == 0) {
         break;
-      std::cout.write(buffer, count);
-      std::cout.flush();
+      } else if (errno != EINTR && errno != EAGAIN &&
+                 errno != EWOULDBLOCK) {
+        std::cerr << "Failed to receive response from UniDB: "
+                  << std::strerror(errno) << '\\n';
+        ::close(socket);
+        return 1;
+      }
     }
   }
+
   ::close(socket);
   return 0;
 }
