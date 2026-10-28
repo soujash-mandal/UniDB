@@ -3,24 +3,271 @@
 #include "cli/SqlShell.h"
 #include "container/container.h"
 
+#include <cerrno>
+#include <chrono>
+#include <csignal>
 #include <cstdint>
+#include <cstring>
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <thread>
+#include <vector>
+
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+namespace {
+constexpr std::string_view kDefaultDatabasePath = "database.db";
+constexpr unsigned int kDefaultPort = 7432;
+
+std::string pidFilePath(std::string_view databasePath) {
+  return std::string(databasePath) + ".pid";
+}
+
+std::string logFilePath(std::string_view databasePath) {
+  return std::string(databasePath) + ".log";
+}
+
+bool sendAll(int socket, const char *data, std::size_t size) {
+  while (size > 0) {
+    const auto sent = ::send(socket, data, size, 0);
+    if (sent < 0) {
+      if (errno == EINTR)
+        continue;
+      return false;
+    }
+    if (sent == 0)
+      return false;
+    data += sent;
+    size -= static_cast<std::size_t>(sent);
+  }
+  return true;
+}
+
+int connectToServer(unsigned int port) {
+  const int socket = ::socket(AF_INET, SOCK_STREAM, 0);
+  if (socket < 0) {
+    std::cerr << "UniDB could not create a client socket: "
+              << std::strerror(errno) << '\n';
+    return -1;
+  }
+
+  sockaddr_in address{};
+  address.sin_family = AF_INET;
+  address.sin_port = htons(static_cast<std::uint16_t>(port));
+  address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  if (::connect(socket, reinterpret_cast<sockaddr *>(&address),
+                sizeof(address)) != 0) {
+    std::cerr << "Could not connect to UniDB at 127.0.0.1:" << port << ": "
+              << std::strerror(errno) << '\n';
+    ::close(socket);
+    return -1;
+  }
+  return socket;
+}
+
+int startServer(const char *executable, std::string_view databasePath,
+                unsigned int port) {
+  const std::string pidPath = pidFilePath(databasePath);
+  const std::string logPath = logFilePath(databasePath);
+
+  {
+    std::ifstream pidFile(pidPath);
+    long existingPid = 0;
+    if (pidFile >> existingPid) {
+      if (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM) {
+        std::cerr << "UniDB may already be running (PID " << existingPid
+                  << "). Use 'unidb stop' before starting it again.\n";
+        return 1;
+      }
+      std::remove(pidPath.c_str());
+    }
+  }
+
+  const pid_t child = ::fork();
+  if (child < 0) {
+    std::cerr << "Could not start UniDB: " << std::strerror(errno) << '\n';
+    return 1;
+  }
+  if (child == 0) {
+    if (::setsid() < 0)
+      _exit(126);
+    const int logFd = ::open(logPath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (logFd < 0)
+      _exit(126);
+    ::dup2(logFd, STDOUT_FILENO);
+    ::dup2(logFd, STDERR_FILENO);
+    if (logFd > STDERR_FILENO)
+      ::close(logFd);
+
+    const std::string databaseArg(databasePath);
+    const std::string portArg = std::to_string(port);
+    char *const args[] = {const_cast<char *>(executable),
+                          const_cast<char *>("--server"),
+                          const_cast<char *>("--db-path"),
+                          const_cast<char *>(databaseArg.c_str()),
+                          const_cast<char *>("--port"),
+                          const_cast<char *>(portArg.c_str()), nullptr};
+    ::execvp(executable, args);
+    _exit(127);
+  }
+
+  {
+    std::ofstream pidFile(pidPath, std::ios::trunc);
+    if (!pidFile || !(pidFile << child << '\n')) {
+      std::cerr << "Could not write PID file: " << pidPath << '\n';
+      ::kill(child, SIGTERM);
+      ::waitpid(child, nullptr, 0);
+      return 1;
+    }
+  }
+
+  // Wait for the listener to become reachable, or report startup failure.
+  for (int attempt = 0; attempt < 50; ++attempt) {
+    int status = 0;
+    if (::waitpid(child, &status, WNOHANG) == child) {
+      std::remove(pidPath.c_str());
+      std::cerr << "UniDB failed to start. Check the log: " << logPath << '\n';
+      return 1;
+    }
+    const int probe = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (probe >= 0) {
+      sockaddr_in address{};
+      address.sin_family = AF_INET;
+      address.sin_port = htons(static_cast<std::uint16_t>(port));
+      address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+      const bool ready =
+          ::connect(probe, reinterpret_cast<sockaddr *>(&address),
+                    sizeof(address)) == 0;
+      ::close(probe);
+      if (ready) {
+        std::cout << "UniDB started (PID " << child << ") on 127.0.0.1:"
+                  << port << "\nLog: " << logPath << '\n';
+        return 0;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  std::cerr << "Timed out waiting for UniDB to listen. Check the log: "
+            << logPath << '\n';
+  ::kill(child, SIGTERM);
+  ::waitpid(child, nullptr, 0);
+  std::remove(pidPath.c_str());
+  return 1;
+}
+
+int stopServer(std::string_view databasePath) {
+  const std::string pidPath = pidFilePath(databasePath);
+  std::ifstream pidFile(pidPath);
+  long rawPid = 0;
+  if (!(pidFile >> rawPid) || rawPid <= 1) {
+    std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
+    return 1;
+  }
+  const auto pid = static_cast<pid_t>(rawPid);
+  if (::kill(pid, 0) != 0 && errno == ESRCH) {
+    std::remove(pidPath.c_str());
+    std::cerr << "Removed stale PID file; UniDB is not running.\n";
+    return 1;
+  }
+  if (::kill(pid, SIGTERM) != 0) {
+    std::cerr << "Could not request UniDB shutdown: " << std::strerror(errno)
+              << '\n';
+    return 1;
+  }
+
+  for (int attempt = 0; attempt < 100; ++attempt) {
+    if (::kill(pid, 0) != 0 && errno == ESRCH) {
+      std::remove(pidPath.c_str());
+      std::cout << "UniDB stopped; graceful shutdown completed.\n";
+      return 0;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  std::cerr << "UniDB did not exit within 10 seconds. Check "
+            << logFilePath(databasePath) << '\n';
+  return 1;
+}
+
+int connectInteractive(unsigned int port) {
+  const int socket = connectToServer(port);
+  if (socket < 0)
+    return 1;
+  std::cout << "Connected to UniDB at 127.0.0.1:" << port
+            << ". Enter one SQL statement per line; Ctrl+D disconnects.\n";
+
+  pollfd descriptors[2] = {{STDIN_FILENO, POLLIN, 0}, {socket, POLLIN, 0}};
+  char buffer[4096];
+  bool stdinOpen = true;
+  while (true) {
+    descriptors[0].fd = stdinOpen ? STDIN_FILENO : -1;
+    const int ready = ::poll(descriptors, 2, -1);
+    if (ready < 0) {
+      if (errno == EINTR)
+        continue;
+      std::cerr << "Client poll failed: " << std::strerror(errno) << '\n';
+      ::close(socket);
+      return 1;
+    }
+    if (stdinOpen && (descriptors[0].revents & (POLLIN | POLLHUP))) {
+      const auto count = ::read(STDIN_FILENO, buffer, sizeof(buffer));
+      if (count <= 0) {
+        stdinOpen = false;
+        ::shutdown(socket, SHUT_WR);
+      } else if (!sendAll(socket, buffer, static_cast<std::size_t>(count))) {
+        std::cerr << "Failed to send SQL to UniDB.\n";
+        ::close(socket);
+        return 1;
+      }
+    }
+    if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR)) {
+      const auto count = ::recv(socket, buffer, sizeof(buffer), 0);
+      if (count <= 0)
+        break;
+      std::cout.write(buffer, count);
+      std::cout.flush();
+    }
+    if (!stdinOpen && (descriptors[1].revents & (POLLHUP | POLLERR)))
+      break;
+  }
+  ::close(socket);
+  return 0;
+}
+} // namespace
 
 int main(int argc, char *argv[]) {
-  bool serverMode = false;
-  std::string_view databasePath = "database.db";
-  unsigned int port = 7432;
+  std::string_view command;
+  int firstOption = 1;
+  if (argc > 1) {
+    const std::string_view first(argv[1]);
+    if (first == "start" || first == "connect" || first == "stop") {
+      command = first;
+      firstOption = 2;
+    }
+  }
 
-  for (int index = 1; index < argc; ++index) {
+  bool serverMode = false;
+  std::string_view databasePath = kDefaultDatabasePath;
+  unsigned int port = kDefaultPort;
+
+  for (int index = firstOption; index < argc; ++index) {
     const std::string_view argument(argv[index]);
     if (argument == "--server") {
       serverMode = true;
     } else if (argument == "--port") {
       if (index + 1 >= argc) {
-        std::cerr << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n";
+        std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] [--port PORT]\n";
         return 2;
       }
       try {
@@ -34,15 +281,17 @@ int main(int argc, char *argv[]) {
       }
     } else if (argument == "--db-path") {
       if (index + 1 >= argc) {
-        std::cerr << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n";
+        std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] [--port PORT]\n";
         return 2;
       }
       databasePath = argv[++index];
     } else if (argument == "--help") {
       std::cout
-          << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n"
-             "  --server       Accept newline-delimited SQL over loopback "
-             "TCP.\n"
+          << "Usage: unidb [start|connect|stop] [--server] [--db-path PATH] [--port PORT]\n"
+             "  start          Start a background server and write a PID/log file.\n"
+             "  connect        Open an interactive SQL connection to the server.\n"
+             "  stop           Request graceful shutdown and wait for exit.\n"
+             "  --server       Run the TCP server in the foreground (legacy mode).\n"
              "  --db-path PATH Database file path (default: database.db).\n"
              "  --port PORT    TCP port (default: 7432; loopback only).\n";
       return 0;
@@ -52,6 +301,13 @@ int main(int argc, char *argv[]) {
       return 2;
     }
   }
+
+  if (command == "start")
+    return startServer(argv[0], databasePath, port);
+  if (command == "connect")
+    return connectInteractive(port);
+  if (command == "stop")
+    return stopServer(databasePath);
 
   try {
     Container container(std::string(databasePath), 2, EvictionPolicyType::FIFO);
