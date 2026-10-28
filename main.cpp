@@ -3,8 +3,10 @@
 #include "cli/SqlShell.h"
 #include "container/container.h"
 
+#include <cstdint>
 #include <exception>
 #include <iostream>
+#include <string>
 #include <string_view>
 
 int main(int argc, char *argv[]) {
