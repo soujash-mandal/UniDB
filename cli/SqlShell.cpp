@@ -33,7 +33,8 @@ std::string lower(std::string value) {
   return value;
 }
 
-// Makes terminal control characters visible so values cannot disrupt table layout.
+// Makes terminal control characters visible so values cannot disrupt table
+// layout.
 std::string escapeControlCharacters(const std::string &value) {
   std::ostringstream escaped;
   for (const unsigned char ch : value) {
@@ -91,8 +92,7 @@ std::size_t codePointDisplayWidth(std::uint32_t codePoint) {
   // Common East Asian wide/full-width ranges occupy two terminal columns.
   if (codePoint >= 0x1100 &&
       (codePoint <= 0x115f || codePoint == 0x2329 || codePoint == 0x232a ||
-       (codePoint >= 0x2e80 && codePoint <= 0xa4cf &&
-        codePoint != 0x303f) ||
+       (codePoint >= 0x2e80 && codePoint <= 0xa4cf && codePoint != 0x303f) ||
        (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
        (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
        (codePoint >= 0xfe10 && codePoint <= 0xfe19) ||
@@ -175,7 +175,8 @@ void printBorder(const std::vector<std::size_t> &widths, std::ostream &output) {
   output << '\n';
 }
 
-// Prints a bordered result table using terminal display widths rather than byte counts.
+// Prints a bordered result table using terminal display widths rather than byte
+// counts.
 void printRows(const QueryExecutionService::QueryExecutionResult &result,
                std::ostream &output) {
   std::vector<std::size_t> widths;
