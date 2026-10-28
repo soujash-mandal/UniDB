@@ -3,7 +3,7 @@
 #include "../domain/RdbTable.h"
 #include "../port/CalculateRequiredSpacePort.h"
 #include "../port/CreateSpaceMapPagePort.h"
-#include "../port/CreateTupleWithFreeSpacePort.h"
+#include "../port/CreateTuplePort.h"
 #include "../port/FindPageWithSpacePort.h"
 #include "../port/GetCatalogRootPageIdPort.h"
 #include "../port/GetCatalogTableByNamePort.h"
@@ -33,7 +33,7 @@ public:
                   CreateSpaceMapPagePort &createSpaceMapPagePort,
                   CalculateRequiredSpacePort &calculateRequiredSpacePort,
                   FindPageWithSpacePort &findPageWithSpacePort,
-                  CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort,
+                  CreateTuplePort &createTuplePort,
                   UpdateFreeSpacePort &updateFreeSpacePort);
 
   InsertedRowLocation execute(uint32_t metadataPageId,
@@ -47,7 +47,7 @@ private:
   CreateSpaceMapPagePort &createSpaceMapPagePort;
   CalculateRequiredSpacePort &calculateRequiredSpacePort;
   FindPageWithSpacePort &findPageWithSpacePort;
-  CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort;
+  CreateTuplePort &createTuplePort;
   UpdateFreeSpacePort &updateFreeSpacePort;
 };
 
