@@ -12,6 +12,7 @@
 #include "../EvictionPolicy/EvictionPolicyType.h"
 
 #include "../BufferPoolManager/actions/FetchPageAction.h"
+#include "../BufferPoolManager/actions/DeletePageAction.h"
 #include "../BufferPoolManager/actions/FlushPageAction.h"
 #include "../BufferPoolManager/actions/NewPageAction.h"
 #include "../BufferPoolManager/actions/UnpinPageAction.h"
@@ -19,10 +20,12 @@
 #include "../BufferPoolManager/domain/BufferPool.h"
 
 #include "../BufferPoolManager/adapter/AllocatePageAdapter.h"
+#include "../BufferPoolManager/adapter/DeallocatePageAdapter.h"
 #include "../BufferPoolManager/adapter/ReadPageAdapter.h"
 #include "../BufferPoolManager/adapter/WritePageAdapter.h"
 
 #include "../FreePageManager/actions/AllocatePageAction.h"
+#include "../FreePageManager/actions/DeallocatePageAction.h"
 #include "../FreePageManager/actions/CreateFpmPageAction.h"
 #include "../FreePageManager/adapter/ReadFreePageMetadataAdapter.h"
 #include "../FreePageManager/adapter/WriteFreePageMetadataAdapter.h"
@@ -60,6 +63,7 @@
 #include "../RdbService/adapter/GetCatalogRootPageIdAdapter.h"
 #include "../RdbService/adapter/GetCatalogTableByNameAdapter.h"
 #include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
+#include "../RdbService/adapter/ReclaimPageAdapter.h"
 
 class Container {
 public:
@@ -72,6 +76,7 @@ public:
   UnpinPageAction &unpinPageAction() { return unpinPage; }
   FlushPageAction &flushPageAction() { return flushPage; }
   NewPageAction &newPageAction() { return newPage; }
+  DeletePageAction &deletePageAction() { return deletePage; }
   WritePageAction &writePageAction() { return writePage; }
   CreateFpmPageAction &createFpmPageAction() { return createFpmPage; }
   InitializeRdbAction &initializeRdbAction() { return initializeRdb; }
@@ -102,6 +107,7 @@ private:
   WriteFreePageMetadataAdapter writeFreePageMetadataAdapter;
 
   AllocatePageAction allocatePage;
+  DeallocatePageAction deallocatePage;
   CreateFpmPageAction createFpmPage;
 
   std::unique_ptr<EvictionPolicy> evictionPolicy;
@@ -110,9 +116,12 @@ private:
   WritePageAdapter writePageAdapter;
   BufferPool bufferPool;
   AllocatePageAdapter allocatePageAdapter;
+  DeallocatePageAdapter deallocatePageAdapter;
 
   FetchPageAction fetchPage;
   UnpinPageAction unpinPage;
+  DeletePageAction deletePage;
+  RdbService::ReclaimPageAdapter reclaimPageAdapter;
   FlushPageAction flushPage;
   NewPageAction newPage;
   WritePageAction writePage;
