@@ -27,7 +27,7 @@ InsertRowAction::InsertRowAction(
     CreateSpaceMapPagePort &createSpaceMapPagePort,
     CalculateRequiredSpacePort &calculateRequiredSpacePort,
     FindPageWithSpacePort &findPageWithSpacePort,
-    CreateTupleWithFreeSpacePort &createTupleWithFreeSpacePort,
+    CreateTuplePort &createTuplePort,
     UpdateFreeSpacePort &updateFreeSpacePort)
     : getCatalogRootPageIdPort(getCatalogRootPageIdPort),
       getCatalogTableByNamePort(getCatalogTableByNamePort),
@@ -35,7 +35,7 @@ InsertRowAction::InsertRowAction(
       createSpaceMapPagePort(createSpaceMapPagePort),
       calculateRequiredSpacePort(calculateRequiredSpacePort),
       findPageWithSpacePort(findPageWithSpacePort),
-      createTupleWithFreeSpacePort(createTupleWithFreeSpacePort),
+      createTuplePort(createTuplePort),
       updateFreeSpacePort(updateFreeSpacePort) {}
 
 // Insert one encoded row into the named table and return its page/slot
@@ -96,8 +96,8 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   // Step 8: Insert the row into the selected tuple page. The returned result
   // is expected to contain the new slot ID and the page's actual remaining
   // free space after the insertion.
-  const RdbCreateTupleWithFreeSpaceResult insertResult =
-      createTupleWithFreeSpacePort.createTupleWithFreeSpace(
+  const CreateTupleResult insertResult =
+      createTuplePort.createTuple(
           target.tuplePageId, std::move(tupleData));
 
   // Step 9: Refresh SpaceMap's recorded free-space value using the actual
@@ -107,7 +107,7 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   try {
     updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId,
                                         target.tuplePageId,
-                                        insertResult.remainingFreeSpace);
+                                        insertResult.freeSpace);
   } catch (const std::exception &error) {
     // The tuple is already persisted. Return its committed location instead
     // of throwing an error that could cause the caller to insert it again.
@@ -122,7 +122,7 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   // Step 10: Return the committed row location and enough metadata to retry
   // the SpaceMap update if spaceMapUpdated is false.
   return {target.tuplePageId,    insertResult.slotId,
-          target.spaceMapPageId, insertResult.remainingFreeSpace,
+          target.spaceMapPageId, insertResult.freeSpace,
           spaceMapUpdated,       std::move(spaceMapUpdateError)};
 }
 
