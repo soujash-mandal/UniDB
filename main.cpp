@@ -19,6 +19,7 @@ int main() {
     SqlShell shell(container.executeQueryAction(), std::cin, std::cout,
                    std::cerr);
     shell.run();
+    container.flushDirtyPages();
   } catch (const std::exception &error) {
     std::cerr << "UniDB startup failed: " << error.what() << '\n';
     return 1;
