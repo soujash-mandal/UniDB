@@ -5,7 +5,7 @@
 #include "../port/FetchPagePort.h"
 #include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
-#include "../port/SpaceMapWritePagePort.h"
+#include "../port/WritePagePort.h"
 
 struct FindPageWithSpaceResult {
   TuplePageId tuplePageId;
