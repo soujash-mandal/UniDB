@@ -499,14 +499,12 @@ int connectInteractive(unsigned int port) {
 
   while (true) {
     const std::size_t pendingBytes = pendingInput.size() - pendingOffset;
-    descriptors[0] = {stdinOpen && pendingBytes < kMaxPendingInput
-                          ? STDIN_FILENO
-                          : -1,
-                      POLLIN, 0};
-    descriptors[1] = {socket,
-                      static_cast<short>(POLLIN |
-                                         (pendingBytes > 0 ? POLLOUT : 0)),
-                      0};
+    descriptors[0] = {
+        stdinOpen && pendingBytes < kMaxPendingInput ? STDIN_FILENO : -1,
+        POLLIN, 0};
+    descriptors[1] = {
+        socket, static_cast<short>(POLLIN | (pendingBytes > 0 ? POLLOUT : 0)),
+        0};
 
     const int ready = ::poll(descriptors, 2, -1);
     if (ready < 0) {
@@ -579,8 +577,7 @@ int connectInteractive(unsigned int port) {
         std::cout.flush();
       } else if (count == 0) {
         break;
-      } else if (errno != EINTR && errno != EAGAIN &&
-                 errno != EWOULDBLOCK) {
+      } else if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
         std::cerr << "Failed to receive response from UniDB: "
                   << std::strerror(errno) << '\n';
         ::close(socket);
