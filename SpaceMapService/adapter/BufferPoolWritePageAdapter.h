@@ -3,9 +3,9 @@
 #include "../../BufferPoolManager/actions/WritePageAction.h"
 #include "../port/WritePagePort.h"
 
-class BufferPoolWritePageAdapter : public WritePagePort {
+class SpaceMapBufferPoolWritePageAdapter : public WritePagePort {
 public:
-  explicit BufferPoolWritePageAdapter(WritePageAction &writePageAction);
+  explicit SpaceMapBufferPoolWritePageAdapter(WritePageAction &writePageAction);
   void writePage(SpaceMapPageId pageId, SpaceMapPage page) override;
 
 private:
