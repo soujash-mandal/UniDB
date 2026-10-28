@@ -80,8 +80,33 @@ TEST(SqlShellTest, EscapesControlCharactersAndAlignsUtf8Text) {
   EXPECT_TRUE(error.str().empty());
 }
 
+
+TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
+  // Scenario 4: Invalid UTF-8 is visible, and a ZWJ emoji occupies two columns.
+  FakeQesRdbServicePort port;
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{9}, std::string("bad ") + std::string(1, static_cast<char>(0xff))}));
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{10}, std::string("👩‍💻")}));
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  std::istringstream input("SELECT * FROM people;\\nquit\\n");
+  std::ostringstream output;
+  std::ostringstream error;
+  SqlShell shell(action, input, output, error);
+
+  shell.run();
+
+  EXPECT_NE(output.str().find("bad \\xFF"), std::string::npos);
+  EXPECT_NE(output.str().find("👩‍💻"), std::string::npos);
+  EXPECT_NE(output.str().find("+----+----------+"), std::string::npos);
+  EXPECT_TRUE(error.str().empty());
+}
+
 TEST(SqlShellTest, PrintsHeadersAndBordersForEmptyResultSet) {
-  // Scenario 4: An empty SELECT still renders the schema and an empty table.
+  // Scenario 5: An empty SELECT still renders the schema and an empty table.
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
@@ -99,7 +124,7 @@ TEST(SqlShellTest, PrintsHeadersAndBordersForEmptyResultSet) {
 }
 
 TEST(SqlShellTest, ReportsInvalidSqlAndContinues) {
-  // Scenario 5: A statement error does not terminate the interactive loop.
+  // Scenario 6: A statement error does not terminate the interactive loop.
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
@@ -116,7 +141,7 @@ TEST(SqlShellTest, ReportsInvalidSqlAndContinues) {
 }
 
 TEST(SqlShellTest, ExitsCleanlyOnEndOfInput) {
-  // Scenario 6: EOF exits without requiring a quit command.
+  // Scenario 7: EOF exits without requiring a quit command.
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
