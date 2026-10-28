@@ -13,6 +13,7 @@
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -87,12 +88,35 @@ int startServer(const char *executable, std::string_view databasePath,
     std::ifstream pidFile(pidPath);
     long existingPid = 0;
     if (pidFile >> existingPid) {
-      if (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM) {
+      const bool validPid =
+          existingPid > 1 &&
+          existingPid <= static_cast<long>(std::numeric_limits<pid_t>::max());
+      if (validPid &&
+          (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM)) {
         std::cerr << "UniDB may already be running (PID " << existingPid
                   << "). Use 'unidb stop' before starting it again.\n";
         return 1;
       }
       std::remove(pidPath.c_str());
+    }
+  }
+
+  // Fail before forking if another listener already owns this port.
+  const int existingListener = ::socket(AF_INET, SOCK_STREAM, 0);
+  if (existingListener >= 0) {
+    sockaddr_in existingAddress{};
+    existingAddress.sin_family = AF_INET;
+    existingAddress.sin_port = htons(static_cast<std::uint16_t>(port));
+    existingAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    const bool portInUse =
+        ::connect(existingListener,
+                  reinterpret_cast<sockaddr *>(&existingAddress),
+                  sizeof(existingAddress)) == 0;
+    ::close(existingListener);
+    if (portInUse) {
+      std::cerr << "Port " << port
+                << " is already in use on 127.0.0.1.\n";
+      return 1;
     }
   }
 
@@ -154,10 +178,17 @@ int startServer(const char *executable, std::string_view databasePath,
           ::connect(probe, reinterpret_cast<sockaddr *>(&address),
                     sizeof(address)) == 0;
       ::close(probe);
-      if (ready) {
+      int childStatus = 0;
+      const pid_t childState = ::waitpid(child, &childStatus, WNOHANG);
+      if (ready && childState == 0) {
         std::cout << "UniDB started (PID " << child << ") on 127.0.0.1:" << port
                   << "\nLog: " << logPath << '\n';
         return 0;
+      }
+      if (childState == child) {
+        std::remove(pidPath.c_str());
+        std::cerr << "UniDB failed to start. Check the log: " << logPath << '\n';
+        return 1;
       }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -177,6 +208,11 @@ int stopServer(std::string_view databasePath) {
   long rawPid = 0;
   if (!(pidFile >> rawPid) || rawPid <= 1) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
+    return 1;
+  }
+  if (rawPid > static_cast<long>(std::numeric_limits<pid_t>::max())) {
+    std::cerr << "UniDB PID file contains an out-of-range PID: " << pidPath
+              << '\n';
     return 1;
   }
   const auto pid = static_cast<pid_t>(rawPid);
@@ -206,6 +242,9 @@ int stopServer(std::string_view databasePath) {
 }
 
 int connectInteractive(unsigned int port) {
+  // A server may close the socket while input is still being forwarded.
+  // Ignore SIGPIPE so sendAll can report EPIPE through its normal error path.
+  std::signal(SIGPIPE, SIG_IGN);
   const int socket = connectToServer(port);
   if (socket < 0)
     return 1;
