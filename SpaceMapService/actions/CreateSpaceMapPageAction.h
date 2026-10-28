@@ -2,18 +2,18 @@
 
 #include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
-#include "../port/WritePagePort.h"
+#include "../port/SpaceMapWritePagePort.h"
 
 class CreateSpaceMapPageAction {
 public:
   CreateSpaceMapPageAction(NewPagePort &newPagePort,
-                           WritePagePort &writePagePort,
+                           SpaceMapWritePagePort &writePagePort,
                            UnpinPagePort &unpinPagePort);
 
   SpaceMapPageId execute();
 
 private:
   NewPagePort &newPagePort;
-  WritePagePort &writePagePort;
+  SpaceMapWritePagePort &writePagePort;
   UnpinPagePort &unpinPagePort;
 };
