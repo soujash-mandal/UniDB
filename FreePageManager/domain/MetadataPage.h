@@ -36,11 +36,10 @@ public:
   void setPageFree(PageId pageId);
   bool isPageOccupied(PageId pageId) const;
 
-  uint32_t getNextMetadataPageId() { return nextMetadataPageId; };
-  void setNextMetadataPageId(uint32_t pageId) { nextMetadataPageId = pageId; };
-
-  uint32_t getFirstTrackedPageId() const { return firstTrackedPageId; };
   uint32_t getNextMetadataPageId() const { return nextMetadataPageId; }
+  void setNextMetadataPageId(uint32_t pageId) { nextMetadataPageId = pageId; }
+
+  uint32_t getFirstTrackedPageId() const { return firstTrackedPageId; }
   void setFirstTrackedPageId(uint32_t pageId) { firstTrackedPageId = pageId; };
 
 private:
