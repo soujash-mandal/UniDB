@@ -9,6 +9,7 @@
 #include "../port/GetCatalogTableByNamePort.h"
 #include "../port/UpdateCatalogTablePort.h"
 #include "../port/UpdateFreeSpacePort.h"
+#include "../port/ReclaimPagePort.h"
 
 #include <cstdint>
 #include <stdexcept>
@@ -44,6 +45,7 @@ public:
                   GetCatalogTableByNamePort &getCatalogTableByNamePort,
                   UpdateCatalogTablePort &updateCatalogTablePort,
                   CreateSpaceMapPagePort &createSpaceMapPagePort,
+                  ReclaimPagePort &reclaimPagePort,
                   CalculateRequiredSpacePort &calculateRequiredSpacePort,
                   FindPageWithSpacePort &findPageWithSpacePort,
                   CreateTuplePort &createTuplePort,
@@ -58,6 +60,7 @@ private:
   GetCatalogTableByNamePort &getCatalogTableByNamePort;
   UpdateCatalogTablePort &updateCatalogTablePort;
   CreateSpaceMapPagePort &createSpaceMapPagePort;
+  ReclaimPagePort &reclaimPagePort;
   CalculateRequiredSpacePort &calculateRequiredSpacePort;
   FindPageWithSpacePort &findPageWithSpacePort;
   CreateTuplePort &createTuplePort;
