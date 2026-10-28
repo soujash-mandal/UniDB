@@ -8,19 +8,19 @@ using SpaceMapPageId = uint32_t;
 using TuplePageId = uint32_t;
 
 namespace {
-static constexpr std::size_t PAGE_SIZE = 8192;
-static constexpr SpaceMapPageId INVALID_PAGE_ID = UINT32_MAX;
-struct Header {
+static constexpr std::size_t SPACE_MAP_PAGE_SIZE = 8192;
+static constexpr SpaceMapPageId SPACE_MAP_INVALID_PAGE_ID = UINT32_MAX;
+struct SpaceMapHeader {
   SpaceMapPageId nextPageId;
   uint32_t entryCount;
 };
-struct Entry {
+struct SpaceMapEntry {
   SpaceMapPageId pageId;
   uint32_t freeSpace;
 };
-static constexpr uint32_t HEADER_SIZE = sizeof(Header);
-static constexpr uint32_t MAX_ENTRIES =
-    (PAGE_SIZE - HEADER_SIZE) / sizeof(Entry);
+static constexpr uint32_t SPACE_MAP_HEADER_SIZE = sizeof(SpaceMapHeader);
+static constexpr uint32_t SPACE_MAP_MAX_ENTRIES =
+    (SPACE_MAP_PAGE_SIZE - SPACE_MAP_HEADER_SIZE) / sizeof(SpaceMapEntry);
 } // namespace
 
 class SpaceMapPage {
@@ -30,7 +30,7 @@ public:
   const char *data() const { return bytes; }
 
   static bool isValidPage(uint32_t pageId) {
-    return !(pageId == INVALID_PAGE_ID);
+    return !(pageId == SPACE_MAP_INVALID_PAGE_ID);
   }
 
   SpaceMapPageId getNextPageId();
@@ -43,5 +43,5 @@ public:
   bool isFull();
 
 private:
-  char bytes[PAGE_SIZE]{};
+  char bytes[SPACE_MAP_PAGE_SIZE]{};
 };
