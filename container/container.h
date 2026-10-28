@@ -197,7 +197,7 @@ private:
   SpaceMapBufferPoolFetchPageAdapter spaceMapFetchPageAdapter;
   SpaceMapBufferPoolNewPageAdapter spaceMapNewPageAdapter;
   SpaceMapBufferPoolUnpinPageAdapter spaceMapUnpinPageAdapter;
-  BufferPoolWritePageAdapter spaceMapWritePageAdapter;
+  SpaceMapBufferPoolWritePageAdapter spaceMapWritePageAdapter;
   SpaceMapCreateTuplePageAdapter spaceMapCreateTuplePageAdapter;
 
   CreateSpaceMapPageAction createSpaceMapPage;
