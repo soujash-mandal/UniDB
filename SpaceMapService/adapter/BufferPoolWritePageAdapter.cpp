@@ -1,4 +1,4 @@
-#include "SpaceMapBufferPoolWritePageAdapter.h"
+#include "BufferPoolWritePageAdapter.h"
 
 #include <cstring>
 
