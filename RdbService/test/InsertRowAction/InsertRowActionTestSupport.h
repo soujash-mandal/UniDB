@@ -3,8 +3,8 @@
 #include "../../actions/InsertRowAction.h"
 #include "../../port/CalculateRequiredSpacePort.h"
 #include "../../port/CreateTuplePort.h"
-#include "../../port/UpdateFreeSpacePort.h"
 #include "../../port/ReclaimPagePort.h"
+#include "../../port/UpdateFreeSpacePort.h"
 
 #include <limits>
 #include <stdexcept>

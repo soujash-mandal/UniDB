@@ -19,9 +19,9 @@ TEST(InsertRowActionTest, PreservesCatalogExceptionWhenRootReclamationFails) {
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
-  RdbService::InsertRowAction action(
-      root, table, update, createSpaceMap, reclaimPage, calculateRequiredSpace,
-      findSpace, createTuple, updateFreeSpace);
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+                                     reclaimPage, calculateRequiredSpace,
+                                     findSpace, createTuple, updateFreeSpace);
 
   try {
     action.execute(3, "users", {'x'});

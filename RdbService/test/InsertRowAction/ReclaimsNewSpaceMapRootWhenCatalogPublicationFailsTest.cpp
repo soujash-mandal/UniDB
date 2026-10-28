@@ -16,9 +16,9 @@ TEST(InsertRowActionTest, ReclaimsNewSpaceMapRootWhenCatalogPublicationFails) {
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
-  RdbService::InsertRowAction action(
-      root, table, update, createSpaceMap, reclaimPage, calculateRequiredSpace,
-      findSpace, createTuple, updateFreeSpace);
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+                                     reclaimPage, calculateRequiredSpace,
+                                     findSpace, createTuple, updateFreeSpace);
 
   EXPECT_THROW(action.execute(3, "users", {'x'}), std::runtime_error);
   EXPECT_EQ(createSpaceMap.calls, 1);

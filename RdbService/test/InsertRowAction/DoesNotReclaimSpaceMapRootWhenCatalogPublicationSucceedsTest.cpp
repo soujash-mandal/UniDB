@@ -2,7 +2,8 @@
 
 #include <gtest/gtest.h>
 
-TEST(InsertRowActionTest, DoesNotReclaimSpaceMapRootWhenCatalogPublicationSucceeds) {
+TEST(InsertRowActionTest,
+     DoesNotReclaimSpaceMapRootWhenCatalogPublicationSucceeds) {
   // Scenario 1: A successfully published root remains allocated and is reused.
   FakeInsertRootPort root;
   FakeInsertTablePort table;
@@ -14,9 +15,9 @@ TEST(InsertRowActionTest, DoesNotReclaimSpaceMapRootWhenCatalogPublicationSuccee
   FakeInsertFindSpacePort findSpace;
   FakeInsertTuplePort createTuple;
   FakeInsertUpdateFreeSpacePort updateFreeSpace;
-  RdbService::InsertRowAction action(
-      root, table, update, createSpaceMap, reclaimPage, calculateRequiredSpace,
-      findSpace, createTuple, updateFreeSpace);
+  RdbService::InsertRowAction action(root, table, update, createSpaceMap,
+                                     reclaimPage, calculateRequiredSpace,
+                                     findSpace, createTuple, updateFreeSpace);
 
   const auto inserted = action.execute(3, "users", {'x'});
 
