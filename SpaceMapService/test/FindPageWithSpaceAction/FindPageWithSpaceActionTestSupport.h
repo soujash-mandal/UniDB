@@ -11,7 +11,7 @@
 
 class FindPageWithSpaceTestStore final : public FetchPagePort,
                                          public UnpinPagePort,
-                                         public WritePagePort,
+                                         public SpaceMapWritePagePort,
                                          public NewPagePort,
                                          public CreateTuplePagePort {
 public:

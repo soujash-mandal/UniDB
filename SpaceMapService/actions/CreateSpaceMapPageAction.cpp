@@ -1,8 +1,8 @@
 #include "CreateSpaceMapPageAction.h"
 
-CreateSpaceMapPageAction::CreateSpaceMapPageAction(NewPagePort &newPagePort,
-                                                   WritePagePort &writePagePort,
-                                                   UnpinPagePort &unpinPagePort)
+CreateSpaceMapPageAction::CreateSpaceMapPageAction(
+    NewPagePort &newPagePort, SpaceMapWritePagePort &writePagePort,
+    UnpinPagePort &unpinPagePort)
     : newPagePort(newPagePort), writePagePort(writePagePort),
       unpinPagePort(unpinPagePort) {}
 

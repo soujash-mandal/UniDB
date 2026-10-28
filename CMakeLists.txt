@@ -58,6 +58,11 @@ set(UNIDB_SOURCES
     SpaceMapService/actions/FindPageWithSpaceAction.cpp
     SpaceMapService/actions/GetTablePagesAction.cpp
     SpaceMapService/actions/UpdateFreeSpaceAction.cpp
+    SpaceMapService/adapter/SpaceMapBufferPoolFetchPageAdapter.cpp
+    SpaceMapService/adapter/SpaceMapBufferPoolNewPageAdapter.cpp
+    SpaceMapService/adapter/SpaceMapBufferPoolUnpinPageAdapter.cpp
+    SpaceMapService/adapter/BufferPoolWritePageAdapter.cpp
+    SpaceMapService/adapter/SpaceMapCreateTuplePageAdapter.cpp
 
     TupleService/domain/TuplePage.cpp
     TupleService/adapter/BufferPoolFetchPageAdapter.cpp
@@ -71,6 +76,8 @@ set(UNIDB_SOURCES
     TupleService/actions/GetAllTuplesAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
+    QueryExecutionService/adapter/RdbServiceAdapter.cpp
+    QueryExecutionService/actions/ExecuteQueryAction.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/actions/CreateTableAction.cpp
@@ -188,6 +195,12 @@ add_executable(tests
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/CreatesTableAndReturnsCommandResultTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/InsertsValuesInSchemaOrderTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/SelectStarDecodesRowsTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/RejectsUnsupportedSelectFormsTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp
     SQLParser/test/SqlParserTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp

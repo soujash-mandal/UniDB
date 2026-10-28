@@ -7,7 +7,7 @@
 class UpdateFreeSpaceAction {
 public:
   UpdateFreeSpaceAction(FetchPagePort &fetchPagePort,
-                        WritePagePort &writePagePort,
+                        SpaceMapWritePagePort &writePagePort,
                         UnpinPagePort &unpinPagePort);
 
   void execute(SpaceMapPageId spaceMapPageId, TuplePageId pageId,
@@ -15,6 +15,6 @@ public:
 
 private:
   FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
+  SpaceMapWritePagePort &writePagePort;
   UnpinPagePort &unpinPagePort;
 };

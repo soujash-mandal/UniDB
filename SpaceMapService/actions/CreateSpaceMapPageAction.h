@@ -7,13 +7,13 @@
 class CreateSpaceMapPageAction {
 public:
   CreateSpaceMapPageAction(NewPagePort &newPagePort,
-                           WritePagePort &writePagePort,
+                           SpaceMapWritePagePort &writePagePort,
                            UnpinPagePort &unpinPagePort);
 
   SpaceMapPageId execute();
 
 private:
   NewPagePort &newPagePort;
-  WritePagePort &writePagePort;
+  SpaceMapWritePagePort &writePagePort;
   UnpinPagePort &unpinPagePort;
 };

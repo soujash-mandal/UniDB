@@ -16,7 +16,7 @@ class FindPageWithSpaceAction {
 public:
   FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
                           UnpinPagePort &unpinPagePort,
-                          WritePagePort &writePagePort,
+                          SpaceMapWritePagePort &writePagePort,
                           NewPagePort &newPagePort,
                           CreateTuplePagePort &createTuplePagePort);
 
@@ -26,7 +26,7 @@ public:
 private:
   FetchPagePort &fetchPagePort;
   UnpinPagePort &unpinPagePort;
-  WritePagePort &writePagePort;
+  SpaceMapWritePagePort &writePagePort;
   NewPagePort &newPagePort;
   CreateTuplePagePort &createTuplePagePort;
 };

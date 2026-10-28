@@ -4,7 +4,7 @@
 
 FindPageWithSpaceAction::FindPageWithSpaceAction(
     FetchPagePort &fetchPagePort, UnpinPagePort &unpinPagePort,
-    WritePagePort &writePagePort, NewPagePort &newPagePort,
+    SpaceMapWritePagePort &writePagePort, NewPagePort &newPagePort,
     CreateTuplePagePort &createTuplePagePort)
     : fetchPagePort(fetchPagePort), unpinPagePort(unpinPagePort),
       writePagePort(writePagePort), newPagePort(newPagePort),

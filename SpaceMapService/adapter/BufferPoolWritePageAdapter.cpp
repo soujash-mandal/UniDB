@@ -2,13 +2,13 @@
 
 #include <cstring>
 
-BufferPoolWritePageAdapter::BufferPoolWritePageAdapter(
+SpaceMapBufferPoolWritePageAdapter::SpaceMapBufferPoolWritePageAdapter(
     WritePageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
-void BufferPoolWritePageAdapter::writePage(SpaceMapPageId pageId,
-                                           SpaceMapPage page) {
+void SpaceMapBufferPoolWritePageAdapter::writePage(SpaceMapPageId pageId,
+                                                   SpaceMapPage page) {
   BufferPoolPage bufferPoolPage;
-  std::memcpy(bufferPoolPage.data(), page.data(), PAGE_SIZE);
+  std::memcpy(bufferPoolPage.data(), page.data(), SPACE_MAP_PAGE_SIZE);
   writePageAction.execute(pageId, bufferPoolPage);
 }

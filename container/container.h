@@ -53,13 +53,42 @@
 #include "../RdbService/actions/CreateTableAction.h"
 #include "../RdbService/actions/GetTableDefinitionAction.h"
 #include "../RdbService/actions/InitializeRdbAction.h"
+#include "../RdbService/actions/InsertRowAction.h"
+#include "../RdbService/actions/SelectAllRowsAction.h"
 #include "../RdbService/adapter/AllocateNextTableIdAdapter.h"
+#include "../RdbService/adapter/CalculateRequiredSpaceAdapter.h"
 #include "../RdbService/adapter/CreateCatalogTableAdapter.h"
 #include "../RdbService/adapter/CreateRdbMetadataPageAdapter.h"
 #include "../RdbService/adapter/CreateRootCatalogPageAdapter.h"
+#include "../RdbService/adapter/CreateSpaceMapPageAdapter.h"
+#include "../RdbService/adapter/CreateTupleAdapter.h"
+#include "../RdbService/adapter/FindPageWithSpaceAdapter.h"
+#include "../RdbService/adapter/GetAllTuplesAdapter.h"
 #include "../RdbService/adapter/GetCatalogRootPageIdAdapter.h"
 #include "../RdbService/adapter/GetCatalogTableByNameAdapter.h"
+#include "../RdbService/adapter/GetTablePagesAdapter.h"
+#include "../RdbService/adapter/UpdateCatalogTableAdapter.h"
+#include "../RdbService/adapter/UpdateFreeSpaceAdapter.h"
 #include "../RdbService/adapter/UpdateRdbMetadataPageAdapter.h"
+
+#include "../TupleService/actions/CalculateRequiredSpaceAction.h"
+#include "../TupleService/actions/CreateTupleAction.h"
+#include "../TupleService/actions/CreateTuplePageAction.h"
+#include "../TupleService/actions/GetAllTuplesAction.h"
+
+#include "../SpaceMapService/actions/CreateSpaceMapPageAction.h"
+#include "../SpaceMapService/actions/FindPageWithSpaceAction.h"
+#include "../SpaceMapService/actions/GetTablePagesAction.h"
+#include "../SpaceMapService/actions/UpdateFreeSpaceAction.h"
+#include "../SpaceMapService/adapter/BufferPoolWritePageAdapter.h"
+#include "../SpaceMapService/adapter/SpaceMapBufferPoolFetchPageAdapter.h"
+#include "../SpaceMapService/adapter/SpaceMapBufferPoolNewPageAdapter.h"
+#include "../SpaceMapService/adapter/SpaceMapBufferPoolUnpinPageAdapter.h"
+#include "../SpaceMapService/adapter/SpaceMapCreateTuplePageAdapter.h"
+
+#include "../QueryExecutionService/actions/ExecuteQueryAction.h"
+#include "../QueryExecutionService/adapter/RdbServiceAdapter.h"
+#include "../SQLParser/SqlParserImpl.h"
 
 class Container {
 public:
@@ -81,6 +110,11 @@ public:
   RdbService::GetTableDefinitionAction &rdbGetTableDefinitionAction() {
     return rdbGetTableDefinition;
   }
+  QueryExecutionService::ExecuteQueryAction &executeQueryAction() {
+    return executeQuery;
+  }
+
+  static constexpr uint32_t RDB_METADATA_PAGE_ID = 1;
   GetCatalogRootPageIdAction &getCatalogRootPageIdAction() {
     return getCatalogRootId;
   }
@@ -154,4 +188,36 @@ private:
   GetCatalogTableByNameAdapter getCatalogTableByNameAdapter;
   RdbService::CreateTableAction rdbCreateTable;
   RdbService::GetTableDefinitionAction rdbGetTableDefinition;
+
+  CreateTuplePageAction createTuplePage;
+  CreateTupleAction createTuple;
+  CalculateRequiredSpaceAction calculateRequiredSpace;
+  GetAllTuplesAction getAllTuples;
+
+  SpaceMapBufferPoolFetchPageAdapter spaceMapFetchPageAdapter;
+  SpaceMapBufferPoolNewPageAdapter spaceMapNewPageAdapter;
+  SpaceMapBufferPoolUnpinPageAdapter spaceMapUnpinPageAdapter;
+  SpaceMapBufferPoolWritePageAdapter spaceMapWritePageAdapter;
+  SpaceMapCreateTuplePageAdapter spaceMapCreateTuplePageAdapter;
+
+  CreateSpaceMapPageAction createSpaceMapPage;
+  FindPageWithSpaceAction findPageWithSpace;
+  GetTablePagesAction getTablePages;
+  UpdateFreeSpaceAction updateFreeSpace;
+
+  CreateSpaceMapPageAdapter createSpaceMapPageAdapter;
+  FindPageWithSpaceAdapter findPageWithSpaceAdapter;
+  GetTablePagesAdapter getTablePagesAdapter;
+  CreateTupleAdapter createTupleAdapter;
+  RdbService::CalculateRequiredSpaceAdapter calculateRequiredSpaceAdapter;
+  RdbService::UpdateFreeSpaceAdapter updateFreeSpaceAdapter;
+  GetAllTuplesAdapter getAllTuplesAdapter;
+  UpdateCatalogTableAdapter updateCatalogTableAdapter;
+
+  RdbService::InsertRowAction rdbInsertRow;
+  RdbService::SelectAllRowsAction rdbSelectAllRows;
+
+  QueryExecutionService::RdbServiceAdapter qesRdbServiceAdapter;
+  unidb::sql::SqlParserImpl sqlParser;
+  QueryExecutionService::ExecuteQueryAction executeQuery;
 };
