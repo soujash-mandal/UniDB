@@ -80,13 +80,13 @@ TEST(SqlShellTest, EscapesControlCharactersAndAlignsUtf8Text) {
   EXPECT_TRUE(error.str().empty());
 }
 
-
 TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
   // Scenario 4: Invalid UTF-8 is visible, and a ZWJ emoji occupies two columns.
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      {std::int64_t{9}, std::string("bad ") + std::string(1, static_cast<char>(0xff))}));
+      {std::int64_t{9},
+       std::string("bad ") + std::string(1, static_cast<char>(0xff))}));
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
       {std::int64_t{10}, std::string("👩‍💻")}));

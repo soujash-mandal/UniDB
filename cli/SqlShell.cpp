@@ -44,11 +44,21 @@ std::string escapeTerminalText(const std::string &value) {
     const auto first = static_cast<unsigned char>(value[index]);
     if (first < 0x20 || first == 0x7f) {
       switch (first) {
-      case '\t': escaped += "\\t"; break;
-      case '\n': escaped += "\\n"; break;
-      case '\r': escaped += "\\r"; break;
-      case '\b': escaped += "\\b"; break;
-      case '\f': escaped += "\\f"; break;
+      case '\t':
+        escaped += "\\t";
+        break;
+      case '\n':
+        escaped += "\\n";
+        break;
+      case '\r':
+        escaped += "\\r";
+        break;
+      case '\b':
+        escaped += "\\b";
+        break;
+      case '\f':
+        escaped += "\\f";
+        break;
       default:
         escaped += "\\x";
         escaped += hex[first >> 4];
@@ -132,8 +142,7 @@ std::size_t codePointDisplayWidth(std::uint32_t codePoint) {
       (codePoint >= 0x20d0 && codePoint <= 0x20ff) ||
       (codePoint >= 0xfe00 && codePoint <= 0xfe0f) ||
       (codePoint >= 0xfe20 && codePoint <= 0xfe2f) ||
-      (codePoint >= 0x1f3fb && codePoint <= 0x1f3ff) ||
-      codePoint == 0x200d) {
+      (codePoint >= 0x1f3fb && codePoint <= 0x1f3ff) || codePoint == 0x200d) {
     return 0;
   }
   if (codePoint >= 0x1100 &&
@@ -165,15 +174,18 @@ std::vector<CodePoint> decodeUtf8(const std::string &value) {
     std::size_t length = 1;
     std::uint32_t codePoint = first;
     if ((first & 0xe0) == 0xc0) {
-      length = 2; codePoint = first & 0x1f;
+      length = 2;
+      codePoint = first & 0x1f;
     } else if ((first & 0xf0) == 0xe0) {
-      length = 3; codePoint = first & 0x0f;
+      length = 3;
+      codePoint = first & 0x0f;
     } else if ((first & 0xf8) == 0xf0) {
-      length = 4; codePoint = first & 0x07;
+      length = 4;
+      codePoint = first & 0x07;
     }
     for (std::size_t offset = 1; offset < length; ++offset) {
       codePoint = (codePoint << 6) |
-          (static_cast<unsigned char>(value[index + offset]) & 0x3f);
+                  (static_cast<unsigned char>(value[index + offset]) & 0x3f);
     }
     points.push_back({codePoint, length, codePointDisplayWidth(codePoint)});
     index += length;
@@ -198,8 +210,7 @@ std::size_t displayWidth(const std::string &value) {
     ++index;
     while (index < points.size()) {
       if (points[index].value == 0xfe0f ||
-          (points[index].value >= 0x1f3fb &&
-           points[index].value <= 0x1f3ff)) {
+          (points[index].value >= 0x1f3fb && points[index].value <= 0x1f3ff)) {
         ++index;
         continue;
       }
@@ -269,7 +280,8 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
     output << '|';
     for (std::size_t index = 0; index < result.columns.size(); ++index) {
       output << ' ';
-      printPadded(escapeTerminalText(result.columns[index].name), widths[index], true, output);
+      printPadded(escapeTerminalText(result.columns[index].name), widths[index],
+                  true, output);
       output << " |";
     }
     output << '\n';
