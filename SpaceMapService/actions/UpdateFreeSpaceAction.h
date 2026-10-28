@@ -2,7 +2,7 @@
 
 #include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
-#include "../port/SpaceMapWritePagePort.h"
+#include "../port/WritePagePort.h"
 
 class UpdateFreeSpaceAction {
 public:
