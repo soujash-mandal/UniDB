@@ -32,3 +32,14 @@ TEST(SqlRequestFramerTest, AcceptsMaximumLengthRequestWithCrLf) {
   ASSERT_EQ(result.requests.size(), 1U);
   EXPECT_EQ(result.requests.front(), sql);
 }
+
+TEST(SqlRequestFramerTest, AcceptsCrLfSplitAcrossReadsAtMaximumLength) {
+  ConnectionProtocol::SqlRequestFramer framer;
+  const std::string sql(ConnectionProtocol::MAX_REQUEST_BYTES, 'x');
+  EXPECT_TRUE(framer.append(sql + "\r").requests.empty());
+
+  const auto result = framer.append("\n");
+  ASSERT_FALSE(result.error.has_value());
+  ASSERT_EQ(result.requests.size(), 1U);
+  EXPECT_EQ(result.requests.front(), sql);
+}
