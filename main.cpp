@@ -18,8 +18,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
 #include <string_view>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -41,7 +41,8 @@ namespace {
 constexpr std::string_view kDefaultDatabasePath = "database.db";
 constexpr unsigned int kDefaultPort = 7432;
 
-// Resolve aliases before deriving lifecycle files so symlinked paths share state.
+// Resolve aliases before deriving lifecycle files so symlinked paths share
+// state.
 std::string lifecycleKey(std::string_view databasePath) {
   std::error_code error;
   const auto canonical = std::filesystem::weakly_canonical(
@@ -61,8 +62,7 @@ std::string logFilePath(std::string_view databasePath) {
 class LifecycleLock {
 public:
   explicit LifecycleLock(std::string_view databasePath) {
-    const std::string lockPath =
-        lifecycleKey(databasePath) + ".lifecycle.lock";
+    const std::string lockPath = lifecycleKey(databasePath) + ".lifecycle.lock";
     descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
     if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX) != 0) {
       ::close(descriptor_);
@@ -219,9 +219,10 @@ int startServer(const char *executable, std::string_view databasePath,
             std::cerr << "UniDB may already be running (PID " << existingPid
                       << "). Use 'unidb stop' before starting it again.\n";
           } else {
-            std::cerr << "A UniDB process (PID " << existingPid
-                      << ") is still alive; preserving its PID record rather "
-                         "than risking a second server for the same database.\n";
+            std::cerr
+                << "A UniDB process (PID " << existingPid
+                << ") is still alive; preserving its PID record rather "
+                   "than risking a second server for the same database.\n";
           }
           return 1;
         }
