@@ -28,12 +28,15 @@ TEST(SqlShellTest, PrintsCommandSuccessAndContinuesUntilQuit) {
   EXPECT_TRUE(error.str().empty());
 }
 
-TEST(SqlShellTest, PrintsSelectColumnNamesAndValues) {
-  // Scenario 2: SELECT * output contains schema names and decoded values.
+TEST(SqlShellTest, PrintsSelectResultsAsAlignedTable) {
+  // Scenario 2: Headers and values are aligned using widths based on their content.
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
       {std::int64_t{7}, std::string("Ada")}));
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{12}, std::string("Grace Hopper")}));
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
   std::istringstream input("SELECT * FROM people;\nquit\n");
@@ -43,15 +46,34 @@ TEST(SqlShellTest, PrintsSelectColumnNamesAndValues) {
 
   shell.run();
 
-  EXPECT_NE(output.str().find("id"), std::string::npos);
-  EXPECT_NE(output.str().find("name"), std::string::npos);
-  EXPECT_NE(output.str().find("7"), std::string::npos);
-  EXPECT_NE(output.str().find("Ada"), std::string::npos);
+  EXPECT_NE(output.str().find("+----+--------------+"), std::string::npos);
+  EXPECT_NE(output.str().find("| id | name         |"), std::string::npos);
+  EXPECT_NE(output.str().find("|  7 | Ada          |"), std::string::npos);
+  EXPECT_NE(output.str().find("| 12 | Grace Hopper |"), std::string::npos);
+  EXPECT_NE(output.str().find("2 row(s)"), std::string::npos);
+  EXPECT_TRUE(error.str().empty());
+}
+
+TEST(SqlShellTest, PrintsHeadersAndBordersForEmptyResultSet) {
+  // Scenario 3: An empty SELECT still renders the schema and an empty table.
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  std::istringstream input("SELECT * FROM people;\nquit\n");
+  std::ostringstream output;
+  std::ostringstream error;
+  SqlShell shell(action, input, output, error);
+
+  shell.run();
+
+  EXPECT_NE(output.str().find("+----+------+"), std::string::npos);
+  EXPECT_NE(output.str().find("| id | name |"), std::string::npos);
+  EXPECT_NE(output.str().find("0 row(s)"), std::string::npos);
   EXPECT_TRUE(error.str().empty());
 }
 
 TEST(SqlShellTest, ReportsInvalidSqlAndContinues) {
-  // Scenario 3: A statement error does not terminate the interactive loop.
+  // Scenario 4: A statement error does not terminate the interactive loop.
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
@@ -68,7 +90,7 @@ TEST(SqlShellTest, ReportsInvalidSqlAndContinues) {
 }
 
 TEST(SqlShellTest, ExitsCleanlyOnEndOfInput) {
-  // Scenario 4: EOF exits without requiring a quit command.
+  // Scenario 5: EOF exits without requiring a quit command.
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
