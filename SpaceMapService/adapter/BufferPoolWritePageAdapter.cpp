@@ -1,12 +1,12 @@
-#include "BufferPoolWritePageAdapter.h"
+#include "SpaceMapBufferPoolWritePageAdapter.h"
 
 #include <cstring>
 
-BufferPoolWritePageAdapter::BufferPoolWritePageAdapter(
+SpaceMapBufferPoolWritePageAdapter::SpaceMapBufferPoolWritePageAdapter(
     WritePageAction &writePageAction)
     : writePageAction(writePageAction) {}
 
-void BufferPoolWritePageAdapter::writePage(SpaceMapPageId pageId,
+void SpaceMapBufferPoolWritePageAdapter::writePage(SpaceMapPageId pageId,
                                            SpaceMapPage page) {
   BufferPoolPage bufferPoolPage;
   std::memcpy(bufferPoolPage.data(), page.data(), PAGE_SIZE);
