@@ -350,6 +350,10 @@ void SqlShell::run() {
     if (command == "quit" || command == "exit" || command == ".quit") {
       return;
     }
+    if (command == "cls") {
+      output << "\033[2J\033[H" << std::flush;
+      continue;
+    }
     if (statement.empty()) {
       continue;
     }
