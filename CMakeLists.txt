@@ -121,6 +121,9 @@ add_executable(tests
 
     DiskManager/test/DiskManagerE2ETest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
+    FreePageManager/test/DeallocatePageAction/FreesAllocatedPageForReuseTest.cpp
+    FreePageManager/test/DeallocatePageAction/RejectsDoubleFreeTest.cpp
+    FreePageManager/test/DeallocatePageAction/RejectsReservedMetadataPageTest.cpp
     EvictionPolicy/test/FIFOEvictionPolicyTest.cpp
     BufferPoolManager/test/FetchPageActionTest.cpp
     BufferPoolManager/test/UnpinPageAction/LastUnpinMakesPageEvictableTest.cpp
@@ -134,6 +137,9 @@ add_executable(tests
     BufferPoolManager/test/NewPageActionTest.cpp
     BufferPoolManager/test/FlushPageActionTest.cpp
     BufferPoolManager/test/WritePageActionTest.cpp
+    BufferPoolManager/test/DeletePageAction/DeletesUnpinnedResidentPageTest.cpp
+    BufferPoolManager/test/DeletePageAction/RejectsPinnedPageTest.cpp
+    BufferPoolManager/test/DeletePageAction/PreservesResidentPageWhenDeallocationFailsTest.cpp
     BufferPoolManager/test/FoundationIntegrationTest.cpp
     CatalogService/test/CatalogPage/RemovingTableReclaimsSpaceAndPreservesOtherTablesTest.cpp
     CatalogService/test/CatalogPage/RemovingFirstEntryPreservesRemainingTablesTest.cpp
