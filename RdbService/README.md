@@ -25,7 +25,6 @@ translate those contracts to public Actions exposed by lower-level services.
 - `GetTablePagesPort` — enumerate tuple pages registered for a table.
 - `RdbCreateTuplePagePort` — create and initialize one tuple page.
 - `CreateTuplePort` — insert one row into a tuple page.
-- `CreateTupleWithFreeSpacePort` — insert one row and return its slot ID plus actual remaining free space from the same page mutation.
 - `CalculateRequiredSpacePort` — calculate the bytes needed for a tuple payload and its slot entry.
 - `UpdateFreeSpacePort` — update a tuple page's recorded free space in SpaceMapService.
 - `GetTuplePort` — retrieve one row by slot.
@@ -44,7 +43,6 @@ translate those contracts to public Actions exposed by lower-level services.
 - `GetTablePagesAdapter` — delegates only to `GetTablePagesAction`.
 - `CreateTuplePageAdapter` — delegates only to `CreateTuplePageAction`.
 - `CreateTupleAdapter` — delegates only to `CreateTupleAction`.
-- `CreateTupleWithFreeSpaceAdapter` — delegates only to `CreateTupleWithFreeSpaceAction`.
 - `CalculateRequiredSpaceAdapter` — delegates only to `CalculateRequiredSpaceAction`.
 - `UpdateFreeSpaceAdapter` — delegates only to `UpdateFreeSpaceAction`.
 - `GetTupleAdapter` — delegates only to `GetTupleAction`.
