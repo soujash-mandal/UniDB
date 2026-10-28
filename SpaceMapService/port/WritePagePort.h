@@ -2,9 +2,9 @@
 
 #include "../domain/SpaceMapPage.h"
 
-class WritePagePort {
+class SpaceMapWritePagePort {
 public:
-  virtual ~WritePagePort() = default;
+  virtual ~SpaceMapWritePagePort() = default;
 
   virtual void writePage(SpaceMapPageId pageId, SpaceMapPage page) = 0;
 };
