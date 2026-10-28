@@ -278,7 +278,8 @@ int startServer(const char *executable, std::string_view databasePath,
   }
 
   ::close(startupPipe[0]);
-  // Prevent a broken handshake pipe from terminating the launcher before cleanup.
+  // Prevent a broken handshake pipe from terminating the launcher before
+  // cleanup.
   std::signal(SIGPIPE, SIG_IGN);
 
   {
