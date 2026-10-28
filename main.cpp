@@ -217,7 +217,9 @@ int startServer(const char *executable, std::string_view databasePath,
     const std::string identity = processIdentity(child);
     std::ofstream pidFile(pidPath, std::ios::trunc);
     if (identity.empty() || !pidFile ||
-        !(pidFile << child << '\n' << port << '\n' << identity << '\n')) {
+        !(pidFile << child << '\n'
+                  << port << '\n'
+                  << identity << '\n')) {
       std::cerr << "Could not write PID file with process identity: " << pidPath
                 << '\n';
       ::kill(child, SIGTERM);
@@ -294,8 +296,9 @@ int stopServer(std::string_view databasePath, unsigned int port) {
   const std::string currentIdentity = processIdentity(pid);
   if (currentIdentity.empty() || currentIdentity != recordedIdentity) {
     std::remove(pidPath.c_str());
-    std::cerr << "PID no longer identifies the UniDB process; removed stale PID "
-                 "file without sending a signal.\n";
+    std::cerr
+        << "PID no longer identifies the UniDB process; removed stale PID "
+           "file without sending a signal.\n";
     return 1;
   }
   if (recordedPort != port || !isPortReachable(recordedPort)) {
