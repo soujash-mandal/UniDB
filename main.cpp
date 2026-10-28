@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -28,6 +29,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#if defined(__APPLE__)
+#include <libproc.h>
+#include <sys/proc_info.h>
+#endif
 
 namespace {
 constexpr std::string_view kDefaultDatabasePath = "database.db";
@@ -39,6 +44,39 @@ std::string pidFilePath(std::string_view databasePath) {
 
 std::string logFilePath(std::string_view databasePath) {
   return std::string(databasePath) + ".log";
+}
+
+// Return a process-start token so a reused PID cannot identify another process.
+std::string processIdentity(pid_t pid) {
+#if defined(__APPLE__)
+  proc_bsdinfo info{};
+  const int size = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, sizeof(info));
+  if (size != sizeof(info))
+    return {};
+  return std::to_string(info.pbi_start_tvsec) + ":" +
+         std::to_string(info.pbi_start_tvusec);
+#elif defined(__linux__)
+  std::ifstream statFile("/proc/" + std::to_string(pid) + "/stat");
+  std::string statLine;
+  if (!std::getline(statFile, statLine))
+    return {};
+  const auto commandEnd = statLine.rfind(')');
+  if (commandEnd == std::string::npos || commandEnd + 2 >= statLine.size())
+    return {};
+  std::istringstream fields(statLine.substr(commandEnd + 2));
+  std::string field;
+  // After the command name, the first token is field 3; starttime is field 22.
+  for (int fieldNumber = 3; fieldNumber <= 22; ++fieldNumber) {
+    if (!(fields >> field))
+      return {};
+    if (fieldNumber == 22)
+      return field;
+  }
+  return {};
+#else
+  (void)pid;
+  return {};
+#endif
 }
 
 bool sendAll(int socket, const char *data, std::size_t size) {
@@ -176,9 +214,12 @@ int startServer(const char *executable, std::string_view databasePath,
   }
 
   {
+    const std::string identity = processIdentity(child);
     std::ofstream pidFile(pidPath, std::ios::trunc);
-    if (!pidFile || !(pidFile << child << '\n' << port << '\n')) {
-      std::cerr << "Could not write PID file: " << pidPath << '\n';
+    if (identity.empty() || !pidFile ||
+        !(pidFile << child << '\n' << port << '\n' << identity << '\n')) {
+      std::cerr << "Could not write PID file with process identity: " << pidPath
+                << '\n';
       ::kill(child, SIGTERM);
       ::waitpid(child, nullptr, 0);
       return 1;
@@ -233,7 +274,8 @@ int stopServer(std::string_view databasePath, unsigned int port) {
   std::ifstream pidFile(pidPath);
   long rawPid = 0;
   unsigned int recordedPort = 0;
-  if (!(pidFile >> rawPid >> recordedPort) || rawPid <= 1 ||
+  std::string recordedIdentity;
+  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity) || rawPid <= 1 ||
       recordedPort == 0 || recordedPort > 65535) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
     return 1;
@@ -247,6 +289,13 @@ int stopServer(std::string_view databasePath, unsigned int port) {
   if (::kill(pid, 0) != 0 && errno == ESRCH) {
     std::remove(pidPath.c_str());
     std::cerr << "Removed stale PID file; UniDB is not running.\n";
+    return 1;
+  }
+  const std::string currentIdentity = processIdentity(pid);
+  if (currentIdentity.empty() || currentIdentity != recordedIdentity) {
+    std::remove(pidPath.c_str());
+    std::cerr << "PID no longer identifies the UniDB process; removed stale PID "
+                 "file without sending a signal.\n";
     return 1;
   }
   if (recordedPort != port || !isPortReachable(recordedPort)) {
