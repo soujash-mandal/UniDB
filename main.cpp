@@ -1,5 +1,5 @@
-#include "DatabaseStartup.h"
 #include "ConnectionProtocol/SqlConnectionServer.h"
+#include "DatabaseStartup.h"
 #include "cli/SqlShell.h"
 #include "container/container.h"
 
@@ -25,7 +25,8 @@ int main(int argc, char *argv[]) {
       }
       try {
         const auto parsed = std::stoul(argv[++index]);
-        if (parsed == 0 || parsed > 65535) throw std::out_of_range("port");
+        if (parsed == 0 || parsed > 65535)
+          throw std::out_of_range("port");
         port = static_cast<unsigned int>(parsed);
       } catch (const std::exception &) {
         std::cerr << "Invalid TCP port. Expected a number from 1 to 65535.\n";
@@ -40,7 +41,8 @@ int main(int argc, char *argv[]) {
     } else if (argument == "--help") {
       std::cout
           << "Usage: unidb [--server] [--db-path PATH] [--port PORT]\n"
-             "  --server       Accept newline-delimited SQL over loopback TCP.\n"
+             "  --server       Accept newline-delimited SQL over loopback "
+             "TCP.\n"
              "  --db-path PATH Database file path (default: database.db).\n"
              "  --port PORT    TCP port (default: 7432; loopback only).\n";
       return 0;

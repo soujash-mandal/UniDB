@@ -14,10 +14,9 @@ std::vector<std::string> SqlRequestFramer::append(std::string_view bytes) {
     const auto end = newline == std::string_view::npos ? bytes.size() : newline;
     const auto segment = bytes.substr(start, end - start);
 
-    if (segment.size() > MAX_REQUEST_BYTES -
-                             (pending.size() > MAX_REQUEST_BYTES
-                                  ? MAX_REQUEST_BYTES
-                                  : pending.size())) {
+    if (segment.size() > MAX_REQUEST_BYTES - (pending.size() > MAX_REQUEST_BYTES
+                                                  ? MAX_REQUEST_BYTES
+                                                  : pending.size())) {
       throw std::length_error("SQL request exceeds 64 KiB limit");
     }
     pending.append(segment);
