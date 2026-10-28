@@ -188,3 +188,5 @@ int SqlConnectionServer::run() {
   std::cout << "UniDB server shutdown complete.\n";
   return 0;
 }
+
+} // namespace ConnectionProtocol
