@@ -5,7 +5,7 @@
 #include "../port/FetchPagePort.h"
 #include "../port/NewPagePort.h"
 #include "../port/UnpinPagePort.h"
-#include "../port/WritePagePort.h"
+#include "../port/SpaceMapWritePagePort.h"
 
 struct FindPageWithSpaceResult {
   TuplePageId tuplePageId;
@@ -16,7 +16,7 @@ class FindPageWithSpaceAction {
 public:
   FindPageWithSpaceAction(FetchPagePort &fetchPagePort,
                           UnpinPagePort &unpinPagePort,
-                          WritePagePort &writePagePort,
+                          SpaceMapWritePagePort &writePagePort,
                           NewPagePort &newPagePort,
                           CreateTuplePagePort &createTuplePagePort);
 
@@ -26,7 +26,7 @@ public:
 private:
   FetchPagePort &fetchPagePort;
   UnpinPagePort &unpinPagePort;
-  WritePagePort &writePagePort;
+  SpaceMapWritePagePort &writePagePort;
   NewPagePort &newPagePort;
   CreateTuplePagePort &createTuplePagePort;
 };
