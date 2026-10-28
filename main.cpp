@@ -21,7 +21,7 @@ int main() {
     shell.run();
     container.flushDirtyPages();
   } catch (const std::exception &error) {
-    std::cerr << "UniDB startup failed: " << error.what() << '\n';
+    std::cerr << "UniDB failed: " << error.what() << '\n';
     return 1;
   }
 
