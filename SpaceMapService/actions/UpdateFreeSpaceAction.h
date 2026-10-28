@@ -2,12 +2,12 @@
 
 #include "../port/FetchPagePort.h"
 #include "../port/UnpinPagePort.h"
-#include "../port/WritePagePort.h"
+#include "../port/SpaceMapWritePagePort.h"
 
 class UpdateFreeSpaceAction {
 public:
   UpdateFreeSpaceAction(FetchPagePort &fetchPagePort,
-                        WritePagePort &writePagePort,
+                        SpaceMapWritePagePort &writePagePort,
                         UnpinPagePort &unpinPagePort);
 
   void execute(SpaceMapPageId spaceMapPageId, TuplePageId pageId,
@@ -15,6 +15,6 @@ public:
 
 private:
   FetchPagePort &fetchPagePort;
-  WritePagePort &writePagePort;
+  SpaceMapWritePagePort &writePagePort;
   UnpinPagePort &unpinPagePort;
 };
