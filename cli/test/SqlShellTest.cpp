@@ -93,6 +93,12 @@ TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
       {std::int64_t{11}, std::string("C1 ") + std::string("\xC2\x9B", 2)}));
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{12}, std::string("a | b")}));
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{13}, std::string("\\t")}));
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
   std::istringstream input("SELECT * FROM people;\nquit\n");
@@ -105,6 +111,8 @@ TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
   EXPECT_NE(output.str().find("bad \\xFF"), std::string::npos);
   EXPECT_NE(output.str().find("👩‍💻"), std::string::npos);
   EXPECT_NE(output.str().find("C1 \\u009B"), std::string::npos);
+  EXPECT_NE(output.str().find("a \\| b"), std::string::npos);
+  EXPECT_NE(output.str().find("\\\\t"), std::string::npos);
   EXPECT_NE(output.str().find("+----+-----------+"), std::string::npos);
   EXPECT_TRUE(error.str().empty());
 }
