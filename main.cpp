@@ -88,6 +88,35 @@ private:
   int descriptor_ = -1;
 };
 
+// Keep only one process at a time opening a database with its own buffer pool.
+class DatabaseOwnershipLock {
+public:
+  explicit DatabaseOwnershipLock(std::string_view databasePath) {
+    const std::string lockPath = lifecycleKey(databasePath) + ".ownership.lock";
+    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
+    if (descriptor_ >= 0 &&
+        ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
+      ::close(descriptor_);
+      descriptor_ = -1;
+    }
+  }
+
+  ~DatabaseOwnershipLock() {
+    if (descriptor_ >= 0) {
+      ::flock(descriptor_, LOCK_UN);
+      ::close(descriptor_);
+    }
+  }
+
+  DatabaseOwnershipLock(const DatabaseOwnershipLock &) = delete;
+  DatabaseOwnershipLock &operator=(const DatabaseOwnershipLock &) = delete;
+
+  bool acquired() const { return descriptor_ >= 0; }
+
+private:
+  int descriptor_ = -1;
+};
+
 // Return a process-start token so a reused PID cannot identify another process.
 std::string processIdentity(pid_t pid) {
 #if defined(__APPLE__)
@@ -659,6 +688,14 @@ int main(int argc, char *argv[]) {
     return connectInteractive(port);
   if (command == "stop")
     return stopServer(databasePath, port);
+
+  DatabaseOwnershipLock databaseOwnershipLock(databasePath);
+  if (!databaseOwnershipLock.acquired()) {
+    std::cerr << "Another UniDB process already owns this database: "
+              << databasePath << '\\n'
+              << "Stop the other process before opening this database again.\\n";
+    return 1;
+  }
 
   try {
     Container container(std::string(databasePath), 2, EvictionPolicyType::FIFO);
