@@ -1,6 +1,7 @@
 #include "container.h"
 
 #include "../EvictionPolicy/EvictionPolicyFactory.h"
+#include <stdexcept>
 
 #include <utility>
 
@@ -89,4 +90,15 @@ Container::Container(std::string fileName, uint32_t bufferPoolSize,
       sqlParser(), executeQuery(qesRdbServiceAdapter, sqlParser) {
   databaseFileName = std::move(fileName);
   diskManager.fileName = databaseFileName;
+}
+
+
+void Container::flushDirtyPages() {
+  // Iterate frames without holding the pool mutex while FlushPageAction writes.
+  for (uint32_t frameId = 0; frameId < bufferPool.size(); ++frameId) {
+    const Frame &frame = bufferPool.getFrame(frameId);
+    if (frame.isOccupied() && frame.isDirty()) {
+      flushPage.execute(frame.getPageId());
+    }
+  }
 }
