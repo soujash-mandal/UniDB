@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../../BufferPoolManager/actions/WritePageAction.h"
-#include "../port/WritePagePort.h"
+#include "../port/SpaceMapWritePagePort.h"
 
-class SpaceMapBufferPoolWritePageAdapter : public WritePagePort {
+class SpaceMapBufferPoolWritePageAdapter : public SpaceMapWritePagePort {
 public:
   explicit SpaceMapBufferPoolWritePageAdapter(WritePageAction &writePageAction);
   void writePage(SpaceMapPageId pageId, SpaceMapPage page) override;
