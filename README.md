@@ -72,3 +72,27 @@ service graph, but remains deferred from V1 acceptance criteria unless a concret
 operation requires it. The `SpaceMapService --> TupleService` edge reflects the
 current implementation's tuple-page creation port; it should be revisited when SpaceMapService's
 page-selection and page-creation responsibilities are refactored.
+
+
+## Running UniDB
+
+Build the project first:
+
+```bash
+./scripts/run.sh
+```
+
+The executable supports lifecycle subcommands. Run them from the repository root (or use the path to your built executable):
+
+```bash
+./build/unidb start --db-path ./database.db --port 7432
+./build/unidb connect --port 7432
+./build/unidb stop --db-path ./database.db --port 7432
+```
+
+- `start` launches the TCP server in the background and waits until its loopback listener is reachable.
+- `connect` opens an interactive session; enter one SQL statement per line. Press Ctrl+D to disconnect.
+- `stop` sends a graceful shutdown signal and waits for the server process to exit so it can flush dirty pages.
+- The default database path is `database.db`; the default port is `7432`. Use the same database path for `start` and `stop`.
+- The PID file is stored as `<database-path>.pid` and the server log as `<database-path>.log`. If startup fails, inspect the log.
+- For foreground server operation, the existing `--server` mode remains available.
