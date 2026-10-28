@@ -39,8 +39,9 @@ void SpaceMapPage::insert(SpaceMapPageId pageId, uint32_t freeSpace) {
   SpaceMapEntry entry;
   entry.pageId = pageId;
   entry.freeSpace = freeSpace;
-  std::memcpy(bytes + SPACE_MAP_HEADER_SIZE + header.entryCount * sizeof(SpaceMapEntry), &entry,
-              sizeof(SpaceMapEntry));
+  std::memcpy(bytes + SPACE_MAP_HEADER_SIZE +
+                  header.entryCount * sizeof(SpaceMapEntry),
+              &entry, sizeof(SpaceMapEntry));
   ++header.entryCount;
   std::memcpy(bytes, &header, sizeof(SpaceMapHeader));
 }
@@ -50,11 +51,13 @@ void SpaceMapPage::update(SpaceMapPageId pageId, uint32_t freeSpace) {
   std::memcpy(&header, bytes, sizeof(SpaceMapHeader));
   for (uint32_t i = 0; i < header.entryCount; ++i) {
     SpaceMapEntry entry;
-    std::memcpy(&entry, bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry), sizeof(SpaceMapEntry));
+    std::memcpy(&entry,
+                bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry),
+                sizeof(SpaceMapEntry));
     if (entry.pageId == pageId) {
       entry.freeSpace = freeSpace;
-      std::memcpy(bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry), &entry,
-                  sizeof(SpaceMapEntry));
+      std::memcpy(bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry),
+                  &entry, sizeof(SpaceMapEntry));
       return;
     }
   }
@@ -66,7 +69,9 @@ SpaceMapPageId SpaceMapPage::findPageWithSpace(uint32_t requiredSpace) {
   std::memcpy(&header, bytes, sizeof(SpaceMapHeader));
   for (uint32_t i = 0; i < header.entryCount; ++i) {
     SpaceMapEntry entry;
-    std::memcpy(&entry, bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry), sizeof(SpaceMapEntry));
+    std::memcpy(&entry,
+                bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry),
+                sizeof(SpaceMapEntry));
     if (entry.freeSpace >= requiredSpace) {
       return entry.pageId;
     }
@@ -85,7 +90,9 @@ std::vector<TuplePageId> SpaceMapPage::getPageIds() const {
   pageIds.reserve(header.entryCount);
   for (uint32_t i = 0; i < header.entryCount; ++i) {
     SpaceMapEntry entry;
-    std::memcpy(&entry, bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry), sizeof(SpaceMapEntry));
+    std::memcpy(&entry,
+                bytes + SPACE_MAP_HEADER_SIZE + i * sizeof(SpaceMapEntry),
+                sizeof(SpaceMapEntry));
     if (!isValidPage(entry.pageId)) {
       throw std::runtime_error("Invalid tuple page ID in SpaceMapPage");
     }
