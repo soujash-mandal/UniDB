@@ -92,34 +92,30 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
                                               requiredSpace);
 
   // Step 7: Insert the row into the selected tuple page. The returned result
-  // is expected to contain the new slot ID and the page's actual remaining
-  // free space after the insertion.
+  // contains the new slot ID and the page's actual remaining free space.
   const CreateTupleResult insertResult =
       createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
 
   // Step 8: Refresh SpaceMap's recorded free-space value using the actual
   // post-insert value, not the estimate calculated in Step 2.
-  bool spaceMapUpdated = true;
-  std::string spaceMapUpdateError;
   try {
     updateFreeSpacePort.updateFreeSpace(
         target.spaceMapPageId, target.tuplePageId, insertResult.freeSpace);
   } catch (const std::exception &error) {
-    // The tuple is already persisted. Return its committed location instead
-    // of throwing an error that could cause the caller to insert it again.
-    spaceMapUpdated = false;
-    spaceMapUpdateError = error.what();
+    // The tuple is already committed. Report that fact explicitly and expose
+    // only its location, so callers do not mistake this for an insert failure.
+    throw SpaceMapUpdateFailedAfterInsert(
+        {target.tuplePageId, insertResult.slotId}, error.what());
   } catch (...) {
     // Preserve the committed outcome even for a non-standard adapter error.
-    spaceMapUpdated = false;
-    spaceMapUpdateError = "Unknown SpaceMap free-space update failure";
+    throw SpaceMapUpdateFailedAfterInsert(
+        {target.tuplePageId, insertResult.slotId},
+        "Unknown SpaceMap free-space update failure");
   }
 
-  // Step 9: Return the committed row location and enough metadata to retry
-  // the SpaceMap update if spaceMapUpdated is false.
-  return {target.tuplePageId,    insertResult.slotId,
-          target.spaceMapPageId, insertResult.freeSpace,
-          spaceMapUpdated,       std::move(spaceMapUpdateError)};
+  // Step 9: Return only the public row location; SpaceMap bookkeeping stays
+  // internal to this action.
+  return {target.tuplePageId, insertResult.slotId};
 }
 
 } // namespace RdbService
