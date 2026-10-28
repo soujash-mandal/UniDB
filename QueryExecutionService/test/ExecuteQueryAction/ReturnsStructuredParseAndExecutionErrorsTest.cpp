@@ -8,7 +8,7 @@ TEST(ExecuteQueryActionTest, ReturnsStructuredParseAndExecutionErrors) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto syntax = action.execute("CREATE TABLE");
+  const auto syntax = action.execute("CREATE TABLE people (");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           syntax));
