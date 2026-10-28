@@ -48,7 +48,7 @@ std::string escapeTerminalText(const std::string &value) {
       continue;
     }
     if (first == '|') {
-      escaped += "\\\\|";
+      escaped += "\\|";
       ++index;
       continue;
     }
