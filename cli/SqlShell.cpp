@@ -2,11 +2,10 @@
 
 #include <algorithm>
 #include <cctype>
-#include <iomanip>
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -34,13 +33,11 @@ std::string lower(std::string value) {
   return value;
 }
 
+// Makes terminal control characters visible so values cannot disrupt table layout.
 std::string escapeControlCharacters(const std::string &value) {
   std::ostringstream escaped;
   for (const unsigned char ch : value) {
     switch (ch) {
-    case '\\':
-      escaped << "\\\\";
-      break;
     case '\t':
       escaped << "\\t";
       break;
@@ -75,7 +72,7 @@ std::string formatValue(const unidb::sql::SqlValue &value) {
   return escapeControlCharacters(formatted.str());
 }
 
-// Returns a terminal-column width estimate for a Unicode code point.
+// Returns an approximate terminal-column width for a Unicode code point.
 std::size_t codePointDisplayWidth(std::uint32_t codePoint) {
   if (codePoint == 0 || codePoint < 0x20 ||
       (codePoint >= 0x7f && codePoint < 0xa0)) {
@@ -178,6 +175,7 @@ void printBorder(const std::vector<std::size_t> &widths, std::ostream &output) {
   output << '\n';
 }
 
+// Prints a bordered result table using terminal display widths rather than byte counts.
 void printRows(const QueryExecutionService::QueryExecutionResult &result,
                std::ostream &output) {
   std::vector<std::size_t> widths;
