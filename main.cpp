@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -39,19 +40,27 @@ namespace {
 constexpr std::string_view kDefaultDatabasePath = "database.db";
 constexpr unsigned int kDefaultPort = 7432;
 
+// Resolve aliases before deriving lifecycle files so symlinked paths share state.
+std::string lifecycleKey(std::string_view databasePath) {
+  std::error_code error;
+  const auto canonical = std::filesystem::weakly_canonical(
+      std::filesystem::path(std::string(databasePath)), error);
+  return error ? std::string(databasePath) : canonical.string();
+}
+
 std::string pidFilePath(std::string_view databasePath) {
-  return std::string(databasePath) + ".pid";
+  return lifecycleKey(databasePath) + ".pid";
 }
 
 std::string logFilePath(std::string_view databasePath) {
-  return std::string(databasePath) + ".log";
+  return lifecycleKey(databasePath) + ".log";
 }
 
 // Serialize lifecycle operations for a database path across processes.
 class LifecycleLock {
 public:
   explicit LifecycleLock(std::string_view databasePath) {
-    const std::string lockPath = std::string(databasePath) + ".lifecycle.lock";
+    const std::string lockPath = lifecycleKey(databasePath) + ".lifecycle.lock";
     descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
     if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX) != 0) {
       ::close(descriptor_);
@@ -183,24 +192,39 @@ int startServer(const char *executable, std::string_view databasePath,
     std::ifstream pidFile(pidPath);
     long existingPid = 0;
     unsigned int recordedPort = 0;
+    std::string recordedIdentity;
     if (pidFile >> existingPid >> recordedPort) {
       const bool validPid =
           existingPid > 1 &&
           existingPid <= static_cast<long>(std::numeric_limits<pid_t>::max());
-      if (validPid &&
-          (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM) &&
-          recordedPort == port && isPortReachable(recordedPort)) {
-        std::cerr << "UniDB may already be running (PID " << existingPid
-                  << "). Use 'unidb stop' before starting it again.\n";
-        return 1;
+      const auto existingProcess = static_cast<pid_t>(existingPid);
+      const bool processAlive =
+          validPid && (::kill(existingProcess, 0) == 0 || errno == EPERM);
+      if (processAlive) {
+        if (!(pidFile >> recordedIdentity) || recordedIdentity.empty()) {
+          std::cerr << "PID file refers to a live process but has no process "
+                       "identity; refusing to remove it automatically.\n";
+          return 1;
+        }
+        const std::string currentIdentity = processIdentity(existingProcess);
+        if (currentIdentity.empty()) {
+          std::cerr << "Could not verify the live process identity in " << pidPath
+                    << "; refusing to remove the PID file.\n";
+          return 1;
+        }
+        if (currentIdentity == recordedIdentity) {
+          if (recordedPort == port && isPortReachable(recordedPort)) {
+            std::cerr << "UniDB may already be running (PID " << existingPid
+                      << "). Use 'unidb stop' before starting it again.\n";
+          } else {
+            std::cerr << "A UniDB process (PID " << existingPid
+                      << ") is still alive; preserving its PID record rather "
+                         "than risking a second server for the same database.\n";
+          }
+          return 1;
+        }
       }
-      if (validPid &&
-          (::kill(static_cast<pid_t>(existingPid), 0) == 0 || errno == EPERM) &&
-          recordedPort != 0 && isPortReachable(recordedPort)) {
-        std::cerr << "PID file points to a live process and listening port; "
-                     "refusing to remove it automatically.\n";
-        return 1;
-      }
+      // The PID is dead or its start token proves it has been reused.
       std::remove(pidPath.c_str());
     } else {
       std::remove(pidPath.c_str());
