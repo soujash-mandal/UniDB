@@ -27,8 +27,7 @@ InsertRowAction::InsertRowAction(
     CreateSpaceMapPagePort &createSpaceMapPagePort,
     CalculateRequiredSpacePort &calculateRequiredSpacePort,
     FindPageWithSpacePort &findPageWithSpacePort,
-    CreateTuplePort &createTuplePort,
-    UpdateFreeSpacePort &updateFreeSpacePort)
+    CreateTuplePort &createTuplePort, UpdateFreeSpacePort &updateFreeSpacePort)
     : getCatalogRootPageIdPort(getCatalogRootPageIdPort),
       getCatalogTableByNamePort(getCatalogTableByNamePort),
       updateCatalogTablePort(updateCatalogTablePort),
@@ -97,17 +96,15 @@ InsertedRowLocation InsertRowAction::execute(uint32_t metadataPageId,
   // is expected to contain the new slot ID and the page's actual remaining
   // free space after the insertion.
   const CreateTupleResult insertResult =
-      createTuplePort.createTuple(
-          target.tuplePageId, std::move(tupleData));
+      createTuplePort.createTuple(target.tuplePageId, std::move(tupleData));
 
   // Step 9: Refresh SpaceMap's recorded free-space value using the actual
   // post-insert value, not the estimate calculated in Step 3.
   bool spaceMapUpdated = true;
   std::string spaceMapUpdateError;
   try {
-    updateFreeSpacePort.updateFreeSpace(target.spaceMapPageId,
-                                        target.tuplePageId,
-                                        insertResult.freeSpace);
+    updateFreeSpacePort.updateFreeSpace(
+        target.spaceMapPageId, target.tuplePageId, insertResult.freeSpace);
   } catch (const std::exception &error) {
     // The tuple is already persisted. Return its committed location instead
     // of throwing an error that could cause the caller to insert it again.

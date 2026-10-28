@@ -91,17 +91,15 @@ public:
   }
 };
 
-class FakeInsertTuplePort final
-    : public CreateTuplePort {
+class FakeInsertTuplePort final : public CreateTuplePort {
 public:
   uint32_t calls = 0;
   uint32_t pageId = 0;
   uint32_t slotId = 4;
   uint32_t remainingFreeSpace = 1234;
   std::vector<char> bytes;
-  CreateTupleResult
-  createTuple(uint32_t requestedPageId,
-                           std::vector<char> tupleData) override {
+  CreateTupleResult createTuple(uint32_t requestedPageId,
+                                std::vector<char> tupleData) override {
     ++calls;
     pageId = requestedPageId;
     bytes = std::move(tupleData);
