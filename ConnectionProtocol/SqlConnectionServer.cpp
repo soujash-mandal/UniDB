@@ -171,6 +171,9 @@ int SqlConnectionServer::run() {
     std::cerr << "UniDB failed to install shutdown handlers\n";
     return 1;
   }
+  // A disconnected client must not terminate the process before dirty pages
+  // can be flushed during orderly shutdown.
+  std::signal(SIGPIPE, SIG_IGN);
 
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
   if (listener < 0) {
