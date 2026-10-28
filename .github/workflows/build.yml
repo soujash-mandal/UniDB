@@ -12,16 +12,35 @@ jobs:
   build:
     name: Build
     runs-on: macos-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install GoogleTest
-        run: brew install googletest
+      - name: Install build dependencies
+        run: brew install ccache googletest
+
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
 
       - name: Configure
-        run: cmake -S . -B build
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --parallel 3
+
+      - name: Save compiler cache
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-build-${{ github.sha }}
+
+      - name: Show compiler cache statistics
+        run: ccache --show-stats
