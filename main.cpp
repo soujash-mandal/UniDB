@@ -225,12 +225,34 @@ int startServer(const char *executable, std::string_view databasePath,
     }
   }
 
+  // Keep the child blocked until its PID record is written. If this launcher
+  // exits before releasing it, EOF makes the child exit before opening the DB.
+  int startupPipe[2] = {-1, -1};
+  if (::pipe(startupPipe) != 0) {
+    std::cerr << "Could not create UniDB startup handshake: "
+              << std::strerror(errno) << '\n';
+    return 1;
+  }
+
   const pid_t child = ::fork();
   if (child < 0) {
-    std::cerr << "Could not start UniDB: " << std::strerror(errno) << '\n';
+    const int forkError = errno;
+    ::close(startupPipe[0]);
+    ::close(startupPipe[1]);
+    std::cerr << "Could not start UniDB: " << std::strerror(forkError) << '\n';
     return 1;
   }
   if (child == 0) {
+    ::close(startupPipe[1]);
+    char startupSignal = 0;
+    ssize_t bytesRead = -1;
+    do {
+      bytesRead = ::read(startupPipe[0], &startupSignal, 1);
+    } while (bytesRead < 0 && errno == EINTR);
+    ::close(startupPipe[0]);
+    if (bytesRead != 1 || startupSignal != 'G')
+      _exit(125);
+
     if (::setsid() < 0)
       _exit(126);
     const int logFd =
@@ -255,6 +277,10 @@ int startServer(const char *executable, std::string_view databasePath,
     _exit(127);
   }
 
+  ::close(startupPipe[0]);
+  // Prevent a broken handshake pipe from terminating the launcher before cleanup.
+  std::signal(SIGPIPE, SIG_IGN);
+
   {
     const std::string identity = processIdentity(child);
     std::ofstream pidFile(pidPath, std::ios::trunc);
@@ -269,10 +295,27 @@ int startServer(const char *executable, std::string_view databasePath,
     if (!pidFileWritten) {
       std::cerr << "Could not write PID file with process identity: " << pidPath
                 << '\n';
+      ::close(startupPipe[1]);
       ::kill(child, SIGTERM);
       ::waitpid(child, nullptr, 0);
+      std::remove(pidPath.c_str());
       return 1;
     }
+  }
+
+  // The complete PID record exists before the child can initialize storage.
+  const char startupSignal = 'G';
+  ssize_t bytesWritten = -1;
+  do {
+    bytesWritten = ::write(startupPipe[1], &startupSignal, 1);
+  } while (bytesWritten < 0 && errno == EINTR);
+  ::close(startupPipe[1]);
+  if (bytesWritten != 1) {
+    std::cerr << "Could not release UniDB startup handshake.\n";
+    ::kill(child, SIGTERM);
+    ::waitpid(child, nullptr, 0);
+    std::remove(pidPath.c_str());
+    return 1;
   }
 
   // Wait for the listener to become reachable, or report startup failure.
