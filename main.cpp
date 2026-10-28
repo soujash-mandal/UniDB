@@ -52,7 +52,7 @@ class LifecycleLock {
 public:
   explicit LifecycleLock(std::string_view databasePath) {
     const std::string lockPath = std::string(databasePath) + ".lifecycle.lock";
-    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR, 0644);
+    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
     if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX) != 0) {
       ::close(descriptor_);
       descriptor_ = -1;
@@ -320,6 +320,15 @@ int startServer(const char *executable, std::string_view databasePath,
 }
 
 int stopServer(std::string_view databasePath, unsigned int port) {
+  // Serialize stop with start so stale-file cleanup cannot remove a replacement
+  // server's PID record.
+  LifecycleLock lifecycleLock(databasePath);
+  if (!lifecycleLock.acquired()) {
+    std::cerr << "Could not acquire UniDB lifecycle lock for database: "
+              << databasePath << '\\n';
+    return 1;
+  }
+
   const std::string pidPath = pidFilePath(databasePath);
   std::ifstream pidFile(pidPath);
   long rawPid = 0;
