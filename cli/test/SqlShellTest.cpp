@@ -32,7 +32,7 @@ TEST(SqlShellTest, PrintsCommandSuccessAndContinuesUntilQuit) {
 TEST(SqlShellTest, PrintsSelectColumnNamesAndValues) {
   // Scenario 2: SELECT * output contains schema names and decoded values.
   FakeQesRdbServicePort port;
-  port.rows.push_back(QueryExecutionService::SqlTupleCodec::encode(
+  port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
       {std::int64_t{7}, std::string("Ada")}));
   unidb::sql::SqlParserImpl parser;
