@@ -11,7 +11,7 @@ public:
     return page;
   }
 };
-class Write final : public WritePagePort {
+class Write final : public SpaceMapWritePagePort {
 public:
   void writePage(SpaceMapPageId, SpaceMapPage) override { ++calls; }
   int calls = 0;
