@@ -29,7 +29,8 @@ TEST(SqlShellTest, PrintsCommandSuccessAndContinuesUntilQuit) {
 }
 
 TEST(SqlShellTest, PrintsSelectResultsAsAlignedTable) {
-  // Scenario 2: Headers and values are aligned using widths based on their content.
+  // Scenario 2: Headers and values are aligned using widths based on their
+  // content.
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},

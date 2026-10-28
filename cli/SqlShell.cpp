@@ -40,8 +40,7 @@ std::string formatValue(const unidb::sql::SqlValue &value) {
   return formatted.str();
 }
 
-void printBorder(const std::vector<std::size_t> &widths,
-                 std::ostream &output) {
+void printBorder(const std::vector<std::size_t> &widths, std::ostream &output) {
   output << '+';
   for (const auto width : widths) {
     output << std::string(width + 2, '-') << '+';
@@ -84,8 +83,8 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
 
     for (std::size_t rowIndex = 0; rowIndex < result.rows.size(); ++rowIndex) {
       output << '|';
-      for (std::size_t columnIndex = 0;
-           columnIndex < result.columns.size(); ++columnIndex) {
+      for (std::size_t columnIndex = 0; columnIndex < result.columns.size();
+           ++columnIndex) {
         output << ' ';
         if (columnIndex < formattedRows[rowIndex].size()) {
           const auto &value = formattedRows[rowIndex][columnIndex];
