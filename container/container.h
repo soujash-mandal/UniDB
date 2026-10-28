@@ -77,7 +77,7 @@ public:
   FlushPageAction &flushPageAction() { return flushPage; }
   NewPageAction &newPageAction() { return newPage; }
   DeletePageAction &deletePageAction() { return deletePage; }
-  RdbService::ReclaimPageAdapter &reclaimPageAdapter() {
+  RdbService::ReclaimPageAdapter &reclaimPagePortAdapter() {
     return reclaimPageAdapter;
   }
   WritePageAction &writePageAction() { return writePage; }
