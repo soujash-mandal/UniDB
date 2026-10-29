@@ -4,6 +4,7 @@
 #include "../container/container.h"
 #include "SqlRequestFramer.h"
 
+#include <algorithm>
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -11,6 +12,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -21,6 +23,9 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 namespace ConnectionProtocol {
 namespace {
@@ -113,10 +118,25 @@ responseJson(const QueryExecutionService::QueryExecutionOutcome &outcome) {
   return response;
 }
 
-bool sendAll(int socket, std::string_view bytes) {
+bool sendAll(int socket, SSL *tls, std::string_view bytes) {
   while (!bytes.empty()) {
     if (stopRequested)
       return false;
+    if (tls != nullptr) {
+      const auto maxChunk = static_cast<std::size_t>(
+          std::numeric_limits<int>::max());
+      const int chunkSize = static_cast<int>(
+          bytes.size() > maxChunk ? maxChunk : bytes.size());
+      const int sent = SSL_write(tls, bytes.data(), chunkSize);
+      if (sent <= 0) {
+        const int sslError = SSL_get_error(tls, sent);
+        if (sslError == SSL_ERROR_SYSCALL && errno == EINTR && !stopRequested)
+          continue;
+        return false;
+      }
+      bytes.remove_prefix(static_cast<std::size_t>(sent));
+      continue;
+    }
     const auto sent = ::send(socket, bytes.data(), bytes.size(), 0);
     if (sent < 0) {
       if (errno == EINTR && !stopRequested)
@@ -130,34 +150,87 @@ bool sendAll(int socket, std::string_view bytes) {
   return true;
 }
 
-void serveClient(int client, Container &container) {
+void serveClient(int client, Container &container, SSL *tls) {
   SqlRequestFramer framer;
   char buffer[4096];
   while (!stopRequested) {
-    const auto received = ::recv(client, buffer, sizeof(buffer), 0);
-    if (received == 0)
-      break;
-    if (received < 0) {
-      if (errno == EINTR)
-        continue;
-      break;
+    int received = 0;
+    if (tls != nullptr) {
+      received = SSL_read(tls, buffer, static_cast<int>(sizeof(buffer)));
+      if (received <= 0) {
+        const int sslError = SSL_get_error(tls, received);
+        if (sslError == SSL_ERROR_ZERO_RETURN)
+          break;
+        if (sslError == SSL_ERROR_SYSCALL && errno == EINTR)
+          continue;
+        break;
+      }
+    } else {
+      const auto count = ::recv(client, buffer, sizeof(buffer), 0);
+      if (count == 0)
+        break;
+      if (count < 0) {
+        if (errno == EINTR)
+          continue;
+        break;
+      }
+      received = static_cast<int>(count);
     }
 
     auto framing = framer.append(
         std::string_view(buffer, static_cast<std::size_t>(received)));
     for (const auto &sql : framing.requests) {
       const auto result = container.executeQueryAction().execute(sql);
-      if (!sendAll(client, responseJson(result)))
+      if (!sendAll(client, tls, responseJson(result)))
         return;
     }
     if (framing.error) {
       const std::string response =
           "{\"ok\":false,\"error\":{\"code\":\"invalid_request\",\"message\":" +
           jsonString(*framing.error) + "}}\n";
-      sendAll(client, response);
+      sendAll(client, tls, response);
       break;
     }
   }
+}
+
+using SslContextPtr = std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
+
+SslContextPtr createMutualTlsContext() {
+  const char *certificateFile = std::getenv("UNIDB_TLS_CERT_FILE");
+  const char *privateKeyFile = std::getenv("UNIDB_TLS_KEY_FILE");
+  const char *caFile = std::getenv("UNIDB_TLS_CA_FILE");
+  if (certificateFile == nullptr || certificateFile[0] == '\0' ||
+      privateKeyFile == nullptr || privateKeyFile[0] == '\0' ||
+      caFile == nullptr || caFile[0] == '\0') {
+    std::cerr << "Non-loopback SQL listeners require mutual TLS. Set "
+                 "UNIDB_TLS_CERT_FILE, UNIDB_TLS_KEY_FILE, and "
+                 "UNIDB_TLS_CA_FILE.\n";
+    return SslContextPtr(nullptr, SSL_CTX_free);
+  }
+
+  SslContextPtr context(SSL_CTX_new(TLS_server_method()), SSL_CTX_free);
+  if (!context) {
+    std::cerr << "Could not create TLS context.\n";
+    ERR_print_errors_fp(stderr);
+    return context;
+  }
+  if (SSL_CTX_set_min_proto_version(context.get(), TLS1_2_VERSION) != 1 ||
+      SSL_CTX_use_certificate_chain_file(context.get(), certificateFile) != 1 ||
+      SSL_CTX_use_PrivateKey_file(context.get(), privateKeyFile,
+                                  SSL_FILETYPE_PEM) != 1 ||
+      SSL_CTX_check_private_key(context.get()) != 1 ||
+      SSL_CTX_load_verify_locations(context.get(), caFile, nullptr) != 1) {
+    std::cerr << "Could not configure mutual TLS; check the certificate, "
+                 "private key, and client CA files.\n";
+    ERR_print_errors_fp(stderr);
+    return SslContextPtr(nullptr, SSL_CTX_free);
+  }
+
+  SSL_CTX_set_verify(context.get(),
+                     SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                     nullptr);
+  return context;
 }
 } // namespace
 
@@ -195,19 +268,16 @@ int SqlConnectionServer::run() {
     return 2;
   }
 
-  // SQL traffic is currently plaintext and unauthenticated. Refuse remote
-  // listeners unless the operator explicitly opts into that risk.
+  // Plain SQL is allowed only on a loopback listener. Every
+  // non-loopback listener requires mutual TLS, which encrypts traffic and
+  // authenticates the connecting client before SQL can be processed.
   const auto hostOrderAddress = ntohl(bindAddressValue.s_addr);
   const bool loopbackAddress = (hostOrderAddress >> 24U) == 127U;
-  const char *allowInsecureRemote =
-      std::getenv("UNIDB_ALLOW_INSECURE_REMOTE_ACCESS");
-  if (!loopbackAddress && (allowInsecureRemote == nullptr ||
-                           std::string_view(allowInsecureRemote) != "1")) {
-    std::cerr << "Refusing non-loopback SQL bind without TLS/authentication. "
-                 "Use loopback or explicitly set "
-                 "UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 only on a trusted, "
-                 "isolated network.\n";
-    return 2;
+  SslContextPtr tlsContext(nullptr, SSL_CTX_free);
+  if (!loopbackAddress) {
+    tlsContext = createMutualTlsContext();
+    if (!tlsContext)
+      return 2;
   }
 
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -260,7 +330,46 @@ int SqlConnectionServer::run() {
       acceptFailed = true;
       break;
     }
-    serveClient(client, container);
+    SSL *tls = nullptr;
+    if (tlsContext) {
+      tls = SSL_new(tlsContext.get());
+      if (tls == nullptr || SSL_set_fd(tls, client) != 1) {
+        std::cerr << "Could not initialize TLS for an incoming SQL client.\n";
+        ERR_print_errors_fp(stderr);
+        if (tls != nullptr)
+          SSL_free(tls);
+        ::close(client);
+        continue;
+      }
+
+      // Bound unauthenticated handshake time so a stalled client cannot hold
+      // the single-threaded server before presenting its certificate.
+      timeval handshakeTimeout{};
+      handshakeTimeout.tv_sec = 5;
+      (void)::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &handshakeTimeout,
+                         sizeof(handshakeTimeout));
+      (void)::setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &handshakeTimeout,
+                         sizeof(handshakeTimeout));
+      const int handshakeResult = SSL_accept(tls);
+      timeval noTimeout{};
+      (void)::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &noTimeout,
+                         sizeof(noTimeout));
+      (void)::setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &noTimeout,
+                         sizeof(noTimeout));
+      if (handshakeResult != 1) {
+        std::cerr << "Rejected SQL client: mutual TLS authentication failed.\n";
+        ERR_clear_error();
+        SSL_free(tls);
+        ::close(client);
+        continue;
+      }
+    }
+
+    serveClient(client, container, tls);
+    if (tls != nullptr) {
+      (void)SSL_shutdown(tls);
+      SSL_free(tls);
+    }
     ::close(client);
   }
 
