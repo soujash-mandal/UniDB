@@ -355,10 +355,9 @@ int startServer(const char *executable, std::string_view databasePath,
 
     if (::setsid() < 0)
       _exit(126);
-    const int logFd = ::open(logPath.c_str(),
-                                O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW |
-                                    O_CLOEXEC,
-                                0644);
+    const int logFd =
+        ::open(logPath.c_str(),
+               O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW | O_CLOEXEC, 0644);
     if (logFd < 0)
       _exit(126);
     struct stat logInfo{};
@@ -404,9 +403,8 @@ int startServer(const char *executable, std::string_view databasePath,
           ::fstat(pidFd, &pidInfo) == 0 && S_ISREG(pidInfo.st_mode);
     }
 
-    const std::string pidRecord =
-        std::to_string(child) + '\n' + std::to_string(port) + '\n' +
-        identity + '\n';
+    const std::string pidRecord = std::to_string(child) + '\n' +
+                                  std::to_string(port) + '\n' + identity + '\n';
     std::size_t written = 0;
     while (pidFileWritten && written < pidRecord.size()) {
       const auto count = ::write(pidFd, pidRecord.data() + written,
@@ -432,7 +430,8 @@ int startServer(const char *executable, std::string_view databasePath,
     }
   }
 
-  // The complete PID record is written and closed before the child can initialize storage.
+  // The complete PID record is written and closed before the child can
+  // initialize storage.
   const char startupSignal = 'G';
   ssize_t bytesWritten = -1;
   do {
