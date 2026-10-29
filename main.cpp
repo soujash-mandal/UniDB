@@ -105,17 +105,15 @@ public:
           "-" +
           std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
     } else if (errno == ENOENT) {
-      lockKey = lifecycleKey(databasePath);
+      // Hash the canonical path so it becomes a single, bounded filename.
+      lockKey = std::to_string(
+          std::hash<std::string>{}(lifecycleKey(databasePath)));
     } else {
       return;
     }
 
-    std::error_code error;
-    const auto tempDirectory = std::filesystem::temp_directory_path(error);
-    if (error)
-      return;
-    const std::string lockPath =
-        (tempDirectory / ("unidb-ownership-" + lockKey + ".lock")).string();
+    // Use a fixed system-wide location; TMPDIR can differ between processes.
+    const std::string lockPath = "/tmp/unidb-ownership-" + lockKey + ".lock";
     descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
     if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
       ::close(descriptor_);
