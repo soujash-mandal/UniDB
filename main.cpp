@@ -239,8 +239,12 @@ private:
         return false;
       pathDescriptor_ =
           openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
-      return pathDescriptor_ >= 0 &&
-             ::flock(pathDescriptor_, LOCK_EX | LOCK_NB) == 0;
+      if (pathDescriptor_ < 0 ||
+          ::flock(pathDescriptor_, LOCK_EX | LOCK_NB) != 0) {
+        closeDescriptor(pathDescriptor_);
+        return false;
+      }
+      return true;
     } else {
       return false;
     }
@@ -250,8 +254,12 @@ private:
       return false;
     inodeDescriptor_ =
         openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
-    return inodeDescriptor_ >= 0 &&
-           ::flock(inodeDescriptor_, LOCK_EX | LOCK_NB) == 0;
+    if (inodeDescriptor_ < 0 ||
+        ::flock(inodeDescriptor_, LOCK_EX | LOCK_NB) != 0) {
+      closeDescriptor(inodeDescriptor_);
+      return false;
+    }
+    return true;
   }
 
   std::string databasePath_;
