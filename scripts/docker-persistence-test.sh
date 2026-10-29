@@ -180,6 +180,30 @@ client_sql() {
   printf '%s\n' "$response"
 }
 
+
+client_sql_batch() {
+  local statements="$1"
+  local output
+  local responses
+  if ! output="$(printf '%s' "$statements" | timeout 120 docker exec -i "$CONTAINER" \
+      /usr/local/bin/unidb connect --host 127.0.0.1 --port 7432 \
+      --tls-ca-file /run/unidb-tls/ca.crt \
+      --tls-cert-file /run/unidb-tls/client.crt \
+      --tls-key-file /run/unidb-tls/client.key)"; then
+    echo "Built-in client failed while sending a multi-statement TLS batch." >&2
+    printf '%s\n' "$output" >&2
+    docker logs "$CONTAINER" >&2 || true
+    return 1
+  fi
+  responses="$(printf '%s\n' "$output" | grep -F '"ok":' || true)"
+  if [[ -z "$responses" ]]; then
+    echo "Built-in client received no SQL responses for the TLS batch." >&2
+    printf '%s\n' "$output" >&2
+    return 1
+  fi
+  printf '%s\n' "$responses"
+}
+
 wait_for_server() {
   for attempt in $(seq 1 50); do
     if host_sql "SELECT * FROM docker_persistence;" >/dev/null 2>&1; then
@@ -241,6 +265,59 @@ fi
 
 client_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":true'
 host_sql "INSERT INTO docker_persistence (id, name) VALUES (7, 'Ada');" | grep -q '"affected_rows":1'
+
+# 1.1 Send more than 64 KiB of piped SQL through one built-in TLS client.
+# This exercises nonblocking writes while the client concurrently drains replies.
+client_sql "CREATE TABLE tls_large_response (id INT, payload TEXT);" | grep -q '"ok":true'
+batch=""
+for index in $(seq 1 600); do
+  payload="row-${index}-$(printf '%0120d' 0)"
+  batch+="INSERT INTO tls_large_response (id, payload) VALUES (${index}, '${payload}');"
+if ! docker stop --time 10 "$CONTAINER" >/dev/null; then
+  echo "Failed to stop the UniDB persistence-test container cleanly." >&2
+  docker logs "$CONTAINER" >&2 || true
+  exit 1
+fi
+exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER")"
+if [[ "$exit_code" != "0" ]]; then
+  echo "UniDB exited with status $exit_code during shutdown; expected 0." >&2
+  docker logs "$CONTAINER" >&2 || true
+  exit 1
+fi
+docker rm "$CONTAINER" >/dev/null
+CONTAINER_CREATED=0
+
+start_container
+wait_for_server
+
+response="$(host_sql "SELECT * FROM docker_persistence;")"
+if ! grep -Fq '"rows":[[7,"Ada"]]' <<<"$response"; then
+  echo "Persisted row was not found after container recreation:" >&2
+  echo "$response" >&2
+  docker logs "$CONTAINER" >&2
+  exit 1
+fi
+
+echo "Docker named-volume persistence test passed."
+\n'
+done
+batch_responses="$(client_sql_batch "$batch")"
+insert_count="$(grep -Fc '"affected_rows":1' <<<"$batch_responses")"
+if [[ "$insert_count" != "600" ]]; then
+  echo "Expected 600 successful inserts from one TLS client; got $insert_count." >&2
+  exit 1
+fi
+
+# 1.2 A response larger than the client read buffer must be fully drained.
+large_response="$(client_sql "SELECT * FROM tls_large_response;")"
+if (( ${#large_response} <= 4096 )); then
+  echo "Expected TLS SELECT response larger than 4 KiB; got ${#large_response} bytes." >&2
+  exit 1
+fi
+if ! grep -Fq 'row-600-' <<<"$large_response"; then
+  echo "Large TLS response was truncated before the final row." >&2
+  exit 1
+fi
 
 # Stop must trigger the server's graceful flush before the container is removed.
 if ! docker stop --time 10 "$CONTAINER" >/dev/null; then
