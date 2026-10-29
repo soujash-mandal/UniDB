@@ -202,20 +202,20 @@ TEST_F(SqlServerSocketIntegrationTest,
   ASSERT_TRUE(
       sendAll(socketFd, "CREATE TABLE socket_test (id INT, name TEXT);\n"));
   const auto createResponse = readResponse(socketFd);
-  EXPECT_NE(createResponse.find("\\"ok\\":true"), std::string::npos);
+  EXPECT_NE(createResponse.find("\"ok\":true"), std::string::npos);
 
   // 1.3 Send another request on the same connection and verify insertion.
   ASSERT_TRUE(sendAll(
       socketFd, "INSERT INTO socket_test (id, name) VALUES (7, 'Ada');\n"));
   const auto insertResponse = readResponse(socketFd);
-  EXPECT_NE(insertResponse.find("\\"ok\\":true"), std::string::npos);
-  EXPECT_NE(insertResponse.find("\\"affected_rows\\":1"), std::string::npos);
+  EXPECT_NE(insertResponse.find("\"ok\":true"), std::string::npos);
+  EXPECT_NE(insertResponse.find("\"affected_rows\":1"), std::string::npos);
 
   // 1.4 Verify SELECT returns the row inserted earlier on this TCP connection.
   ASSERT_TRUE(sendAll(socketFd, "SELECT * FROM socket_test;\n"));
   const auto selectResponse = readResponse(socketFd);
-  EXPECT_NE(selectResponse.find("\\"kind\\":\\"rows\\""), std::string::npos);
-  EXPECT_NE(selectResponse.find("\\"rows\\":[[7,\\"Ada\\"]]"),
+  EXPECT_NE(selectResponse.find("\"kind\":\"rows\""), std::string::npos);
+  EXPECT_NE(selectResponse.find("\"rows\":[[7,\"Ada\"]]"),
             std::string::npos);
   ::close(socketFd);
 }
