@@ -199,7 +199,7 @@ wait_for_server() {
 start_container
 wait_for_server
 
-# A client without a trusted certificate must be rejected during TLS handshake.
+# A client without a trusted certificate must not receive any SQL response.
 unauthenticated_result="$(python3 - "$TLS_DIR" "$PORT" <<'PY'
 import socket
 import ssl
@@ -209,17 +209,31 @@ from pathlib import Path
 tls_dir = Path(sys.argv[1])
 context = ssl.create_default_context(cafile=str(tls_dir / "ca.crt"))
 try:
-    with socket.create_connection(("127.0.0.1", int(sys.argv[2])), timeout=5) as raw_socket:
-        with context.wrap_socket(raw_socket, server_hostname="127.0.0.1") as connection:
-            connection.settimeout(5)
-            print("UNEXPECTED_ACCEPTED")
-            sys.exit(3)
+    raw_socket = socket.create_connection(("127.0.0.1", int(sys.argv[2])), timeout=5)
+except OSError as error:
+    raise SystemExit(f"Could not reach the published UniDB listener: {error}")
+try:
+    connection = context.wrap_socket(raw_socket, server_hostname="127.0.0.1")
 except ssl.SSLError:
+    print("REJECTED_NO_CLIENT_CERTIFICATE")
+    raise SystemExit(0)
+
+with connection:
+    connection.settimeout(5)
+    try:
+        connection.sendall(b"CREATE TABLE should_not_exist (id INT);\n")
+        response = connection.recv(4096)
+    except (ssl.SSLError, OSError):
+        print("REJECTED_NO_CLIENT_CERTIFICATE")
+        raise SystemExit(0)
+    if response:
+        print("UNEXPECTED_SQL_RESPONSE:" + response.decode("utf-8", errors="replace"))
+        raise SystemExit(3)
     print("REJECTED_NO_CLIENT_CERTIFICATE")
 PY
 )"
 if [[ "$unauthenticated_result" != "REJECTED_NO_CLIENT_CERTIFICATE" ]]; then
-  echo "Server did not reject the TLS client without a certificate:" >&2
+  echo "Server did not reject a TLS client without a certificate:" >&2
   echo "$unauthenticated_result" >&2
   exit 1
 fi
