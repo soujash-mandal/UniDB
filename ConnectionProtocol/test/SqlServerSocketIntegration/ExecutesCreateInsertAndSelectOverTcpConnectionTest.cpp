@@ -215,8 +215,7 @@ TEST_F(SqlServerSocketIntegrationTest,
   ASSERT_TRUE(sendAll(socketFd, "SELECT * FROM socket_test;\n"));
   const auto selectResponse = readResponse(socketFd);
   EXPECT_NE(selectResponse.find("\"kind\":\"rows\""), std::string::npos);
-  EXPECT_NE(selectResponse.find("\"rows\":[[7,\"Ada\"]]"),
-            std::string::npos);
+  EXPECT_NE(selectResponse.find("\"rows\":[[7,\"Ada\"]]"), std::string::npos);
   ::close(socketFd);
 }
 
