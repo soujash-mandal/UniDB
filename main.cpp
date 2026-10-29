@@ -360,21 +360,21 @@ int startServer(const char *executable, std::string_view databasePath,
                O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW | O_CLOEXEC, 0644);
     if (logFd < 0) {
       static constexpr char message[] =
-          "UniDB could not open the log file; symlinks are rejected.\\n";
+          "UniDB could not open the log file; symlinks are rejected.\n";
       (void)::write(STDERR_FILENO, message, sizeof(message) - 1);
       _exit(126);
     }
     struct stat logInfo{};
     if (::fstat(logFd, &logInfo) != 0) {
       static constexpr char message[] =
-          "UniDB could not inspect the log file.\\n";
+          "UniDB could not inspect the log file.\n";
       (void)::write(STDERR_FILENO, message, sizeof(message) - 1);
       ::close(logFd);
       _exit(126);
     }
     if (!S_ISREG(logInfo.st_mode)) {
       static constexpr char message[] =
-          "UniDB log path is not a regular file.\\n";
+          "UniDB log path is not a regular file.\n";
       (void)::write(STDERR_FILENO, message, sizeof(message) - 1);
       ::close(logFd);
       _exit(126);
