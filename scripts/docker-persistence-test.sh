@@ -180,7 +180,11 @@ wait_for_server() {
     fi
     sleep 0.1
   done
-  docker logs "$CONTAINER"
+  echo "UniDB container state at readiness timeout:" >&2
+  docker inspect --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' "$CONTAINER" >&2 || true
+  docker logs "$CONTAINER" >&2 || true
+  echo "Last mutual-TLS client diagnostic:" >&2
+  cat "$TLS_DIR/s_client.log" >&2 || true
   echo "UniDB did not become ready through the published host port" >&2
   return 1
 }
