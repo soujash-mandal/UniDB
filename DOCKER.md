@@ -28,7 +28,7 @@ connection at a time.
 ## Verify persistence across container recreation
 
 ```bash
-./scripts/docker-persistence-test.sh
+bash scripts/docker-persistence-test.sh
 ```
 
 The script builds the image, creates a named volume, creates a table and row,
