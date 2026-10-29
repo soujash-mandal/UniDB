@@ -96,13 +96,14 @@ public:
     // Existing hard links share the same device/inode lock key. For a database
     // that has not been created yet, use its canonical path without creating
     // the database file before DatabaseStartup can initialize it.
-    struct stat databaseInfo {};
+    struct stat databaseInfo{};
     std::string lockKey;
     const std::string path(databasePath);
     if (::stat(path.c_str(), &databaseInfo) == 0) {
-      lockKey = std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
-                "-" +
-                std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
+      lockKey =
+          std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
+          "-" +
+          std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
     } else if (errno == ENOENT) {
       lockKey = lifecycleKey(databasePath);
     } else {
