@@ -5,6 +5,7 @@ RUN_ID="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$$"
 IMAGE="unidb:persistence-${RUN_ID}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
+NETWORK="unidb-persistence-test-net-${RUN_ID}"
 PORT="${UNIDB_DOCKER_TEST_PORT:-17432}"
 IMAGE_CREATED=0
 VOLUME_CREATED=0
@@ -17,6 +18,7 @@ cleanup() {
   if [[ "$VOLUME_CREATED" == "1" ]]; then
     docker volume rm "$VOLUME" >/dev/null 2>&1 || true
   fi
+  docker network rm "$NETWORK" >/dev/null 2>&1 || true
   if [[ "$IMAGE_CREATED" == "1" ]]; then
     docker image rm "$IMAGE" >/dev/null 2>&1 || true
   fi
@@ -25,11 +27,13 @@ trap cleanup EXIT
 
 docker build -t "$IMAGE" .
 IMAGE_CREATED=1
+docker network create "$NETWORK" >/dev/null
 docker volume create "$VOLUME" >/dev/null
 VOLUME_CREATED=1
 
 start_container() {
-  docker create --name "$CONTAINER" -p "127.0.0.1:${PORT}:7432" \
+  docker create --name "$CONTAINER" --network "$NETWORK" \
+    -p "127.0.0.1:${PORT}:7432" \
     -v "$VOLUME:/data" "$IMAGE" >/dev/null
   CONTAINER_CREATED=1
   docker start "$CONTAINER" >/dev/null
