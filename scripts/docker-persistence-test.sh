@@ -103,9 +103,12 @@ start_container() {
   fi
 
   docker create --name "$CONTAINER" --network "$NETWORK" \
-    --env UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 \
+    --env UNIDB_TLS_CERT_FILE=/run/unidb-tls/server.crt \
+    --env UNIDB_TLS_KEY_FILE=/run/unidb-tls/server.key \
+    --env UNIDB_TLS_CA_FILE=/run/unidb-tls/ca.crt \
     "${publish_args[@]}" \
-    -v "$VOLUME:/data" "$IMAGE" >/dev/null
+    -v "$VOLUME:/data" \
+    -v "$TLS_DIR:/run/unidb-tls:ro" "$IMAGE" >/dev/null
   CONTAINER_CREATED=1
   docker start "$CONTAINER" >/dev/null
 
@@ -124,16 +127,24 @@ start_container() {
 
 host_sql() {
   local statement="$1"
+  local output
   local response
-  if ! exec 3<>"/dev/tcp/127.0.0.1/${PORT}"; then
+  if ! output="$(printf '%s\n' "$statement" | timeout 15 openssl s_client \
+      -quiet -verify_return_error -verify_ip 127.0.0.1 \
+      -CAfile "$TLS_DIR/ca.crt" \
+      -cert "$TLS_DIR/client.crt" -key "$TLS_DIR/client.key" \
+      -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/s_client.log")"; then
+    echo "Mutual TLS SQL request failed." >&2
+    cat "$TLS_DIR/s_client.log" >&2 || true
     return 1
   fi
-  printf '%s\n' "$statement" >&3
-  if ! IFS= read -r -t 5 response <&3; then
-    exec 3>&-
+  response="$(printf '%s\n' "$output" | grep -F '"ok":' | head -n 1 || true)"
+  if [[ -z "$response" ]]; then
+    echo "No SQL JSON response received over mutual TLS." >&2
+    printf '%s\n' "$output" >&2
+    cat "$TLS_DIR/s_client.log" >&2 || true
     return 1
   fi
-  exec 3>&-
   printf '%s\n' "$response"
 }
 
