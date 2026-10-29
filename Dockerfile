@@ -21,8 +21,8 @@ RUN apt-get update \
 
 COPY --from=build /src/build/unidb /usr/local/bin/unidb
 
-# Docker port forwarding requires a non-loopback listener. The server still
-# requires explicit runtime opt-in before accepting plaintext remote connections.
+# Docker port forwarding uses a non-loopback listener. The server requires
+# mutual TLS credentials before accepting SQL connections on that listener.
 ENV UNIDB_BIND_ADDRESS=0.0.0.0
 EXPOSE 7432
 VOLUME ["/data"]
