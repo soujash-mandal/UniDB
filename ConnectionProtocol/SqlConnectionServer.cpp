@@ -112,9 +112,11 @@ responseJson(const QueryExecutionService::QueryExecutionOutcome &outcome) {
 
 bool sendAll(int socket, std::string_view bytes) {
   while (!bytes.empty()) {
+    if (stopRequested)
+      return false;
     const auto sent = ::send(socket, bytes.data(), bytes.size(), 0);
     if (sent < 0) {
-      if (errno == EINTR)
+      if (errno == EINTR && !stopRequested)
         continue;
       return false;
     }
