@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -36,6 +37,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
 #if defined(__APPLE__)
 #include <libproc.h>
 #include <sys/proc_info.h>
@@ -239,6 +244,13 @@ bool isPortReachable(unsigned int port, std::string_view configuredAddress) {
                 sizeof(address)) == 0;
   ::close(probe);
   return reachable;
+}
+
+bool isLoopbackIpv4(std::string_view address) {
+  in_addr parsedAddress{};
+  if (::inet_pton(AF_INET, std::string(address).c_str(), &parsedAddress) != 1)
+    return false;
+  return (ntohl(parsedAddress.s_addr) >> 24U) == 127U;
 }
 
 int connectToServer(unsigned int port, std::string_view destination) {
@@ -651,21 +663,108 @@ int stopServer(std::string_view databasePath, unsigned int port,
   return 1;
 }
 
-int connectInteractive(unsigned int port, std::string_view destination) {
+int connectInteractive(unsigned int port, std::string_view destination,
+                       std::string_view tlsCaFile,
+                       std::string_view tlsCertificateFile,
+                       std::string_view tlsPrivateKeyFile) {
   // Ignore SIGPIPE so a disconnected server is handled through send errors.
   std::signal(SIGPIPE, SIG_IGN);
   const int socket = connectToServer(port, destination);
   if (socket < 0)
     return 1;
 
-  const int socketFlags = ::fcntl(socket, F_GETFL, 0);
-  if (socketFlags < 0 ||
-      ::fcntl(socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
-    std::cerr << "Could not make the UniDB client socket nonblocking: "
-              << std::strerror(errno) << '\n';
-    ::close(socket);
-    return 1;
+  using SslContextPtr =
+      std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
+  using SslSessionPtr = std::unique_ptr<SSL, decltype(&SSL_free)>;
+  SslContextPtr tlsContext(nullptr, SSL_CTX_free);
+  SslSessionPtr tls(nullptr, SSL_free);
+  if (!tlsCaFile.empty()) {
+    tlsContext.reset(SSL_CTX_new(TLS_client_method()));
+    if (!tlsContext ||
+        SSL_CTX_set_min_proto_version(tlsContext.get(), TLS1_2_VERSION) != 1 ||
+        SSL_CTX_load_verify_locations(tlsContext.get(),
+                                      std::string(tlsCaFile).c_str(),
+                                      nullptr) != 1 ||
+        SSL_CTX_use_certificate_chain_file(
+            tlsContext.get(), std::string(tlsCertificateFile).c_str()) != 1 ||
+        SSL_CTX_use_PrivateKey_file(
+            tlsContext.get(), std::string(tlsPrivateKeyFile).c_str(),
+            SSL_FILETYPE_PEM) != 1 ||
+        SSL_CTX_check_private_key(tlsContext.get()) != 1) {
+      std::cerr << "Could not configure mutual TLS client credentials.\n";
+      ERR_print_errors_fp(stderr);
+      ::close(socket);
+      return 1;
+    }
+    SSL_CTX_set_verify(tlsContext.get(), SSL_VERIFY_PEER, nullptr);
+    tls.reset(SSL_new(tlsContext.get()));
+    const std::string destinationAddress(destination);
+    if (!tls || SSL_set_fd(tls.get(), socket) != 1 ||
+        X509_VERIFY_PARAM_set1_ip_asc(SSL_get0_param(tls.get()),
+                                      destinationAddress.c_str()) != 1 ||
+        SSL_connect(tls.get()) != 1) {
+      std::cerr << "Mutual TLS connection to UniDB failed. Check the server "
+                   "certificate and client credentials.\n";
+      ERR_print_errors_fp(stderr);
+      ::close(socket);
+      return 1;
+    }
   }
+
+  // TLS is initialized on a blocking socket to complete its handshake before
+  // the interactive poll loop. Plain loopback connections remain nonblocking.
+  if (!tls) {
+    const int socketFlags = ::fcntl(socket, F_GETFL, 0);
+    if (socketFlags < 0 ||
+        ::fcntl(socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
+      std::cerr << "Could not make the UniDB client socket nonblocking: "
+                << std::strerror(errno) << '\n';
+      ::close(socket);
+      return 1;
+    }
+  }
+
+  auto writeToServer = [&](const char *data, std::size_t size) -> ssize_t {
+    if (!tls)
+      return ::send(socket, data, size, 0);
+    const auto maxChunk = static_cast<std::size_t>(
+        std::numeric_limits<int>::max());
+    const int chunkSize = static_cast<int>(size > maxChunk ? maxChunk : size);
+    const int count = SSL_write(tls.get(), data, chunkSize);
+    if (count > 0)
+      return count;
+    const int sslError = SSL_get_error(tls.get(), count);
+    if (sslError == SSL_ERROR_SYSCALL && errno == EINTR)
+      return -1;
+    if (sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE) {
+      errno = EAGAIN;
+      return -1;
+    }
+    errno = EPIPE;
+    return -1;
+  };
+
+  auto readFromServer = [&](char *data, std::size_t size) -> ssize_t {
+    if (!tls)
+      return ::recv(socket, data, size, 0);
+    const auto maxChunk = static_cast<std::size_t>(
+        std::numeric_limits<int>::max());
+    const int chunkSize = static_cast<int>(size > maxChunk ? maxChunk : size);
+    const int count = SSL_read(tls.get(), data, chunkSize);
+    if (count > 0)
+      return count;
+    const int sslError = SSL_get_error(tls.get(), count);
+    if (sslError == SSL_ERROR_ZERO_RETURN)
+      return 0;
+    if (sslError == SSL_ERROR_SYSCALL && errno == EINTR)
+      return -1;
+    if (sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE) {
+      errno = EAGAIN;
+      return -1;
+    }
+    errno = ECONNRESET;
+    return -1;
+  };
 
   std::cout << "Connected to UniDB at " << destination << ':' << port
             << ". Enter one SQL statement per line; Ctrl+D disconnects.\n";
@@ -725,8 +824,8 @@ int connectInteractive(unsigned int port, std::string_view destination) {
     if (descriptors[1].revents & POLLOUT) {
       const auto pendingBytesNow = pendingInput.size() - pendingOffset;
       if (pendingBytesNow > 0) {
-        const auto count = ::send(socket, pendingInput.data() + pendingOffset,
-                                  pendingBytesNow, 0);
+        const auto count = writeToServer(pendingInput.data() + pendingOffset,
+                                         pendingBytesNow);
         if (count > 0) {
           pendingOffset += static_cast<std::size_t>(count);
           if (pendingOffset == pendingInput.size()) {
@@ -754,7 +853,7 @@ int connectInteractive(unsigned int port, std::string_view destination) {
     }
 
     if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)) {
-      const auto count = ::recv(socket, buffer, sizeof(buffer), 0);
+      const auto count = readFromServer(buffer, sizeof(buffer));
       if (count > 0) {
         std::cout.write(buffer, count);
         std::cout.flush();
@@ -790,6 +889,9 @@ int main(int argc, char *argv[]) {
   unsigned int port = kDefaultPort;
   bool portSpecified = false;
   std::string_view host = "127.0.0.1";
+  std::string_view tlsCaFile;
+  std::string_view tlsCertificateFile;
+  std::string_view tlsPrivateKeyFile;
 
   for (int index = firstOption; index < argc; ++index) {
     const std::string_view argument(argv[index]);
@@ -817,6 +919,24 @@ int main(int argc, char *argv[]) {
         return 2;
       }
       host = argv[++index];
+    } else if (argument == "--tls-ca-file") {
+      if (index + 1 >= argc) {
+        std::cerr << "Missing path after --tls-ca-file.\n";
+        return 2;
+      }
+      tlsCaFile = argv[++index];
+    } else if (argument == "--tls-cert-file") {
+      if (index + 1 >= argc) {
+        std::cerr << "Missing path after --tls-cert-file.\n";
+        return 2;
+      }
+      tlsCertificateFile = argv[++index];
+    } else if (argument == "--tls-key-file") {
+      if (index + 1 >= argc) {
+        std::cerr << "Missing path after --tls-key-file.\n";
+        return 2;
+      }
+      tlsPrivateKeyFile = argv[++index];
     } else if (argument == "--db-path") {
       if (index + 1 >= argc) {
         std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] "
@@ -827,7 +947,8 @@ int main(int argc, char *argv[]) {
     } else if (argument == "--help") {
       std::cout
           << "Usage: unidb [start|connect|stop] [--server] [--db-path PATH] "
-             "[--port PORT] [--host IPv4]\n"
+             "[--port PORT] [--host IPv4] [--tls-ca-file PATH] "
+             "[--tls-cert-file PATH] [--tls-key-file PATH]\n"
              "  start          Start a background server and write a PID/log "
              "file.\n"
              "  connect        Open an interactive SQL connection to the "
@@ -838,7 +959,10 @@ int main(int argc, char *argv[]) {
              "  --db-path PATH Database file path (default: database.db).\n"
              "  --port PORT    TCP port (default: 7432).\n"
              "  --host IPv4    Server address for connect (default: "
-             "127.0.0.1).\n";
+             "127.0.0.1).\n"
+             "  --tls-ca-file PATH   CA certificate to verify the TLS server.\n"
+             "  --tls-cert-file PATH Client certificate for mutual TLS.\n"
+             "  --tls-key-file PATH  Private key for the client certificate.\n";
       return 0;
     } else {
       std::cerr << "Unknown argument: " << argument << '\n'
@@ -849,8 +973,23 @@ int main(int argc, char *argv[]) {
 
   if (command == "start")
     return startServer(argv[0], databasePath, port);
-  if (command == "connect")
-    return connectInteractive(port, host);
+  if (command == "connect") {
+    const bool hasCa = !tlsCaFile.empty();
+    const bool hasCert = !tlsCertificateFile.empty();
+    const bool hasKey = !tlsPrivateKeyFile.empty();
+    if (hasCa != hasCert || hasCa != hasKey) {
+      std::cerr << "TLS connections require --tls-ca-file, --tls-cert-file, "
+                   "and --tls-key-file together.\n";
+      return 2;
+    }
+    if (!isLoopbackIpv4(host) && !hasCa) {
+      std::cerr << "Remote UniDB connections require mutual TLS. Supply "
+                   "--tls-ca-file, --tls-cert-file, and --tls-key-file.\n";
+      return 2;
+    }
+    return connectInteractive(port, host, tlsCaFile, tlsCertificateFile,
+                              tlsPrivateKeyFile);
+  }
   if (command == "stop")
     return stopServer(databasePath, port, portSpecified);
 
