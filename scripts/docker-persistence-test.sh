@@ -6,7 +6,8 @@ IMAGE="unidb:persistence-${RUN_ID}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 NETWORK="unidb-persistence-test-net-${RUN_ID}"
-PORT="${UNIDB_DOCKER_TEST_PORT:-17432}"
+PORT_OVERRIDE="${UNIDB_DOCKER_TEST_PORT:-}"
+PORT=""
 IMAGE_CREATED=0
 VOLUME_CREATED=0
 CONTAINER_CREATED=0
@@ -32,11 +33,32 @@ docker volume create "$VOLUME" >/dev/null
 VOLUME_CREATED=1
 
 start_container() {
+  local -a publish_args
+  if [[ -n "$PORT_OVERRIDE" ]]; then
+    PORT="$PORT_OVERRIDE"
+    publish_args=(-p "127.0.0.1:${PORT}:7432")
+  else
+    publish_args=(-p "127.0.0.1::7432")
+  fi
+
   docker create --name "$CONTAINER" --network "$NETWORK" \
-    -p "127.0.0.1:${PORT}:7432" \
+    --env UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 \
+    "${publish_args[@]}" \
     -v "$VOLUME:/data" "$IMAGE" >/dev/null
   CONTAINER_CREATED=1
   docker start "$CONTAINER" >/dev/null
+
+  # Docker assigns a free host port when no explicit override was supplied.
+  if [[ -z "$PORT_OVERRIDE" ]]; then
+    local published_address
+    published_address="$(docker port "$CONTAINER" 7432/tcp | head -n 1)"
+    PORT="${published_address##*:}"
+    if [[ ! "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1 || PORT > 65535 )); then
+      echo "Could not determine Docker's published host port (got: '$published_address')" >&2
+      docker logs "$CONTAINER" >&2 || true
+      return 1
+    fi
+  fi
 }
 
 host_sql() {
@@ -72,7 +94,17 @@ host_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":
 host_sql "INSERT INTO docker_persistence (id, name) VALUES (7, 'Ada');" | grep -q '"affected_rows":1'
 
 # Stop must trigger the server's graceful flush before the container is removed.
-docker stop --time 10 "$CONTAINER" >/dev/null
+if ! docker stop --time 10 "$CONTAINER" >/dev/null; then
+  echo "Failed to stop the UniDB persistence-test container cleanly." >&2
+  docker logs "$CONTAINER" >&2 || true
+  exit 1
+fi
+exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER")"
+if [[ "$exit_code" != "0" ]]; then
+  echo "UniDB exited with status $exit_code during shutdown; expected 0." >&2
+  docker logs "$CONTAINER" >&2 || true
+  exit 1
+fi
 docker rm "$CONTAINER" >/dev/null
 CONTAINER_CREATED=0
 
