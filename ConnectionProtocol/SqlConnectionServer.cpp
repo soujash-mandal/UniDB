@@ -123,10 +123,10 @@ bool sendAll(int socket, SSL *tls, std::string_view bytes) {
     if (stopRequested)
       return false;
     if (tls != nullptr) {
-      const auto maxChunk = static_cast<std::size_t>(
-          std::numeric_limits<int>::max());
-      const int chunkSize = static_cast<int>(
-          bytes.size() > maxChunk ? maxChunk : bytes.size());
+      const auto maxChunk =
+          static_cast<std::size_t>(std::numeric_limits<int>::max());
+      const int chunkSize =
+          static_cast<int>(bytes.size() > maxChunk ? maxChunk : bytes.size());
       const int sent = SSL_write(tls, bytes.data(), chunkSize);
       if (sent <= 0) {
         const int sslError = SSL_get_error(tls, sent);
