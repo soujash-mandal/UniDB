@@ -59,6 +59,8 @@ on:
 jobs:
   named-volume-persistence:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 20
     steps:
       - name: Check out repository
