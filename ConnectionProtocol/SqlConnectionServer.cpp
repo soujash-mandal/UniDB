@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <csignal>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -20,9 +21,10 @@
 #include <vector>
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #include <openssl/err.h>
@@ -197,6 +199,63 @@ void serveClient(int client, Container &container, SSL *tls) {
 
 using SslContextPtr = std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
 
+// Complete the unauthenticated part of the TLS exchange with an absolute
+// deadline. Socket I/O timeouts alone can be reset by a peer that drips bytes.
+bool completeMutualTlsHandshake(SSL *tls, int client) {
+  const int originalFlags = ::fcntl(client, F_GETFL, 0);
+  if (originalFlags < 0 ||
+      ::fcntl(client, F_SETFL, originalFlags | O_NONBLOCK) != 0)
+    return false;
+
+  const auto restoreSocketFlags = [&]() {
+    return ::fcntl(client, F_SETFL, originalFlags) == 0;
+  };
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds(5);
+
+  while (true) {
+    if (std::chrono::steady_clock::now() >= deadline) {
+      (void)restoreSocketFlags();
+      return false;
+    }
+
+    const int result = SSL_accept(tls);
+    if (result == 1) {
+      const bool beforeDeadline =
+          std::chrono::steady_clock::now() <= deadline;
+      return restoreSocketFlags() && beforeDeadline;
+    }
+
+    const int sslError = SSL_get_error(tls, result);
+    short waitEvents = 0;
+    if (sslError == SSL_ERROR_WANT_READ) {
+      waitEvents = POLLIN;
+    } else if (sslError == SSL_ERROR_WANT_WRITE) {
+      waitEvents = POLLOUT;
+    } else {
+      (void)restoreSocketFlags();
+      return false;
+    }
+
+    const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+        deadline - std::chrono::steady_clock::now());
+    if (remaining.count() <= 0) {
+      (void)restoreSocketFlags();
+      return false;
+    }
+    const auto timeout = static_cast<int>(remaining.count());
+    pollfd event{client, waitEvents, 0};
+    const int pollResult = ::poll(&event, 1, timeout);
+    if (pollResult < 0 && errno == EINTR)
+      continue;
+    if (pollResult <= 0 ||
+        (event.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
+      (void)restoreSocketFlags();
+      return false;
+    }
+  }
+}
+
 SslContextPtr createMutualTlsContext() {
   const char *certificateFile = std::getenv("UNIDB_TLS_CERT_FILE");
   const char *privateKeyFile = std::getenv("UNIDB_TLS_KEY_FILE");
@@ -343,21 +402,8 @@ int SqlConnectionServer::run() {
         continue;
       }
 
-      // Bound unauthenticated handshake time so a stalled client cannot hold
-      // the single-threaded server before presenting its certificate.
-      timeval handshakeTimeout{};
-      handshakeTimeout.tv_sec = 5;
-      (void)::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &handshakeTimeout,
-                         sizeof(handshakeTimeout));
-      (void)::setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &handshakeTimeout,
-                         sizeof(handshakeTimeout));
-      const int handshakeResult = SSL_accept(tls);
-      timeval noTimeout{};
-      (void)::setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &noTimeout,
-                         sizeof(noTimeout));
-      (void)::setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &noTimeout,
-                         sizeof(noTimeout));
-      if (handshakeResult != 1) {
+      // Reject stalled or invalid TLS handshakes before dispatching SQL.
+      if (!completeMutualTlsHandshake(tls, client)) {
         std::cerr << "Rejected SQL client: mutual TLS handshake failed.\n";
         ERR_clear_error();
         SSL_free(tls);
