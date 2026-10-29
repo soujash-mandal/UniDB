@@ -167,10 +167,10 @@ SqlConnectionServer::SqlConnectionServer(Container &container,
     : container(container), port(port), bindAddress(std::move(bindAddress)) {
   if (this->bindAddress.empty()) {
     const char *configuredAddress = std::getenv("UNIDB_BIND_ADDRESS");
-    this->bindAddress = (configuredAddress == nullptr ||
-                         configuredAddress[0] == '\0')
-                            ? "127.0.0.1"
-                            : configuredAddress;
+    this->bindAddress =
+        (configuredAddress == nullptr || configuredAddress[0] == '\0')
+            ? "127.0.0.1"
+            : configuredAddress;
   }
 }
 
