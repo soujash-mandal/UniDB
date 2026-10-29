@@ -6,7 +6,12 @@
 
 bool DatabaseStartup::execute(Container &container) {
   const std::string &databaseFileName = container.getDatabaseFileName();
-  const bool databaseAlreadyExists = std::filesystem::exists(databaseFileName);
+  const bool databaseFileExists = std::filesystem::exists(databaseFileName);
+  // DatabaseOwnershipLock may atomically create the file before Container is
+  // constructed. An empty file has not been initialized yet and must follow
+  // the same initialization path as a missing database.
+  const bool databaseAlreadyExists =
+      databaseFileExists && std::filesystem::file_size(databaseFileName) > 0;
 
   if (!databaseAlreadyExists) {
     std::ofstream databaseFile(databaseFileName, std::ios::binary);
