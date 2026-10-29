@@ -116,8 +116,7 @@ public:
     const std::string lockPath =
         (tempDirectory / ("unidb-ownership-" + lockKey + ".lock")).string();
     descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
-    if (descriptor_ >= 0 &&
-        ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
+    if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
       ::close(descriptor_);
       descriptor_ = -1;
     }
