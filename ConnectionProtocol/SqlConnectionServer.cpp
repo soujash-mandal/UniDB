@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -159,8 +160,15 @@ void serveClient(int client, Container &container) {
 } // namespace
 
 SqlConnectionServer::SqlConnectionServer(Container &container,
-                                         std::uint16_t port)
-    : container(container), port(port) {}
+                                         std::uint16_t port,
+                                         std::string bindAddress)
+    : container(container), port(port), bindAddress(std::move(bindAddress)) {
+  if (this->bindAddress.empty()) {
+    const char *configuredAddress = std::getenv("UNIDB_BIND_ADDRESS");
+    this->bindAddress =
+        configuredAddress == nullptr ? "127.0.0.1" : configuredAddress;
+  }
+}
 
 int SqlConnectionServer::run() {
   struct sigaction action{};
@@ -176,6 +184,13 @@ int SqlConnectionServer::run() {
   // can be flushed during orderly shutdown.
   std::signal(SIGPIPE, SIG_IGN);
 
+  in_addr bindAddressValue{};
+  if (::inet_pton(AF_INET, bindAddress.c_str(), &bindAddressValue) != 1) {
+    std::cerr << "Invalid IPv4 bind address '" << bindAddress
+              << "'. Expected a dotted IPv4 address.\n";
+    return 2;
+  }
+
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
   if (listener < 0) {
     std::cerr << "UniDB failed to create TCP socket: " << std::strerror(errno)
@@ -188,17 +203,18 @@ int SqlConnectionServer::run() {
   sockaddr_in address{};
   address.sin_family = AF_INET;
   address.sin_port = htons(port);
-  address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  address.sin_addr = bindAddressValue;
   if (::bind(listener, reinterpret_cast<sockaddr *>(&address),
              sizeof(address)) != 0 ||
       ::listen(listener, 16) != 0) {
-    std::cerr << "UniDB failed to listen on 127.0.0.1:" << port << ": "
-              << std::strerror(errno) << '\n';
+    std::cerr << "UniDB failed to listen on " << bindAddress << ':' << port
+              << ": " << std::strerror(errno) << '\n';
     ::close(listener);
     return 1;
   }
 
-  std::cout << "UniDB SQL protocol listening on 127.0.0.1:" << port << '\n';
+  std::cout << "UniDB SQL protocol listening on " << bindAddress << ':' << port
+            << '\n';
   bool acceptFailed = false;
   while (!stopRequested) {
     const int client = ::accept(listener, nullptr, nullptr);
