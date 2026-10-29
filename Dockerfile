@@ -2,7 +2,7 @@
 FROM debian:bookworm-slim AS build
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y cmake g++ make libgtest-dev \
+    && apt-get install --no-install-recommends -y cmake g++ make libgtest-dev libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -12,9 +12,12 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
 
 FROM debian:bookworm-slim AS runtime
 
-RUN useradd --system --uid 10001 --create-home unidb \
-    && mkdir -p /data \
-    && chown unidb:unidb /data
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libssl3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 --create-home unidb \
+    && mkdir -p /data /run/unidb-tls \
+    && chown unidb:unidb /data /run/unidb-tls
 
 COPY --from=build /src/build/unidb /usr/local/bin/unidb
 
