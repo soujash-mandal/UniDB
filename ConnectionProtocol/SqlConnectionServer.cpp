@@ -8,11 +8,11 @@
 #include <cerrno>
 #include <chrono>
 #include <condition_variable>
-#include <deque>
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -246,11 +246,12 @@ bool hasTrustedClientCertificate(SSL *tls) {
 // Accept new sockets while progressing all pending TLS handshakes in one poll
 // loop. Serving stays on the caller thread so Container operations remain
 // serialized, but a client that never starts TLS cannot block later accepts.
-void acceptAndAuthenticateClients(
-    int listener, SSL_CTX *tlsContext, std::mutex &sessionsMutex,
-    std::condition_variable &sessionsReady,
-    std::deque<ClientConnection> &readySessions, int &activeClient,
-    bool &acceptFailed, bool &acceptLoopFinished) {
+void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
+                                  std::mutex &sessionsMutex,
+                                  std::condition_variable &sessionsReady,
+                                  std::deque<ClientConnection> &readySessions,
+                                  int &activeClient, bool &acceptFailed,
+                                  bool &acceptLoopFinished) {
   constexpr std::size_t maximumPendingHandshakes = 32;
   constexpr std::size_t maximumReadySessions = 16;
   constexpr auto handshakeTimeout = std::chrono::seconds(5);
@@ -305,9 +306,8 @@ void acceptAndAuthenticateClients(
     if ((listenerEvents & POLLIN) != 0) {
       sockaddr_in peerAddress{};
       socklen_t peerLength = sizeof(peerAddress);
-      const int client =
-          ::accept(listener, reinterpret_cast<sockaddr *>(&peerAddress),
-                   &peerLength);
+      const int client = ::accept(
+          listener, reinterpret_cast<sockaddr *>(&peerAddress), &peerLength);
       if (client < 0) {
         if (errno != EINTR && errno != ECONNABORTED && errno != EAGAIN &&
             errno != EWOULDBLOCK && !stopRequested) {
@@ -318,7 +318,8 @@ void acceptAndAuthenticateClients(
       } else if (tlsContext == nullptr) {
         (void)queueSession(ClientConnection{client, nullptr});
       } else if (pendingHandshakes.size() >= maximumPendingHandshakes) {
-        std::cerr << "Rejected SQL client: too many TLS handshakes are pending.\\n";
+        std::cerr
+            << "Rejected SQL client: too many TLS handshakes are pending.\\n";
         ::close(client);
       } else {
         const int originalFlags = ::fcntl(client, F_GETFL, 0);
@@ -329,7 +330,8 @@ void acceptAndAuthenticateClients(
         } else {
           SSL *tls = SSL_new(tlsContext);
           if (tls == nullptr || SSL_set_fd(tls, client) != 1) {
-            std::cerr << "Could not initialize TLS for an incoming SQL client.\\n";
+            std::cerr
+                << "Could not initialize TLS for an incoming SQL client.\\n";
             ERR_print_errors_fp(stderr);
             if (tls != nullptr)
               SSL_free(tls);
@@ -541,11 +543,11 @@ int SqlConnectionServer::run() {
 
   std::thread acceptThread;
   try {
-    acceptThread = std::thread(
-        acceptAndAuthenticateClients, listener, tlsContext.get(),
-        std::ref(sessionsMutex), std::ref(sessionsReady),
-        std::ref(readySessions), std::ref(activeClient), std::ref(acceptFailed),
-        std::ref(acceptLoopFinished));
+    acceptThread =
+        std::thread(acceptAndAuthenticateClients, listener, tlsContext.get(),
+                    std::ref(sessionsMutex), std::ref(sessionsReady),
+                    std::ref(readySessions), std::ref(activeClient),
+                    std::ref(acceptFailed), std::ref(acceptLoopFinished));
   } catch (...) {
     std::cerr << "UniDB failed to start its connection accept loop.\\n";
     ::close(listener);
