@@ -432,7 +432,7 @@ int startServer(const char *executable, std::string_view databasePath,
     }
   }
 
-  // The complete PID record exists before the child can initialize storage.
+  // The complete PID record is written and closed before the child can initialize storage.
   const char startupSignal = 'G';
   ssize_t bytesWritten = -1;
   do {
