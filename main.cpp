@@ -699,8 +699,17 @@ int connectInteractive(unsigned int port, std::string_view destination,
     const std::string destinationAddress(destination);
     if (!tls || SSL_set_fd(tls.get(), socket) != 1 ||
         X509_VERIFY_PARAM_set1_ip_asc(SSL_get0_param(tls.get()),
-                                      destinationAddress.c_str()) != 1 ||
-        SSL_connect(tls.get()) != 1) {
+                                      destinationAddress.c_str()) != 1) {
+      std::cerr << "Could not initialize mutual TLS client session.\n";
+      ERR_print_errors_fp(stderr);
+      ::close(socket);
+      return 1;
+    }
+    // A queued SSL_write retry may follow a string reallocation. OpenSSL still
+    // requires the same write length and bytes, but permits a moved pointer.
+    SSL_set_mode(tls.get(), SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
+                                SSL_MODE_ENABLE_PARTIAL_WRITE);
+    if (SSL_connect(tls.get()) != 1) {
       std::cerr << "Mutual TLS connection to UniDB failed. Check the server "
                    "certificate and client credentials.\n";
       ERR_print_errors_fp(stderr);
@@ -709,60 +718,16 @@ int connectInteractive(unsigned int port, std::string_view destination,
     }
   }
 
-  // TLS is initialized on a blocking socket to complete its handshake before
-  // the interactive poll loop. Plain loopback connections remain nonblocking.
-  if (!tls) {
-    const int socketFlags = ::fcntl(socket, F_GETFL, 0);
-    if (socketFlags < 0 ||
-        ::fcntl(socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
-      std::cerr << "Could not make the UniDB client socket nonblocking: "
-                << std::strerror(errno) << '\n';
-      ::close(socket);
-      return 1;
-    }
+  // Complete the TLS handshake while the socket is blocking, then use poll
+  // for all I/O so a full send buffer cannot stall response processing.
+  const int socketFlags = ::fcntl(socket, F_GETFL, 0);
+  if (socketFlags < 0 ||
+      ::fcntl(socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
+    std::cerr << "Could not make the UniDB client socket nonblocking: "
+              << std::strerror(errno) << '\n';
+    ::close(socket);
+    return 1;
   }
-
-  auto writeToServer = [&](const char *data, std::size_t size) -> ssize_t {
-    if (!tls)
-      return ::send(socket, data, size, 0);
-    const auto maxChunk =
-        static_cast<std::size_t>(std::numeric_limits<int>::max());
-    const int chunkSize = static_cast<int>(size > maxChunk ? maxChunk : size);
-    const int count = SSL_write(tls.get(), data, chunkSize);
-    if (count > 0)
-      return count;
-    const int sslError = SSL_get_error(tls.get(), count);
-    if (sslError == SSL_ERROR_SYSCALL && errno == EINTR)
-      return -1;
-    if (sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE) {
-      errno = EAGAIN;
-      return -1;
-    }
-    errno = EPIPE;
-    return -1;
-  };
-
-  auto readFromServer = [&](char *data, std::size_t size) -> ssize_t {
-    if (!tls)
-      return ::recv(socket, data, size, 0);
-    const auto maxChunk =
-        static_cast<std::size_t>(std::numeric_limits<int>::max());
-    const int chunkSize = static_cast<int>(size > maxChunk ? maxChunk : size);
-    const int count = SSL_read(tls.get(), data, chunkSize);
-    if (count > 0)
-      return count;
-    const int sslError = SSL_get_error(tls.get(), count);
-    if (sslError == SSL_ERROR_ZERO_RETURN)
-      return 0;
-    if (sslError == SSL_ERROR_SYSCALL && errno == EINTR)
-      return -1;
-    if (sslError == SSL_ERROR_WANT_READ || sslError == SSL_ERROR_WANT_WRITE) {
-      errno = EAGAIN;
-      return -1;
-    }
-    errno = ECONNRESET;
-    return -1;
-  };
 
   std::cout << "Connected to UniDB at " << destination << ':' << port
             << ". Enter one SQL statement per line; Ctrl+D disconnects.\n";
@@ -777,16 +742,116 @@ int connectInteractive(unsigned int port, std::string_view destination,
   bool inputEndsWithNewline = false;
   bool writeShutdown = false;
 
+  // OpenSSL needs the exact same write length for a WANT_READ/WANT_WRITE
+  // retry. Keep this length until SSL_write succeeds or fails permanently.
+  bool tlsWriteInFlight = false;
+  std::size_t tlsWriteLength = 0;
+  short tlsWriteWaitEvents = POLLOUT;
+  short tlsReadWaitEvents = POLLIN;
+  bool tlsShutdownPending = false;
+  short tlsShutdownWaitEvents = POLLOUT;
+
+  auto writeToServer = [&](const char *data, std::size_t size) -> ssize_t {
+    if (!tls)
+      return ::send(socket, data, size, 0);
+
+    if (!tlsWriteInFlight) {
+      tlsWriteInFlight = true;
+      tlsWriteLength = size;
+    } else if (size != tlsWriteLength) {
+      errno = EINVAL;
+      return -1;
+    }
+
+    const int count = SSL_write(tls.get(), data,
+                                static_cast<int>(tlsWriteLength));
+    if (count > 0) {
+      tlsWriteInFlight = false;
+      tlsWriteLength = 0;
+      tlsWriteWaitEvents = POLLOUT;
+      return count;
+    }
+
+    const int sslError = SSL_get_error(tls.get(), count);
+    if (sslError == SSL_ERROR_WANT_READ) {
+      tlsWriteWaitEvents = POLLIN;
+      errno = EAGAIN;
+      return -1;
+    }
+    if (sslError == SSL_ERROR_WANT_WRITE) {
+      tlsWriteWaitEvents = POLLOUT;
+      errno = EAGAIN;
+      return -1;
+    }
+    if (sslError == SSL_ERROR_SYSCALL && errno == EINTR) {
+      tlsWriteWaitEvents = POLLOUT;
+      return -1;
+    }
+
+    tlsWriteInFlight = false;
+    tlsWriteLength = 0;
+    errno = EPIPE;
+    return -1;
+  };
+
+  auto readFromServer = [&](char *data, std::size_t size) -> ssize_t {
+    if (!tls)
+      return ::recv(socket, data, size, 0);
+
+    const int count = SSL_read(tls.get(), data, static_cast<int>(size));
+    if (count > 0) {
+      tlsReadWaitEvents = POLLIN;
+      return count;
+    }
+
+    const int sslError = SSL_get_error(tls.get(), count);
+    if (sslError == SSL_ERROR_ZERO_RETURN)
+      return 0;
+    if (sslError == SSL_ERROR_WANT_READ) {
+      tlsReadWaitEvents = POLLIN;
+      errno = EAGAIN;
+      return -1;
+    }
+    if (sslError == SSL_ERROR_WANT_WRITE) {
+      tlsReadWaitEvents = POLLOUT;
+      errno = EAGAIN;
+      return -1;
+    }
+    if (sslError == SSL_ERROR_SYSCALL && errno == EINTR) {
+      tlsReadWaitEvents = POLLIN;
+      return -1;
+    }
+
+    errno = ECONNRESET;
+    return -1;
+  };
+
   while (true) {
     const std::size_t pendingBytes = pendingInput.size() - pendingOffset;
     descriptors[0] = {
         stdinOpen && pendingBytes < kMaxPendingInput ? STDIN_FILENO : -1,
         POLLIN, 0};
-    descriptors[1] = {
-        socket, static_cast<short>(POLLIN | (pendingBytes > 0 ? POLLOUT : 0)),
-        0};
 
-    const int ready = ::poll(descriptors, 2, -1);
+    // Monitor the event OpenSSL actually requested for an in-flight operation.
+    // Always monitor the read side too, so response traffic can drain while a
+    // large piped input is waiting for socket write capacity.
+    short socketEvents = tls ? tlsReadWaitEvents : POLLIN;
+    if (pendingBytes > 0) {
+      socketEvents |=
+          (tls && tlsWriteInFlight) ? tlsWriteWaitEvents : POLLOUT;
+    }
+    const bool shouldShutdownTls =
+        tls && !stdinOpen && pendingBytes == 0 && !writeShutdown;
+    if (shouldShutdownTls) {
+      socketEvents |=
+          tlsShutdownPending ? tlsShutdownWaitEvents : POLLOUT;
+    }
+    descriptors[1] = {socket, socketEvents, 0};
+
+    // SSL_pending() counts decrypted bytes already buffered by OpenSSL. They
+    // must be consumed even when the underlying file descriptor is not readable.
+    const bool bufferedTlsData = tls && SSL_pending(tls.get()) > 0;
+    const int ready = ::poll(descriptors, 2, bufferedTlsData ? 0 : -1);
     if (ready < 0) {
       if (errno == EINTR)
         continue;
@@ -819,55 +884,80 @@ int connectInteractive(unsigned int port, std::string_view destination,
       }
     }
 
-    if (descriptors[1].revents & POLLOUT) {
-      const auto pendingBytesNow = pendingInput.size() - pendingOffset;
-      if (pendingBytesNow > 0) {
-        const auto count =
-            writeToServer(pendingInput.data() + pendingOffset, pendingBytesNow);
-        if (count > 0) {
-          pendingOffset += static_cast<std::size_t>(count);
-          if (pendingOffset == pendingInput.size()) {
-            pendingInput.clear();
-            pendingOffset = 0;
-          } else if (pendingOffset >= kMaxPendingInput / 2) {
-            pendingInput.erase(0, pendingOffset);
-            pendingOffset = 0;
-          }
-        } else if (count < 0 && errno != EINTR && errno != EAGAIN &&
-                   errno != EWOULDBLOCK) {
-          std::cerr << "Failed to send SQL to UniDB: " << std::strerror(errno)
-                    << '\n';
-          ::close(socket);
-          return 1;
+    const std::size_t pendingBytesNow = pendingInput.size() - pendingOffset;
+    const short requiredWriteEvents =
+        (tls && tlsWriteInFlight) ? tlsWriteWaitEvents : POLLOUT;
+    if (pendingBytesNow > 0 &&
+        (descriptors[1].revents & requiredWriteEvents)) {
+      const std::size_t bytesToWrite =
+          (tls && tlsWriteInFlight) ? tlsWriteLength : pendingBytesNow;
+      const auto count =
+          writeToServer(pendingInput.data() + pendingOffset, bytesToWrite);
+      if (count > 0) {
+        pendingOffset += static_cast<std::size_t>(count);
+        if (pendingOffset == pendingInput.size()) {
+          pendingInput.clear();
+          pendingOffset = 0;
+        } else if (pendingOffset >= kMaxPendingInput / 2) {
+          // No SSL_write is outstanding after a positive write result, so
+          // compacting the queued buffer cannot invalidate a pending retry.
+          pendingInput.erase(0, pendingOffset);
+          pendingOffset = 0;
         }
+      } else if (count < 0 && errno != EINTR && errno != EAGAIN &&
+                 errno != EWOULDBLOCK) {
+        std::cerr << "Failed to send SQL to UniDB: " << std::strerror(errno)
+                  << '\n';
+        ::close(socket);
+        return 1;
       }
     }
 
-    // Half-close only after every queued byte (including the final newline)
-    // has been sent, so EOF cannot discard pending SQL.
+    // Retry a nonblocking TLS shutdown only when its previous WANT_* event is
+    // ready. The first call sends close_notify after all queued SQL is sent.
     if (!stdinOpen && pendingInput.empty() && !writeShutdown) {
-      if (tls) {
-        const int shutdownResult = SSL_shutdown(tls.get());
-        if (shutdownResult >= 0 ||
-            (SSL_get_shutdown(tls.get()) & SSL_SENT_SHUTDOWN) != 0) {
+      const bool shutdownReady =
+          !tlsShutdownPending ||
+          (descriptors[1].revents & tlsShutdownWaitEvents) != 0;
+      if (!tls || shutdownReady) {
+        if (!tls) {
+          ::shutdown(socket, SHUT_WR);
           writeShutdown = true;
         } else {
-          const int sslError = SSL_get_error(tls.get(), shutdownResult);
-          if (sslError != SSL_ERROR_WANT_READ &&
-              sslError != SSL_ERROR_WANT_WRITE) {
-            std::cerr << "Failed to close the TLS write side cleanly.\n";
-            ERR_print_errors_fp(stderr);
-            ::close(socket);
-            return 1;
+          const int shutdownResult = SSL_shutdown(tls.get());
+          if (shutdownResult >= 0) {
+            writeShutdown = true;
+            tlsShutdownPending = false;
+          } else {
+            const int sslError = SSL_get_error(tls.get(), shutdownResult);
+            if (sslError == SSL_ERROR_WANT_READ) {
+              tlsShutdownPending = true;
+              tlsShutdownWaitEvents = POLLIN;
+            } else if (sslError == SSL_ERROR_WANT_WRITE) {
+              tlsShutdownPending = true;
+              tlsShutdownWaitEvents = POLLOUT;
+            } else if (sslError == SSL_ERROR_SYSCALL && errno == EINTR) {
+              tlsShutdownPending = true;
+              tlsShutdownWaitEvents = POLLOUT;
+            } else {
+              std::cerr << "Failed to close the TLS write side cleanly.\n";
+              ERR_print_errors_fp(stderr);
+              ::close(socket);
+              return 1;
+            }
           }
         }
-      } else {
-        ::shutdown(socket, SHUT_WR);
-        writeShutdown = true;
       }
     }
 
-    if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)) {
+    const short socketErrorEvents = POLLHUP | POLLERR | POLLNVAL;
+    const bool socketHasError =
+        (descriptors[1].revents & socketErrorEvents) != 0;
+    const bool readReady =
+        bufferedTlsData ||
+        (descriptors[1].revents & (tls ? tlsReadWaitEvents : POLLIN)) != 0 ||
+        socketHasError;
+    if (readReady) {
       const auto count = readFromServer(buffer, sizeof(buffer));
       if (count > 0) {
         std::cout.write(buffer, count);
