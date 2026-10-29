@@ -216,8 +216,7 @@ std::string serverBindAddress() {
 }
 
 std::string serverProbeAddress(std::string_view bindAddress) {
-  return bindAddress == "0.0.0.0" ? "127.0.0.1"
-                                   : std::string(bindAddress);
+  return bindAddress == "0.0.0.0" ? "127.0.0.1" : std::string(bindAddress);
 }
 
 bool isPortReachable(unsigned int port, std::string_view configuredAddress) {

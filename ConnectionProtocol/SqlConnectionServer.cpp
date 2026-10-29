@@ -199,9 +199,8 @@ int SqlConnectionServer::run() {
   const bool loopbackAddress = (hostOrderAddress >> 24U) == 127U;
   const char *allowInsecureRemote =
       std::getenv("UNIDB_ALLOW_INSECURE_REMOTE_ACCESS");
-  if (!loopbackAddress &&
-      (allowInsecureRemote == nullptr ||
-       std::string_view(allowInsecureRemote) != "1")) {
+  if (!loopbackAddress && (allowInsecureRemote == nullptr ||
+                           std::string_view(allowInsecureRemote) != "1")) {
     std::cerr << "Refusing non-loopback SQL bind without TLS/authentication. "
                  "Use loopback or explicitly set "
                  "UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 only on a trusted, "
