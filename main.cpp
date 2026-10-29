@@ -247,7 +247,8 @@ int connectToServer(unsigned int port, std::string_view destination) {
   sockaddr_in address{};
   address.sin_family = AF_INET;
   address.sin_port = htons(static_cast<std::uint16_t>(port));
-  if (::inet_pton(AF_INET, destinationAddress.c_str(), &address.sin_addr) != 1) {
+  if (::inet_pton(AF_INET, destinationAddress.c_str(), &address.sin_addr) !=
+      1) {
     std::cerr << "Invalid server IPv4 address: " << destination << '\n';
     ::close(socket);
     return -1;
@@ -502,8 +503,8 @@ int startServer(const char *executable, std::string_view databasePath,
       const pid_t childState = ::waitpid(child, &childStatus, WNOHANG);
       if (ready && childState == 0) {
         std::cout << "UniDB started (PID " << child << ") on "
-                  << serverProbeAddress() << ':' << port << "\nLog: "
-                  << logPath << '\n';
+                  << serverProbeAddress() << ':' << port << "\nLog: " << logPath
+                  << '\n';
         return 0;
       }
       if (childState == child) {
@@ -794,7 +795,8 @@ int main(int argc, char *argv[]) {
              "mode).\n"
              "  --db-path PATH Database file path (default: database.db).\n"
              "  --port PORT    TCP port (default: 7432).\n"
-             "  --host IPv4    Server address for connect (default: 127.0.0.1).\n";
+             "  --host IPv4    Server address for connect (default: "
+             "127.0.0.1).\n";
       return 0;
     } else {
       std::cerr << "Unknown argument: " << argument << '\n'
