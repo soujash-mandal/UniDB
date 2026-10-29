@@ -162,6 +162,18 @@ wait_for_server() {
 
 start_container
 wait_for_server
+
+# A client without a trusted certificate must never receive an SQL response.
+unauthenticated_output="$(printf '%s\\n' \
+  "CREATE TABLE should_not_exist (id INT);" | timeout 8 openssl s_client \
+  -quiet -verify_ip 127.0.0.1 -CAfile "$TLS_DIR/ca.crt" \
+  -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/unauthenticated.log" || true)"
+if grep -Fq '"ok":true' <<<"$unauthenticated_output"; then
+  echo "Server executed SQL from a client without a certificate." >&2
+  echo "$unauthenticated_output" >&2
+  exit 1
+fi
+
 host_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":true'
 host_sql "INSERT INTO docker_persistence (id, name) VALUES (7, 'Ada');" | grep -q '"affected_rows":1'
 
