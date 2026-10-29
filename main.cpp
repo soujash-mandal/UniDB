@@ -269,9 +269,18 @@ int connectToServer(unsigned int port, std::string_view destination) {
 int startServer(const char *executable, std::string_view databasePath,
                 unsigned int port) {
   const std::string bindAddress = serverProbeAddress();
+  const std::string conflictProbeAddress =
+      bindAddress == "0.0.0.0" ? "127.0.0.1" : bindAddress;
   in_addr configuredBindAddress{};
   if (::inet_pton(AF_INET, bindAddress.c_str(), &configuredBindAddress) != 1) {
     std::cerr << "Invalid IPv4 bind address '" << bindAddress << "'.\n";
+    return 2;
+  }
+  in_addr conflictProbeAddressValue{};
+  if (::inet_pton(AF_INET, conflictProbeAddress.c_str(),
+                  &conflictProbeAddressValue) != 1) {
+    std::cerr << "Invalid IPv4 probe address '" << conflictProbeAddress
+              << "'.\n";
     return 2;
   }
 #if !defined(__APPLE__) && !defined(__linux__)
@@ -341,7 +350,7 @@ int startServer(const char *executable, std::string_view databasePath,
     sockaddr_in existingAddress{};
     existingAddress.sin_family = AF_INET;
     existingAddress.sin_port = htons(static_cast<std::uint16_t>(port));
-    existingAddress.sin_addr = configuredBindAddress;
+    existingAddress.sin_addr = conflictProbeAddressValue
     const bool portInUse =
         ::connect(existingListener,
                   reinterpret_cast<sockaddr *>(&existingAddress),
