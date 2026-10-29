@@ -266,7 +266,47 @@ fi
 client_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":true'
 host_sql "INSERT INTO docker_persistence (id, name) VALUES (7, 'Ada');" | grep -q '"affected_rows":1'
 
-# 1.1 Send more than 64 KiB of piped SQL through one built-in TLS client.
+# 1.1 An unauthenticated peer that stalls before ClientHello must not block
+# another client from completing mutual TLS and executing a query.
+python3 - "$TLS_DIR" "$PORT" <<'PY'
+import socket
+import ssl
+import sys
+import time
+from pathlib import Path
+
+tls_dir = Path(sys.argv[1])
+port = int(sys.argv[2])
+stalled_peer = socket.create_connection(("127.0.0.1", port), timeout=3)
+try:
+    # Let the listener accept the stalled socket before the valid connection.
+    time.sleep(0.2)
+    context = ssl.create_default_context(cafile=str(tls_dir / "ca.crt"))
+    context.load_cert_chain(
+        certfile=str(tls_dir / "client.crt"),
+        keyfile=str(tls_dir / "client.key"),
+    )
+    with socket.create_connection(("127.0.0.1", port), timeout=3) as raw_socket:
+        with context.wrap_socket(raw_socket, server_hostname="127.0.0.1") as connection:
+            connection.settimeout(3)
+            connection.sendall(b"SELECT * FROM docker_persistence;\\n")
+            response = bytearray()
+            while b"\\n" not in response:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                response.extend(chunk)
+            if b'"rows":[[7,"Ada"]]' not in response:
+                raise RuntimeError(
+                    "Valid TLS client did not receive the expected query response "
+                    "while an unauthenticated peer was stalled: "
+                    + bytes(response).decode("utf-8", errors="replace")
+                )
+finally:
+    stalled_peer.close()
+PY
+
+# 1.2 Send more than 64 KiB of piped SQL through one built-in TLS client.
 # This exercises nonblocking writes while the client concurrently drains replies.
 client_sql "CREATE TABLE tls_large_response (id INT, payload TEXT);" | grep -q '"ok":true'
 batch=""
@@ -281,7 +321,7 @@ if [[ "$insert_count" != "600" ]]; then
   exit 1
 fi
 
-# 1.2 A response larger than the client read buffer must be fully drained.
+# 1.3 A response larger than the client read buffer must be fully drained.
 large_response="$(client_sql "SELECT * FROM tls_large_response;")"
 if (( ${#large_response} <= 4096 )); then
   echo "Expected TLS SELECT response larger than 4 KiB; got ${#large_response} bytes." >&2
