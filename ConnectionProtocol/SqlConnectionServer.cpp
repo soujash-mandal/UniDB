@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <cerrno>
-#include <csignal>
 #include <chrono>
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -221,8 +221,7 @@ bool completeMutualTlsHandshake(SSL *tls, int client) {
 
     const int result = SSL_accept(tls);
     if (result == 1) {
-      const bool beforeDeadline =
-          std::chrono::steady_clock::now() <= deadline;
+      const bool beforeDeadline = std::chrono::steady_clock::now() <= deadline;
       return restoreSocketFlags() && beforeDeadline;
     }
 
@@ -237,8 +236,9 @@ bool completeMutualTlsHandshake(SSL *tls, int client) {
       return false;
     }
 
-    const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
-        deadline - std::chrono::steady_clock::now());
+    const auto remaining =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            deadline - std::chrono::steady_clock::now());
     if (remaining.count() <= 0) {
       (void)restoreSocketFlags();
       return false;
