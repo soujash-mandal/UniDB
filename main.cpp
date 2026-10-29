@@ -208,14 +208,26 @@ bool sendAll(int socket, const char *data, std::size_t size) {
   return true;
 }
 
+std::string serverProbeAddress() {
+  const char *configuredAddress = std::getenv("UNIDB_BIND_ADDRESS");
+  if (configuredAddress == nullptr || configuredAddress[0] == '\0' ||
+      std::string_view(configuredAddress) == "0.0.0.0")
+    return "127.0.0.1";
+  return configuredAddress;
+}
+
 bool isPortReachable(unsigned int port) {
   const int probe = ::socket(AF_INET, SOCK_STREAM, 0);
   if (probe < 0)
     return false;
+  const std::string probeAddress = serverProbeAddress();
   sockaddr_in address{};
   address.sin_family = AF_INET;
   address.sin_port = htons(static_cast<std::uint16_t>(port));
-  address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  if (::inet_pton(AF_INET, probeAddress.c_str(), &address.sin_addr) != 1) {
+    ::close(probe);
+    return false;
+  }
   const bool reachable =
       ::connect(probe, reinterpret_cast<sockaddr *>(&address),
                 sizeof(address)) == 0;
@@ -223,7 +235,7 @@ bool isPortReachable(unsigned int port) {
   return reachable;
 }
 
-int connectToServer(unsigned int port) {
+int connectToServer(unsigned int port, std::string_view destination) {
   const int socket = ::socket(AF_INET, SOCK_STREAM, 0);
   if (socket < 0) {
     std::cerr << "UniDB could not create a client socket: "
@@ -231,14 +243,19 @@ int connectToServer(unsigned int port) {
     return -1;
   }
 
+  const std::string destinationAddress(destination);
   sockaddr_in address{};
   address.sin_family = AF_INET;
   address.sin_port = htons(static_cast<std::uint16_t>(port));
-  address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  if (::inet_pton(AF_INET, destinationAddress.c_str(), &address.sin_addr) != 1) {
+    std::cerr << "Invalid server IPv4 address: " << destination << '\n';
+    ::close(socket);
+    return -1;
+  }
   if (::connect(socket, reinterpret_cast<sockaddr *>(&address),
                 sizeof(address)) != 0) {
-    std::cerr << "Could not connect to UniDB at 127.0.0.1:" << port << ": "
-              << std::strerror(errno) << '\n';
+    std::cerr << "Could not connect to UniDB at " << destination << ':' << port
+              << ": " << std::strerror(errno) << '\n';
     ::close(socket);
     return -1;
   }
@@ -470,19 +487,23 @@ int startServer(const char *executable, std::string_view databasePath,
     }
     const int probe = ::socket(AF_INET, SOCK_STREAM, 0);
     if (probe >= 0) {
+      const std::string probeAddress = serverProbeAddress();
       sockaddr_in address{};
       address.sin_family = AF_INET;
       address.sin_port = htons(static_cast<std::uint16_t>(port));
-      address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+      const bool validProbeAddress =
+          ::inet_pton(AF_INET, probeAddress.c_str(), &address.sin_addr) == 1;
       const bool ready =
+          validProbeAddress &&
           ::connect(probe, reinterpret_cast<sockaddr *>(&address),
                     sizeof(address)) == 0;
       ::close(probe);
       int childStatus = 0;
       const pid_t childState = ::waitpid(child, &childStatus, WNOHANG);
       if (ready && childState == 0) {
-        std::cout << "UniDB started (PID " << child << ") on 127.0.0.1:" << port
-                  << "\nLog: " << logPath << '\n';
+        std::cout << "UniDB started (PID " << child << ") on "
+                  << serverProbeAddress() << ':' << port << "\nLog: "
+                  << logPath << '\n';
         return 0;
       }
       if (childState == child) {
@@ -587,10 +608,10 @@ int stopServer(std::string_view databasePath, unsigned int port,
   return 1;
 }
 
-int connectInteractive(unsigned int port) {
+int connectInteractive(unsigned int port, std::string_view destination) {
   // Ignore SIGPIPE so a disconnected server is handled through send errors.
   std::signal(SIGPIPE, SIG_IGN);
-  const int socket = connectToServer(port);
+  const int socket = connectToServer(port, destination);
   if (socket < 0)
     return 1;
 
@@ -603,7 +624,7 @@ int connectInteractive(unsigned int port) {
     return 1;
   }
 
-  std::cout << "Connected to UniDB at 127.0.0.1:" << port
+  std::cout << "Connected to UniDB at " << destination << ':' << port
             << ". Enter one SQL statement per line; Ctrl+D disconnects.\n";
 
   constexpr std::size_t kMaxPendingInput = 64 * 1024;
@@ -725,6 +746,7 @@ int main(int argc, char *argv[]) {
   std::string_view databasePath = kDefaultDatabasePath;
   unsigned int port = kDefaultPort;
   bool portSpecified = false;
+  std::string_view host = "127.0.0.1";
 
   for (int index = firstOption; index < argc; ++index) {
     const std::string_view argument(argv[index]);
@@ -746,6 +768,12 @@ int main(int argc, char *argv[]) {
         std::cerr << "Invalid TCP port. Expected a number from 1 to 65535.\n";
         return 2;
       }
+    } else if (argument == "--host") {
+      if (index + 1 >= argc) {
+        std::cerr << "Missing IPv4 address after --host.\n";
+        return 2;
+      }
+      host = argv[++index];
     } else if (argument == "--db-path") {
       if (index + 1 >= argc) {
         std::cerr << "Usage: unidb [start|connect|stop] [--db-path PATH] "
@@ -756,7 +784,7 @@ int main(int argc, char *argv[]) {
     } else if (argument == "--help") {
       std::cout
           << "Usage: unidb [start|connect|stop] [--server] [--db-path PATH] "
-             "[--port PORT]\n"
+             "[--port PORT] [--host IPv4]\n"
              "  start          Start a background server and write a PID/log "
              "file.\n"
              "  connect        Open an interactive SQL connection to the "
@@ -765,7 +793,8 @@ int main(int argc, char *argv[]) {
              "  --server       Run the TCP server in the foreground (legacy "
              "mode).\n"
              "  --db-path PATH Database file path (default: database.db).\n"
-             "  --port PORT    TCP port (default: 7432; loopback only).\n";
+             "  --port PORT    TCP port (default: 7432).\n"
+             "  --host IPv4    Server address for connect (default: 127.0.0.1).\n";
       return 0;
     } else {
       std::cerr << "Unknown argument: " << argument << '\n'
@@ -777,7 +806,7 @@ int main(int argc, char *argv[]) {
   if (command == "start")
     return startServer(argv[0], databasePath, port);
   if (command == "connect")
-    return connectInteractive(port);
+    return connectInteractive(port, host);
   if (command == "stop")
     return stopServer(databasePath, port, portSpecified);
 
