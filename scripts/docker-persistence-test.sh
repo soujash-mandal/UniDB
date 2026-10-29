@@ -272,34 +272,7 @@ client_sql "CREATE TABLE tls_large_response (id INT, payload TEXT);" | grep -q '
 batch=""
 for index in $(seq 1 600); do
   payload="row-${index}-$(printf '%0120d' 0)"
-  batch+="INSERT INTO tls_large_response (id, payload) VALUES (${index}, '${payload}');"
-if ! docker stop --time 10 "$CONTAINER" >/dev/null; then
-  echo "Failed to stop the UniDB persistence-test container cleanly." >&2
-  docker logs "$CONTAINER" >&2 || true
-  exit 1
-fi
-exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER")"
-if [[ "$exit_code" != "0" ]]; then
-  echo "UniDB exited with status $exit_code during shutdown; expected 0." >&2
-  docker logs "$CONTAINER" >&2 || true
-  exit 1
-fi
-docker rm "$CONTAINER" >/dev/null
-CONTAINER_CREATED=0
-
-start_container
-wait_for_server
-
-response="$(host_sql "SELECT * FROM docker_persistence;")"
-if ! grep -Fq '"rows":[[7,"Ada"]]' <<<"$response"; then
-  echo "Persisted row was not found after container recreation:" >&2
-  echo "$response" >&2
-  docker logs "$CONTAINER" >&2
-  exit 1
-fi
-
-echo "Docker named-volume persistence test passed."
-\n'
+  batch+="INSERT INTO tls_large_response (id, payload) VALUES (${index}, '${payload}');"$'\n'
 done
 batch_responses="$(client_sql_batch "$batch")"
 insert_count="$(grep -Fc '"affected_rows":1' <<<"$batch_responses")"
