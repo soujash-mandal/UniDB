@@ -1,0 +1,10 @@
+.git
+.github
+.vscode
+build
+.cache
+database.db
+database.db.*
+*.log
+.DS_Store
+visualisation
