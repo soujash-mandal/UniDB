@@ -21,6 +21,7 @@ namespace {
 
 class SqlServerSocketIntegrationTest : public ::testing::Test {
 protected:
+  // Reserve an unused loopback TCP port for the child server.
   static unsigned short reserveEphemeralPort() {
     const int socketFd = ::socket(AF_INET, SOCK_STREAM, 0);
     EXPECT_GE(socketFd, 0);
@@ -44,6 +45,7 @@ protected:
     return port;
   }
 
+  // Connect to the test server, returning -1 when it is not ready.
   static int connectToServer(unsigned short port) {
     const int socketFd = ::socket(AF_INET, SOCK_STREAM, 0);
     if (socketFd < 0)
@@ -61,6 +63,7 @@ protected:
     return socketFd;
   }
 
+  // Send the complete request, retrying interrupted system calls.
   static bool sendAll(int socketFd, const std::string &request) {
     std::size_t sent = 0;
     while (sent < request.size()) {
@@ -78,23 +81,32 @@ protected:
     return true;
   }
 
+  // Read one newline-terminated response, with a five-second receive deadline.
+  // Return an empty string for timeout, read error, or an incomplete frame.
   static std::string readResponse(int socketFd) {
+    timeval timeout{};
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    if (::setsockopt(socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+                     sizeof(timeout)) != 0)
+      return {};
+
     std::string response;
     char ch = '\0';
     while (response.size() < 1024 * 1024) {
       const auto count = ::recv(socketFd, &ch, 1, 0);
       if (count == 0)
-        break;
+        return {};
       if (count < 0) {
         if (errno == EINTR)
           continue;
-        break;
+        return {};
       }
       response += ch;
       if (ch == '\n')
-        break;
+        return response;
     }
-    return response;
+    return {};
   }
 
   void SetUp() override {
@@ -138,11 +150,33 @@ protected:
 
   void TearDown() override {
     if (serverPid > 0) {
-      ::kill(serverPid, SIGTERM);
+      // Allow graceful shutdown to flush dirty pages, but never hang the suite.
+      EXPECT_EQ(::kill(serverPid, SIGTERM), 0);
       int status = 0;
-      ASSERT_EQ(::waitpid(serverPid, &status, 0), serverPid);
-      EXPECT_TRUE(WIFEXITED(status));
-      EXPECT_EQ(WEXITSTATUS(status), 0);
+      bool reaped = false;
+      for (int attempt = 0; attempt < 100; ++attempt) {
+        const pid_t result = ::waitpid(serverPid, &status, WNOHANG);
+        if (result == serverPid) {
+          reaped = true;
+          break;
+        }
+        if (result < 0 && errno != EINTR) {
+          ADD_FAILURE() << "waitpid failed while awaiting server shutdown";
+          break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      }
+
+      if (!reaped) {
+        ADD_FAILURE() << "UniDB server did not shut down within five seconds";
+        ::kill(serverPid, SIGKILL);
+        while (::waitpid(serverPid, &status, 0) < 0 && errno == EINTR) {
+        }
+      } else {
+        EXPECT_TRUE(WIFEXITED(status));
+        if (WIFEXITED(status))
+          EXPECT_EQ(WEXITSTATUS(status), 0);
+      }
     }
     std::error_code error;
     std::filesystem::remove(databasePath, error);
@@ -167,20 +201,21 @@ TEST_F(SqlServerSocketIntegrationTest,
   ASSERT_TRUE(
       sendAll(socketFd, "CREATE TABLE socket_test (id INT, name TEXT);\n"));
   const auto createResponse = readResponse(socketFd);
-  EXPECT_NE(createResponse.find("\"ok\":true"), std::string::npos);
+  EXPECT_NE(createResponse.find("\\"ok\\":true"), std::string::npos);
 
   // 1.3 Send another request on the same connection and verify insertion.
   ASSERT_TRUE(sendAll(
       socketFd, "INSERT INTO socket_test (id, name) VALUES (7, 'Ada');\n"));
   const auto insertResponse = readResponse(socketFd);
-  EXPECT_NE(insertResponse.find("\"ok\":true"), std::string::npos);
-  EXPECT_NE(insertResponse.find("\"affected_rows\":1"), std::string::npos);
+  EXPECT_NE(insertResponse.find("\\"ok\\":true"), std::string::npos);
+  EXPECT_NE(insertResponse.find("\\"affected_rows\\":1"), std::string::npos);
 
   // 1.4 Verify SELECT returns the row inserted earlier on this TCP connection.
   ASSERT_TRUE(sendAll(socketFd, "SELECT * FROM socket_test;\n"));
   const auto selectResponse = readResponse(socketFd);
-  EXPECT_NE(selectResponse.find("\"kind\":\"rows\""), std::string::npos);
-  EXPECT_NE(selectResponse.find("\"rows\":[[7,\"Ada\"]]"), std::string::npos);
+  EXPECT_NE(selectResponse.find("\\"kind\\":\\"rows\\""), std::string::npos);
+  EXPECT_NE(selectResponse.find("\\"rows\\":[[7,\\"Ada\\"]]"),
+            std::string::npos);
   ::close(socketFd);
 }
 
