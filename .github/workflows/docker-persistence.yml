@@ -25,6 +25,7 @@ on:
       - "RdbMetadataService/**"
       - "QueryExecutionService/**"
       - "SQLParser/**"
+      - "SQLParserContract/**"
       - ".github/workflows/docker-persistence.yml"
   push:
     branches:
@@ -52,6 +53,7 @@ on:
       - "RdbMetadataService/**"
       - "QueryExecutionService/**"
       - "SQLParser/**"
+      - "SQLParserContract/**"
       - ".github/workflows/docker-persistence.yml"
 
 jobs:
