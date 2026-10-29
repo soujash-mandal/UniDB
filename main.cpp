@@ -105,9 +105,13 @@ public:
           "-" +
           std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
     } else if (errno == ENOENT) {
-      // Hash the canonical path so it becomes a single, bounded filename.
-      lockKey = std::to_string(
-          std::hash<std::string>{}(lifecycleKey(databasePath)));
+      // Use a deterministic hash so the key is stable across processes.
+      std::uint64_t pathHash = 14695981039346656037ULL;
+      for (const unsigned char character : lifecycleKey(databasePath)) {
+        pathHash ^= character;
+        pathHash *= 1099511628211ULL;
+      }
+      lockKey = std::to_string(pathHash);
     } else {
       return;
     }
