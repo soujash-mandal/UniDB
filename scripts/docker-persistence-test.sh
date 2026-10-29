@@ -289,9 +289,9 @@ try:
     with socket.create_connection(("127.0.0.1", port), timeout=3) as raw_socket:
         with context.wrap_socket(raw_socket, server_hostname="127.0.0.1") as connection:
             connection.settimeout(3)
-            connection.sendall(b"SELECT * FROM docker_persistence;\\n")
+            connection.sendall(b"SELECT * FROM docker_persistence;\n")
             response = bytearray()
-            while b"\\n" not in response:
+            while b"\n" not in response:
                 chunk = connection.recv(4096)
                 if not chunk:
                     break
