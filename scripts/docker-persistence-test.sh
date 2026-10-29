@@ -6,6 +6,7 @@ IMAGE="${UNIDB_DOCKER_IMAGE:-unidb:persistence-${RUN_ID}}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 PORT="${UNIDB_DOCKER_TEST_PORT:-17432}"
+IMAGE_CREATED=0
 VOLUME_CREATED=0
 CONTAINER_CREATED=0
 
@@ -16,10 +17,14 @@ cleanup() {
   if [[ "$VOLUME_CREATED" == "1" ]]; then
     docker volume rm "$VOLUME" >/dev/null 2>&1 || true
   fi
+  if [[ "$IMAGE_CREATED" == "1" ]]; then
+    docker image rm "$IMAGE" >/dev/null 2>&1 || true
+  fi
 }
 trap cleanup EXIT
 
 docker build -t "$IMAGE" .
+IMAGE_CREATED=1
 docker volume create "$VOLUME" >/dev/null
 VOLUME_CREATED=1
 
