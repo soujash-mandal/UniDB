@@ -108,11 +108,14 @@ bool ownershipLockDirectory(std::filesystem::path &directory) {
   for (const auto &path : {privateDirectory, directory}) {
     struct stat info {};
     if (::lstat(path.c_str(), &info) != 0 || !S_ISDIR(info.st_mode) ||
+        info.st_uid != ::geteuid()) {
+      return false;
+    }
+    if (::chmod(path.c_str(), 0700) != 0 ||
+        ::lstat(path.c_str(), &info) != 0 || !S_ISDIR(info.st_mode) ||
         info.st_uid != ::geteuid() || (info.st_mode & 0077) != 0) {
       return false;
     }
-    if (::chmod(path.c_str(), 0700) != 0)
-      return false;
   }
   return true;
 }
