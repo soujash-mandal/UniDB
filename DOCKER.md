@@ -62,6 +62,8 @@ openssl x509 -req -sha256 -days 365 -in unidb-tls/client.csr \
   -CA unidb-tls/ca.crt -CAkey unidb-tls/ca.key -CAcreateserial \
   -out unidb-tls/client.crt -extfile unidb-tls/client.ext
 
+# Certificates are public; the container needs to read the CA and server cert.
+chmod 644 unidb-tls/ca.crt unidb-tls/server.crt unidb-tls/client.crt
 # The container runs as UID 10001. Keep the server private key readable only
 # by that UID, and keep CA/client private keys restricted to their owner.
 sudo chown 10001:10001 unidb-tls/server.key
