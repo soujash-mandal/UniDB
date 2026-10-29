@@ -6,6 +6,7 @@ IMAGE="unidb:persistence-${RUN_ID}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 NETWORK="unidb-persistence-test-net-${RUN_ID}"
+TLS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/unidb-persistence-tls.XXXXXX")"
 PORT_OVERRIDE="${UNIDB_DOCKER_TEST_PORT:-}"
 PORT=""
 if [[ -n "$PORT_OVERRIDE" ]]; then
@@ -27,11 +28,64 @@ cleanup() {
     docker volume rm "$VOLUME" >/dev/null 2>&1 || true
   fi
   docker network rm "$NETWORK" >/dev/null 2>&1 || true
+  rm -rf "$TLS_DIR"
   if [[ "$IMAGE_CREATED" == "1" ]]; then
     docker image rm "$IMAGE" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
+
+# Generate disposable mutual-TLS credentials for the persistence integration test.
+cat > "$TLS_DIR/ca.cnf" <<'EOF'
+[ req ]
+prompt = no
+distinguished_name = dn
+x509_extensions = v3_ca
+[ dn ]
+CN = UniDB Persistence Test CA
+[ v3_ca ]
+basicConstraints = critical, CA:TRUE
+keyUsage = critical, keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+EOF
+openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 2 \
+  -config "$TLS_DIR/ca.cnf" -keyout "$TLS_DIR/ca.key" \
+  -out "$TLS_DIR/ca.crt" >/dev/null 2>&1
+
+openssl req -new -newkey rsa:2048 -nodes -sha256 -subj "/CN=127.0.0.1" \
+  -keyout "$TLS_DIR/server.key" -out "$TLS_DIR/server.csr" >/dev/null 2>&1
+cat > "$TLS_DIR/server.ext" <<'EOF'
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = IP:127.0.0.1
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+EOF
+openssl x509 -req -sha256 -days 2 -in "$TLS_DIR/server.csr" \
+  -CA "$TLS_DIR/ca.crt" -CAkey "$TLS_DIR/ca.key" -CAcreateserial \
+  -out "$TLS_DIR/server.crt" -extfile "$TLS_DIR/server.ext" >/dev/null 2>&1
+
+openssl req -new -newkey rsa:2048 -nodes -sha256 \
+  -subj "/CN=unidb-persistence-test-client" \
+  -keyout "$TLS_DIR/client.key" -out "$TLS_DIR/client.csr" >/dev/null 2>&1
+cat > "$TLS_DIR/client.ext" <<'EOF'
+basicConstraints = critical, CA:FALSE
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
+EOF
+openssl x509 -req -sha256 -days 2 -in "$TLS_DIR/client.csr" \
+  -CA "$TLS_DIR/ca.crt" -CAkey "$TLS_DIR/ca.key" -CAcreateserial \
+  -out "$TLS_DIR/client.crt" -extfile "$TLS_DIR/client.ext" >/dev/null 2>&1
+
+# The test server runs as UID 10001. This temporary server key is disposable;
+# production keys must be readable only by the service account.
+chmod 755 "$TLS_DIR"
+chmod 644 "$TLS_DIR/ca.crt" "$TLS_DIR/server.crt" "$TLS_DIR/server.key" \
+  "$TLS_DIR/client.crt"
+chmod 600 "$TLS_DIR/ca.key" "$TLS_DIR/client.key"
 
 docker build -t "$IMAGE" .
 IMAGE_CREATED=1
