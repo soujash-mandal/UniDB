@@ -20,6 +20,7 @@ docker build -t unidb:local .
 docker network create unidb-net
 docker volume create unidb-data
 docker run -d --name unidb --network unidb-net \
+  -e UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 \
   -p 127.0.0.1:7432:7432 \
   -v unidb-data:/data \
   unidb:local
@@ -31,12 +32,15 @@ that implements UniDB's newline-delimited SQL/JSON TCP protocol.
 
 UniDB currently has no authentication or transport encryption. SQL statements
 and results travel in plaintext. The server rejects non-loopback binds unless
-`UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1` is explicitly set. The Docker image sets
-this opt-in because its listener must accept traffic forwarded by Docker; use
-it only on a trusted, isolated network, never with untrusted peer containers or
-a public interface. For remote administration, use a secure tunnel until TLS
-and authentication are implemented. The server handles one client connection
-at a time.
+`UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1` is explicitly set. The image does **not**
+enable this opt-in by default. Since it binds to `0.0.0.0` for Docker port
+forwarding, the container will refuse to start unless the operator explicitly
+passes `-e UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1`, as in the example above.
+Only do this on a trusted, isolated network, never with untrusted peer
+containers or a public interface. The example still publishes the port only
+on host loopback. For remote administration, use a secure tunnel until TLS and
+authentication are implemented. The server handles one client connection at a
+time.
 
 ## Verify persistence across container recreation
 
