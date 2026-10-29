@@ -358,7 +358,7 @@ int SqlConnectionServer::run() {
       (void)::setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, &noTimeout,
                          sizeof(noTimeout));
       if (handshakeResult != 1) {
-        std::cerr << "Rejected SQL client: mutual TLS handshake failed.\\n";
+        std::cerr << "Rejected SQL client: mutual TLS handshake failed.\n";
         ERR_clear_error();
         SSL_free(tls);
         ::close(client);
@@ -372,7 +372,7 @@ int SqlConnectionServer::run() {
       const long verificationResult = SSL_get_verify_result(tls);
       if (peerCertificate == nullptr || verificationResult != X509_V_OK) {
         std::cerr << "Rejected SQL client: a trusted client certificate is "
-                     "required.\\n";
+                     "required.\n";
         if (peerCertificate != nullptr)
           X509_free(peerCertificate);
         SSL_free(tls);
