@@ -161,7 +161,7 @@ client_sql() {
   local statement="$1"
   local output
   local response
-  if ! output="$(printf '%s\n' "$statement" | docker exec -i "$CONTAINER" \
+  if ! output="$(printf '%s\n' "$statement" | timeout 15 docker exec -i "$CONTAINER" \
       /usr/local/bin/unidb connect --host 127.0.0.1 --port 7432 \
       --tls-ca-file /run/unidb-tls/ca.crt \
       --tls-cert-file /run/unidb-tls/client.crt \
