@@ -355,10 +355,17 @@ int startServer(const char *executable, std::string_view databasePath,
 
     if (::setsid() < 0)
       _exit(126);
-    const int logFd =
-        ::open(logPath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+    const int logFd = ::open(logPath.c_str(),
+                                O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW |
+                                    O_CLOEXEC,
+                                0644);
     if (logFd < 0)
       _exit(126);
+    struct stat logInfo{};
+    if (::fstat(logFd, &logInfo) != 0 || !S_ISREG(logInfo.st_mode)) {
+      ::close(logFd);
+      _exit(126);
+    }
     ::dup2(logFd, STDOUT_FILENO);
     ::dup2(logFd, STDERR_FILENO);
     if (logFd > STDERR_FILENO)
@@ -384,22 +391,43 @@ int startServer(const char *executable, std::string_view databasePath,
 
   {
     const std::string identity = processIdentity(child);
-    std::ofstream pidFile(pidPath, std::ios::trunc);
-    bool pidFileWritten = !identity.empty() && static_cast<bool>(pidFile);
+    const int pidFd =
+        identity.empty()
+            ? -1
+            : ::open(pidPath.c_str(),
+                     O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC,
+                     0644);
+    bool pidFileWritten = pidFd >= 0;
     if (pidFileWritten) {
-      pidFile << child << '\n' << port << '\n' << identity << '\n';
-      pidFile.flush();
-      pidFileWritten = static_cast<bool>(pidFile);
-      pidFile.close();
-      pidFileWritten = pidFileWritten && !pidFile.fail();
+      struct stat pidInfo{};
+      pidFileWritten =
+          ::fstat(pidFd, &pidInfo) == 0 && S_ISREG(pidInfo.st_mode);
     }
+
+    const std::string pidRecord =
+        std::to_string(child) + '\n' + std::to_string(port) + '\n' +
+        identity + '\n';
+    std::size_t written = 0;
+    while (pidFileWritten && written < pidRecord.size()) {
+      const auto count = ::write(pidFd, pidRecord.data() + written,
+                                 pidRecord.size() - written);
+      if (count < 0 && errno == EINTR)
+        continue;
+      if (count <= 0) {
+        pidFileWritten = false;
+        break;
+      }
+      written += static_cast<std::size_t>(count);
+    }
+    if (pidFd >= 0 && ::close(pidFd) != 0)
+      pidFileWritten = false;
+
     if (!pidFileWritten) {
-      std::cerr << "Could not write PID file with process identity: " << pidPath
+      std::cerr << "Could not securely create or write PID file: " << pidPath
                 << '\n';
       ::close(startupPipe[1]);
       ::kill(child, SIGTERM);
       ::waitpid(child, nullptr, 0);
-      std::remove(pidPath.c_str());
       return 1;
     }
   }
@@ -463,7 +491,8 @@ int startServer(const char *executable, std::string_view databasePath,
 #endif
 }
 
-int stopServer(std::string_view databasePath, unsigned int port) {
+int stopServer(std::string_view databasePath, unsigned int port,
+               bool portSpecified) {
   // Serialize stop with start so stale-file cleanup cannot remove a replacement
   // server's PID record.
   LifecycleLock lifecycleLock(databasePath);
@@ -514,9 +543,15 @@ int stopServer(std::string_view databasePath, unsigned int port) {
            "file without sending a signal.\n";
     return 1;
   }
-  if (recordedPort != port || !isPortReachable(recordedPort)) {
-    std::cerr << "PID file does not match a reachable UniDB listener on port "
-              << recordedPort << "; refusing to signal PID " << rawPid << ".\n";
+  if (portSpecified && recordedPort != port) {
+    std::cerr << "UniDB was started on port " << recordedPort
+              << "; rerun stop with --port " << recordedPort << ".\n";
+    return 1;
+  }
+  if (!isPortReachable(recordedPort)) {
+    std::cerr << "The UniDB listener recorded in " << pidPath
+              << " is not reachable on port " << recordedPort
+              << "; refusing to signal PID " << rawPid << ".\n";
     return 1;
   }
   if (::kill(pid, SIGTERM) != 0) {
@@ -676,6 +711,7 @@ int main(int argc, char *argv[]) {
   bool serverMode = false;
   std::string_view databasePath = kDefaultDatabasePath;
   unsigned int port = kDefaultPort;
+  bool portSpecified = false;
 
   for (int index = firstOption; index < argc; ++index) {
     const std::string_view argument(argv[index]);
@@ -692,6 +728,7 @@ int main(int argc, char *argv[]) {
         if (parsed == 0 || parsed > 65535)
           throw std::out_of_range("port");
         port = static_cast<unsigned int>(parsed);
+        portSpecified = true;
       } catch (const std::exception &) {
         std::cerr << "Invalid TCP port. Expected a number from 1 to 65535.\n";
         return 2;
@@ -729,7 +766,7 @@ int main(int argc, char *argv[]) {
   if (command == "connect")
     return connectInteractive(port);
   if (command == "stop")
-    return stopServer(databasePath, port);
+    return stopServer(databasePath, port, portSpecified);
 
   DatabaseOwnershipLock databaseOwnershipLock(databasePath);
   if (!databaseOwnershipLock.acquired()) {
