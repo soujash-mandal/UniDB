@@ -463,8 +463,8 @@ int startServer(const char *executable, std::string_view databasePath,
     }
 
     const std::string pidRecord = std::to_string(child) + '\n' +
-                                  std::to_string(port) + '\n' + identity + '\n' +
-                                  bindAddress + '\n';
+                                  std::to_string(port) + '\n' + identity +
+                                  '\n' + bindAddress + '\n';
     std::size_t written = 0;
     while (pidFileWritten && written < pidRecord.size()) {
       const auto count = ::write(pidFd, pidRecord.data() + written,
@@ -523,8 +523,8 @@ int startServer(const char *executable, std::string_view databasePath,
   }
   ::close(readinessPipe[0]);
   if (readyBytes == 1 && readySignal == 'R') {
-    std::cout << "UniDB started (PID " << child << ") on "
-              << bindAddress << ':' << port << "\\nLog: " << logPath << '\\n';
+    std::cout << "UniDB started (PID " << child << ") on " << bindAddress << ':'
+              << port << "\\nLog: " << logPath << '\\n';
     return 0;
   }
   std::cerr << "Timed out waiting for UniDB to listen. Check the log: "
@@ -554,8 +554,8 @@ int stopServer(std::string_view databasePath, unsigned int port,
   std::string recordedIdentity;
   std::string recordedBindAddress;
   if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity >>
-        recordedBindAddress) || rawPid <= 1 ||
-      recordedPort == 0 || recordedPort > 65535) {
+        recordedBindAddress) ||
+      rawPid <= 1 || recordedPort == 0 || recordedPort > 65535) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
     return 1;
   }
