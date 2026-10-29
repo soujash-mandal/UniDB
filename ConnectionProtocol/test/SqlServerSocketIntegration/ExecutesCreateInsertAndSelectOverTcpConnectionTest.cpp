@@ -33,10 +33,12 @@ protected:
     address.sin_port = 0;
 
     EXPECT_EQ(::bind(socketFd, reinterpret_cast<sockaddr *>(&address),
-                     sizeof(address)), 0);
+                     sizeof(address)),
+              0);
     socklen_t length = sizeof(address);
     EXPECT_EQ(::getsockname(socketFd, reinterpret_cast<sockaddr *>(&address),
-                            &length), 0);
+                            &length),
+              0);
     const auto port = ntohs(address.sin_port);
     ::close(socketFd);
     return port;
@@ -62,8 +64,8 @@ protected:
   static bool sendAll(int socketFd, const std::string &request) {
     std::size_t sent = 0;
     while (sent < request.size()) {
-      const auto count = ::send(socketFd, request.data() + sent,
-                                request.size() - sent, 0);
+      const auto count =
+          ::send(socketFd, request.data() + sent, request.size() - sent, 0);
       if (count < 0) {
         if (errno == EINTR)
           continue;
@@ -160,13 +162,16 @@ TEST_F(SqlServerSocketIntegrationTest,
   const int socketFd = connectToServer(port);
   ASSERT_GE(socketFd, 0);
 
-  // 1.2 Verify a command response is returned as one newline-delimited JSON frame.
-  ASSERT_TRUE(sendAll(socketFd, "CREATE TABLE socket_test (id INT, name TEXT);\n"));
+  // 1.2 Verify a command response is returned as one newline-delimited JSON
+  // frame.
+  ASSERT_TRUE(
+      sendAll(socketFd, "CREATE TABLE socket_test (id INT, name TEXT);\n"));
   const auto createResponse = readResponse(socketFd);
   EXPECT_NE(createResponse.find("\"ok\":true"), std::string::npos);
 
   // 1.3 Send another request on the same connection and verify insertion.
-  ASSERT_TRUE(sendAll(socketFd, "INSERT INTO socket_test (id, name) VALUES (7, 'Ada');\n"));
+  ASSERT_TRUE(sendAll(
+      socketFd, "INSERT INTO socket_test (id, name) VALUES (7, 'Ada');\n"));
   const auto insertResponse = readResponse(socketFd);
   EXPECT_NE(insertResponse.find("\"ok\":true"), std::string::npos);
   EXPECT_NE(insertResponse.find("\"affected_rows\":1"), std::string::npos);
