@@ -297,4 +297,6 @@ target_link_libraries(tests
 
 enable_testing()
 include(GoogleTest)
-gtest_discover_tests(tests)
+gtest_discover_tests(tests
+    WORKING_DIRECTORY "$<TARGET_FILE_DIR:unidb>"
+)
