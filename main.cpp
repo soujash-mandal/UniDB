@@ -216,11 +216,14 @@ std::string serverProbeAddress() {
   return configuredAddress;
 }
 
-bool isPortReachable(unsigned int port) {
+bool isPortReachable(unsigned int port, std::string_view configuredAddress) {
   const int probe = ::socket(AF_INET, SOCK_STREAM, 0);
   if (probe < 0)
     return false;
-  const std::string probeAddress = serverProbeAddress();
+  const std::string probeAddress =
+      configuredAddress.empty() || configuredAddress == "0.0.0.0"
+          ? "127.0.0.1"
+          : std::string(configuredAddress);
   sockaddr_in address{};
   address.sin_family = AF_INET;
   address.sin_port = htons(static_cast<std::uint16_t>(port));
@@ -265,10 +268,17 @@ int connectToServer(unsigned int port, std::string_view destination) {
 
 int startServer(const char *executable, std::string_view databasePath,
                 unsigned int port) {
+  const std::string bindAddress = serverProbeAddress();
+  in_addr configuredBindAddress{};
+  if (::inet_pton(AF_INET, bindAddress.c_str(), &configuredBindAddress) != 1) {
+    std::cerr << "Invalid IPv4 bind address '" << bindAddress << "'.\n";
+    return 2;
+  }
 #if !defined(__APPLE__) && !defined(__linux__)
   (void)executable;
   (void)databasePath;
   (void)port;
+  (void)bindAddress;
   std::cerr << "The 'start' command currently supports macOS and Linux only.\n";
   return 1;
 #else
@@ -331,14 +341,15 @@ int startServer(const char *executable, std::string_view databasePath,
     sockaddr_in existingAddress{};
     existingAddress.sin_family = AF_INET;
     existingAddress.sin_port = htons(static_cast<std::uint16_t>(port));
-    existingAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    existingAddress.sin_addr = configuredBindAddress;
     const bool portInUse =
         ::connect(existingListener,
                   reinterpret_cast<sockaddr *>(&existingAddress),
                   sizeof(existingAddress)) == 0;
     ::close(existingListener);
     if (portInUse) {
-      std::cerr << "Port " << port << " is already in use on 127.0.0.1.\n";
+      std::cerr << "Port " << port << " is already in use on " << bindAddress
+                << ".\n";
       return 1;
     }
   }
@@ -346,7 +357,16 @@ int startServer(const char *executable, std::string_view databasePath,
   // Keep the child blocked until its PID record is written. If this launcher
   // exits before releasing it, EOF makes the child exit before opening the DB.
   int startupPipe[2] = {-1, -1};
-  if (::pipe(startupPipe) != 0) {
+  int readinessPipe[2] = {-1, -1};
+  if (::pipe(startupPipe) != 0 || ::pipe(readinessPipe) != 0) {
+    if (startupPipe[0] >= 0) {
+      ::close(startupPipe[0]);
+      ::close(startupPipe[1]);
+    }
+    if (readinessPipe[0] >= 0) {
+      ::close(readinessPipe[0]);
+      ::close(readinessPipe[1]);
+    }
     std::cerr << "Could not create UniDB startup handshake: "
               << std::strerror(errno) << '\n';
     return 1;
@@ -357,11 +377,14 @@ int startServer(const char *executable, std::string_view databasePath,
     const int forkError = errno;
     ::close(startupPipe[0]);
     ::close(startupPipe[1]);
+    ::close(readinessPipe[0]);
+    ::close(readinessPipe[1]);
     std::cerr << "Could not start UniDB: " << std::strerror(forkError) << '\n';
     return 1;
   }
   if (child == 0) {
     ::close(startupPipe[1]);
+    ::close(readinessPipe[0]);
     char startupSignal = 0;
     ssize_t bytesRead = -1;
     do {
@@ -404,6 +427,9 @@ int startServer(const char *executable, std::string_view databasePath,
 
     const std::string databaseArg(databasePath);
     const std::string portArg = std::to_string(port);
+    const std::string readinessFd = std::to_string(readinessPipe[1]);
+    if (::setenv("UNIDB_READY_FD", readinessFd.c_str(), 1) != 0)
+      _exit(126);
     char *const args[] = {const_cast<char *>(executable),
                           const_cast<char *>("--server"),
                           const_cast<char *>("--db-path"),
@@ -416,6 +442,7 @@ int startServer(const char *executable, std::string_view databasePath,
   }
 
   ::close(startupPipe[0]);
+  ::close(readinessPipe[1]);
   // Prevent a broken handshake pipe from terminating the launcher before
   // cleanup.
   std::signal(SIGPIPE, SIG_IGN);
@@ -436,7 +463,8 @@ int startServer(const char *executable, std::string_view databasePath,
     }
 
     const std::string pidRecord = std::to_string(child) + '\n' +
-                                  std::to_string(port) + '\n' + identity + '\n';
+                                  std::to_string(port) + '\n' + identity + '\n' +
+                                  bindAddress + '\n';
     std::size_t written = 0;
     while (pidFileWritten && written < pidRecord.size()) {
       const auto count = ::write(pidFd, pidRecord.data() + written,
@@ -456,6 +484,8 @@ int startServer(const char *executable, std::string_view databasePath,
       std::cerr << "Could not securely create or write PID file: " << pidPath
                 << '\n';
       ::close(startupPipe[1]);
+      ::close(readinessPipe[0]);
+      ::close(readinessPipe[1]);
       ::kill(child, SIGTERM);
       ::waitpid(child, nullptr, 0);
       return 1;
@@ -478,45 +508,25 @@ int startServer(const char *executable, std::string_view databasePath,
     return 1;
   }
 
-  // Wait for the listener to become reachable, or report startup failure.
-  for (int attempt = 0; attempt < 50; ++attempt) {
-    int status = 0;
-    if (::waitpid(child, &status, WNOHANG) == child) {
-      std::remove(pidPath.c_str());
-      std::cerr << "UniDB failed to start. Check the log: " << logPath << '\n';
-      return 1;
-    }
-    const int probe = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (probe >= 0) {
-      const std::string probeAddress = serverProbeAddress();
-      sockaddr_in address{};
-      address.sin_family = AF_INET;
-      address.sin_port = htons(static_cast<std::uint16_t>(port));
-      const bool validProbeAddress =
-          ::inet_pton(AF_INET, probeAddress.c_str(), &address.sin_addr) == 1;
-      const bool ready =
-          validProbeAddress &&
-          ::connect(probe, reinterpret_cast<sockaddr *>(&address),
-                    sizeof(address)) == 0;
-      ::close(probe);
-      int childStatus = 0;
-      const pid_t childState = ::waitpid(child, &childStatus, WNOHANG);
-      if (ready && childState == 0) {
-        std::cout << "UniDB started (PID " << child << ") on "
-                  << serverProbeAddress() << ':' << port << "\nLog: " << logPath
-                  << '\n';
-        return 0;
-      }
-      if (childState == child) {
-        std::remove(pidPath.c_str());
-        std::cerr << "UniDB failed to start. Check the log: " << logPath
-                  << '\n';
-        return 1;
-      }
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Readiness is reported only after the child successfully calls listen().
+  pollfd readinessEvent{readinessPipe[0], POLLIN | POLLHUP, 0};
+  int pollResult = -1;
+  do {
+    pollResult = ::poll(&readinessEvent, 1, 5000);
+  } while (pollResult < 0 && errno == EINTR);
+  char readySignal = 0;
+  ssize_t readyBytes = -1;
+  if (pollResult > 0 && (readinessEvent.revents & POLLIN)) {
+    do {
+      readyBytes = ::read(readinessPipe[0], &readySignal, 1);
+    } while (readyBytes < 0 && errno == EINTR);
   }
-
+  ::close(readinessPipe[0]);
+  if (readyBytes == 1 && readySignal == 'R') {
+    std::cout << "UniDB started (PID " << child << ") on "
+              << bindAddress << ':' << port << "\\nLog: " << logPath << '\\n';
+    return 0;
+  }
   std::cerr << "Timed out waiting for UniDB to listen. Check the log: "
             << logPath << '\n';
   ::kill(child, SIGTERM);
@@ -542,7 +552,9 @@ int stopServer(std::string_view databasePath, unsigned int port,
   long rawPid = 0;
   unsigned int recordedPort = 0;
   std::string recordedIdentity;
-  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity) || rawPid <= 1 ||
+  std::string recordedBindAddress;
+  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity >>
+        recordedBindAddress) || rawPid <= 1 ||
       recordedPort == 0 || recordedPort > 65535) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
     return 1;
@@ -583,7 +595,7 @@ int stopServer(std::string_view databasePath, unsigned int port,
               << "; rerun stop with --port " << recordedPort << ".\n";
     return 1;
   }
-  if (!isPortReachable(recordedPort)) {
+  if (!isPortReachable(recordedPort, recordedBindAddress)) {
     std::cerr << "The UniDB listener recorded in " << pidPath
               << " is not reachable on port " << recordedPort
               << "; refusing to signal PID " << rawPid << ".\n";

@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -216,6 +217,20 @@ int SqlConnectionServer::run() {
 
   std::cout << "UniDB SQL protocol listening on " << bindAddress << ':' << port
             << '\n';
+  // Notify the launcher only after bind() and listen() have both succeeded.
+  const char *readyFdValue = std::getenv("UNIDB_READY_FD");
+  if (readyFdValue != nullptr) {
+    char *end = nullptr;
+    errno = 0;
+    const long readyFd = std::strtol(readyFdValue, &end, 10);
+    if (errno == 0 && end != readyFdValue && *end == '\0' && readyFd >= 0 &&
+        readyFd <= std::numeric_limits<int>::max()) {
+      const char readySignal = 'R';
+      (void)::write(static_cast<int>(readyFd), &readySignal, 1);
+      ::close(static_cast<int>(readyFd));
+      ::unsetenv("UNIDB_READY_FD");
+    }
+  }
   bool acceptFailed = false;
   while (!stopRequested) {
     const int client = ::accept(listener, nullptr, nullptr);

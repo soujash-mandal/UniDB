@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUN_ID="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$$"
-IMAGE="${UNIDB_DOCKER_IMAGE:-unidb:persistence-${RUN_ID}}"
+IMAGE="unidb:persistence-${RUN_ID}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 PORT="${UNIDB_DOCKER_TEST_PORT:-17432}"
@@ -29,9 +29,10 @@ docker volume create "$VOLUME" >/dev/null
 VOLUME_CREATED=1
 
 start_container() {
-  docker run -d --name "$CONTAINER" -p "127.0.0.1:${PORT}:7432" \
+  docker create --name "$CONTAINER" -p "127.0.0.1:${PORT}:7432" \
     -v "$VOLUME:/data" "$IMAGE" >/dev/null
   CONTAINER_CREATED=1
+  docker start "$CONTAINER" >/dev/null
 }
 
 host_sql() {
