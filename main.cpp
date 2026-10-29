@@ -350,8 +350,7 @@ int startServer(const char *executable, std::string_view databasePath,
     sockaddr_in existingAddress{};
     existingAddress.sin_family = AF_INET;
     existingAddress.sin_port = htons(static_cast<std::uint16_t>(port));
-    existingAddress.sin_addr = conflictProbeAddressValue
-    const bool portInUse =
+    existingAddress.sin_addr = conflictProbeAddressValue const bool portInUse =
         ::connect(existingListener,
                   reinterpret_cast<sockaddr *>(&existingAddress),
                   sizeof(existingAddress)) == 0;
