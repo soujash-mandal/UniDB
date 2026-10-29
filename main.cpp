@@ -314,11 +314,18 @@ int startServer(const char *executable, std::string_view databasePath,
       const bool processAlive =
           validPid && (::kill(existingProcess, 0) == 0 || errno == EPERM);
       if (processAlive) {
-        if (!(pidFile >> recordedIdentity >> recordedBindAddress) ||
-            recordedIdentity.empty() || recordedBindAddress.empty()) {
+        // Older UniDB versions wrote PID, port, and process identity only.
+        // Those servers always bound to loopback, so preserve compatibility.
+        if (!(pidFile >> recordedIdentity) || recordedIdentity.empty()) {
           std::cerr << "PID file refers to a live process but is missing its "
-                       "identity or bind address; refusing to remove it "
-                       "automatically.\n";
+                       "process identity; refusing to remove it automatically.\n";
+          return 1;
+        }
+        if (!(pidFile >> recordedBindAddress))
+          recordedBindAddress = "127.0.0.1";
+        if (recordedBindAddress.empty()) {
+          std::cerr << "PID file contains an empty bind address; refusing to "
+                       "remove it automatically.\n";
           return 1;
         }
         const std::string currentIdentity = processIdentity(existingProcess);
@@ -566,10 +573,18 @@ int stopServer(std::string_view databasePath, unsigned int port,
   unsigned int recordedPort = 0;
   std::string recordedIdentity;
   std::string recordedBindAddress;
-  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity >>
-        recordedBindAddress) ||
-      rawPid <= 1 || recordedPort == 0 || recordedPort > 65535) {
+  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity) ||
+      rawPid <= 1 || recordedPort == 0 || recordedPort > 65535 ||
+      recordedIdentity.empty()) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
+    return 1;
+  }
+  // Legacy three-field PID records imply the historical loopback bind.
+  if (!(pidFile >> recordedBindAddress))
+    recordedBindAddress = "127.0.0.1";
+  if (recordedBindAddress.empty()) {
+    std::cerr << "UniDB PID file contains an empty bind address: " << pidPath
+              << '\n';
     return 1;
   }
   if (rawPid > static_cast<long>(std::numeric_limits<pid_t>::max())) {
