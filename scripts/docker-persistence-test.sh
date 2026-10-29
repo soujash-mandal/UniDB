@@ -127,28 +127,35 @@ start_container() {
 }
 
 host_sql() {
-  local statement="$1"
-  local output
-  local response
-  if ! output="$(printf '%s\n' "$statement" | timeout 15 openssl s_client \
-      -quiet -no_ign_eof -verify_return_error -verify_ip 127.0.0.1 \
-      -CAfile "$TLS_DIR/ca.crt" \
-      -cert "$TLS_DIR/client.crt" -key "$TLS_DIR/client.key" \
-      -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/s_client.log")"; then
-    echo "Mutual TLS SQL request failed." >&2
-    cat "$TLS_DIR/s_client.log" >&2 || true
-    return 1
-  fi
-  response="$(printf '%s\n' "$output" | grep -F '"ok":' | head -n 1 || true)"
-  if [[ -z "$response" ]]; then
-    echo "No SQL JSON response received over mutual TLS." >&2
-    printf '%s\n' "$output" >&2
-    cat "$TLS_DIR/s_client.log" >&2 || true
-    return 1
-  fi
-  printf '%s\n' "$response"
-}
+  python3 - "$TLS_DIR" "$PORT" "$1" <<'PY'
+import socket
+import ssl
+import sys
+from pathlib import Path
 
+tls_dir = Path(sys.argv[1])
+port = int(sys.argv[2])
+statement = sys.argv[3]
+context = ssl.create_default_context(cafile=str(tls_dir / "ca.crt"))
+context.load_cert_chain(
+    certfile=str(tls_dir / "client.crt"),
+    keyfile=str(tls_dir / "client.key"),
+)
+with socket.create_connection(("127.0.0.1", port), timeout=5) as raw_socket:
+    with context.wrap_socket(raw_socket, server_hostname="127.0.0.1") as connection:
+        connection.settimeout(5)
+        connection.sendall((statement + "\n").encode("utf-8"))
+        response = bytearray()
+        while b"\n" not in response:
+            chunk = connection.recv(4096)
+            if not chunk:
+                break
+            response.extend(chunk)
+        if not response:
+            raise RuntimeError("server closed the TLS connection without a SQL response")
+        print(bytes(response).split(b"\n", 1)[0].decode("utf-8"))
+PY
+}
 
 client_sql() {
   local statement="$1"
@@ -192,16 +199,31 @@ wait_for_server() {
 start_container
 wait_for_server
 
-# A client without a trusted certificate must never receive an SQL response.
-unauthenticated_output="$(printf '%s\n' \
-  "CREATE TABLE should_not_exist (id INT);" | timeout 8 openssl s_client \
-  -quiet -no_ign_eof -verify_ip 127.0.0.1 -CAfile "$TLS_DIR/ca.crt" \
-  -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/unauthenticated.log" || true)"
-if grep -Fq '"ok":true' <<<"$unauthenticated_output"; then
-  echo "Server executed SQL from a client without a certificate." >&2
-  echo "$unauthenticated_output" >&2
+# A client without a trusted certificate must be rejected during TLS handshake.
+unauthenticated_result="$(python3 - "$TLS_DIR" "$PORT" <<'PY'
+import socket
+import ssl
+import sys
+from pathlib import Path
+
+tls_dir = Path(sys.argv[1])
+context = ssl.create_default_context(cafile=str(tls_dir / "ca.crt"))
+try:
+    with socket.create_connection(("127.0.0.1", int(sys.argv[2])), timeout=5) as raw_socket:
+        with context.wrap_socket(raw_socket, server_hostname="127.0.0.1") as connection:
+            connection.settimeout(5)
+            print("UNEXPECTED_ACCEPTED")
+            sys.exit(3)
+except ssl.SSLError:
+    print("REJECTED_NO_CLIENT_CERTIFICATE")
+PY
+)"
+if [[ "$unauthenticated_result" != "REJECTED_NO_CLIENT_CERTIFICATE" ]]; then
+  echo "Server did not reject the TLS client without a certificate:" >&2
+  echo "$unauthenticated_result" >&2
   exit 1
 fi
+
 
 client_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":true'
 host_sql "INSERT INTO docker_persistence (id, name) VALUES (7, 'Ada');" | grep -q '"affected_rows":1'
