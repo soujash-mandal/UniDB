@@ -164,7 +164,7 @@ start_container
 wait_for_server
 
 # A client without a trusted certificate must never receive an SQL response.
-unauthenticated_output="$(printf '%s\\n' \
+unauthenticated_output="$(printf '%s\n' \
   "CREATE TABLE should_not_exist (id INT);" | timeout 8 openssl s_client \
   -quiet -verify_ip 127.0.0.1 -CAfile "$TLS_DIR/ca.crt" \
   -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/unauthenticated.log" || true)"
