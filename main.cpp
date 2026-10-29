@@ -317,8 +317,9 @@ int startServer(const char *executable, std::string_view databasePath,
         // Older UniDB versions wrote PID, port, and process identity only.
         // Those servers always bound to loopback, so preserve compatibility.
         if (!(pidFile >> recordedIdentity) || recordedIdentity.empty()) {
-          std::cerr << "PID file refers to a live process but is missing its "
-                       "process identity; refusing to remove it automatically.\n";
+          std::cerr
+              << "PID file refers to a live process but is missing its "
+                 "process identity; refusing to remove it automatically.\n";
           return 1;
         }
         if (!(pidFile >> recordedBindAddress))
@@ -573,9 +574,8 @@ int stopServer(std::string_view databasePath, unsigned int port,
   unsigned int recordedPort = 0;
   std::string recordedIdentity;
   std::string recordedBindAddress;
-  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity) ||
-      rawPid <= 1 || recordedPort == 0 || recordedPort > 65535 ||
-      recordedIdentity.empty()) {
+  if (!(pidFile >> rawPid >> recordedPort >> recordedIdentity) || rawPid <= 1 ||
+      recordedPort == 0 || recordedPort > 65535 || recordedIdentity.empty()) {
     std::cerr << "UniDB PID file not found or invalid: " << pidPath << '\n';
     return 1;
   }
