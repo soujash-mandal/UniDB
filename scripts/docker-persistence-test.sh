@@ -85,8 +85,8 @@ openssl x509 -req -sha256 -days 2 -in "$TLS_DIR/client.csr" \
 # production keys must be readable only by the service account.
 chmod 755 "$TLS_DIR"
 chmod 644 "$TLS_DIR/ca.crt" "$TLS_DIR/server.crt" "$TLS_DIR/server.key" \
-  "$TLS_DIR/client.crt"
-chmod 600 "$TLS_DIR/ca.key" "$TLS_DIR/client.key"
+  "$TLS_DIR/client.crt" "$TLS_DIR/client.key"
+chmod 600 "$TLS_DIR/ca.key"
 
 docker build -t "$IMAGE" .
 IMAGE_CREATED=1
@@ -149,6 +149,30 @@ host_sql() {
   printf '%s\n' "$response"
 }
 
+
+client_sql() {
+  local statement="$1"
+  local output
+  local response
+  if ! output="$(printf '%s\n' "$statement" | docker exec -i "$CONTAINER" \
+      /usr/local/bin/unidb connect --host 127.0.0.1 --port 7432 \
+      --tls-ca-file /run/unidb-tls/ca.crt \
+      --tls-cert-file /run/unidb-tls/client.crt \
+      --tls-key-file /run/unidb-tls/client.key)"; then
+    echo "Built-in client mutual TLS request failed." >&2
+    printf '%s\n' "$output" >&2
+    docker logs "$CONTAINER" >&2 || true
+    return 1
+  fi
+  response="$(printf '%s\n' "$output" | grep -F '"ok":' | head -n 1 || true)"
+  if [[ -z "$response" ]]; then
+    echo "Built-in client did not receive a SQL JSON response over mutual TLS." >&2
+    printf '%s\n' "$output" >&2
+    return 1
+  fi
+  printf '%s\n' "$response"
+}
+
 wait_for_server() {
   for attempt in $(seq 1 50); do
     if host_sql "SELECT * FROM docker_persistence;" >/dev/null 2>&1; then
@@ -175,7 +199,7 @@ if grep -Fq '"ok":true' <<<"$unauthenticated_output"; then
   exit 1
 fi
 
-host_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":true'
+client_sql "CREATE TABLE docker_persistence (id INT, name TEXT);" | grep -q '"ok":true'
 host_sql "INSERT INTO docker_persistence (id, name) VALUES (7, 'Ada');" | grep -q '"affected_rows":1'
 
 # Stop must trigger the server's graceful flush before the container is removed.
