@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(GTest REQUIRED)
 find_package(OpenSSL 3.0 REQUIRED)
+find_package(Threads REQUIRED)
 
 set(UNIDB_SOURCES
     container/container.cpp
@@ -117,7 +118,7 @@ add_library(unidb_core STATIC
     DatabaseStartup.cpp
     ${UNIDB_SOURCES}
 )
-target_link_libraries(unidb_core PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(unidb_core PUBLIC OpenSSL::SSL OpenSSL::Crypto Threads::Threads)
 
 add_executable(unidb
     main.cpp
