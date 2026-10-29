@@ -846,8 +846,25 @@ int connectInteractive(unsigned int port, std::string_view destination,
     // Half-close only after every queued byte (including the final newline)
     // has been sent, so EOF cannot discard pending SQL.
     if (!stdinOpen && pendingInput.empty() && !writeShutdown) {
-      ::shutdown(socket, SHUT_WR);
-      writeShutdown = true;
+      if (tls) {
+        const int shutdownResult = SSL_shutdown(tls.get());
+        if (shutdownResult >= 0 ||
+            (SSL_get_shutdown(tls.get()) & SSL_SENT_SHUTDOWN) != 0) {
+          writeShutdown = true;
+        } else {
+          const int sslError = SSL_get_error(tls.get(), shutdownResult);
+          if (sslError != SSL_ERROR_WANT_READ &&
+              sslError != SSL_ERROR_WANT_WRITE) {
+            std::cerr << "Failed to close the TLS write side cleanly.\\n";
+            ERR_print_errors_fp(stderr);
+            ::close(socket);
+            return 1;
+          }
+        }
+      } else {
+        ::shutdown(socket, SHUT_WR);
+        writeShutdown = true;
+      }
     }
 
     if (descriptors[1].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)) {
