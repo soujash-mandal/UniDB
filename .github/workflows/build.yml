@@ -1,5 +1,8 @@
 name: UniDB Build
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
