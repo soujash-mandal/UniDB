@@ -8,10 +8,18 @@ publishing can reach the listener.
 
 ## Build and run
 
+Use Docker Engine 28.0.0 or newer. Older Engine releases may expose ports
+published to host loopback to other machines on the same layer-2 network.
+Upgrade or apply host firewall rules that block this access before running
+UniDB.
+
+Create a dedicated network and do not attach untrusted containers to it:
+
 ```bash
 docker build -t unidb:local .
+docker network create unidb-net
 docker volume create unidb-data
-docker run -d --name unidb \
+docker run -d --name unidb --network unidb-net \
   -p 127.0.0.1:7432:7432 \
   -v unidb-data:/data \
   unidb:local
@@ -21,9 +29,14 @@ The example publishes the port only on the host's loopback interface. Connect
 with `./build/unidb connect --port 7432` from a local build, or use any client
 that implements UniDB's newline-delimited SQL/JSON TCP protocol.
 
-UniDB currently has no authentication or transport encryption. Do not publish
-port 7432 on a public or untrusted interface. The server handles one client
-connection at a time.
+UniDB currently has no authentication or transport encryption. SQL statements
+and results travel in plaintext. The server rejects non-loopback binds unless
+`UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1` is explicitly set. The Docker image sets
+this opt-in because its listener must accept traffic forwarded by Docker; use
+it only on a trusted, isolated network, never with untrusted peer containers or
+a public interface. For remote administration, use a secure tunnel until TLS
+and authentication are implemented. The server handles one client connection
+at a time.
 
 ## Verify persistence across container recreation
 
@@ -41,13 +54,14 @@ For a manual restart, stop and remove the container but keep the volume:
 ```bash
 docker stop unidb
 docker rm unidb
-docker run -d --name unidb \
+docker run -d --name unidb --network unidb-net \
   -p 127.0.0.1:7432:7432 \
   -v unidb-data:/data \
   unidb:local
 ```
 
 Do not run `docker volume rm unidb-data` if you need to retain the database.
+Keep the replacement container on the same dedicated network.
 
 ## Platform and durability notes
 
