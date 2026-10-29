@@ -305,6 +305,7 @@ int startServer(const char *executable, std::string_view databasePath,
     long existingPid = 0;
     unsigned int recordedPort = 0;
     std::string recordedIdentity;
+    std::string recordedBindAddress;
     if (pidFile >> existingPid >> recordedPort) {
       const bool validPid =
           existingPid > 1 &&
@@ -313,9 +314,11 @@ int startServer(const char *executable, std::string_view databasePath,
       const bool processAlive =
           validPid && (::kill(existingProcess, 0) == 0 || errno == EPERM);
       if (processAlive) {
-        if (!(pidFile >> recordedIdentity) || recordedIdentity.empty()) {
-          std::cerr << "PID file refers to a live process but has no process "
-                       "identity; refusing to remove it automatically.\n";
+        if (!(pidFile >> recordedIdentity >> recordedBindAddress) ||
+            recordedIdentity.empty() || recordedBindAddress.empty()) {
+          std::cerr << "PID file refers to a live process but is missing its "
+                       "identity or bind address; refusing to remove it "
+                       "automatically.\n";
           return 1;
         }
         const std::string currentIdentity = processIdentity(existingProcess);
@@ -325,7 +328,8 @@ int startServer(const char *executable, std::string_view databasePath,
           return 1;
         }
         if (currentIdentity == recordedIdentity) {
-          if (recordedPort == port && isPortReachable(recordedPort)) {
+          if (recordedPort == port &&
+              isPortReachable(recordedPort, recordedBindAddress)) {
             std::cerr << "UniDB may already be running (PID " << existingPid
                       << "). Use 'unidb stop' before starting it again.\n";
           } else {
@@ -350,7 +354,8 @@ int startServer(const char *executable, std::string_view databasePath,
     sockaddr_in existingAddress{};
     existingAddress.sin_family = AF_INET;
     existingAddress.sin_port = htons(static_cast<std::uint16_t>(port));
-    existingAddress.sin_addr = conflictProbeAddressValue const bool portInUse =
+    existingAddress.sin_addr = conflictProbeAddressValue;
+    const bool portInUse =
         ::connect(existingListener,
                   reinterpret_cast<sockaddr *>(&existingAddress),
                   sizeof(existingAddress)) == 0;
@@ -532,7 +537,7 @@ int startServer(const char *executable, std::string_view databasePath,
   ::close(readinessPipe[0]);
   if (readyBytes == 1 && readySignal == 'R') {
     std::cout << "UniDB started (PID " << child << ") on " << bindAddress << ':'
-              << port << "\\nLog: " << logPath << '\\n';
+              << port << "\nLog: " << logPath << '\n';
     return 0;
   }
   std::cerr << "Timed out waiting for UniDB to listen. Check the log: "
