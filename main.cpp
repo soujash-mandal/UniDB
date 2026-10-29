@@ -106,14 +106,14 @@ bool ownershipLockDirectory(std::filesystem::path &directory) {
     return false;
 
   for (const auto &path : {privateDirectory, directory}) {
-    struct stat info {};
+    struct stat info{};
     if (::lstat(path.c_str(), &info) != 0 || !S_ISDIR(info.st_mode) ||
         info.st_uid != ::geteuid()) {
       return false;
     }
-    if (::chmod(path.c_str(), 0700) != 0 ||
-        ::lstat(path.c_str(), &info) != 0 || !S_ISDIR(info.st_mode) ||
-        info.st_uid != ::geteuid() || (info.st_mode & 0077) != 0) {
+    if (::chmod(path.c_str(), 0700) != 0 || ::lstat(path.c_str(), &info) != 0 ||
+        !S_ISDIR(info.st_mode) || info.st_uid != ::geteuid() ||
+        (info.st_mode & 0077) != 0) {
       return false;
     }
   }
@@ -126,7 +126,7 @@ int openOwnershipLockFile(const std::filesystem::path &path) {
   if (descriptor < 0)
     return -1;
 
-  struct stat info {};
+  struct stat info{};
   if (::fstat(descriptor, &info) != 0 || !S_ISREG(info.st_mode) ||
       info.st_uid != ::geteuid() || (info.st_mode & 0077) != 0) {
     ::close(descriptor);
@@ -186,18 +186,17 @@ public:
       return true;
     }
 
-    struct stat databaseInfo {};
+    struct stat databaseInfo{};
     if (::stat(databasePath_.c_str(), &databaseInfo) != 0)
       return false;
     const std::string lockKey =
-        std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
-        "-" +
+        std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) + "-" +
         std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
     std::filesystem::path lockDirectory;
     if (!ownershipLockDirectory(lockDirectory))
       return false;
-    inodeDescriptor_ =
-        openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
+    inodeDescriptor_ = openOwnershipLockFile(
+        lockDirectory / ("ownership-" + lockKey + ".lock"));
     if (inodeDescriptor_ < 0 ||
         ::flock(inodeDescriptor_, LOCK_EX | LOCK_NB) != 0) {
       closeDescriptor(inodeDescriptor_);
@@ -223,7 +222,7 @@ private:
   }
 
   bool acquireDatabaseLock() {
-    struct stat databaseInfo {};
+    struct stat databaseInfo{};
     std::string lockKey;
     if (::stat(databasePath_.c_str(), &databaseInfo) == 0) {
       lockKey =
@@ -240,8 +239,8 @@ private:
       std::filesystem::path lockDirectory;
       if (!ownershipLockDirectory(lockDirectory))
         return false;
-      pathDescriptor_ =
-          openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
+      pathDescriptor_ = openOwnershipLockFile(
+          lockDirectory / ("ownership-" + lockKey + ".lock"));
       if (pathDescriptor_ < 0 ||
           ::flock(pathDescriptor_, LOCK_EX | LOCK_NB) != 0) {
         closeDescriptor(pathDescriptor_);
@@ -255,8 +254,8 @@ private:
     std::filesystem::path lockDirectory;
     if (!ownershipLockDirectory(lockDirectory))
       return false;
-    inodeDescriptor_ =
-        openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
+    inodeDescriptor_ = openOwnershipLockFile(
+        lockDirectory / ("ownership-" + lockKey + ".lock"));
     if (inodeDescriptor_ < 0 ||
         ::flock(inodeDescriptor_, LOCK_EX | LOCK_NB) != 0) {
       closeDescriptor(inodeDescriptor_);
