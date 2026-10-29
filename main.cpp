@@ -763,8 +763,8 @@ int connectInteractive(unsigned int port, std::string_view destination,
       return -1;
     }
 
-    const int count = SSL_write(tls.get(), data,
-                                static_cast<int>(tlsWriteLength));
+    const int count =
+        SSL_write(tls.get(), data, static_cast<int>(tlsWriteLength));
     if (count > 0) {
       tlsWriteInFlight = false;
       tlsWriteLength = 0;
@@ -837,19 +837,18 @@ int connectInteractive(unsigned int port, std::string_view destination,
     // large piped input is waiting for socket write capacity.
     short socketEvents = tls ? tlsReadWaitEvents : POLLIN;
     if (pendingBytes > 0) {
-      socketEvents |=
-          (tls && tlsWriteInFlight) ? tlsWriteWaitEvents : POLLOUT;
+      socketEvents |= (tls && tlsWriteInFlight) ? tlsWriteWaitEvents : POLLOUT;
     }
     const bool shouldShutdownTls =
         tls && !stdinOpen && pendingBytes == 0 && !writeShutdown;
     if (shouldShutdownTls) {
-      socketEvents |=
-          tlsShutdownPending ? tlsShutdownWaitEvents : POLLOUT;
+      socketEvents |= tlsShutdownPending ? tlsShutdownWaitEvents : POLLOUT;
     }
     descriptors[1] = {socket, socketEvents, 0};
 
     // SSL_pending() counts decrypted bytes already buffered by OpenSSL. They
-    // must be consumed even when the underlying file descriptor is not readable.
+    // must be consumed even when the underlying file descriptor is not
+    // readable.
     const bool bufferedTlsData = tls && SSL_pending(tls.get()) > 0;
     const int ready = ::poll(descriptors, 2, bufferedTlsData ? 0 : -1);
     if (ready < 0) {
@@ -887,8 +886,7 @@ int connectInteractive(unsigned int port, std::string_view destination,
     const std::size_t pendingBytesNow = pendingInput.size() - pendingOffset;
     const short requiredWriteEvents =
         (tls && tlsWriteInFlight) ? tlsWriteWaitEvents : POLLOUT;
-    if (pendingBytesNow > 0 &&
-        (descriptors[1].revents & requiredWriteEvents)) {
+    if (pendingBytesNow > 0 && (descriptors[1].revents & requiredWriteEvents)) {
       const std::size_t bytesToWrite =
           (tls && tlsWriteInFlight) ? tlsWriteLength : pendingBytesNow;
       const auto count =
