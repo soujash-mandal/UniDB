@@ -53,12 +53,14 @@ gracefully stops and removes the container, then starts a fresh container with
 the same volume and checks that the row remains. It removes its test container
 and volume on exit. Requires Docker Engine and a working Docker daemon.
 
-For a manual restart, stop and remove the container but keep the volume:
+For a manual restart, stop and remove the container but keep the volume. The
+remote-access opt-in must be set again when creating the replacement container:
 
 ```bash
 docker stop unidb
 docker rm unidb
 docker run -d --name unidb --network unidb-net \
+  -e UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 \
   -p 127.0.0.1:7432:7432 \
   -v unidb-data:/data \
   unidb:local
