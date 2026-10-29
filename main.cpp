@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <pwd.h>
 #include <sys/file.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -89,58 +90,175 @@ private:
   int descriptor_ = -1;
 };
 
+// Resolve a private per-user lock directory. Never follow symlinks or accept
+// lock files owned by another user.
+bool ownershipLockDirectory(std::filesystem::path &directory) {
+  const passwd *account = ::getpwuid(::geteuid());
+  if (account == nullptr || account->pw_dir == nullptr)
+    return false;
+
+  const std::filesystem::path home(account->pw_dir);
+  const auto privateDirectory = home / ".unidb";
+  directory = privateDirectory / "locks";
+  std::error_code error;
+  std::filesystem::create_directories(directory, error);
+  if (error)
+    return false;
+
+  for (const auto &path : {privateDirectory, directory}) {
+    struct stat info {};
+    if (::lstat(path.c_str(), &info) != 0 || !S_ISDIR(info.st_mode) ||
+        info.st_uid != ::geteuid() || (info.st_mode & 0077) != 0) {
+      return false;
+    }
+    if (::chmod(path.c_str(), 0700) != 0)
+      return false;
+  }
+  return true;
+}
+
+int openOwnershipLockFile(const std::filesystem::path &path) {
+  const int descriptor =
+      ::open(path.c_str(), O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0600);
+  if (descriptor < 0)
+    return -1;
+
+  struct stat info {};
+  if (::fstat(descriptor, &info) != 0 || !S_ISREG(info.st_mode) ||
+      info.st_uid != ::geteuid() || (info.st_mode & 0077) != 0) {
+    ::close(descriptor);
+    return -1;
+  }
+  return descriptor;
+}
+
 // Keep only one process at a time opening a database with its own buffer pool.
+// A short global transition lock makes ownership continuous while a new file
+// changes from a path-based key to its device/inode key.
 class DatabaseOwnershipLock {
 public:
   explicit DatabaseOwnershipLock(std::string_view databasePath) {
-    // Existing hard links share the same device/inode lock key. For a database
-    // that has not been created yet, use its canonical path without creating
-    // the database file before DatabaseStartup can initialize it.
-    struct stat databaseInfo{};
-    std::string lockKey;
-    const std::string path(databasePath);
-    if (::stat(path.c_str(), &databaseInfo) == 0) {
-      lockKey =
-          std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
-          "-" +
-          std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
-    } else if (errno == ENOENT) {
-      // Use a deterministic hash so the key is stable across processes.
-      std::uint64_t pathHash = 14695981039346656037ULL;
-      for (const unsigned char character : lifecycleKey(databasePath)) {
-        pathHash ^= character;
-        pathHash *= 1099511628211ULL;
-      }
-      lockKey = std::to_string(pathHash);
-    } else {
+    std::filesystem::path lockDirectory;
+    if (!ownershipLockDirectory(lockDirectory))
+      return;
+
+    const auto transitionPath = lockDirectory / "ownership-transition.lock";
+    transitionDescriptor_ = openOwnershipLockFile(transitionPath);
+    if (transitionDescriptor_ < 0 ||
+        ::flock(transitionDescriptor_, LOCK_EX) != 0) {
+      closeDescriptor(transitionDescriptor_);
       return;
     }
 
-    // Use a fixed system-wide location; TMPDIR can differ between processes.
-    const std::string lockPath = "/tmp/unidb-ownership-" + lockKey + ".lock";
-    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
-    if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
-      ::close(descriptor_);
-      descriptor_ = -1;
+    databasePath_ = std::string(databasePath);
+    if (!acquireDatabaseLock()) {
+      releaseTransitionLock();
+      return;
     }
+
+    // Existing databases already have an inode lock. The global transition
+    // lock is needed only until a newly-created database has its inode lock.
+    if (inodeDescriptor_ >= 0)
+      releaseTransitionLock();
   }
 
   ~DatabaseOwnershipLock() {
-    if (descriptor_ >= 0) {
-      ::flock(descriptor_, LOCK_UN);
-      ::close(descriptor_);
-    }
+    closeDescriptor(inodeDescriptor_);
+    closeDescriptor(pathDescriptor_);
+    releaseTransitionLock();
   }
 
   DatabaseOwnershipLock(const DatabaseOwnershipLock &) = delete;
   DatabaseOwnershipLock &operator=(const DatabaseOwnershipLock &) = delete;
 
-  bool acquired() const { return descriptor_ >= 0; }
+  bool acquired() const {
+    return inodeDescriptor_ >= 0 || pathDescriptor_ >= 0;
+  }
+
+  // Call after DatabaseStartup creates and initializes a new database file.
+  // Keep the transition lock until the inode lock is held.
+  bool acquireCreatedDatabaseLock() {
+    if (inodeDescriptor_ >= 0) {
+      releaseTransitionLock();
+      return true;
+    }
+
+    struct stat databaseInfo {};
+    if (::stat(databasePath_.c_str(), &databaseInfo) != 0)
+      return false;
+    const std::string lockKey =
+        std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
+        "-" +
+        std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
+    std::filesystem::path lockDirectory;
+    if (!ownershipLockDirectory(lockDirectory))
+      return false;
+    inodeDescriptor_ =
+        openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
+    if (inodeDescriptor_ < 0 ||
+        ::flock(inodeDescriptor_, LOCK_EX | LOCK_NB) != 0) {
+      closeDescriptor(inodeDescriptor_);
+      return false;
+    }
+    releaseTransitionLock();
+    return true;
+  }
 
 private:
-  int descriptor_ = -1;
-};
+  static void closeDescriptor(int &descriptor) {
+    if (descriptor >= 0) {
+      ::close(descriptor);
+      descriptor = -1;
+    }
+  }
 
+  void releaseTransitionLock() {
+    if (transitionDescriptor_ >= 0) {
+      ::flock(transitionDescriptor_, LOCK_UN);
+      closeDescriptor(transitionDescriptor_);
+    }
+  }
+
+  bool acquireDatabaseLock() {
+    struct stat databaseInfo {};
+    std::string lockKey;
+    if (::stat(databasePath_.c_str(), &databaseInfo) == 0) {
+      lockKey =
+          std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
+          "-" +
+          std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
+    } else if (errno == ENOENT) {
+      std::uint64_t pathHash = 14695981039346656037ULL;
+      for (const unsigned char character : lifecycleKey(databasePath_)) {
+        pathHash ^= character;
+        pathHash *= 1099511628211ULL;
+      }
+      lockKey = std::to_string(pathHash);
+      std::filesystem::path lockDirectory;
+      if (!ownershipLockDirectory(lockDirectory))
+        return false;
+      pathDescriptor_ =
+          openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
+      return pathDescriptor_ >= 0 &&
+             ::flock(pathDescriptor_, LOCK_EX | LOCK_NB) == 0;
+    } else {
+      return false;
+    }
+
+    std::filesystem::path lockDirectory;
+    if (!ownershipLockDirectory(lockDirectory))
+      return false;
+    inodeDescriptor_ =
+        openOwnershipLockFile(lockDirectory / ("ownership-" + lockKey + ".lock"));
+    return inodeDescriptor_ >= 0 &&
+           ::flock(inodeDescriptor_, LOCK_EX | LOCK_NB) == 0;
+  }
+
+  std::string databasePath_;
+  int transitionDescriptor_ = -1;
+  int pathDescriptor_ = -1;
+  int inodeDescriptor_ = -1;
+};
 // Return a process-start token so a reused PID cannot identify another process.
 std::string processIdentity(pid_t pid) {
 #if defined(__APPLE__)
@@ -725,6 +843,11 @@ int main(int argc, char *argv[]) {
     Container container(std::string(databasePath), 2, EvictionPolicyType::FIFO);
 
     const bool initializedNewDatabase = DatabaseStartup::execute(container);
+    if (!databaseOwnershipLock.acquireCreatedDatabaseLock()) {
+      std::cerr << "Could not retain exclusive ownership of database: "
+                << databasePath << '\n';
+      return 1;
+    }
     if (initializedNewDatabase) {
       std::cout << "Initialized new UniDB database.\n";
     } else {
