@@ -31,6 +31,7 @@
 #include <poll.h>
 #include <sys/file.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -92,9 +93,31 @@ private:
 class DatabaseOwnershipLock {
 public:
   explicit DatabaseOwnershipLock(std::string_view databasePath) {
-    const std::string lockPath = lifecycleKey(databasePath) + ".ownership.lock";
-    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
-    if (descriptor_ >= 0 && ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
+    // Existing hard links share the same device/inode lock key. For a database
+    // that has not been created yet, use its canonical path without creating
+    // the database file before DatabaseStartup can initialize it.
+    struct stat databaseInfo {};
+    std::string lockKey;
+    const std::string path(databasePath);
+    if (::stat(path.c_str(), &databaseInfo) == 0) {
+      lockKey = std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_dev)) +
+                "-" +
+                std::to_string(static_cast<std::uintmax_t>(databaseInfo.st_ino));
+    } else if (errno == ENOENT) {
+      lockKey = lifecycleKey(databasePath);
+    } else {
+      return;
+    }
+
+    std::error_code error;
+    const auto tempDirectory = std::filesystem::temp_directory_path(error);
+    if (error)
+      return;
+    const std::string lockPath =
+        (tempDirectory / ("unidb-ownership-" + lockKey + ".lock")).string();
+    descriptor_ = ::open(lockPath.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0600);
+    if (descriptor_ >= 0 &&
+        ::flock(descriptor_, LOCK_EX | LOCK_NB) != 0) {
       ::close(descriptor_);
       descriptor_ = -1;
     }
