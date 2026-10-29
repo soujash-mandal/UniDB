@@ -198,6 +198,7 @@ add_executable(tests
     ConnectionProtocol/test/SqlRequestFramer/ExtractsCompleteRequestsAcrossChunksTest.cpp
     ConnectionProtocol/test/SqlRequestFramer/AcceptsCrlfAndRejectsEmptyRequestTest.cpp
     ConnectionProtocol/test/SqlRequestFramer/RejectsOversizedRequestTest.cpp
+    ConnectionProtocol/test/SqlServerSocketIntegration/ExecutesCreateInsertAndSelectOverTcpConnectionTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
@@ -283,6 +284,9 @@ add_executable(tests
     CatalogService/test/UpdateTableAction/UnpinsPageWhenWriteFailsTest.cpp
     CatalogService/test/UpdateTableAction/UpdatesExistingTableAndPersistsPageTest.cpp
 )
+
+# Socket integration tests launch the built server executable as a child process.
+add_dependencies(tests unidb)
 
 target_link_libraries(tests
     PRIVATE
