@@ -203,8 +203,6 @@ void serveClient(int client, Container &container, SSL *tls) {
 
 using SslContextPtr = std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
 
-using SslContextPtr = std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
-
 struct ClientConnection {
   int socket;
   SSL *tls;
@@ -263,7 +261,7 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
     std::lock_guard<std::mutex> lock(sessionsMutex);
     if (stopRequested || readySessions.size() >= maximumReadySessions) {
       std::cerr << "Rejected SQL client: too many sessions are waiting to be "
-                   "served.\\n";
+                   "served.\n";
       closeClientConnection(connection);
       return false;
     }
@@ -289,7 +287,7 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
         continue;
       if (!stopRequested) {
         std::cerr << "UniDB accept poll failed: " << std::strerror(errno)
-                  << '\\n';
+                  << '\n';
         acceptFailed = true;
       }
       break;
@@ -298,7 +296,7 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
     const short listenerEvents = descriptors.front().revents;
     if ((listenerEvents & (POLLERR | POLLHUP | POLLNVAL)) != 0 &&
         (listenerEvents & POLLIN) == 0) {
-      std::cerr << "UniDB listener reported a poll error.\\n";
+      std::cerr << "UniDB listener reported a poll error.\n";
       acceptFailed = true;
       break;
     }
@@ -311,7 +309,7 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
       if (client < 0) {
         if (errno != EINTR && errno != ECONNABORTED && errno != EAGAIN &&
             errno != EWOULDBLOCK && !stopRequested) {
-          std::cerr << "UniDB accept failed: " << std::strerror(errno) << '\\n';
+          std::cerr << "UniDB accept failed: " << std::strerror(errno) << '\n';
           acceptFailed = true;
           break;
         }
@@ -319,19 +317,19 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
         (void)queueSession(ClientConnection{client, nullptr});
       } else if (pendingHandshakes.size() >= maximumPendingHandshakes) {
         std::cerr
-            << "Rejected SQL client: too many TLS handshakes are pending.\\n";
+            << "Rejected SQL client: too many TLS handshakes are pending.\n";
         ::close(client);
       } else {
         const int originalFlags = ::fcntl(client, F_GETFL, 0);
         if (originalFlags < 0 ||
             ::fcntl(client, F_SETFL, originalFlags | O_NONBLOCK) != 0) {
-          std::cerr << "Could not configure TLS client socket.\\n";
+          std::cerr << "Could not configure TLS client socket.\n";
           ::close(client);
         } else {
           SSL *tls = SSL_new(tlsContext);
           if (tls == nullptr || SSL_set_fd(tls, client) != 1) {
             std::cerr
-                << "Could not initialize TLS for an incoming SQL client.\\n";
+                << "Could not initialize TLS for an incoming SQL client.\n";
             ERR_print_errors_fp(stderr);
             if (tls != nullptr)
               SSL_free(tls);
@@ -352,7 +350,7 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
       const short events = descriptors[index + 1].revents;
       if (now >= handshake.deadline ||
           (events & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
-        std::cerr << "Rejected SQL client: mutual TLS handshake failed.\\n";
+        std::cerr << "Rejected SQL client: mutual TLS handshake failed.\n";
         closePendingTlsHandshake(handshake);
         pendingHandshakes.erase(pendingHandshakes.begin() + index);
         continue;
@@ -364,13 +362,13 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
       if (result == 1) {
         if (!hasTrustedClientCertificate(handshake.tls)) {
           std::cerr << "Rejected SQL client: a trusted client certificate is "
-                       "required.\\n";
+                       "required.\n";
           closePendingTlsHandshake(handshake);
           pendingHandshakes.erase(pendingHandshakes.begin() + index);
           continue;
         }
         if (::fcntl(handshake.socket, F_SETFL, handshake.originalFlags) != 0) {
-          std::cerr << "Could not restore TLS client socket flags.\\n";
+          std::cerr << "Could not restore TLS client socket flags.\n";
           closePendingTlsHandshake(handshake);
           pendingHandshakes.erase(pendingHandshakes.begin() + index);
           continue;
@@ -390,7 +388,7 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
       } else if (sslError == SSL_ERROR_WANT_WRITE) {
         handshake.events = POLLOUT;
       } else {
-        std::cerr << "Rejected SQL client: mutual TLS handshake failed.\\n";
+        std::cerr << "Rejected SQL client: mutual TLS handshake failed.\n";
         closePendingTlsHandshake(handshake);
         pendingHandshakes.erase(pendingHandshakes.begin() + index);
       }
@@ -549,7 +547,7 @@ int SqlConnectionServer::run() {
                     std::ref(readySessions), std::ref(activeClient),
                     std::ref(acceptFailed), std::ref(acceptLoopFinished));
   } catch (...) {
-    std::cerr << "UniDB failed to start its connection accept loop.\\n";
+    std::cerr << "UniDB failed to start its connection accept loop.\n";
     ::close(listener);
     return 1;
   }
