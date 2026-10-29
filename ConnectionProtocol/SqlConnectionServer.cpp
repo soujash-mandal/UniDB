@@ -193,6 +193,22 @@ int SqlConnectionServer::run() {
     return 2;
   }
 
+  // SQL traffic is currently plaintext and unauthenticated. Refuse remote
+  // listeners unless the operator explicitly opts into that risk.
+  const auto hostOrderAddress = ntohl(bindAddressValue.s_addr);
+  const bool loopbackAddress = (hostOrderAddress >> 24U) == 127U;
+  const char *allowInsecureRemote =
+      std::getenv("UNIDB_ALLOW_INSECURE_REMOTE_ACCESS");
+  if (!loopbackAddress &&
+      (allowInsecureRemote == nullptr ||
+       std::string_view(allowInsecureRemote) != "1")) {
+    std::cerr << "Refusing non-loopback SQL bind without TLS/authentication. "
+                 "Use loopback or explicitly set "
+                 "UNIDB_ALLOW_INSECURE_REMOTE_ACCESS=1 only on a trusted, "
+                 "isolated network.\n";
+    return 2;
+  }
+
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
   if (listener < 0) {
     std::cerr << "UniDB failed to create TCP socket: " << std::strerror(errno)
