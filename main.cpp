@@ -98,8 +98,8 @@ class DatabaseOwnershipLock {
 public:
   explicit DatabaseOwnershipLock(std::string_view databasePath) {
     databasePath_ = std::string(databasePath);
-    descriptor_ = ::open(databasePath_.c_str(),
-                         O_CREAT | O_RDWR | O_CLOEXEC, 0644);
+    descriptor_ =
+        ::open(databasePath_.c_str(), O_CREAT | O_RDWR | O_CLOEXEC, 0644);
     if (descriptor_ < 0) {
       failureReason_ = "could not open database file '" + databasePath_ +
                        "': " + std::strerror(errno);
@@ -734,9 +734,10 @@ int main(int argc, char *argv[]) {
   DatabaseOwnershipLock databaseOwnershipLock(databasePath);
   if (!databaseOwnershipLock.acquired()) {
     if (databaseOwnershipLock.contended()) {
-      std::cerr << "Another UniDB process already owns this database: "
-                << databasePath << '\n'
-                << "Stop the other process before opening this database again.\n";
+      std::cerr
+          << "Another UniDB process already owns this database: "
+          << databasePath << '\n'
+          << "Stop the other process before opening this database again.\n";
     } else {
       std::cerr << "Could not acquire database ownership: "
                 << databaseOwnershipLock.failureReason() << '\n';
