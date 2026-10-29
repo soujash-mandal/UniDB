@@ -673,8 +673,7 @@ int connectInteractive(unsigned int port, std::string_view destination,
   if (socket < 0)
     return 1;
 
-  using SslContextPtr =
-      std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
+  using SslContextPtr = std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)>;
   using SslSessionPtr = std::unique_ptr<SSL, decltype(&SSL_free)>;
   SslContextPtr tlsContext(nullptr, SSL_CTX_free);
   SslSessionPtr tls(nullptr, SSL_free);
@@ -682,14 +681,13 @@ int connectInteractive(unsigned int port, std::string_view destination,
     tlsContext.reset(SSL_CTX_new(TLS_client_method()));
     if (!tlsContext ||
         SSL_CTX_set_min_proto_version(tlsContext.get(), TLS1_2_VERSION) != 1 ||
-        SSL_CTX_load_verify_locations(tlsContext.get(),
-                                      std::string(tlsCaFile).c_str(),
-                                      nullptr) != 1 ||
+        SSL_CTX_load_verify_locations(
+            tlsContext.get(), std::string(tlsCaFile).c_str(), nullptr) != 1 ||
         SSL_CTX_use_certificate_chain_file(
             tlsContext.get(), std::string(tlsCertificateFile).c_str()) != 1 ||
-        SSL_CTX_use_PrivateKey_file(
-            tlsContext.get(), std::string(tlsPrivateKeyFile).c_str(),
-            SSL_FILETYPE_PEM) != 1 ||
+        SSL_CTX_use_PrivateKey_file(tlsContext.get(),
+                                    std::string(tlsPrivateKeyFile).c_str(),
+                                    SSL_FILETYPE_PEM) != 1 ||
         SSL_CTX_check_private_key(tlsContext.get()) != 1) {
       std::cerr << "Could not configure mutual TLS client credentials.\n";
       ERR_print_errors_fp(stderr);
@@ -727,8 +725,8 @@ int connectInteractive(unsigned int port, std::string_view destination,
   auto writeToServer = [&](const char *data, std::size_t size) -> ssize_t {
     if (!tls)
       return ::send(socket, data, size, 0);
-    const auto maxChunk = static_cast<std::size_t>(
-        std::numeric_limits<int>::max());
+    const auto maxChunk =
+        static_cast<std::size_t>(std::numeric_limits<int>::max());
     const int chunkSize = static_cast<int>(size > maxChunk ? maxChunk : size);
     const int count = SSL_write(tls.get(), data, chunkSize);
     if (count > 0)
@@ -747,8 +745,8 @@ int connectInteractive(unsigned int port, std::string_view destination,
   auto readFromServer = [&](char *data, std::size_t size) -> ssize_t {
     if (!tls)
       return ::recv(socket, data, size, 0);
-    const auto maxChunk = static_cast<std::size_t>(
-        std::numeric_limits<int>::max());
+    const auto maxChunk =
+        static_cast<std::size_t>(std::numeric_limits<int>::max());
     const int chunkSize = static_cast<int>(size > maxChunk ? maxChunk : size);
     const int count = SSL_read(tls.get(), data, chunkSize);
     if (count > 0)
@@ -824,8 +822,8 @@ int connectInteractive(unsigned int port, std::string_view destination,
     if (descriptors[1].revents & POLLOUT) {
       const auto pendingBytesNow = pendingInput.size() - pendingOffset;
       if (pendingBytesNow > 0) {
-        const auto count = writeToServer(pendingInput.data() + pendingOffset,
-                                         pendingBytesNow);
+        const auto count =
+            writeToServer(pendingInput.data() + pendingOffset, pendingBytesNow);
         if (count > 0) {
           pendingOffset += static_cast<std::size_t>(count);
           if (pendingOffset == pendingInput.size()) {
