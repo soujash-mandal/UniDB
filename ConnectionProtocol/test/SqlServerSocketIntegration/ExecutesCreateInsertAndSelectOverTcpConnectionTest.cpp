@@ -52,6 +52,16 @@ protected:
     if (socketFd < 0)
       return -1;
 
+#ifdef SO_NOSIGPIPE
+    // Prevent a peer closing the connection from terminating the test process.
+    const int noSigPipe = 1;
+    if (::setsockopt(socketFd, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe,
+                     sizeof(noSigPipe)) != 0) {
+      ::close(socketFd);
+      return -1;
+    }
+#endif
+
     sockaddr_in address{};
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
@@ -68,8 +78,12 @@ protected:
   static bool sendAll(int socketFd, const std::string &request) {
     std::size_t sent = 0;
     while (sent < request.size()) {
-      const auto count =
-          ::send(socketFd, request.data() + sent, request.size() - sent, 0);
+      int sendFlags = 0;
+#ifdef MSG_NOSIGNAL
+      sendFlags |= MSG_NOSIGNAL;
+#endif
+      const auto count = ::send(socketFd, request.data() + sent,
+                                request.size() - sent, sendFlags);
       if (count < 0) {
         if (errno == EINTR)
           continue;
