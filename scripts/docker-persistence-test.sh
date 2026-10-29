@@ -6,7 +6,7 @@ IMAGE="unidb:persistence-${RUN_ID}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 NETWORK="unidb-persistence-test-net-${RUN_ID}"
-TLS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/unidb-persistence-tls.XXXXXX")"
+TLS_DIR=""
 PORT_OVERRIDE="${UNIDB_DOCKER_TEST_PORT:-}"
 PORT=""
 if [[ -n "$PORT_OVERRIDE" ]]; then
@@ -16,6 +16,7 @@ if [[ -n "$PORT_OVERRIDE" ]]; then
     exit 2
   fi
 fi
+TLS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/unidb-persistence-tls.XXXXXX")"
 IMAGE_CREATED=0
 VOLUME_CREATED=0
 CONTAINER_CREATED=0
@@ -130,7 +131,7 @@ host_sql() {
   local output
   local response
   if ! output="$(printf '%s\n' "$statement" | timeout 15 openssl s_client \
-      -quiet -verify_return_error -verify_ip 127.0.0.1 \
+      -quiet -no_ign_eof -verify_return_error -verify_ip 127.0.0.1 \
       -CAfile "$TLS_DIR/ca.crt" \
       -cert "$TLS_DIR/client.crt" -key "$TLS_DIR/client.key" \
       -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/s_client.log")"; then
@@ -166,7 +167,7 @@ wait_for_server
 # A client without a trusted certificate must never receive an SQL response.
 unauthenticated_output="$(printf '%s\n' \
   "CREATE TABLE should_not_exist (id INT);" | timeout 8 openssl s_client \
-  -quiet -verify_ip 127.0.0.1 -CAfile "$TLS_DIR/ca.crt" \
+  -quiet -no_ign_eof -verify_ip 127.0.0.1 -CAfile "$TLS_DIR/ca.crt" \
   -connect "127.0.0.1:$PORT" 2>"$TLS_DIR/unauthenticated.log" || true)"
 if grep -Fq '"ok":true' <<<"$unauthenticated_output"; then
   echo "Server executed SQL from a client without a certificate." >&2
