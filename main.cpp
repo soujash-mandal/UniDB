@@ -855,7 +855,7 @@ int connectInteractive(unsigned int port, std::string_view destination,
           const int sslError = SSL_get_error(tls.get(), shutdownResult);
           if (sslError != SSL_ERROR_WANT_READ &&
               sslError != SSL_ERROR_WANT_WRITE) {
-            std::cerr << "Failed to close the TLS write side cleanly.\\n";
+            std::cerr << "Failed to close the TLS write side cleanly.\n";
             ERR_print_errors_fp(stderr);
             ::close(socket);
             return 1;
