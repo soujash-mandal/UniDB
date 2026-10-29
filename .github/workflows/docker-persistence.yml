@@ -1,0 +1,38 @@
+name: Docker Persistence
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "DOCKER.md"
+      - "scripts/docker-persistence-test.sh"
+      - "ConnectionProtocol/**"
+      - "container/**"
+      - "DatabaseStartup.*"
+      - "CMakeLists.txt"
+      - ".github/workflows/docker-persistence.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "DOCKER.md"
+      - "scripts/docker-persistence-test.sh"
+      - "ConnectionProtocol/**"
+      - "container/**"
+      - "DatabaseStartup.*"
+      - "CMakeLists.txt"
+      - ".github/workflows/docker-persistence.yml"
+
+jobs:
+  named-volume-persistence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify Docker build and named-volume persistence
+        run: bash scripts/docker-persistence-test.sh
