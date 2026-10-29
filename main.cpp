@@ -208,12 +208,16 @@ bool sendAll(int socket, const char *data, std::size_t size) {
   return true;
 }
 
-std::string serverProbeAddress() {
+std::string serverBindAddress() {
   const char *configuredAddress = std::getenv("UNIDB_BIND_ADDRESS");
-  if (configuredAddress == nullptr || configuredAddress[0] == '\0' ||
-      std::string_view(configuredAddress) == "0.0.0.0")
+  if (configuredAddress == nullptr || configuredAddress[0] == '\0')
     return "127.0.0.1";
   return configuredAddress;
+}
+
+std::string serverProbeAddress(std::string_view bindAddress) {
+  return bindAddress == "0.0.0.0" ? "127.0.0.1"
+                                   : std::string(bindAddress);
 }
 
 bool isPortReachable(unsigned int port, std::string_view configuredAddress) {
@@ -268,9 +272,8 @@ int connectToServer(unsigned int port, std::string_view destination) {
 
 int startServer(const char *executable, std::string_view databasePath,
                 unsigned int port) {
-  const std::string bindAddress = serverProbeAddress();
-  const std::string conflictProbeAddress =
-      bindAddress == "0.0.0.0" ? "127.0.0.1" : bindAddress;
+  const std::string bindAddress = serverBindAddress();
+  const std::string conflictProbeAddress = serverProbeAddress(bindAddress);
   in_addr configuredBindAddress{};
   if (::inet_pton(AF_INET, bindAddress.c_str(), &configuredBindAddress) != 1) {
     std::cerr << "Invalid IPv4 bind address '" << bindAddress << "'.\n";
