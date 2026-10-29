@@ -99,7 +99,7 @@ public:
   explicit DatabaseOwnershipLock(std::string_view databasePath) {
     databasePath_ = std::string(databasePath);
     descriptor_ = ::open(databasePath_.c_str(),
-                         O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0644);
+                         O_CREAT | O_RDWR | O_CLOEXEC, 0644);
     if (descriptor_ < 0) {
       failureReason_ = "could not open database file '" + databasePath_ +
                        "': " + std::strerror(errno);
