@@ -8,6 +8,13 @@ VOLUME="unidb-persistence-test-data-${RUN_ID}"
 NETWORK="unidb-persistence-test-net-${RUN_ID}"
 PORT_OVERRIDE="${UNIDB_DOCKER_TEST_PORT:-}"
 PORT=""
+if [[ -n "$PORT_OVERRIDE" ]]; then
+  if [[ ! "$PORT_OVERRIDE" =~ ^[0-9]{1,5}$ ]] ||
+     (( 10#$PORT_OVERRIDE < 1 || 10#$PORT_OVERRIDE > 65535 )); then
+    echo "UNIDB_DOCKER_TEST_PORT must be a TCP port from 1 through 65535." >&2
+    exit 2
+  fi
+fi
 IMAGE_CREATED=0
 VOLUME_CREATED=0
 CONTAINER_CREATED=0
