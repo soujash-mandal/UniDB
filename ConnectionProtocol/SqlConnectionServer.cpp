@@ -553,7 +553,7 @@ int SqlConnectionServer::run() {
       ::unsetenv("UNIDB_READY_FD");
     }
   }
-  constexpr std::size_t maximumConcurrentSessions = 64;
+  constexpr std::size_t maximumConcurrentSessions = 32;
   bool acceptFailed = false;
   std::mutex sessionsMutex;
   std::condition_variable sessionsReady;
