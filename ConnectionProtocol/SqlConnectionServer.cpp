@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -605,8 +606,14 @@ int SqlConnectionServer::run() {
     // up another client's SQL while database mutations remain serialized.
     try {
       std::thread clientThread([&, connection]() {
-        serveClient(connection.socket, container, connection.tls,
-                    containerMutex);
+        try {
+          serveClient(connection.socket, container, connection.tls,
+                      containerMutex);
+        } catch (const std::exception &error) {
+          std::cerr << "SQL client session failed: " << error.what() << '\\n';
+        } catch (...) {
+          std::cerr << "SQL client session failed with an unknown error.\\n";
+        }
         if (connection.tls != nullptr) {
           (void)SSL_shutdown(connection.tls);
           SSL_free(connection.tls);
