@@ -92,10 +92,16 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
               });
-              const version = latest.tag_name.replace(/^v/, "");
-              if (!/^\d+\.\d+\.\d+$/.test(version)) {
-                throw new Error(`Latest stable release has a non-semver tag: ${latest.tag_name}`);
+              const normalizedTag = latest.tag_name.replace(/^v/, "");
+              const semverMatch = normalizedTag.match(
+                /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/,
+              );
+              if (!semverMatch) {
+                throw new Error(`Latest stable release has an unsupported semver tag: ${latest.tag_name}`);
               }
+
+              // Docker metadata-action's {{version}} pattern omits SemVer build metadata.
+              const version = `${semverMatch[1]}.${semverMatch[2]}.${semverMatch[3]}`;
               core.setOutput("version", version);
             } catch (error) {
               if (error.status === 404) {
