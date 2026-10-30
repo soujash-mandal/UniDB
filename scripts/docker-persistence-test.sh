@@ -9,6 +9,11 @@ NETWORK="unidb-persistence-test-net-${RUN_ID}"
 TLS_DIR=""
 PORT_OVERRIDE="${UNIDB_DOCKER_TEST_PORT:-}"
 PORT=""
+TIMEOUT_BIN="$(command -v timeout || command -v gtimeout || true)"
+if [[ -z "$TIMEOUT_BIN" ]]; then
+  echo "A timeout command is required. Install GNU coreutils (for example: brew install coreutils on macOS)." >&2
+  exit 1
+fi
 if [[ -n "$PORT_OVERRIDE" ]]; then
   if [[ ! "$PORT_OVERRIDE" =~ ^[0-9]{1,5}$ ]] ||
      (( 10#$PORT_OVERRIDE < 1 || 10#$PORT_OVERRIDE > 65535 )); then
@@ -161,7 +166,7 @@ client_sql() {
   local statement="$1"
   local output
   local response
-  if ! output="$(printf '%s\n' "$statement" | timeout 15 docker exec -i "$CONTAINER" \
+  if ! output="$(printf '%s\n' "$statement" | "$TIMEOUT_BIN" 15 docker exec -i "$CONTAINER" \
       /usr/local/bin/unidb connect --host 127.0.0.1 --port 7432 \
       --tls-ca-file /run/unidb-tls/ca.crt \
       --tls-cert-file /run/unidb-tls/client.crt \
@@ -185,7 +190,7 @@ client_sql_batch() {
   local statements="$1"
   local output
   local responses
-  if ! output="$(printf '%s' "$statements" | timeout 120 docker exec -i "$CONTAINER" \
+  if ! output="$(printf '%s' "$statements" | "$TIMEOUT_BIN" 120 docker exec -i "$CONTAINER" \
       /usr/local/bin/unidb connect --host 127.0.0.1 --port 7432 \
       --tls-ca-file /run/unidb-tls/ca.crt \
       --tls-cert-file /run/unidb-tls/client.crt \
