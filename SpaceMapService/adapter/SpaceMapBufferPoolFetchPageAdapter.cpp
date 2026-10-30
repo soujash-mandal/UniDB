@@ -1,5 +1,7 @@
 #include "SpaceMapBufferPoolFetchPageAdapter.h"
 
+#include <cstring>
+
 SpaceMapBufferPoolFetchPageAdapter::SpaceMapBufferPoolFetchPageAdapter(
     FetchPageAction &fetchPageAction)
     : fetchPageAction(fetchPageAction) {}
