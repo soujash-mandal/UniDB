@@ -45,8 +45,8 @@ key, and CA certificate read-only. Prefer publishing the host port on
 `127.0.0.1:7432:7432`; do not expose it to an untrusted network.
 
 The container runs as the unprivileged `unidb` user (UID `10001`). The
-mounted TLS directory and every parent directory in its host path must be
-searchable (have directory execute permission) by UID `10001`. The server
+mounted TLS directory itself must be searchable (have directory execute
+permission) by UID `10001`. The server
 certificate, private key, and CA certificate must all be readable by that UID. Keep the private key restricted; do not make
 it world-readable. For a dedicated host-side `./tls` directory, one possible
 permission setup is:
