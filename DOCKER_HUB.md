@@ -5,12 +5,13 @@ workflow `Publish Docker Image`.
 
 ## Pull
 
-For the first release, replace `0.1.0` with the version shown in the GitHub
-release:
+For the first release, replace `0.1.0` with the numeric image tag from the
+GitHub release. The workflow removes the leading `v` from semantic version
+tags, so a GitHub release tagged `v0.1.0` is published as `0.1.0`:
 
 ```bash
 docker pull soujash/unidb:0.1.0
-# Latest non-prerelease release:
+# Latest stable release:
 docker pull soujash/unidb:latest
 ```
 
@@ -25,9 +26,12 @@ docker pull soujash/unidb:latest
 
 The workflow runs `scripts/docker-persistence-test.sh` first. Publishing
 starts only if the Docker build, named-volume persistence, and mutual-TLS
-checks pass. It then publishes the version tag and, for non-prerelease
-releases, `latest`. Both `linux/amd64` and `linux/arm64` are built, with
-BuildKit provenance and SBOM metadata.
+checks pass. It then publishes the version tag. The `latest` tag is added
+only when that release is currently GitHub's latest non-prerelease release;
+prereleases and reruns of older releases cannot move `latest backwards.
+Release publishing is serialized to avoid concurrent runs overwriting that
+shared tag. Both `linux/amd64` and `linux/arm64` are built, with BuildKit
+provenance and SBOM metadata.
 
 ## Secure run requirements
 
@@ -38,3 +42,22 @@ mutual TLS**. Supply `UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and
 `UNIDB_TLS_CA_FILE` and mount the corresponding server certificate, private
 key, and CA certificate read-only. Prefer publishing the host port on
 `127.0.0.1:7432:7432`; do not expose it to an untrusted network.
+
+The container runs as the unprivileged `unidb` user (UID `10001`). The
+mounted TLS directory must be searchable (have directory execute permission)
+by UID `10001`, and the server certificate, private key, and CA certificate
+must all be readable by that UID. Keep the private key restricted; do not make
+it world-readable. For a dedicated host-side `./tls` directory, one possible
+permission setup is:
+
+```bash
+sudo chown 10001:10001 ./tls
+sudo chmod 0700 ./tls
+sudo chown 10001:10001 ./tls/server.key ./tls/server.crt ./tls/ca.crt
+sudo chmod 0400 ./tls/server.key
+sudo chmod 0444 ./tls/server.crt ./tls/ca.crt
+```
+
+Adjust the paths to match the files you mount into the container. The private
+key remains owner-readable only, while the public certificate files are
+readable by the container user.
