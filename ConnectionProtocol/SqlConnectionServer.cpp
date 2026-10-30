@@ -158,7 +158,8 @@ bool sendAll(int socket, SSL *tls, std::string_view bytes) {
   return true;
 }
 
-void serveClient(int client, Container &container, SSL *tls) {
+void serveClient(int client, Container &container, SSL *tls,
+                 std::mutex &containerMutex) {
   SqlRequestFramer framer;
   char buffer[4096];
   while (!stopRequested) {
@@ -188,8 +189,15 @@ void serveClient(int client, Container &container, SSL *tls) {
     auto framing = framer.append(
         std::string_view(buffer, static_cast<std::size_t>(received)));
     for (const auto &sql : framing.requests) {
-      const auto result = container.executeQueryAction().execute(sql);
-      if (!sendAll(client, tls, responseJson(result)))
+      std::string response;
+      {
+        // Container and its service actions are shared by all client threads.
+        // Keep database operations serialized, but never hold this lock during
+        // network reads or writes from an individual client.
+        std::lock_guard<std::mutex> lock(containerMutex);
+        response = responseJson(container.executeQueryAction().execute(sql));
+      }
+      if (!sendAll(client, tls, response))
         return;
     }
     if (framing.error) {
@@ -213,6 +221,7 @@ struct PendingTlsHandshake {
   int socket;
   SSL *tls;
   int originalFlags;
+  std::uint32_t peerAddress;
   std::chrono::steady_clock::time_point deadline;
   short events;
 };
@@ -243,15 +252,15 @@ bool hasTrustedClientCertificate(SSL *tls) {
 }
 
 // Accept new sockets while progressing all pending TLS handshakes in one poll
-// loop. Serving stays on the caller thread so Container operations remain
-// serialized, but a client that never starts TLS cannot block later accepts.
+// loop. Authenticated sessions are queued for independent client workers, so
+// an idle client cannot block admission of later connections.
 void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
                                   std::mutex &sessionsMutex,
                                   std::condition_variable &sessionsReady,
                                   std::deque<ClientConnection> &readySessions,
-                                  int &activeClient, bool &acceptFailed,
-                                  bool &acceptLoopFinished) {
+                                  bool &acceptFailed, bool &acceptLoopFinished) {
   constexpr std::size_t maximumPendingHandshakes = 32;
+  constexpr std::size_t maximumPendingHandshakesPerAddress = 4;
   constexpr std::size_t maximumReadySessions = 16;
   constexpr auto handshakeTimeout = std::chrono::seconds(5);
   constexpr int pollIntervalMilliseconds = 100;
@@ -316,11 +325,22 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
         }
       } else if (tlsContext == nullptr) {
         (void)queueSession(ClientConnection{client, nullptr});
-      } else if (pendingHandshakes.size() >= maximumPendingHandshakes) {
-        std::cerr
-            << "Rejected SQL client: too many TLS handshakes are pending.\n";
-        ::close(client);
       } else {
+        const auto pendingFromAddress = std::count_if(
+            pendingHandshakes.begin(), pendingHandshakes.end(),
+            [&](const PendingTlsHandshake &handshake) {
+              return handshake.peerAddress == peerAddress.sin_addr.s_addr;
+            });
+        if (pendingHandshakes.size() >= maximumPendingHandshakes) {
+          std::cerr
+              << "Rejected SQL client: too many TLS handshakes are pending.\n";
+          ::close(client);
+        } else if (pendingFromAddress >=
+                   maximumPendingHandshakesPerAddress) {
+          std::cerr << "Rejected SQL client: pending TLS handshake limit for "
+                       "this address reached.\n";
+          ::close(client);
+        } else {
         const int originalFlags = ::fcntl(client, F_GETFL, 0);
         if (originalFlags < 0 ||
             ::fcntl(client, F_SETFL, originalFlags | O_NONBLOCK) != 0) {
@@ -337,9 +357,10 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
             ::close(client);
           } else {
             pendingHandshakes.push_back(PendingTlsHandshake{
-                client, tls, originalFlags,
+                client, tls, originalFlags, peerAddress.sin_addr.s_addr,
                 std::chrono::steady_clock::now() + handshakeTimeout, POLLIN});
           }
+        }
         }
       }
     }
@@ -401,8 +422,6 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
 
   {
     std::lock_guard<std::mutex> lock(sessionsMutex);
-    if (activeClient >= 0)
-      (void)::shutdown(activeClient, SHUT_RDWR);
     for (const auto &connection : readySessions)
       closeClientConnection(connection);
     readySessions.clear();
@@ -533,11 +552,14 @@ int SqlConnectionServer::run() {
       ::unsetenv("UNIDB_READY_FD");
     }
   }
+  constexpr std::size_t maximumConcurrentSessions = 64;
   bool acceptFailed = false;
   std::mutex sessionsMutex;
   std::condition_variable sessionsReady;
   std::deque<ClientConnection> readySessions;
-  int activeClient = -1;
+  std::vector<int> activeClientSockets;
+  std::size_t activeSessionCount = 0;
+  std::mutex containerMutex;
   bool acceptLoopFinished = false;
 
   std::thread acceptThread;
@@ -545,8 +567,8 @@ int SqlConnectionServer::run() {
     acceptThread =
         std::thread(acceptAndAuthenticateClients, listener, tlsContext.get(),
                     std::ref(sessionsMutex), std::ref(sessionsReady),
-                    std::ref(readySessions), std::ref(activeClient),
-                    std::ref(acceptFailed), std::ref(acceptLoopFinished));
+                    std::ref(readySessions), std::ref(acceptFailed),
+                    std::ref(acceptLoopFinished));
   } catch (...) {
     std::cerr << "UniDB failed to start its connection accept loop.\n";
     ::close(listener);
@@ -560,33 +582,79 @@ int SqlConnectionServer::run() {
       sessionsReady.wait_for(lock, std::chrono::milliseconds(100), [&]() {
         return !readySessions.empty() || acceptLoopFinished || stopRequested;
       });
+      if (stopRequested || acceptLoopFinished)
+        break;
       if (!readySessions.empty()) {
         connection = readySessions.front();
         readySessions.pop_front();
-        activeClient = connection.socket;
-      } else if (acceptLoopFinished || stopRequested) {
-        break;
+        if (activeSessionCount >= maximumConcurrentSessions) {
+          std::cerr << "Rejected SQL client: maximum concurrent session limit "
+                       "reached.\n";
+          closeClientConnection(connection);
+          continue;
+        }
+        activeClientSockets.push_back(connection.socket);
+        ++activeSessionCount;
       } else {
         continue;
       }
     }
 
-    // Only authenticated TLS sessions reach this serialized query path.
-    serveClient(connection.socket, container, connection.tls);
-    if (connection.tls != nullptr) {
-      (void)SSL_shutdown(connection.tls);
-      SSL_free(connection.tls);
+    // Each authenticated client gets an independent network worker. Only the
+    // query action is guarded by containerMutex, so an idle socket cannot hold
+    // up another client's SQL while database mutations remain serialized.
+    try {
+      std::thread clientThread([&, connection]() {
+        serveClient(connection.socket, container, connection.tls,
+                    containerMutex);
+        if (connection.tls != nullptr) {
+          (void)SSL_shutdown(connection.tls);
+          SSL_free(connection.tls);
+        }
+
+        {
+          std::lock_guard<std::mutex> lock(sessionsMutex);
+          const auto active =
+              std::find(activeClientSockets.begin(), activeClientSockets.end(),
+                        connection.socket);
+          if (active != activeClientSockets.end())
+            activeClientSockets.erase(active);
+          --activeSessionCount;
+          ::close(connection.socket);
+        }
+        sessionsReady.notify_all();
+      });
+      clientThread.detach();
+    } catch (...) {
+      std::cerr << "Could not start SQL client worker.\n";
+      closeClientConnection(connection);
+      {
+        std::lock_guard<std::mutex> lock(sessionsMutex);
+        const auto active =
+            std::find(activeClientSockets.begin(), activeClientSockets.end(),
+                      connection.socket);
+        if (active != activeClientSockets.end())
+          activeClientSockets.erase(active);
+        --activeSessionCount;
+      }
+      sessionsReady.notify_all();
     }
-    {
-      std::lock_guard<std::mutex> lock(sessionsMutex);
-      if (activeClient == connection.socket)
-        activeClient = -1;
-      ::close(connection.socket);
-    }
+  }
+
+  // Interrupt all blocking client reads/writes before waiting for workers to
+  // finish. Worker threads own SSL objects and close their sockets themselves.
+  {
+    std::lock_guard<std::mutex> lock(sessionsMutex);
+    for (const int client : activeClientSockets)
+      (void)::shutdown(client, SHUT_RDWR);
   }
 
   if (acceptThread.joinable())
     acceptThread.join();
+  {
+    std::unique_lock<std::mutex> lock(sessionsMutex);
+    sessionsReady.wait(lock, [&]() { return activeSessionCount == 0; });
+  }
   ::close(listener);
   std::cout << "UniDB server shutting down; flushing dirty pages.\n";
   container.flushDirtyPages();
