@@ -93,7 +93,7 @@ jobs:
                 repo: context.repo.repo,
               });
               const version = latest.tag_name.replace(/^v/, "");
-              if (!/^\\d+\\.\\d+\\.\\d+$/.test(version)) {
+              if (!/^\d+\.\d+\.\d+$/.test(version)) {
                 throw new Error(`Latest stable release has a non-semver tag: ${latest.tag_name}`);
               }
               core.setOutput("version", version);
