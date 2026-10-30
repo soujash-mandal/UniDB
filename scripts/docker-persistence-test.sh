@@ -329,9 +329,9 @@ try:
     logs = subprocess.run(
         ["docker", "logs", container],
         check=True,
-        capture_output=True,
-        text=True,
+        stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        text=True,
     ).stdout
     expected = "pending TLS handshake limit for this address reached"
     if expected not in logs:
