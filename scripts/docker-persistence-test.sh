@@ -342,6 +342,8 @@ finally:
     for peer in stalled_peers:
         peer.close()
 PY
+# Give the accept loop time to remove the closed pending handshakes.
+sleep 0.3
 host_sql "SELECT * FROM docker_persistence;" | grep -Fq '"rows":[[7,"Ada"]]'
 
 # 1.3 An authenticated but idle client must not block another client from
