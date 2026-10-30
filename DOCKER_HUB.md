@@ -26,12 +26,13 @@ docker pull soujash/unidb:latest
 
 The workflow runs `scripts/docker-persistence-test.sh` first. Publishing
 starts only if the Docker build, named-volume persistence, and mutual-TLS
-checks pass. It then publishes the version tag. The `latest` tag is added
-only when that release is currently GitHub's latest non-prerelease release;
-prereleases and reruns of older releases cannot move `latest` backwards.
-Only updates to the shared `latest` alias are serialized; version-tag
-publishes can run independently. Both `linux/amd64` and `linux/arm64` are built, with BuildKit
-provenance and SBOM metadata.
+checks pass. It then publishes the release's version tag. For the mutable
+`latest` alias, each release run looks up GitHub's current latest stable
+(non-prerelease) release and points `latest` at that release's versioned image.
+This prevents prereleases and older maintenance releases from moving `latest`
+backwards. Updates to the shared alias are serialized; version-tag publishes
+can run independently. Both `linux/amd64` and `linux/arm64` are built, with BuildKit provenance
+and SBOM metadata.
 
 ## Secure run requirements
 
