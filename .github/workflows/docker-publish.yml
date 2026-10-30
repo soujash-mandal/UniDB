@@ -105,6 +105,22 @@ jobs:
               }
             }
 
+      - name: Wait for the current stable image to be available
+        if: steps.release.outputs.version != ''
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          for attempt in $(seq 1 120); do
+            if docker buildx imagetools inspect "soujash/unidb:${VERSION}" >/dev/null 2>&1; then
+              echo "Found soujash/unidb:${VERSION}."
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "::error::The current latest stable image did not appear in Docker Hub within 10 minutes."
+          exit 1
+
       - name: Point latest to the current stable release
         if: steps.release.outputs.version != ''
         env:
