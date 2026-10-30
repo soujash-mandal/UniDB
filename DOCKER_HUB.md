@@ -31,8 +31,8 @@ checks pass. It then publishes the release's version tag. For the mutable
 (non-prerelease) release and points `latest` at that release's versioned image.
 This prevents prereleases and older maintenance releases from moving `latest`
 backwards. Updates to the shared alias are serialized; version-tag publishes
-can run independently. Both `linux/amd64` and `linux/arm64` are built, with BuildKit provenance
-and SBOM metadata.
+can run independently. Both `linux/amd64` and `linux/arm64` are built,
+with BuildKit provenance and SBOM metadata.
 
 ## Secure run requirements
 
@@ -45,8 +45,8 @@ key, and CA certificate read-only. Prefer publishing the host port on
 `127.0.0.1:7432:7432`; do not expose it to an untrusted network.
 
 The container runs as the unprivileged `unidb` user (UID `10001`). The
-mounted TLS directory must be searchable (have directory execute permission)
-by UID `10001`, and the server certificate, private key, and CA certificate
+mounted TLS directory and every parent directory in its host path must be
+searchable (have directory execute permission) by UID `10001`, and the server certificate, private key, and CA certificate
 must all be readable by that UID. Keep the private key restricted; do not make
 it world-readable. For a dedicated host-side `./tls` directory, one possible
 permission setup is:
