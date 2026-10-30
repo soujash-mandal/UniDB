@@ -114,6 +114,13 @@ certificate against its CA file and the destination IPv4 address. TLS 1.2 or
 newer is required. Do not share private keys, commit them, or copy them into the
 Docker build context; `.dockerignore` excludes the local `unidb-tls/` directory.
 
+The server progresses pending TLS handshakes without blocking new accepts. It
+allows up to 32 pending handshakes globally and up to 4 per source IPv4 address;
+each handshake has a 5-second deadline. Authenticated sessions run independently
+(up to 64 concurrent sessions), while SQL actions are serialized before they
+access the shared database services. An idle authenticated client therefore
+does not block other clients from issuing queries.
+
 ## Verify persistence across container recreation
 
 ```bash
