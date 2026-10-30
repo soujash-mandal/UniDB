@@ -258,7 +258,8 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
                                   std::mutex &sessionsMutex,
                                   std::condition_variable &sessionsReady,
                                   std::deque<ClientConnection> &readySessions,
-                                  bool &acceptFailed, bool &acceptLoopFinished) {
+                                  bool &acceptFailed,
+                                  bool &acceptLoopFinished) {
   constexpr std::size_t maximumPendingHandshakes = 32;
   constexpr std::size_t maximumPendingHandshakesPerAddress = 4;
   constexpr std::size_t maximumReadySessions = 16;
@@ -335,32 +336,31 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
           std::cerr
               << "Rejected SQL client: too many TLS handshakes are pending.\n";
           ::close(client);
-        } else if (pendingFromAddress >=
-                   maximumPendingHandshakesPerAddress) {
+        } else if (pendingFromAddress >= maximumPendingHandshakesPerAddress) {
           std::cerr << "Rejected SQL client: pending TLS handshake limit for "
                        "this address reached.\n";
           ::close(client);
         } else {
-        const int originalFlags = ::fcntl(client, F_GETFL, 0);
-        if (originalFlags < 0 ||
-            ::fcntl(client, F_SETFL, originalFlags | O_NONBLOCK) != 0) {
-          std::cerr << "Could not configure TLS client socket.\n";
-          ::close(client);
-        } else {
-          SSL *tls = SSL_new(tlsContext);
-          if (tls == nullptr || SSL_set_fd(tls, client) != 1) {
-            std::cerr
-                << "Could not initialize TLS for an incoming SQL client.\n";
-            ERR_print_errors_fp(stderr);
-            if (tls != nullptr)
-              SSL_free(tls);
+          const int originalFlags = ::fcntl(client, F_GETFL, 0);
+          if (originalFlags < 0 ||
+              ::fcntl(client, F_SETFL, originalFlags | O_NONBLOCK) != 0) {
+            std::cerr << "Could not configure TLS client socket.\n";
             ::close(client);
           } else {
-            pendingHandshakes.push_back(PendingTlsHandshake{
-                client, tls, originalFlags, peerAddress.sin_addr.s_addr,
-                std::chrono::steady_clock::now() + handshakeTimeout, POLLIN});
+            SSL *tls = SSL_new(tlsContext);
+            if (tls == nullptr || SSL_set_fd(tls, client) != 1) {
+              std::cerr
+                  << "Could not initialize TLS for an incoming SQL client.\n";
+              ERR_print_errors_fp(stderr);
+              if (tls != nullptr)
+                SSL_free(tls);
+              ::close(client);
+            } else {
+              pendingHandshakes.push_back(PendingTlsHandshake{
+                  client, tls, originalFlags, peerAddress.sin_addr.s_addr,
+                  std::chrono::steady_clock::now() + handshakeTimeout, POLLIN});
+            }
           }
-        }
         }
       }
     }
