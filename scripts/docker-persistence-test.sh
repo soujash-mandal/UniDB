@@ -306,7 +306,88 @@ finally:
     stalled_peer.close()
 PY
 
-# 1.2 Send more than 64 KiB of piped SQL through one built-in TLS client.
+# 1.2 More than four unauthenticated handshakes from one address must not
+# occupy every pending TLS slot. The limit is per address as well as global.
+python3 - "$PORT" "$CONTAINER" <<'PY'
+import socket
+import subprocess
+import sys
+import time
+
+port = int(sys.argv[1])
+container = sys.argv[2]
+stalled_peers = []
+try:
+    for _ in range(5):
+        stalled_peers.append(
+            socket.create_connection(("127.0.0.1", port), timeout=3)
+        )
+        # Give the accept loop time to register each pending handshake.
+        time.sleep(0.15)
+
+    time.sleep(0.25)
+    logs = subprocess.run(
+        ["docker", "logs", container],
+        check=True,
+        capture_output=True,
+        text=True,
+        stderr=subprocess.STDOUT,
+    ).stdout
+    expected = "pending TLS handshake limit for this address reached"
+    if expected not in logs:
+        raise RuntimeError(
+            "The server did not enforce the per-address pending TLS limit."
+        )
+finally:
+    for peer in stalled_peers:
+        peer.close()
+PY
+host_sql "SELECT * FROM docker_persistence;" | grep -Fq '"rows":[[7,"Ada"]]'
+
+# 1.3 An authenticated but idle client must not block another client from
+# executing a query on the same server.
+python3 - "$TLS_DIR" "$PORT" <<'PY'
+import socket
+import ssl
+import sys
+import time
+from pathlib import Path
+
+tls_dir = Path(sys.argv[1])
+port = int(sys.argv[2])
+context = ssl.create_default_context(cafile=str(tls_dir / "ca.crt"))
+context.load_cert_chain(
+    certfile=str(tls_dir / "client.crt"),
+    keyfile=str(tls_dir / "client.key"),
+)
+idle_raw_socket = socket.create_connection(("127.0.0.1", port), timeout=3)
+idle_connection = context.wrap_socket(
+    idle_raw_socket, server_hostname="127.0.0.1"
+)
+try:
+    # Allow the server to enter the idle client's blocking SSL_read.
+    time.sleep(0.2)
+    with socket.create_connection(("127.0.0.1", port), timeout=3) as raw_socket:
+        with context.wrap_socket(raw_socket, server_hostname="127.0.0.1") as connection:
+            connection.settimeout(3)
+            connection.sendall(b"SELECT * FROM docker_persistence;\\n")
+            response = bytearray()
+            while b"\\n" not in response:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                response.extend(chunk)
+            if b'"rows":[[7,"Ada"]]' not in response:
+                raise RuntimeError(
+                    "The query was blocked or returned an unexpected result "
+                    "while another authenticated client was idle: "
+                    + bytes(response).decode("utf-8", errors="replace")
+                )
+finally:
+    idle_connection.close()
+PY
+
+# 1.4 Send more than 64 KiB of piped SQL through one built-in TLS client.
 # This exercises nonblocking writes while the client concurrently drains replies.
 client_sql "CREATE TABLE tls_large_response (id INT, payload TEXT);" | grep -q '"ok":true'
 batch=""
@@ -321,7 +402,7 @@ if [[ "$insert_count" != "600" ]]; then
   exit 1
 fi
 
-# 1.3 A response larger than the client read buffer must be fully drained.
+# 1.5 A response larger than the client read buffer must be fully drained.
 large_response="$(client_sql "SELECT * FROM tls_large_response;")"
 if (( ${#large_response} <= 4096 )); then
   echo "Expected TLS SELECT response larger than 4 KiB; got ${#large_response} bytes." >&2
