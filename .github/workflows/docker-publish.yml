@@ -7,8 +7,10 @@ on:
 permissions:
   contents: read
 
+# Only one release workflow may publish at a time. This prevents an older
+# release finishing after a newer one and moving the shared "latest" tag back.
 concurrency:
-  group: docker-publish-${{ github.event.release.tag_name }}
+  group: docker-hub-publish
   cancel-in-progress: false
 
 jobs:
@@ -47,14 +49,44 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Check whether this is the latest stable GitHub release
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.payload.release.prerelease) {
+              core.setOutput('is_latest', 'false');
+              return;
+            }
+
+            let latestTag = null;
+            try {
+              const { data: latestRelease } = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              latestTag = latestRelease.tag_name;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            core.setOutput(
+              'is_latest',
+              String(latestTag === context.payload.release.tag_name),
+            );
+
       - name: Generate image tags and labels
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: soujash/unidb
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=latest,enable=${{ !github.event.release.prerelease }}
+            type=raw,value=latest,enable=${{ steps.release.outputs.is_latest == 'true' }}
 
       - name: Build and push Linux images
         uses: docker/build-push-action@v6
