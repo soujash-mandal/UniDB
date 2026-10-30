@@ -610,9 +610,9 @@ int SqlConnectionServer::run() {
           serveClient(connection.socket, container, connection.tls,
                       containerMutex);
         } catch (const std::exception &error) {
-          std::cerr << "SQL client session failed: " << error.what() << '\\n';
+          std::cerr << "SQL client session failed: " << error.what() << '\n';
         } catch (...) {
-          std::cerr << "SQL client session failed with an unknown error.\\n";
+          std::cerr << "SQL client session failed with an unknown error.\n";
         }
         if (connection.tls != nullptr) {
           (void)SSL_shutdown(connection.tls);
