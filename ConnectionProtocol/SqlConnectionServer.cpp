@@ -628,8 +628,8 @@ int SqlConnectionServer::run() {
             activeClientSockets.erase(active);
           --activeSessionCount;
           ::close(connection.socket);
+          sessionsReady.notify_all();
         }
-        sessionsReady.notify_all();
       });
       clientThread.detach();
     } catch (...) {
@@ -643,8 +643,8 @@ int SqlConnectionServer::run() {
         if (active != activeClientSockets.end())
           activeClientSockets.erase(active);
         --activeSessionCount;
+        sessionsReady.notify_all();
       }
-      sessionsReady.notify_all();
     }
   }
 
