@@ -49,13 +49,7 @@ with BuildKit provenance and SBOM metadata.
 
 ## Secure run requirements
 
-The server listens on TCP port `7432` and stores its database at
-`/data/database.db`. Mount a persistent named volume at `/data`. The
-container binds to `0.0.0.0`, so **all non-loopback connections require
-mutual TLS**. Supply `UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and
-`UNIDB_TLS_CA_FILE` and mount the corresponding server certificate, private
-key, and CA certificate read-only. Prefer publishing the host port on
-`127.0.0.1:7432:7432`; do not expose it to an untrusted network.
+The server listens on TCP port `7432` and stores its database at `/data/database.db`. Mount a persistent named volume at `/data`. For shared or remote access, explicitly set `UNIDB_SECURITY_MODE=production`; production mode requires mutual TLS. Supply `UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and `UNIDB_TLS_CA_FILE` and mount the corresponding server certificate, private key, and CA certificate read-only. Do not expose the service to an untrusted network.
 
 The container runs as the unprivileged `unidb` user (UID `10001`). The
 mounted TLS directory itself must be searchable (have directory execute
@@ -65,6 +59,8 @@ it world-readable. For a dedicated host-side `./tls` directory, one possible
 permission setup is:
 
 ```bash
+# Include this in the docker run command:
+# -e UNIDB_SECURITY_MODE=production
 sudo chown 10001:10001 ./tls
 sudo chmod 0700 ./tls
 sudo chown 10001:10001 ./tls/server.key ./tls/server.crt ./tls/ca.crt
