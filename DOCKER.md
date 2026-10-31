@@ -95,6 +95,7 @@ docker build -t unidb:local .
 docker network create unidb-net
 docker volume create unidb-data
 docker run -d --name unidb --network unidb-net \
+  -e UNIDB_SECURITY_MODE=production \
   -e UNIDB_TLS_CERT_FILE=/run/unidb-tls/server.crt \
   -e UNIDB_TLS_KEY_FILE=/run/unidb-tls/server.key \
   -e UNIDB_TLS_CA_FILE=/run/unidb-tls/ca.crt \
