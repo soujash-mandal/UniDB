@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <csignal>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
