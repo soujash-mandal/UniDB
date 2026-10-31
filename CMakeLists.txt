@@ -201,6 +201,7 @@ add_executable(tests
     ConnectionProtocol/test/SqlRequestFramer/ExtractsCompleteRequestsAcrossChunksTest.cpp
     ConnectionProtocol/test/SqlRequestFramer/AcceptsCrlfAndRejectsEmptyRequestTest.cpp
     ConnectionProtocol/test/SqlRequestFramer/RejectsOversizedRequestTest.cpp
+    ConnectionProtocol/test/SqlServerSecurityMode/SecurityModeConfigurationTest.cpp
     ConnectionProtocol/test/SqlServerSocketIntegration/ExecutesCreateInsertAndSelectOverTcpConnectionTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
