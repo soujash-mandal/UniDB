@@ -109,6 +109,7 @@ start_container() {
   fi
 
   docker create --name "$CONTAINER" --network "$NETWORK" \
+    --env UNIDB_SECURITY_MODE=production \
     --env UNIDB_TLS_CERT_FILE=/run/unidb-tls/server.crt \
     --env UNIDB_TLS_KEY_FILE=/run/unidb-tls/server.key \
     --env UNIDB_TLS_CA_FILE=/run/unidb-tls/ca.crt \
