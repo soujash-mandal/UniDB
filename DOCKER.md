@@ -8,9 +8,9 @@ Publish the port on host loopback only:
 
 ```bash
 docker pull soujash/unidb:latest
-docker run -d --name unidb \\
-  -p 127.0.0.1:7432:7432 \\
-  -v unidb-data:/data \\
+docker run -d --name unidb \
+  -p 127.0.0.1:7432:7432 \
+  -v unidb-data:/data \
   soujash/unidb:latest
 ```
 
