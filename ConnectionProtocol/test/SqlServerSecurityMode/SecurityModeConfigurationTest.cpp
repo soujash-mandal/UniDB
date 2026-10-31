@@ -13,7 +13,7 @@
 
 namespace {
 
-int runServerWithMode(const char *mode) {
+int runServerWithMode(const char *mode, const char *bindAddress = "127.0.0.1") {
   char path[] = "/tmp/unidb-security-mode-test-XXXXXX";
   const int tempFd = ::mkstemp(path);
   if (tempFd < 0)
@@ -28,7 +28,8 @@ int runServerWithMode(const char *mode) {
   }
   if (child == 0) {
     ::setenv("UNIDB_SECURITY_MODE", mode, 1);
-    ::setenv("UNIDB_BIND_ADDRESS", "127.0.0.1", 1);
+    ::setenv("UNIDB_BIND_ADDRESS", bindAddress, 1);
+    ::unsetenv("UNIDB_DEV_ALLOW_NON_LOOPBACK_BIND");
     ::unsetenv("UNIDB_TLS_CERT_FILE");
     ::unsetenv("UNIDB_TLS_KEY_FILE");
     ::unsetenv("UNIDB_TLS_CA_FILE");
@@ -62,6 +63,10 @@ int runServerWithMode(const char *mode) {
 
 TEST(SqlServerSecurityModeTest, ProductionModeRequiresMutualTlsOnLoopback) {
   EXPECT_EQ(runServerWithMode("production"), 2);
+}
+
+TEST(SqlServerSecurityModeTest, DevelopmentModeRejectsNonLoopbackWithoutOptIn) {
+  EXPECT_EQ(runServerWithMode("development", "0.0.0.0"), 2);
 }
 
 TEST(SqlServerSecurityModeTest, RejectsUnknownSecurityMode) {
