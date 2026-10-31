@@ -25,6 +25,8 @@ COPY --from=build /src/build/unidb /usr/local/bin/unidb
 # published port on 127.0.0.1 when using the default local development mode.
 ENV UNIDB_BIND_ADDRESS=0.0.0.0
 ENV UNIDB_SECURITY_MODE=development
+# Required for Docker's internal port forwarding; publish the host port on localhost.
+ENV UNIDB_DEV_ALLOW_NON_LOOPBACK_BIND=true
 EXPOSE 7432
 VOLUME ["/data"]
 USER unidb
