@@ -529,7 +529,8 @@ int SqlConnectionServer::run() {
       std::cerr << "Development mode requires a loopback listener. For "
                    "container port forwarding only, set "
                    "UNIDB_DEV_ALLOW_NON_LOOPBACK_BIND=true and publish "
-                   "the host port on 127.0.0.1." << '\n';
+                   "the host port on 127.0.0.1."
+                << '\n';
       return 2;
     }
     // Docker port publishing happens outside this process. The container
@@ -539,7 +540,8 @@ int SqlConnectionServer::run() {
                  "authentication on a non-loopback interface. Publish "
                  "the Docker port on host loopback only "
                  "(127.0.0.1:7432:7432). The server cannot inspect the "
-                 "host-side Docker port binding." << '\n';
+                 "host-side Docker port binding."
+              << '\n';
   }
 
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);

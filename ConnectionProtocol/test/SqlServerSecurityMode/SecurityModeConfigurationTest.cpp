@@ -4,8 +4,8 @@
 #include <unistd.h>
 
 #include <cerrno>
-#include <csignal>
 #include <chrono>
+#include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <string>
