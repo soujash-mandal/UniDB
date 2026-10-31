@@ -19,6 +19,9 @@ docker pull soujash/unidb:latest
 
 The image defaults to development mode. Start it with a localhost-only host port mapping:
 
+Use Docker Engine 28.0.0 or newer. Older versions may expose ports published to host loopback to other machines on the same layer-2 network.
+
+
 ```bash
 docker run -d --name unidb \
   -p 127.0.0.1:7432:7432 \
