@@ -1,11 +1,22 @@
 # UniDB Docker server
 
-The image runs the foreground SQL server, stores the database at
-`/data/database.db`, and uses a named volume for durable storage.
-It runs as an unprivileged user. The image binds to `0.0.0.0` so Docker
-port publishing can reach the listener, but **a non-loopback listener refuses
-to start unless mutual TLS is configured**. TLS protects SQL traffic in transit
-and requires a trusted client certificate before executing SQL.
+The image defaults to local development mode. It needs no certificates or passwords and stores data at `/data/database.db`.
+
+## Local development
+
+Publish the port on host loopback only:
+
+```bash
+docker pull soujash/unidb:latest
+docker run -d --name unidb \\
+  -p 127.0.0.1:7432:7432 \\
+  -v unidb-data:/data \\
+  soujash/unidb:latest
+```
+
+Connect with the UniDB CLI or Node client at `127.0.0.1:7432`; no TLS flags are needed.
+
+**Important:** Docker forwards host traffic to a non-loopback interface inside the container. The server cannot inspect the host-side port mapping. Do not use `-p 7432:7432` or publish this development-mode port to an untrusted network. Use production mode for shared or remote access.
 
 ## Create TLS credentials
 
@@ -106,13 +117,7 @@ Connect from a local UniDB build using the client certificate and private key:
   --tls-key-file unidb-tls/client.key
 ```
 
-Every non-loopback bind requires all three server environment variables:
-`UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and
-`UNIDB_TLS_CA_FILE`. The server presents its certificate and verifies a
-client certificate issued by the configured CA. The client verifies the server
-certificate against its CA file and the destination IPv4 address. TLS 1.2 or
-newer is required. Do not share private keys, commit them, or copy them into the
-Docker build context; `.dockerignore` excludes the local `unidb-tls/` directory.
+Production mode requires all three server environment variables: `UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and `UNIDB_TLS_CA_FILE`. The server presents its certificate and verifies a client certificate issued by the configured CA. The client verifies the server certificate against its CA file and destination IPv4 address. TLS 1.2 or newer is required. Do not share private keys, commit them, or copy them into the Docker build context; `.dockerignore` excludes the local `unidb-tls/` directory. Development mode disables TLS and client authentication and must remain restricted to a localhost-only host port mapping.
 
 The server progresses pending TLS handshakes without blocking new accepts. It
 allows up to 32 pending handshakes globally and up to 4 per source IPv4 address;
