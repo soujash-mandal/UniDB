@@ -4,6 +4,8 @@ The image defaults to local development mode. It needs no certificates or passwo
 
 ## Local development
 
+Use Docker Engine 28.0.0 or newer. Older versions may expose ports published to host loopback to other machines on the same layer-2 network.
+
 Publish the port on host loopback only:
 
 ```bash
