@@ -15,6 +15,22 @@ docker pull soujash/unidb:0.1.0
 docker pull soujash/unidb:latest
 ```
 
+## Local development
+
+The image defaults to development mode. Start it with a localhost-only host port mapping:
+
+Use Docker Engine 28.0.0 or newer. Older versions may expose ports published to host loopback to other machines on the same layer-2 network.
+
+
+```bash
+docker run -d --name unidb \
+  -p 127.0.0.1:7432:7432 \
+  -v unidb-data:/data \
+  soujash/unidb:latest
+```
+
+Connect to `127.0.0.1:7432` without TLS or client certificates. Do not publish this development-mode port with `-p 7432:7432`: Docker host port binding is outside the container, so UniDB cannot verify that the host mapping is loopback-only.
+
 ## Configure publishing
 
 1. Create the public Docker Hub repository `soujash/unidb`.
@@ -36,13 +52,7 @@ with BuildKit provenance and SBOM metadata.
 
 ## Secure run requirements
 
-The server listens on TCP port `7432` and stores its database at
-`/data/database.db`. Mount a persistent named volume at `/data`. The
-container binds to `0.0.0.0`, so **all non-loopback connections require
-mutual TLS**. Supply `UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and
-`UNIDB_TLS_CA_FILE` and mount the corresponding server certificate, private
-key, and CA certificate read-only. Prefer publishing the host port on
-`127.0.0.1:7432:7432`; do not expose it to an untrusted network.
+The server listens on TCP port `7432` and stores its database at `/data/database.db`. Mount a persistent named volume at `/data`. For shared or remote access, explicitly set `UNIDB_SECURITY_MODE=production`; production mode requires mutual TLS. Supply `UNIDB_TLS_CERT_FILE`, `UNIDB_TLS_KEY_FILE`, and `UNIDB_TLS_CA_FILE` and mount the corresponding server certificate, private key, and CA certificate read-only. Do not expose the service to an untrusted network.
 
 The container runs as the unprivileged `unidb` user (UID `10001`). The
 mounted TLS directory itself must be searchable (have directory execute
@@ -52,6 +62,8 @@ it world-readable. For a dedicated host-side `./tls` directory, one possible
 permission setup is:
 
 ```bash
+# Include this in the docker run command:
+# -e UNIDB_SECURITY_MODE=production
 sudo chown 10001:10001 ./tls
 sudo chmod 0700 ./tls
 sudo chown 10001:10001 ./tls/server.key ./tls/server.crt ./tls/ca.crt

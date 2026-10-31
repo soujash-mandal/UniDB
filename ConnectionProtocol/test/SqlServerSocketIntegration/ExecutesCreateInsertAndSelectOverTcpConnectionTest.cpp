@@ -139,6 +139,8 @@ protected:
     serverPid = ::fork();
     ASSERT_GE(serverPid, 0);
     if (serverPid == 0) {
+      ::setenv("UNIDB_SECURITY_MODE", "development", 1);
+      ::setenv("UNIDB_BIND_ADDRESS", "127.0.0.1", 1);
       const auto portText = std::to_string(port);
       ::execl(executable.c_str(), executable.c_str(), "--server", "--db-path",
               databasePath.c_str(), "--port", portText.c_str(),

@@ -438,7 +438,7 @@ SslContextPtr createMutualTlsContext() {
   if (certificateFile == nullptr || certificateFile[0] == '\0' ||
       privateKeyFile == nullptr || privateKeyFile[0] == '\0' ||
       caFile == nullptr || caFile[0] == '\0') {
-    std::cerr << "Non-loopback SQL listeners require mutual TLS. Set "
+    std::cerr << "Production mode requires mutual TLS. Set "
                  "UNIDB_TLS_CERT_FILE, UNIDB_TLS_KEY_FILE, and "
                  "UNIDB_TLS_CA_FILE.\n";
     return SslContextPtr(nullptr, SSL_CTX_free);
@@ -503,16 +503,43 @@ int SqlConnectionServer::run() {
     return 2;
   }
 
-  // Plain SQL is allowed only on a loopback listener. Every
-  // non-loopback listener requires mutual TLS, which encrypts traffic and
-  // authenticates the connecting client before SQL can be processed.
   const auto hostOrderAddress = ntohl(bindAddressValue.s_addr);
   const bool loopbackAddress = (hostOrderAddress >> 24U) == 127U;
+  const char *configuredMode = std::getenv("UNIDB_SECURITY_MODE");
+  const std::string_view mode =
+      configuredMode == nullptr || configuredMode[0] == '\0'
+          ? (loopbackAddress ? "development" : "production")
+          : std::string_view(configuredMode);
+  if (mode != "development" && mode != "production") {
+    std::cerr << "Invalid UNIDB_SECURITY_MODE '" << mode
+              << "'. Use 'development' or 'production'.\n";
+    return 2;
+  }
+
   SslContextPtr tlsContext(nullptr, SSL_CTX_free);
-  if (!loopbackAddress) {
+  if (mode == "production") {
     tlsContext = createMutualTlsContext();
     if (!tlsContext)
       return 2;
+  } else if (!loopbackAddress) {
+    const char *allowContainerBind =
+        std::getenv("UNIDB_DEV_ALLOW_NON_LOOPBACK_BIND");
+    if (allowContainerBind == nullptr ||
+        std::string_view(allowContainerBind) != "true") {
+      std::cerr << "Development mode requires a loopback listener. For "
+                   "container port forwarding only, set "
+                   "UNIDB_DEV_ALLOW_NON_LOOPBACK_BIND=true and publish "
+                   "the host port on 127.0.0.1.\n";
+      return 2;
+    }
+    // Docker port publishing happens outside this process. The container
+    // listener must accept traffic on its interface, while the host must
+    // publish that port on 127.0.0.1 only.
+    std::cerr << "WARNING: UniDB development mode has no TLS or client "
+                 "authentication on a non-loopback interface. Publish "
+                 "the Docker port on host loopback only "
+                 "(127.0.0.1:7432:7432). The server cannot inspect the "
+                 "host-side Docker port binding.\n";
   }
 
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
