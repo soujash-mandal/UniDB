@@ -20,9 +20,9 @@ docker pull soujash/unidb:latest
 The image defaults to development mode. Start it with a localhost-only host port mapping:
 
 ```bash
-docker run -d --name unidb \\
-  -p 127.0.0.1:7432:7432 \\
-  -v unidb-data:/data \\
+docker run -d --name unidb \
+  -p 127.0.0.1:7432:7432 \
+  -v unidb-data:/data \
   soujash/unidb:latest
 ```
 
