@@ -512,7 +512,7 @@ int SqlConnectionServer::run() {
           : std::string_view(configuredMode);
   if (mode != "development" && mode != "production") {
     std::cerr << "Invalid UNIDB_SECURITY_MODE '" << mode
-              << "'. Use 'development' or 'production'.\\n";
+              << "'. Use 'development' or 'production'.\n";
     return 2;
   }
 
@@ -529,7 +529,7 @@ int SqlConnectionServer::run() {
                  "authentication on a non-loopback interface. Publish "
                  "the Docker port on host loopback only "
                  "(127.0.0.1:7432:7432). The server cannot inspect the "
-                 "host-side Docker port binding.\\n";
+                 "host-side Docker port binding.\n";
   }
 
   const int listener = ::socket(AF_INET, SOCK_STREAM, 0);
