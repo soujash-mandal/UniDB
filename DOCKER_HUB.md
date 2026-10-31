@@ -15,6 +15,19 @@ docker pull soujash/unidb:0.1.0
 docker pull soujash/unidb:latest
 ```
 
+## Local development
+
+The image defaults to development mode. Start it with a localhost-only host port mapping:
+
+```bash
+docker run -d --name unidb \\
+  -p 127.0.0.1:7432:7432 \\
+  -v unidb-data:/data \\
+  soujash/unidb:latest
+```
+
+Connect to `127.0.0.1:7432` without TLS or client certificates. Do not publish this development-mode port with `-p 7432:7432`: Docker host port binding is outside the container, so UniDB cannot verify that the host mapping is loopback-only.
+
 ## Configure publishing
 
 1. Create the public Docker Hub repository `soujash/unidb`.
