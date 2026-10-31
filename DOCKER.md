@@ -20,9 +20,7 @@ Connect with the UniDB CLI or Node client at `127.0.0.1:7432`; no TLS flags are 
 
 ## Create TLS credentials
 
-For a development setup, generate a private CA and separate server/client
-certificates. For production, use your organization’s certificate authority
-and a managed secret distribution process.
+For production, use your organization’s certificate authority and a managed secret distribution process. The following commands create a local test CA and separate server/client certificates.
 
 ```bash
 mkdir -p unidb-tls
