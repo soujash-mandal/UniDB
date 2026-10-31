@@ -507,7 +507,7 @@ int SqlConnectionServer::run() {
   const bool loopbackAddress = (hostOrderAddress >> 24U) == 127U;
   const char *configuredMode = std::getenv("UNIDB_SECURITY_MODE");
   const std::string_view mode =
-      configuredMode == nullptr || configuredMode[0] == '\\0'
+      configuredMode == nullptr || configuredMode[0] == '\0'
           ? (loopbackAddress ? "development" : "production")
           : std::string_view(configuredMode);
   if (mode != "development" && mode != "production") {
