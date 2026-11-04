@@ -17,10 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install clang-format
+      - name: Install clang-format 23.1.1
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y clang-format-18
+          python3 -m venv "$RUNNER_TEMP/clang-format-venv"
+          "$RUNNER_TEMP/clang-format-venv/bin/python" -m pip install --disable-pip-version-check clang-format==23.1.1
+          echo "$RUNNER_TEMP/clang-format-venv/bin" >> "$GITHUB_PATH"
+          clang-format --version
 
       - name: Check formatting
         run: |
@@ -28,5 +30,5 @@ jobs:
             -not -path "./build/*")
 
           for file in $files; do
-            clang-format-18 --dry-run --Werror "$file"
+            clang-format --dry-run --Werror "$file"
           done
