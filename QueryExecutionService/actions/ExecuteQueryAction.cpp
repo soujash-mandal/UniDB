@@ -134,23 +134,58 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
-    if (!select->selectAll ||
-        !std::holds_alternative<std::monostate>(select->where)) {
+    if (!std::holds_alternative<std::monostate>(select->where)) {
       return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
-                                 "V1 supports only SELECT * FROM table"};
+                                 "WHERE predicates are not supported yet"};
     }
 
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
+
+    std::vector<std::size_t> selectedIndexes;
+    std::vector<ColumnDefinition> selectedColumns;
+    if (select->selectAll) {
+      selectedIndexes.reserve(schema.size());
+      selectedColumns = schema;
+      for (std::size_t index = 0; index < schema.size(); ++index) {
+        selectedIndexes.push_back(index);
+      }
+    } else {
+      if (select->columnNames.empty()) {
+        throw std::invalid_argument("SELECT requires at least one column");
+      }
+      selectedIndexes.reserve(select->columnNames.size());
+      selectedColumns.reserve(select->columnNames.size());
+      for (const auto &columnName : select->columnNames) {
+        const auto found =
+            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+              return column.name == columnName;
+            });
+        if (found == schema.end()) {
+          throw std::invalid_argument("Unknown SELECT column: " + columnName);
+        }
+        const auto schemaIndex =
+            static_cast<std::size_t>(std::distance(schema.begin(), found));
+        selectedIndexes.push_back(schemaIndex);
+        selectedColumns.push_back(*found);
+      }
+    }
+
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
 
     QueryExecutionResult result;
     result.kind = QueryExecutionResultKind::Rows;
     result.message = "Rows selected";
-    result.columns = schema;
+    result.columns = std::move(selectedColumns);
     result.rows.reserve(encodedRows.size());
     for (const auto &bytes : encodedRows) {
-      result.rows.push_back(SqlTupleCodec::decode(types, bytes));
+      const auto decoded = SqlTupleCodec::decode(types, bytes);
+      std::vector<SqlValue> projected;
+      projected.reserve(selectedIndexes.size());
+      for (const auto index : selectedIndexes) {
+        projected.push_back(decoded[index]);
+      }
+      result.rows.push_back(std::move(projected));
     }
     return result;
   }
