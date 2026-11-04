@@ -11,14 +11,18 @@ on:
 jobs:
   lint:
     name: Lint
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install clang-format
-        run: brew install clang-format
+      - name: Install clang-format 23.1.1
+        run: |
+          python3 -m venv "$RUNNER_TEMP/clang-format-venv"
+          "$RUNNER_TEMP/clang-format-venv/bin/python" -m pip install --disable-pip-version-check clang-format==23.1.1
+          echo "$RUNNER_TEMP/clang-format-venv/bin" >> "$GITHUB_PATH"
+          clang-format --version
 
       - name: Check formatting
         run: |
