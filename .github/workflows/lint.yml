@@ -11,14 +11,16 @@ on:
 jobs:
   lint:
     name: Lint
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install clang-format
-        run: brew install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y clang-format-18
 
       - name: Check formatting
         run: |
@@ -26,5 +28,5 @@ jobs:
             -not -path "./build/*")
 
           for file in $files; do
-            clang-format --dry-run --Werror "$file"
+            clang-format-18 --dry-run --Werror "$file"
           done
