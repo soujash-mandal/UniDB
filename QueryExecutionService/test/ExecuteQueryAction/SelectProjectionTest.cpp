@@ -44,13 +44,11 @@ TEST(ExecuteQueryActionTest, RejectsUnknownProjectedColumnBeforeReadingRows) {
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));
-  EXPECT_EQ(
-      std::get<QueryExecutionService::QueryExecutionError>(outcome).code,
-      QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
-  EXPECT_NE(
-      std::get<QueryExecutionService::QueryExecutionError>(outcome).message
-          .find("Unknown SELECT column: missing"),
-      std::string::npos);
+  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionError>(outcome).code,
+            QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("Unknown SELECT column: missing"),
+            std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
