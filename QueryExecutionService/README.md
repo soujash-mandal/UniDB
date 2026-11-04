@@ -4,7 +4,7 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 
 ## Actions
 
-- `ExecuteQueryAction` — execute `CREATE TABLE`, `INSERT INTO ... VALUES (...)`, and `SELECT * FROM ...`, returning structured results or errors.
+- `ExecuteQueryAction` — execute `CREATE TABLE`, `INSERT INTO ... VALUES (...)`, and `SELECT *` / `SELECT column, ...`, returning structured results or errors.
 
 ## Ports
 
