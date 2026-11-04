@@ -37,11 +37,12 @@ jobs:
           path: pr
           persist-credentials: false
 
-      - name: Install clang-format
+      - name: Install clang-format 23.1.1
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y clang-format-18
-          sudo ln -s /usr/bin/clang-format-18 /usr/local/bin/clang-format
+          python3 -m venv "$RUNNER_TEMP/clang-format-venv"
+          "$RUNNER_TEMP/clang-format-venv/bin/python" -m pip install --disable-pip-version-check clang-format==23.1.1
+          echo "$RUNNER_TEMP/clang-format-venv/bin" >> "$GITHUB_PATH"
+          clang-format --version
 
       # Execute only the formatter script from the trusted base checkout.
       # The pull request checkout is treated as data and never runs its own scripts.
