@@ -483,7 +483,7 @@ SqlConnectionServer::SqlConnectionServer(Container &container,
 }
 
 int SqlConnectionServer::run() {
-  struct sigaction action{};
+  struct sigaction action {};
   action.sa_handler = requestStop;
   sigemptyset(&action.sa_mask);
   action.sa_flags = 0;
