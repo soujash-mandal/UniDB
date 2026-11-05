@@ -71,6 +71,69 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
   throw std::invalid_argument("Unknown WHERE comparison operator");
 }
 
+struct CompiledWhereExpression {
+  unidb::sql::WhereExpression::Kind kind{
+      unidb::sql::WhereExpression::Kind::Predicate};
+  std::size_t columnIndex{0};
+  WhereEquals predicate;
+  std::vector<CompiledWhereExpression> children;
+};
+
+CompiledWhereExpression
+compileWhereExpression(const WhereExpression &expression,
+                       const std::vector<ColumnDefinition> &schema,
+                       const std::vector<SqlType> &types) {
+  CompiledWhereExpression compiled;
+  compiled.kind = expression.kind;
+  if (expression.kind == WhereExpression::Kind::Predicate) {
+    const auto found =
+        std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+          return column.name == expression.predicate.columnName;
+        });
+    if (found == schema.end()) {
+      throw std::invalid_argument("Unknown WHERE column: " +
+                                  expression.predicate.columnName);
+    }
+    compiled.columnIndex =
+        static_cast<std::size_t>(std::distance(schema.begin(), found));
+    const bool valueIsInt =
+        std::holds_alternative<std::int64_t>(expression.predicate.value);
+    if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
+      throw std::invalid_argument("WHERE value type does not match column: " +
+                                  found->name);
+    }
+    compiled.predicate = expression.predicate;
+    return compiled;
+  }
+
+  if (expression.children.empty()) {
+    throw std::invalid_argument("WHERE logical expression cannot be empty");
+  }
+  compiled.children.reserve(expression.children.size());
+  for (const auto &child : expression.children) {
+    compiled.children.push_back(compileWhereExpression(child, schema, types));
+  }
+  return compiled;
+}
+
+bool matchesWhereExpression(
+    const std::vector<SqlValue> &row,
+    const CompiledWhereExpression &expression) {
+  if (expression.kind == WhereExpression::Kind::Predicate) {
+    return matchesWhere(row[expression.columnIndex], expression.predicate);
+  }
+  if (expression.kind == WhereExpression::Kind::And) {
+    return std::all_of(expression.children.begin(), expression.children.end(),
+                       [&](const auto &child) {
+                         return matchesWhereExpression(row, child);
+                       });
+  }
+  return std::any_of(expression.children.begin(), expression.children.end(),
+                     [&](const auto &child) {
+                       return matchesWhereExpression(row, child);
+                     });
+}
+
 QueryExecutionResult commandResult(std::string message,
                                    uint32_t affectedRows = 0) {
   QueryExecutionResult result;
@@ -199,34 +262,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
 
-    using CompiledPredicate = std::pair<std::size_t, WhereEquals>;
-    std::vector<std::vector<CompiledPredicate>> compiledWhere;
     const auto *where = std::get_if<WhereExpression>(&select->where);
+    std::optional<CompiledWhereExpression> compiledWhere;
     if (where != nullptr) {
-      compiledWhere.reserve(where->disjunctions.size());
-      for (const auto &conjunction : where->disjunctions) {
-        auto &compiledConjunction = compiledWhere.emplace_back();
-        compiledConjunction.reserve(conjunction.size());
-        for (const auto &predicate : conjunction) {
-          const auto found = std::find_if(
-              schema.begin(), schema.end(), [&](const auto &column) {
-                return column.name == predicate.columnName;
-              });
-          if (found == schema.end()) {
-            throw std::invalid_argument("Unknown WHERE column: " +
-                                        predicate.columnName);
-          }
-          const auto filterIndex =
-              static_cast<std::size_t>(std::distance(schema.begin(), found));
-          const bool valueIsInt =
-              std::holds_alternative<std::int64_t>(predicate.value);
-          if ((types[filterIndex] == SqlType::Int) != valueIsInt) {
-            throw std::invalid_argument(
-                "WHERE value type does not match column: " + found->name);
-          }
-          compiledConjunction.emplace_back(filterIndex, predicate);
-        }
-      }
+      compiledWhere = compileWhereExpression(*where, schema, types);
     }
 
     std::vector<std::size_t> selectedIndexes;
@@ -279,19 +318,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     matchedRows.reserve(encodedRows.size());
     for (const auto &bytes : encodedRows) {
       auto decoded = SqlTupleCodec::decode(types, bytes);
-      if (where != nullptr) {
-        const bool matchesExpression = std::any_of(
-            compiledWhere.begin(), compiledWhere.end(),
-            [&](const auto &conjunction) {
-              return std::all_of(conjunction.begin(), conjunction.end(),
-                                 [&](const auto &compiled) {
-                                   return matchesWhere(decoded[compiled.first],
-                                                       compiled.second);
-                                 });
-            });
-        if (!matchesExpression) {
-          continue;
-        }
+      if (compiledWhere.has_value() &&
+          !matchesWhereExpression(decoded, *compiledWhere)) {
+        continue;
       }
       matchedRows.push_back(std::move(decoded));
     }
