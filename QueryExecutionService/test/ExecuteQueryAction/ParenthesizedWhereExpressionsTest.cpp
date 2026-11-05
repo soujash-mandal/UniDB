@@ -73,7 +73,8 @@ TEST(ExecuteQueryActionTest, ValidatesNestedWherePredicatesBeforeReadingRows) {
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
-TEST(ExecuteQueryActionTest, RejectsMalformedParenthesizedWhereBeforeReadingRows) {
+TEST(ExecuteQueryActionTest,
+     RejectsMalformedParenthesizedWhereBeforeReadingRows) {
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);

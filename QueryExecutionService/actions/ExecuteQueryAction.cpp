@@ -116,22 +116,19 @@ compileWhereExpression(const WhereExpression &expression,
   return compiled;
 }
 
-bool matchesWhereExpression(
-    const std::vector<SqlValue> &row,
-    const CompiledWhereExpression &expression) {
+bool matchesWhereExpression(const std::vector<SqlValue> &row,
+                            const CompiledWhereExpression &expression) {
   if (expression.kind == WhereExpression::Kind::Predicate) {
     return matchesWhere(row[expression.columnIndex], expression.predicate);
   }
   if (expression.kind == WhereExpression::Kind::And) {
-    return std::all_of(expression.children.begin(), expression.children.end(),
-                       [&](const auto &child) {
-                         return matchesWhereExpression(row, child);
-                       });
+    return std::all_of(
+        expression.children.begin(), expression.children.end(),
+        [&](const auto &child) { return matchesWhereExpression(row, child); });
   }
-  return std::any_of(expression.children.begin(), expression.children.end(),
-                     [&](const auto &child) {
-                       return matchesWhereExpression(row, child);
-                     });
+  return std::any_of(
+      expression.children.begin(), expression.children.end(),
+      [&](const auto &child) { return matchesWhereExpression(row, child); });
 }
 
 QueryExecutionResult commandResult(std::string message,

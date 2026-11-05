@@ -297,12 +297,11 @@ TEST(SqlParserTest, RejectsMalformedMultiRowInsertValues) {
   }
 }
 
-
 TEST(SqlParserTest, ParsesParenthesizedWhereGroupsAndNestedPrecedence) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT id FROM users WHERE (id = 1 OR id = 2) AND "
-      "(name = 'A' OR (id > 3 AND name = 'B'))");
+  const auto result =
+      parser.parse("SELECT id FROM users WHERE (id = 1 OR id = 2) AND "
+                   "(name = 'A' OR (id > 3 AND name = 'B'))");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
@@ -319,8 +318,8 @@ TEST(SqlParserTest, ParsesParenthesizedWhereGroupsAndNestedPrecedence) {
 
 TEST(SqlParserTest, ParenthesesOverrideAndBeforeOrPrecedence) {
   SqlParserImpl parser;
-  const auto result =
-      parser.parse("SELECT id FROM users WHERE (id = 1 OR id = 2) AND name = 'B'");
+  const auto result = parser.parse(
+      "SELECT id FROM users WHERE (id = 1 OR id = 2) AND name = 'B'");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
@@ -336,8 +335,7 @@ TEST(SqlParserTest, RejectsMalformedParenthesizedWhereExpressions) {
   SqlParserImpl parser;
   for (const auto *sql :
        {"SELECT * FROM users WHERE (id = 1 OR name = 'A'",
-        "SELECT * FROM users WHERE id = 1)",
-        "SELECT * FROM users WHERE ()",
+        "SELECT * FROM users WHERE id = 1)", "SELECT * FROM users WHERE ()",
         "SELECT * FROM users WHERE (id = 1 AND)",
         "SELECT * FROM users WHERE (OR id = 1)",
         "SELECT * FROM users WHERE ((id = 1)"}) {

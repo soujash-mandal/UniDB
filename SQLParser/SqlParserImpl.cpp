@@ -305,8 +305,7 @@ private:
         parent.children.push_back(std::move(expression));
         expression = std::move(parent);
       }
-      expression.children.push_back(
-          std::get<WhereExpression>(std::move(next)));
+      expression.children.push_back(std::get<WhereExpression>(std::move(next)));
     }
     return expression;
   }
@@ -329,8 +328,7 @@ private:
         parent.children.push_back(std::move(expression));
         expression = std::move(parent);
       }
-      expression.children.push_back(
-          std::get<WhereExpression>(std::move(next)));
+      expression.children.push_back(std::get<WhereExpression>(std::move(next)));
     }
     return expression;
   }
