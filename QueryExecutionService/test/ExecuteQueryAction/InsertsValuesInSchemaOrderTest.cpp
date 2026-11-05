@@ -83,3 +83,20 @@ TEST(ExecuteQueryActionTest, ReportsPartialCommitWhenLaterInsertFails) {
             std::string::npos);
   EXPECT_EQ(port.insertCalls, 2U);
 }
+
+TEST(ExecuteQueryActionTest, CountsRowCommittedBeforePostInsertFailure) {
+  FakeQesRdbServicePort port;
+  port.commitThenFailOnInsertCall = 2;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "INSERT INTO people (id, name) VALUES (1, 'Ada'), (2, 'Grace');");
+
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      outcome));
+  const auto &error =
+      std::get<QueryExecutionService::QueryExecutionError>(outcome);
+  EXPECT_NE(error.message.find("failed after 2 row(s) were inserted"),
+            std::string::npos);
+}
