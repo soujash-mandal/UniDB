@@ -71,7 +71,11 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
 
 void RdbServiceAdapter::insertRow(const std::string &tableName,
                                   const std::vector<char> &tupleBytes) {
-  (void)insertRowAction.execute(metadataPageId, tableName, tupleBytes);
+  try {
+    (void)insertRowAction.execute(metadataPageId, tableName, tupleBytes);
+  } catch (const RdbService::SpaceMapUpdateFailedAfterInsert &error) {
+    throw RowInsertedButPostInsertUpdateFailed(error.what());
+  }
 }
 
 std::vector<std::vector<char>>
