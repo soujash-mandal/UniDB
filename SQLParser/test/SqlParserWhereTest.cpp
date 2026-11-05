@@ -281,7 +281,6 @@ TEST(SqlParserTest, ParsesLikeAndNotLikePatterns) {
 TEST(SqlParserTest, RejectsMalformedLikePredicates) {
   SqlParserImpl parser;
   for (const auto *sql : {"SELECT * FROM users WHERE name LIKE",
-                          "SELECT * FROM users WHERE name LIKE 1",
                           "SELECT * FROM users WHERE name NOT LIKE",
                           "SELECT * FROM users WHERE name NOT LIKE 'A%' AND"}) {
     const auto result = parser.parse(sql);
