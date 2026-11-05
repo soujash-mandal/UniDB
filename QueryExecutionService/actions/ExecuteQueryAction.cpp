@@ -250,7 +250,6 @@ bool matchesWhereExpression(const std::vector<SqlValue> &row,
       [&](const auto &child) { return matchesWhereExpression(row, child); });
 }
 
-
 struct ResolvedJoinColumn {
   const ColumnDefinition *column;
   std::string tableName;
@@ -283,9 +282,8 @@ resolveJoinColumn(const unidb::sql::ColumnReference &reference,
         return column.name == reference.columnName;
       });
   if (found == schema->end()) {
-    throw std::invalid_argument("Unknown JOIN column: " +
-                                *reference.tableName + "." +
-                                reference.columnName);
+    throw std::invalid_argument("Unknown JOIN column: " + *reference.tableName +
+                                "." + reference.columnName);
   }
 
   return {&*found, *reference.tableName,
@@ -308,8 +306,7 @@ resolveSelectedJoinColumn(const std::string &name,
     if (tableName != leftTableName && tableName != rightTableName) {
       throw std::invalid_argument("Unknown SELECT table: " + tableName);
     }
-    const auto &schema =
-        tableName == leftTableName ? leftSchema : rightSchema;
+    const auto &schema = tableName == leftTableName ? leftSchema : rightSchema;
     const auto found =
         std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
           return column.name == columnName;
@@ -337,22 +334,23 @@ resolveSelectedJoinColumn(const std::string &name,
     throw std::invalid_argument("Ambiguous SELECT column: " + name);
   }
   if (inLeft) {
-    return {&*leftFound, leftTableName,
-            static_cast<std::size_t>(
-                std::distance(leftSchema.begin(), leftFound))};
+    return {
+        &*leftFound, leftTableName,
+        static_cast<std::size_t>(std::distance(leftSchema.begin(), leftFound))};
   }
-  return {&*rightFound, rightTableName,
-          static_cast<std::size_t>(
-              std::distance(rightSchema.begin(), rightFound))};
+  return {
+      &*rightFound, rightTableName,
+      static_cast<std::size_t>(std::distance(rightSchema.begin(), rightFound))};
 }
 
-void validateInnerJoinColumns(const SelectStatement &select,
-                              const std::vector<ColumnDefinition> &leftSchema,
-                              const std::vector<ColumnDefinition> &rightSchema) {
+void validateInnerJoinColumns(
+    const SelectStatement &select,
+    const std::vector<ColumnDefinition> &leftSchema,
+    const std::vector<ColumnDefinition> &rightSchema) {
   const auto &join = *select.innerJoin;
   if (select.tableName == join.tableName) {
-    throw std::invalid_argument(
-        "Joining a table to itself requires table aliases, which are unsupported");
+    throw std::invalid_argument("Joining a table to itself requires table "
+                                "aliases, which are unsupported");
   }
 
   const auto leftKey = resolveJoinColumn(
@@ -368,8 +366,8 @@ void validateInnerJoinColumns(const SelectStatement &select,
   }
 
   if (select.aggregate.has_value() || !select.groupBy.empty() ||
-      select.having.has_value() || select.distinct ||
-      !select.orderBy.empty() || select.limit.has_value() || select.offset != 0) {
+      select.having.has_value() || select.distinct || !select.orderBy.empty() ||
+      select.limit.has_value() || select.offset != 0) {
     throw std::invalid_argument(
         "JOIN currently supports only a simple SELECT projection");
   }
@@ -378,16 +376,16 @@ void validateInnerJoinColumns(const SelectStatement &select,
   if (select.selectAll) {
     outputNames.reserve(leftSchema.size() + rightSchema.size());
     for (const auto &column : leftSchema) {
-      const bool duplicated =
-          std::any_of(rightSchema.begin(), rightSchema.end(),
-                      [&](const auto &right) { return right.name == column.name; });
+      const bool duplicated = std::any_of(
+          rightSchema.begin(), rightSchema.end(),
+          [&](const auto &right) { return right.name == column.name; });
       outputNames.push_back(duplicated ? select.tableName + "." + column.name
                                        : column.name);
     }
     for (const auto &column : rightSchema) {
-      const bool duplicated =
-          std::any_of(leftSchema.begin(), leftSchema.end(),
-                      [&](const auto &left) { return left.name == column.name; });
+      const bool duplicated = std::any_of(
+          leftSchema.begin(), leftSchema.end(),
+          [&](const auto &left) { return left.name == column.name; });
       outputNames.push_back(duplicated ? join.tableName + "." + column.name
                                        : column.name);
     }
@@ -401,9 +399,9 @@ void validateInnerJoinColumns(const SelectStatement &select,
     }
     outputNames.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved = resolveSelectedJoinColumn(
-          select.columnNames[index], select.tableName, leftSchema,
-          join.tableName, rightSchema);
+      const auto resolved =
+          resolveSelectedJoinColumn(select.columnNames[index], select.tableName,
+                                    leftSchema, join.tableName, rightSchema);
       const bool duplicated =
           std::any_of(leftSchema.begin(), leftSchema.end(),
                       [&](const auto &column) {
@@ -566,9 +564,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       schemaTypes(leftSchema);
       schemaTypes(rightSchema);
       validateInnerJoinColumns(*select, leftSchema, rightSchema);
-      return QueryExecutionError{
-          QueryExecutionErrorCode::UnsupportedStatement,
-          "INNER JOIN execution is not available yet"};
+      return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
+                                 "INNER JOIN execution is not available yet"};
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
