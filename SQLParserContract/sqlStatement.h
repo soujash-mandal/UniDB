@@ -42,13 +42,20 @@ struct WhereEquals {
   ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
+struct WhereExpression {
+  // Each inner group is joined by AND; groups are joined by OR.
+  // This representation encodes SQL's AND-before-OR precedence.
+  std::vector<std::vector<WhereEquals>> disjunctions;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
   std::vector<std::string> columnNames;
   std::string tableName;
-  // V1 supports at most one comparison predicate.
-  std::variant<std::monostate, WhereEquals> where;
+  // AND binds more tightly than OR. Parenthesized expressions are not yet
+  // supported.
+  std::variant<std::monostate, WhereExpression> where;
 };
 
 using SqlStatement =
