@@ -265,6 +265,5 @@ TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
   }
 }
 
-
 } // namespace
 } // namespace unidb::sql
