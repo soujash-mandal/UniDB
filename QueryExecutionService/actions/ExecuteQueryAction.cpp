@@ -457,6 +457,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
     std::optional<std::size_t> aggregateIndex;
     std::vector<std::size_t> groupIndexes;
+    if (select->having.has_value() && select->groupBy.empty()) {
+      throw std::invalid_argument("HAVING requires GROUP BY");
+    }
     if (!select->groupBy.empty()) {
       if (!select->aggregate.has_value()) {
         throw std::invalid_argument(
@@ -577,6 +580,13 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           functionName + "(" +
           (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
           ")");
+      if (std::any_of(result.columns.begin(), result.columns.end(),
+                      [&](const auto &column) {
+                        return column.name == aggregateName;
+                      })) {
+        throw std::invalid_argument("Duplicate SELECT output column name: " +
+                                    aggregateName);
+      }
       result.columns.push_back({aggregateName, aggregateType});
 
       for (const auto &[key, rows] : groups) {
