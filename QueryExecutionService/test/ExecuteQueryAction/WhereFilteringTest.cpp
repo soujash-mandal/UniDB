@@ -106,3 +106,71 @@ TEST(ExecuteQueryActionTest, ReturnsProjectedColumnsWhenWhereMatchesNoRows) {
   EXPECT_EQ(result.columns[0].name, "name");
   EXPECT_TRUE(result.rows.empty());
 }
+
+TEST(ExecuteQueryActionTest, CombinesWherePredicatesWithAndAndOr) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "A"}, {2, "B"}, {3, "B"}, {4, "C"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto andOutcome =
+      action.execute("SELECT id FROM people WHERE id >= 2 AND name = 'B';");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      andOutcome));
+  const auto &andResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(andOutcome);
+  ASSERT_EQ(andResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(andResult.rows[0][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(andResult.rows[1][0]), 3);
+
+  const auto orOutcome =
+      action.execute("SELECT id FROM people WHERE id = 1 OR id = 4;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      orOutcome));
+  const auto &orResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(orOutcome);
+  ASSERT_EQ(orResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(orResult.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(orResult.rows[1][0]), 4);
+}
+
+TEST(ExecuteQueryActionTest, AppliesAndBeforeOrWhenEvaluatingWhere) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "A"}, {2, "B"}, {3, "B"}, {4, "C"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome = action.execute(
+      "SELECT id FROM people WHERE id = 1 OR id >= 2 AND name = 'B';");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 3U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[2][0]), 3);
+}
+
+TEST(ExecuteQueryActionTest, ValidatesEveryCompoundPredicateBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT * FROM people WHERE id = 1 OR missing = 2;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      outcome));
+  EXPECT_NE(
+      std::get<QueryExecutionService::QueryExecutionError>(outcome).message.find(
+          "Unknown WHERE column: missing"),
+      std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
