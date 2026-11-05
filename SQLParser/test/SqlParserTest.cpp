@@ -48,9 +48,11 @@ TEST(SqlParserTest, ParsesSelectAllAndOptionalEqualityPredicate) {
       std::get<SelectStatement>(std::get<SqlStatement>(result));
   EXPECT_TRUE(select.selectAll);
   EXPECT_EQ(select.tableName, "users");
-  ASSERT_TRUE(std::holds_alternative<WhereEquals>(select.where));
-  const auto &where = std::get<WhereEquals>(select.where);
-  EXPECT_EQ(std::get<std::int64_t>(where.value), 7);
+  ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+  const auto &where = std::get<WhereExpression>(select.where);
+  ASSERT_EQ(where.disjunctions.size(), 1U);
+  ASSERT_EQ(where.disjunctions[0].size(), 1U);
+  EXPECT_EQ(std::get<std::int64_t>(where.disjunctions[0][0].value), 7);
 }
 
 TEST(SqlParserTest, ParsesSelectedColumns) {
@@ -86,8 +88,8 @@ TEST(SqlParserTest, ReportsUnsupportedStatementAndOperators) {
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(comparison));
   const auto &select =
       std::get<SelectStatement>(std::get<SqlStatement>(comparison));
-  ASSERT_TRUE(std::holds_alternative<WhereEquals>(select.where));
-  EXPECT_EQ(std::get<WhereEquals>(select.where).comparison,
+  ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+  EXPECT_EQ(std::get<WhereExpression>(select.where).disjunctions[0][0].comparison,
             ComparisonOperator::GreaterThan);
 }
 
@@ -126,8 +128,8 @@ TEST(SqlParserTest, ParsesEverySupportedWhereComparisonOperator) {
         << "operator: " << token;
     const auto &select =
         std::get<SelectStatement>(std::get<SqlStatement>(result));
-    ASSERT_TRUE(std::holds_alternative<WhereEquals>(select.where));
-    EXPECT_EQ(std::get<WhereEquals>(select.where).comparison, expected)
+    ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+    EXPECT_EQ(std::get<WhereExpression>(select.where).disjunctions[0][0].comparison, expected)
         << "operator: " << token;
   }
 }
@@ -138,6 +140,32 @@ TEST(SqlParserTest, RejectsIncompleteWhereComparison) {
   ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
   EXPECT_EQ(std::get<SqlParseError>(result).code,
             SqlParseErrorCode::SyntaxError);
+}
+
+TEST(SqlParserTest, ParsesAndBeforeOrPrecedence) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM users WHERE id = 1 OR id = 2 AND name = 'B'");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &where = std::get<WhereExpression>(select.where);
+  ASSERT_EQ(where.disjunctions.size(), 2U);
+  ASSERT_EQ(where.disjunctions[0].size(), 1U);
+  ASSERT_EQ(where.disjunctions[1].size(), 2U);
+}
+
+TEST(SqlParserTest, RejectsDanglingAndOrAndRepeatedConnectors) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT * FROM users WHERE id = 1 AND",
+           "SELECT * FROM users WHERE id = 1 OR",
+           "SELECT * FROM users WHERE id = 1 AND OR id = 2"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError) << sql;
+  }
 }
 
 } // namespace
