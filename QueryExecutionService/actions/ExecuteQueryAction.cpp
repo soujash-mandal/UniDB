@@ -431,6 +431,9 @@ void validateInnerJoinColumns(
   }
 }
 
+// Executes the current SELECT * JOIN subset by decoding both inputs and
+// comparing every left/right row pair. This uses O(N x M) comparisons and
+// retains both decoded inputs and the joined output in memory.
 QueryExecutionResult
 executeInnerJoinSelectAll(RdbServicePort &rdbServicePort,
                           const SelectStatement &select,
