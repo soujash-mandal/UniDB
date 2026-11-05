@@ -208,11 +208,15 @@ private:
   SqlParseResult parseSelect() {
     ++position_; // SELECT
     SelectStatement statement;
+    statement.distinct = matchKeyword("DISTINCT");
     if (match(TokenKind::Star)) {
       statement.selectAll = true;
+      if (matchKeyword("AS")) {
+        return syntaxError("SELECT * cannot have a column alias");
+      }
     } else {
       if (current().kind != TokenKind::Identifier) {
-        return syntaxError("Expected '*' or column name after SELECT");
+        return syntaxError("Expected '*', DISTINCT, or column name after SELECT");
       }
       while (true) {
         if (current().kind != TokenKind::Identifier) {
@@ -220,6 +224,15 @@ private:
         }
         statement.columnNames.push_back(current().text);
         ++position_;
+        std::optional<std::string> alias;
+        if (matchKeyword("AS")) {
+          if (current().kind != TokenKind::Identifier) {
+            return syntaxError("Expected alias after AS");
+          }
+          alias = current().text;
+          ++position_;
+        }
+        statement.columnAliases.push_back(std::move(alias));
         if (!match(TokenKind::Comma)) {
           break;
         }
