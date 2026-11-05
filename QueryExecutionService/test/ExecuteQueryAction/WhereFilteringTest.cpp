@@ -361,6 +361,73 @@ TEST(ExecuteQueryActionTest, AppliesOffsetWithoutLimitAndDefaultsOffsetToZero) {
   EXPECT_EQ(std::get<std::int64_t>(limitResult.rows[0][0]), 1);
 }
 
+TEST(ExecuteQueryActionTest, FiltersInclusiveBetweenAndNotBetweenRanges) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "Ada"}, {2, "Grace"}, {3, "Linus"}, {4, "Zoe"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto between = action.execute(
+      "SELECT id FROM people WHERE id BETWEEN 2 AND 3 ORDER BY id;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      between));
+  const auto &betweenResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(between);
+  ASSERT_EQ(betweenResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(betweenResult.rows[0][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(betweenResult.rows[1][0]), 3);
+
+  const auto notBetween = action.execute(
+      "SELECT name FROM people WHERE name NOT BETWEEN 'Grace' AND 'Linus' ORDER BY id;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      notBetween));
+  const auto &notBetweenResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(notBetween);
+  ASSERT_EQ(notBetweenResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(notBetweenResult.rows[0][0]), "Ada");
+  EXPECT_EQ(std::get<std::string>(notBetweenResult.rows[1][0]), "Zoe");
+}
+
+TEST(ExecuteQueryActionTest, SupportsBetweenInsideNestedWhereExpressions) {
+  FakeQesRdbServicePort port;
+  for (const std::int64_t id : {1, 2, 3, 4, 5}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+        {id, std::string("user") + std::to_string(id)}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome = action.execute(
+      "SELECT id FROM people WHERE (id BETWEEN 2 AND 4 OR id = 1) AND id NOT BETWEEN 3 AND 3 ORDER BY id;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 3U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[2][0]), 4);
+}
+
+TEST(ExecuteQueryActionTest, ValidatesBothBetweenBoundsBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT * FROM people WHERE id BETWEEN 1 AND 'wrong';");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("WHERE value type does not match column: id"),
+            std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
+
 TEST(ExecuteQueryActionTest, FiltersIntegerAndTextValuesWithInAndNotIn) {
   FakeQesRdbServicePort port;
   for (const auto &[id, name] :
