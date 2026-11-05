@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <set>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -406,6 +407,23 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         selectedIndexes.push_back(schemaIndex);
         selectedColumns.push_back(*found);
       }
+
+      if (!select->columnAliases.empty() &&
+          select->columnAliases.size() != select->columnNames.size()) {
+        throw std::invalid_argument(
+            "SELECT alias count does not match columns");
+      }
+      std::unordered_set<std::string> outputNames;
+      for (std::size_t index = 0; index < selectedColumns.size(); ++index) {
+        if (index < select->columnAliases.size() &&
+            select->columnAliases[index].has_value()) {
+          selectedColumns[index].name = *select->columnAliases[index];
+        }
+        if (!outputNames.insert(selectedColumns[index].name).second) {
+          throw std::invalid_argument("Duplicate SELECT output column name: " +
+                                      selectedColumns[index].name);
+        }
+      }
     }
 
     std::vector<std::pair<std::size_t, bool>> orderIndexes;
@@ -419,9 +437,16 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         throw std::invalid_argument("Unknown ORDER BY column: " +
                                     order.columnName);
       }
-      orderIndexes.emplace_back(
-          static_cast<std::size_t>(std::distance(schema.begin(), found)),
-          order.ascending);
+      const auto orderIndex =
+          static_cast<std::size_t>(std::distance(schema.begin(), found));
+      if (select->distinct &&
+          std::find(selectedIndexes.begin(), selectedIndexes.end(),
+                    orderIndex) == selectedIndexes.end()) {
+        throw std::invalid_argument("ORDER BY column must appear in SELECT "
+                                    "list when DISTINCT is used: " +
+                                    order.columnName);
+      }
+      orderIndexes.emplace_back(orderIndex, order.ascending);
     }
 
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
@@ -434,6 +459,22 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         continue;
       }
       matchedRows.push_back(std::move(decoded));
+    }
+
+    if (select->distinct) {
+      std::set<std::vector<SqlValue>> seenProjections;
+      matchedRows.erase(
+          std::remove_if(
+              matchedRows.begin(), matchedRows.end(),
+              [&](const auto &row) {
+                std::vector<SqlValue> projection;
+                projection.reserve(selectedIndexes.size());
+                for (const auto index : selectedIndexes) {
+                  projection.push_back(row[index]);
+                }
+                return !seenProjections.insert(std::move(projection)).second;
+              }),
+          matchedRows.end());
     }
 
     if (!orderIndexes.empty()) {

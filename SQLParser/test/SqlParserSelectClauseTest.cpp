@@ -104,5 +104,57 @@ TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
   }
 }
 
+TEST(SqlParserTest, ParsesDistinctAndColumnAliases) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT DISTINCT name AS username, id FROM users");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  EXPECT_TRUE(select.distinct);
+  ASSERT_EQ(select.columnNames.size(), 2U);
+  EXPECT_EQ(select.columnNames[0], "name");
+  EXPECT_EQ(select.columnNames[1], "id");
+  ASSERT_EQ(select.columnAliases.size(), 2U);
+  ASSERT_TRUE(select.columnAliases[0].has_value());
+  EXPECT_EQ(*select.columnAliases[0], "username");
+  EXPECT_FALSE(select.columnAliases[1].has_value());
+}
+
+TEST(SqlParserTest, ParsesDistinctStarAndAliasesWithoutDistinct) {
+  SqlParserImpl parser;
+  const auto distinctStar = parser.parse("SELECT DISTINCT * FROM users");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(distinctStar));
+  const auto &star =
+      std::get<SelectStatement>(std::get<SqlStatement>(distinctStar));
+  EXPECT_TRUE(star.distinct);
+  EXPECT_TRUE(star.selectAll);
+
+  const auto aliased = parser.parse("SELECT name AS username FROM users");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(aliased));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(aliased));
+  EXPECT_FALSE(select.distinct);
+  ASSERT_EQ(select.columnAliases.size(), 1U);
+  ASSERT_TRUE(select.columnAliases[0].has_value());
+  EXPECT_EQ(*select.columnAliases[0], "username");
+}
+
+TEST(SqlParserTest, RejectsMalformedSelectAliases) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT name AS FROM users", "SELECT name AS 1 FROM users",
+        "SELECT name AS username, FROM users",
+        "SELECT * AS everything FROM users",
+        "SELECT DISTINCT AS username FROM users"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
 } // namespace
 } // namespace unidb::sql

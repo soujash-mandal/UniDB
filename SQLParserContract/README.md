@@ -18,6 +18,9 @@ semicolon is optional.
 - `INSERT INTO table_name (column_name, ...) VALUES (literal, ...), (literal, ...)`
 - `SELECT * FROM table_name`
 - `SELECT column_name, ... FROM table_name`
+- `SELECT DISTINCT column_name, ... FROM table_name`
+- `SELECT column_name AS alias, ... FROM table_name`
+- `SELECT DISTINCT * FROM table_name`
 - Either SELECT form may include a WHERE expression with comparison operators,
   IN / NOT IN, BETWEEN / NOT BETWEEN, and LIKE / NOT LIKE.
 - WHERE expressions support parentheses, AND, and OR (AND has higher
@@ -49,3 +52,13 @@ columns. In a pattern, `%` matches zero or more bytes and `_` matches exactly
 one byte. Matching is case-sensitive. There is no ESCAPE clause: backslash has
 no special pattern-escaping meaning, and literal percent/underscore escaping
 is not supported. LIKE patterns must be single-quoted TEXT literals.
+
+## DISTINCT and column aliases
+
+`DISTINCT` removes duplicate rows from the selected projection: two source rows
+are duplicates only when every selected value is equal. It is applied after
+WHERE filtering and before ORDER BY, OFFSET, and LIMIT. For a DISTINCT query,
+each ORDER BY column must also appear in the SELECT list. Duplicate output
+column names (including duplicate aliases or alias/name collisions) are rejected.
+Aliases are introduced with the explicit `AS` keyword and are returned as the
+result column names; the underlying column types and values are unchanged.
