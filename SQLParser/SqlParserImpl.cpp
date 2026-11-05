@@ -57,7 +57,7 @@ public:
     }
     if (current().kind != TokenKind::End) {
       if (current().kind == TokenKind::Unsupported || isKeyword("AND") ||
-          isKeyword("OR") || isKeyword("JOIN")) {
+          isKeyword("OR") || isKeyword("JOIN") || isKeyword("INNER")) {
         return unsupported("SQL syntax is outside the V1 supported subset");
       }
       return syntaxError("Unexpected token '" + current().text + "'");
@@ -212,6 +212,33 @@ private:
             upper(current().text) == "SUM" || upper(current().text) == "AVG");
   }
 
+  std::variant<ColumnReference, SqlParseError>
+  parseColumnReference(bool requireQualifier) {
+    if (current().kind != TokenKind::Identifier) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected column reference"};
+    }
+    ColumnReference reference;
+    const std::string first = current().text;
+    ++position_;
+    if (match(TokenKind::Dot)) {
+      if (current().kind != TokenKind::Identifier) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected column name after '.'"};
+      }
+      reference.tableName = first;
+      reference.columnName = current().text;
+      ++position_;
+      return reference;
+    }
+    if (requireQualifier) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "JOIN ON requires table-qualified columns"};
+    }
+    reference.columnName = first;
+    return reference;
+  }
+
   std::variant<AggregateExpression, SqlParseError> parseAggregateCall() {
     const std::string functionName = upper(current().text);
     ++position_;
@@ -289,11 +316,15 @@ private:
               std::get<AggregateExpression>(std::move(aggregate));
           break;
         }
-        if (current().kind != TokenKind::Identifier) {
-          return syntaxError("Expected column name in SELECT list");
+        auto reference = parseColumnReference(false);
+        if (std::holds_alternative<SqlParseError>(reference)) {
+          return std::get<SqlParseError>(std::move(reference));
         }
-        statement.columnNames.push_back(current().text);
-        ++position_;
+        const auto &column = std::get<ColumnReference>(reference);
+        statement.columnNames.push_back(
+            column.tableName.has_value()
+                ? *column.tableName + "." + column.columnName
+                : column.columnName);
         std::optional<std::string> alias;
         if (matchKeyword("AS")) {
           if (current().kind != TokenKind::Identifier) {
@@ -316,6 +347,37 @@ private:
     }
     statement.tableName = current().text;
     ++position_;
+
+    if (matchKeyword("INNER")) {
+      if (!expectKeyword("JOIN")) {
+        return syntaxError("Expected JOIN after INNER");
+      }
+      if (current().kind != TokenKind::Identifier) {
+        return syntaxError("Expected joined table name after INNER JOIN");
+      }
+      InnerJoinClause join;
+      join.tableName = current().text;
+      ++position_;
+      if (!expectKeyword("ON")) {
+        return syntaxError("Expected ON after joined table name");
+      }
+      auto left = parseColumnReference(true);
+      if (std::holds_alternative<SqlParseError>(left)) {
+        return std::get<SqlParseError>(std::move(left));
+      }
+      join.left = std::get<ColumnReference>(std::move(left));
+      if (!expect(TokenKind::Equals)) {
+        return syntaxError("INNER JOIN ON currently supports equality only");
+      }
+      auto right = parseColumnReference(true);
+      if (std::holds_alternative<SqlParseError>(right)) {
+        return std::get<SqlParseError>(std::move(right));
+      }
+      join.right = std::get<ColumnReference>(std::move(right));
+      statement.innerJoin = std::move(join);
+    } else if (isKeyword("JOIN")) {
+      return unsupported("Only explicit INNER JOIN syntax is supported");
+    }
 
     if (matchKeyword("WHERE")) {
       auto expression = parseWhereOrExpression();
