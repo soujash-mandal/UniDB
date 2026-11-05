@@ -71,10 +71,10 @@ TEST(ExecuteQueryActionJoinResolutionTest,
           result));
   const auto &error =
       std::get<QueryExecutionService::QueryExecutionError>(result);
-  EXPECT_EQ(
-      error.code,
-      QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
-  EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; column projection will be added in the next stage");
+  EXPECT_EQ(error.code,
+            QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
+  EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; "
+                           "column projection will be added in the next stage");
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "orders"}));
   EXPECT_EQ(fixture.port.selectCalls, 0U);
