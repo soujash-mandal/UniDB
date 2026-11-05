@@ -399,7 +399,8 @@ TEST(SqlParserTest, ParsesBetweenAndNotBetweenRangePredicates) {
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(betweenResult));
   const auto &betweenSelect =
       std::get<SelectStatement>(std::get<SqlStatement>(betweenResult));
-  const auto &between = std::get<WhereExpression>(betweenSelect.where).predicate;
+  const auto &between =
+      std::get<WhereExpression>(betweenSelect.where).predicate;
   EXPECT_EQ(between.comparison, ComparisonOperator::Between);
   EXPECT_EQ(std::get<std::int64_t>(between.value), -2);
   ASSERT_TRUE(between.upperBound.has_value());
@@ -420,17 +421,17 @@ TEST(SqlParserTest, ParsesBetweenAndNotBetweenRangePredicates) {
 
 TEST(SqlParserTest, RejectsMalformedBetweenPredicates) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT * FROM users WHERE id BETWEEN 1",
-           "SELECT * FROM users WHERE id BETWEEN AND 3",
-           "SELECT * FROM users WHERE id BETWEEN 1 AND",
-           "SELECT * FROM users WHERE id NOT BETWEEN 1",
-           "SELECT * FROM users WHERE id NOT IN 1",
-           "SELECT * FROM users WHERE id BETWEEN 1 OR id = 2"}) {
+  for (const auto *sql : {"SELECT * FROM users WHERE id BETWEEN 1",
+                          "SELECT * FROM users WHERE id BETWEEN AND 3",
+                          "SELECT * FROM users WHERE id BETWEEN 1 AND",
+                          "SELECT * FROM users WHERE id NOT BETWEEN 1",
+                          "SELECT * FROM users WHERE id NOT IN 1",
+                          "SELECT * FROM users WHERE id BETWEEN 1 OR id = 2"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,
-              SqlParseErrorCode::SyntaxError) << sql;
+              SqlParseErrorCode::SyntaxError)
+        << sql;
   }
 }
 
