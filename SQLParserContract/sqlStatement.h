@@ -68,6 +68,9 @@ struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
   std::vector<std::string> columnNames;
+  // Parallel to columnNames; nullopt means no explicit alias.
+  std::vector<std::optional<std::string>> columnAliases;
+  bool distinct{false};
   std::string tableName;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
