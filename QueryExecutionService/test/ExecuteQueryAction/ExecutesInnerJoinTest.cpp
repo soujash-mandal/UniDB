@@ -227,4 +227,22 @@ TEST(ExecuteQueryActionInnerJoinTest, RejectsAmbiguousUnqualifiedWhereColumn) {
       "Ambiguous WHERE column: id");
 }
 
+TEST(ExecuteQueryActionInnerJoinTest,
+     KeepsQualifiedWhereReferencesWorkingForSingleTableSelects) {
+  InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+  fixture.addUser(2, "Lin");
+
+  const auto outcome =
+      fixture.execute("SELECT name FROM users WHERE users.id = 1");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 1U);
+  EXPECT_EQ(result.rows[0], (std::vector<SqlValue>{std::string{"Ada"}}));
+}
+
 } // namespace
