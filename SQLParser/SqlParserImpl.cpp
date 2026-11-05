@@ -574,6 +574,14 @@ private:
     WhereEquals predicate;
     predicate.columnName = current().text;
     ++position_;
+    if (match(TokenKind::Dot)) {
+      if (current().kind != TokenKind::Identifier) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected column name after '.' in WHERE"};
+      }
+      predicate.columnName += "." + current().text;
+      ++position_;
+    }
 
     bool isMembership = false;
     bool isNegatedMembership = false;
