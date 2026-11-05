@@ -15,7 +15,7 @@ Keywords are case-insensitive. Identifiers are represented as strings. A trailin
 semicolon is optional.
 
 - `CREATE TABLE table_name (column_name INT, column_name TEXT)`
-- `INSERT INTO table_name (column_name, ...) VALUES (literal, ...)`
+- `INSERT INTO table_name (column_name, ...) VALUES (literal, ...), (literal, ...)`
 - `SELECT * FROM table_name`
 - `SELECT column_name, ... FROM table_name`
 - Either SELECT form may include one simple equality predicate:
