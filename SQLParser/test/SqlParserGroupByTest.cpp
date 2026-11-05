@@ -9,11 +9,12 @@ namespace {
 
 TEST(SqlParserTest, ParsesGroupByAndHavingAggregate) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT department, COUNT(*) AS total FROM employees "
-      "WHERE active = 1 GROUP BY department HAVING COUNT(*) >= 2");
+  const auto result =
+      parser.parse("SELECT department, COUNT(*) AS total FROM employees "
+                   "WHERE active = 1 GROUP BY department HAVING COUNT(*) >= 2");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &select = std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
   ASSERT_EQ(select.columnNames.size(), 1U);
   EXPECT_EQ(select.columnNames[0], "department");
   ASSERT_TRUE(select.aggregate.has_value());
@@ -28,12 +29,12 @@ TEST(SqlParserTest, ParsesGroupByAndHavingAggregate) {
 
 TEST(SqlParserTest, RejectsMalformedGroupByAndHaving) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT department, COUNT(*) FROM employees GROUP department",
-           "SELECT department, COUNT(*) FROM employees GROUP BY",
-           "SELECT department, COUNT(*) FROM employees HAVING COUNT(*)",
-           "SELECT department, COUNT(*) FROM employees GROUP BY department "
-           "HAVING SUM(*) > 1"}) {
+  for (const auto *sql :
+       {"SELECT department, COUNT(*) FROM employees GROUP department",
+        "SELECT department, COUNT(*) FROM employees GROUP BY",
+        "SELECT department, COUNT(*) FROM employees HAVING COUNT(*)",
+        "SELECT department, COUNT(*) FROM employees GROUP BY department "
+        "HAVING SUM(*) > 1"}) {
     EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
         << sql;
   }

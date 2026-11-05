@@ -15,10 +15,10 @@ namespace QueryExecutionService {
 namespace {
 
 using unidb::sql::AggregateFunction;
-using unidb::sql::HavingExpression;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
+using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
@@ -545,7 +545,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           aggregate.function == AggregateFunction::Count ? "COUNT"
           : aggregate.function == AggregateFunction::Min ? "MIN"
           : aggregate.function == AggregateFunction::Max ? "MAX"
-          : aggregate.function == AggregateFunction::Sum ? "SUM" : "AVG";
+          : aggregate.function == AggregateFunction::Sum ? "SUM"
+                                                         : "AVG";
       const SqlType aggregateType =
           aggregate.function == AggregateFunction::Min ||
                   aggregate.function == AggregateFunction::Max
@@ -560,8 +561,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
       }
 
-      using GroupRows =
-          std::map<std::vector<SqlValue>, std::vector<const std::vector<SqlValue> *>>;
+      using GroupRows = std::map<std::vector<SqlValue>,
+                                 std::vector<const std::vector<SqlValue> *>>;
       GroupRows groups;
       for (const auto &row : matchedRows) {
         std::vector<SqlValue> key;
@@ -635,10 +636,18 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               compareSqlValues(aggregateValue, select->having->value);
           bool matches = false;
           switch (select->having->comparison) {
-          case ComparisonOperator::Equal: matches = comparison == 0; break;
-          case ComparisonOperator::NotEqual: matches = comparison != 0; break;
-          case ComparisonOperator::GreaterThan: matches = comparison > 0; break;
-          case ComparisonOperator::LessThan: matches = comparison < 0; break;
+          case ComparisonOperator::Equal:
+            matches = comparison == 0;
+            break;
+          case ComparisonOperator::NotEqual:
+            matches = comparison != 0;
+            break;
+          case ComparisonOperator::GreaterThan:
+            matches = comparison > 0;
+            break;
+          case ComparisonOperator::LessThan:
+            matches = comparison < 0;
+            break;
           case ComparisonOperator::GreaterThanOrEqual:
             matches = comparison >= 0;
             break;

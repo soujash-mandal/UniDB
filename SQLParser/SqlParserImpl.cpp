@@ -207,9 +207,9 @@ private:
 
   bool isAggregateStart() const {
     return current().kind == TokenKind::Identifier &&
-           (upper(current().text) == "COUNT" || upper(current().text) == "MIN" ||
-            upper(current().text) == "MAX" || upper(current().text) == "SUM" ||
-            upper(current().text) == "AVG");
+           (upper(current().text) == "COUNT" ||
+            upper(current().text) == "MIN" || upper(current().text) == "MAX" ||
+            upper(current().text) == "SUM" || upper(current().text) == "AVG");
   }
 
   std::variant<AggregateExpression, SqlParseError> parseAggregateCall() {
@@ -268,8 +268,7 @@ private:
       if (std::holds_alternative<SqlParseError>(aggregate)) {
         return std::get<SqlParseError>(std::move(aggregate));
       }
-      statement.aggregate =
-          std::get<AggregateExpression>(std::move(aggregate));
+      statement.aggregate = std::get<AggregateExpression>(std::move(aggregate));
     } else if (match(TokenKind::Star)) {
       statement.selectAll = true;
       if (matchKeyword("AS")) {
@@ -351,8 +350,7 @@ private:
         return std::get<SqlParseError>(std::move(aggregate));
       }
       HavingExpression having;
-      having.aggregate =
-          std::get<AggregateExpression>(std::move(aggregate));
+      having.aggregate = std::get<AggregateExpression>(std::move(aggregate));
       switch (current().kind) {
       case TokenKind::Equals:
         having.comparison = ComparisonOperator::Equal;
