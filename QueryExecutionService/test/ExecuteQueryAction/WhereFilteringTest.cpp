@@ -393,6 +393,33 @@ TEST(ExecuteQueryActionTest, FiltersInclusiveBetweenAndNotBetweenRanges) {
   EXPECT_EQ(std::get<std::string>(notBetweenResult.rows[1][0]), "Zoe");
 }
 
+TEST(ExecuteQueryActionTest, HandlesEqualAndReversedBetweenBounds) {
+  FakeQesRdbServicePort port;
+  for (const std::int64_t id : {1, 2, 3}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+        {id, std::string("user") + std::to_string(id)}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto equal = action.execute(
+      "SELECT id FROM people WHERE id BETWEEN 2 AND 2;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      equal));
+  const auto &equalResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(equal);
+  ASSERT_EQ(equalResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::int64_t>(equalResult.rows[0][0]), 2);
+
+  const auto reversed = action.execute(
+      "SELECT id FROM people WHERE id BETWEEN 3 AND 1;");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+      reversed));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(reversed)
+                  .rows.empty());
+}
+
 TEST(ExecuteQueryActionTest, SupportsBetweenInsideNestedWhereExpressions) {
   FakeQesRdbServicePort port;
   for (const std::int64_t id : {1, 2, 3, 4, 5}) {
