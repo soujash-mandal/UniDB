@@ -1,8 +1,8 @@
 #include "SqlParserImpl.h"
 
 #include <cctype>
-#include <cstdint>
 #include <charconv>
+#include <cstdint>
 #include <string>
 #include <system_error>
 #include <utility>
