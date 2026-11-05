@@ -233,15 +233,27 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
     }
 
-    const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
+    std::vector<std::pair<std::size_t, bool>> orderIndexes;
+    orderIndexes.reserve(select->orderBy.size());
+    for (const auto &order : select->orderBy) {
+      const auto found =
+          std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+            return column.name == order.columnName;
+          });
+      if (found == schema.end()) {
+        throw std::invalid_argument("Unknown ORDER BY column: " +
+                                    order.columnName);
+      }
+      orderIndexes.emplace_back(
+          static_cast<std::size_t>(std::distance(schema.begin(), found)),
+          order.ascending);
+    }
 
-    QueryExecutionResult result;
-    result.kind = QueryExecutionResultKind::Rows;
-    result.message = "Rows selected";
-    result.columns = std::move(selectedColumns);
-    result.rows.reserve(encodedRows.size());
+    const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
+    std::vector<std::vector<SqlValue>> matchedRows;
+    matchedRows.reserve(encodedRows.size());
     for (const auto &bytes : encodedRows) {
-      const auto decoded = SqlTupleCodec::decode(types, bytes);
+      auto decoded = SqlTupleCodec::decode(types, bytes);
       if (where != nullptr) {
         const bool matchesExpression = std::any_of(
             compiledWhere.begin(), compiledWhere.end(),
@@ -256,6 +268,29 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           continue;
         }
       }
+      matchedRows.push_back(std::move(decoded));
+    }
+
+    if (!orderIndexes.empty()) {
+      std::stable_sort(
+          matchedRows.begin(), matchedRows.end(),
+          [&](const auto &left, const auto &right) {
+            for (const auto &[index, ascending] : orderIndexes) {
+              const int comparison = compareSqlValues(left[index], right[index]);
+              if (comparison != 0) {
+                return ascending ? comparison < 0 : comparison > 0;
+              }
+            }
+            return false;
+          });
+    }
+
+    QueryExecutionResult result;
+    result.kind = QueryExecutionResultKind::Rows;
+    result.message = "Rows selected";
+    result.columns = std::move(selectedColumns);
+    result.rows.reserve(matchedRows.size());
+    for (const auto &decoded : matchedRows) {
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
       for (const auto index : selectedIndexes) {
