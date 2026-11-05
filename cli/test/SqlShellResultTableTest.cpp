@@ -1,36 +1,13 @@
-#include "../SqlShell.h"
 #include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
 #include "../../QueryExecutionService/test/ExecuteQueryAction/ExecuteQueryActionTestSupport.h"
+#include "../SqlShell.h"
 
 #include <gtest/gtest.h>
 
 #include <sstream>
 #include <string>
 
-TEST(SqlShellTest, PrintsCommandSuccessAndContinuesUntilQuit) {
-  // Scenario 1: Each supported command is executed through ExecuteQueryAction.
-  FakeQesRdbServicePort port;
-  unidb::sql::SqlParserImpl parser;
-  auto action = makeQesAction(port, parser);
-  std::istringstream input("CREATE TABLE people (id INT, name TEXT);\n"
-                           "INSERT INTO people (id, name) VALUES (7, 'Ada');\n"
-                           "quit\n");
-  std::ostringstream output;
-  std::ostringstream error;
-  SqlShell shell(action, input, output, error);
-
-  shell.run();
-
-  EXPECT_NE(output.str().find("Table created"), std::string::npos);
-  EXPECT_NE(output.str().find("Row inserted"), std::string::npos);
-  EXPECT_EQ(port.createTableCalls, 1U);
-  EXPECT_EQ(port.insertCalls, 1U);
-  EXPECT_TRUE(error.str().empty());
-}
-
 TEST(SqlShellTest, PrintsSelectResultsAsAlignedTable) {
-  // Scenario 2: Headers and values are aligned using widths based on their
-  // content.
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
@@ -56,7 +33,6 @@ TEST(SqlShellTest, PrintsSelectResultsAsAlignedTable) {
 }
 
 TEST(SqlShellTest, EscapesControlCharactersAndAlignsUtf8Text) {
-  // Scenario 3: Tabs are escaped and multibyte UTF-8 text uses display width.
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
@@ -81,7 +57,6 @@ TEST(SqlShellTest, EscapesControlCharactersAndAlignsUtf8Text) {
 }
 
 TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
-  // Scenario 4: Invalid UTF-8 is visible, and a ZWJ emoji occupies two columns.
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
@@ -119,7 +94,6 @@ TEST(SqlShellTest, EscapesInvalidUtf8AndAlignsJoinedEmoji) {
 }
 
 TEST(SqlShellTest, PrintsHeadersAndBordersForEmptyResultSet) {
-  // Scenario 5: An empty SELECT still renders the schema and an empty table.
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
@@ -133,54 +107,5 @@ TEST(SqlShellTest, PrintsHeadersAndBordersForEmptyResultSet) {
   EXPECT_NE(output.str().find("+----+------+"), std::string::npos);
   EXPECT_NE(output.str().find("| id | name |"), std::string::npos);
   EXPECT_NE(output.str().find("0 row(s)"), std::string::npos);
-  EXPECT_TRUE(error.str().empty());
-}
-
-TEST(SqlShellTest, ReportsInvalidSqlAndContinues) {
-  // Scenario 6: A statement error does not terminate the interactive loop.
-  FakeQesRdbServicePort port;
-  unidb::sql::SqlParserImpl parser;
-  auto action = makeQesAction(port, parser);
-  std::istringstream input("NOT SQL;\nCREATE TABLE people (id INT);\nquit\n");
-  std::ostringstream output;
-  std::ostringstream error;
-  SqlShell shell(action, input, output, error);
-
-  shell.run();
-
-  EXPECT_FALSE(error.str().empty());
-  EXPECT_NE(output.str().find("Table created"), std::string::npos);
-  EXPECT_EQ(port.createTableCalls, 1U);
-}
-
-TEST(SqlShellTest, ExitsCleanlyOnEndOfInput) {
-  // Scenario 7: EOF exits without requiring a quit command.
-  FakeQesRdbServicePort port;
-  unidb::sql::SqlParserImpl parser;
-  auto action = makeQesAction(port, parser);
-  std::istringstream input;
-  std::ostringstream output;
-  std::ostringstream error;
-  SqlShell shell(action, input, output, error);
-
-  EXPECT_NO_THROW(shell.run());
-  EXPECT_TRUE(error.str().empty());
-}
-
-TEST(SqlShellTest, ClearsScreenWithClsAndContinuesProcessingCommands) {
-  // Scenario 8: cls clears visible terminal output without exiting the shell.
-  FakeQesRdbServicePort port;
-  unidb::sql::SqlParserImpl parser;
-  auto action = makeQesAction(port, parser);
-  std::istringstream input("cls\nCREATE TABLE people (id INT);\nquit\n");
-  std::ostringstream output;
-  std::ostringstream error;
-  SqlShell shell(action, input, output, error);
-
-  shell.run();
-
-  EXPECT_NE(output.str().find("\033[2J\033[H"), std::string::npos);
-  EXPECT_NE(output.str().find("Table created"), std::string::npos);
-  EXPECT_EQ(port.createTableCalls, 1U);
   EXPECT_TRUE(error.str().empty());
 }

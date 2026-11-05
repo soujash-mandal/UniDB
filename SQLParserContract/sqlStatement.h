@@ -25,7 +25,7 @@ struct CreateTableStatement {
 struct InsertStatement {
   std::string tableName;
   std::vector<std::string> columnNames;
-  std::vector<SqlValue> values;
+  std::vector<std::vector<SqlValue>> rows;
 };
 
 enum class ComparisonOperator {

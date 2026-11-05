@@ -128,46 +128,71 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   if (const auto *insert = std::get_if<InsertStatement>(&statement)) {
     const auto schema = rdbServicePort.getTableDefinition(insert->tableName);
     const auto types = schemaTypes(schema);
-    if (insert->columnNames.size() != insert->values.size()) {
-      throw std::invalid_argument("INSERT column and value counts must match");
+    if (insert->rows.empty()) {
+      throw std::invalid_argument("INSERT requires at least one VALUES row");
     }
 
-    std::vector<SqlValue> orderedValues(schema.size());
-    std::vector<bool> assigned(schema.size(), false);
-    for (std::size_t inputIndex = 0; inputIndex < insert->columnNames.size();
-         ++inputIndex) {
-      const auto found =
-          std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-            return column.name == insert->columnNames[inputIndex];
-          });
-      if (found == schema.end()) {
-        throw std::invalid_argument("Unknown INSERT column: " +
-                                    insert->columnNames[inputIndex]);
-      }
-      const auto schemaIndex =
-          static_cast<std::size_t>(std::distance(schema.begin(), found));
-      if (assigned[schemaIndex]) {
-        throw std::invalid_argument("Duplicate INSERT column: " +
-                                    insert->columnNames[inputIndex]);
-      }
-      const bool valueIsInt =
-          std::holds_alternative<std::int64_t>(insert->values[inputIndex]);
-      if ((types[schemaIndex] == SqlType::Int) != valueIsInt) {
+    std::vector<std::vector<char>> encodedRows;
+    encodedRows.reserve(insert->rows.size());
+    for (const auto &values : insert->rows) {
+      if (insert->columnNames.size() != values.size()) {
         throw std::invalid_argument(
-            "INSERT value type does not match column: " + found->name);
+            "INSERT column and value counts must match");
       }
-      orderedValues[schemaIndex] = insert->values[inputIndex];
-      assigned[schemaIndex] = true;
+
+      std::vector<SqlValue> orderedValues(schema.size());
+      std::vector<bool> assigned(schema.size(), false);
+      for (std::size_t inputIndex = 0; inputIndex < insert->columnNames.size();
+           ++inputIndex) {
+        const auto found =
+            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+              return column.name == insert->columnNames[inputIndex];
+            });
+        if (found == schema.end()) {
+          throw std::invalid_argument("Unknown INSERT column: " +
+                                      insert->columnNames[inputIndex]);
+        }
+        const auto schemaIndex =
+            static_cast<std::size_t>(std::distance(schema.begin(), found));
+        if (assigned[schemaIndex]) {
+          throw std::invalid_argument("Duplicate INSERT column: " +
+                                      insert->columnNames[inputIndex]);
+        }
+        const bool valueIsInt =
+            std::holds_alternative<std::int64_t>(values[inputIndex]);
+        if ((types[schemaIndex] == SqlType::Int) != valueIsInt) {
+          throw std::invalid_argument(
+              "INSERT value type does not match column: " + found->name);
+        }
+        orderedValues[schemaIndex] = values[inputIndex];
+        assigned[schemaIndex] = true;
+      }
+
+      if (std::find(assigned.begin(), assigned.end(), false) !=
+          assigned.end()) {
+        throw std::invalid_argument(
+            "V1 INSERT requires a value for every table column");
+      }
+      encodedRows.push_back(SqlTupleCodec::encode(types, orderedValues));
     }
 
-    if (std::find(assigned.begin(), assigned.end(), false) != assigned.end()) {
-      throw std::invalid_argument(
-          "V1 INSERT requires a value for every table column");
+    std::uint32_t insertedRows = 0;
+    try {
+      for (const auto &bytes : encodedRows) {
+        try {
+          rdbServicePort.insertRow(insert->tableName, bytes);
+          ++insertedRows;
+        } catch (const RowInsertedButPostInsertUpdateFailed &) {
+          ++insertedRows;
+          throw;
+        }
+      }
+    } catch (const std::exception &error) {
+      return executionError("INSERT failed after " +
+                            std::to_string(insertedRows) +
+                            " row(s) were inserted: " + error.what());
     }
-
-    const auto bytes = SqlTupleCodec::encode(types, orderedValues);
-    rdbServicePort.insertRow(insert->tableName, bytes);
-    return commandResult("Row inserted", 1);
+    return commandResult("Rows inserted", insertedRows);
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {

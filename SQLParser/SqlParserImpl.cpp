@@ -176,25 +176,31 @@ private:
     if (!expectKeyword("VALUES")) {
       return syntaxError("Expected VALUES after INSERT column list");
     }
-    if (!expect(TokenKind::LeftParen)) {
-      return syntaxError("Expected '(' before INSERT values");
-    }
-
     while (true) {
-      auto value = parseLiteral();
-      if (std::holds_alternative<SqlParseError>(value)) {
-        return std::get<SqlParseError>(std::move(value));
+      if (!expect(TokenKind::LeftParen)) {
+        return syntaxError("Expected '(' before INSERT values");
       }
-      statement.values.push_back(std::get<SqlValue>(std::move(value)));
+      std::vector<SqlValue> row;
+      while (true) {
+        auto value = parseLiteral();
+        if (std::holds_alternative<SqlParseError>(value)) {
+          return std::get<SqlParseError>(std::move(value));
+        }
+        row.push_back(std::get<SqlValue>(std::move(value)));
+        if (!match(TokenKind::Comma)) {
+          break;
+        }
+      }
+      if (!expect(TokenKind::RightParen)) {
+        return syntaxError("Expected ')' after INSERT values");
+      }
+      if (statement.columnNames.size() != row.size()) {
+        return syntaxError("INSERT column and value counts must match");
+      }
+      statement.rows.push_back(std::move(row));
       if (!match(TokenKind::Comma)) {
         break;
       }
-    }
-    if (!expect(TokenKind::RightParen)) {
-      return syntaxError("Expected ')' after INSERT values");
-    }
-    if (statement.columnNames.size() != statement.values.size()) {
-      return syntaxError("INSERT column and value counts must match");
     }
     return SqlStatement{std::move(statement)};
   }
