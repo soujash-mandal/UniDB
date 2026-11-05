@@ -56,10 +56,12 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
   if (predicate.comparison == ComparisonOperator::Between ||
       predicate.comparison == ComparisonOperator::NotBetween) {
     if (!predicate.upperBound.has_value()) {
-      throw std::invalid_argument("BETWEEN predicates require two range bounds");
+      throw std::invalid_argument(
+          "BETWEEN predicates require two range bounds");
     }
-    const bool withinRange = compareSqlValues(rowValue, predicate.value) >= 0 &&
-                             compareSqlValues(rowValue, *predicate.upperBound) <= 0;
+    const bool withinRange =
+        compareSqlValues(rowValue, predicate.value) >= 0 &&
+        compareSqlValues(rowValue, *predicate.upperBound) <= 0;
     return predicate.comparison == ComparisonOperator::Between ? withinRange
                                                                : !withinRange;
   }
@@ -138,10 +140,11 @@ compileWhereExpression(const WhereExpression &expression,
     }
     if (isRange) {
       if (!expression.predicate.upperBound.has_value()) {
-        throw std::invalid_argument("BETWEEN predicates require two range bounds");
+        throw std::invalid_argument(
+            "BETWEEN predicates require two range bounds");
       }
-      const bool upperIsInt =
-          std::holds_alternative<std::int64_t>(*expression.predicate.upperBound);
+      const bool upperIsInt = std::holds_alternative<std::int64_t>(
+          *expression.predicate.upperBound);
       if ((types[compiled.columnIndex] == SqlType::Int) != upperIsInt) {
         throw std::invalid_argument("WHERE value type does not match column: " +
                                     found->name);

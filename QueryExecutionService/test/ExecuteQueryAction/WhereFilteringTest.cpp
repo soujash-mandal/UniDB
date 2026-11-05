@@ -374,18 +374,21 @@ TEST(ExecuteQueryActionTest, FiltersInclusiveBetweenAndNotBetweenRanges) {
 
   const auto between = action.execute(
       "SELECT id FROM people WHERE id BETWEEN 2 AND 3 ORDER BY id;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      between));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          between));
   const auto &betweenResult =
       std::get<QueryExecutionService::QueryExecutionResult>(between);
   ASSERT_EQ(betweenResult.rows.size(), 2U);
   EXPECT_EQ(std::get<std::int64_t>(betweenResult.rows[0][0]), 2);
   EXPECT_EQ(std::get<std::int64_t>(betweenResult.rows[1][0]), 3);
 
-  const auto notBetween = action.execute(
-      "SELECT name FROM people WHERE name NOT BETWEEN 'Grace' AND 'Linus' ORDER BY id;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      notBetween));
+  const auto notBetween =
+      action.execute("SELECT name FROM people WHERE name NOT BETWEEN 'Grace' "
+                     "AND 'Linus' ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          notBetween));
   const auto &notBetweenResult =
       std::get<QueryExecutionService::QueryExecutionResult>(notBetween);
   ASSERT_EQ(notBetweenResult.rows.size(), 2U);
@@ -403,19 +406,21 @@ TEST(ExecuteQueryActionTest, HandlesEqualAndReversedBetweenBounds) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto equal = action.execute(
-      "SELECT id FROM people WHERE id BETWEEN 2 AND 2;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      equal));
+  const auto equal =
+      action.execute("SELECT id FROM people WHERE id BETWEEN 2 AND 2;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          equal));
   const auto &equalResult =
       std::get<QueryExecutionService::QueryExecutionResult>(equal);
   ASSERT_EQ(equalResult.rows.size(), 1U);
   EXPECT_EQ(std::get<std::int64_t>(equalResult.rows[0][0]), 2);
 
-  const auto reversed = action.execute(
-      "SELECT id FROM people WHERE id BETWEEN 3 AND 1;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      reversed));
+  const auto reversed =
+      action.execute("SELECT id FROM people WHERE id BETWEEN 3 AND 1;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          reversed));
   EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(reversed)
                   .rows.empty());
 }
@@ -429,10 +434,12 @@ TEST(ExecuteQueryActionTest, SupportsBetweenInsideNestedWhereExpressions) {
   }
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
-  const auto outcome = action.execute(
-      "SELECT id FROM people WHERE (id BETWEEN 2 AND 4 OR id = 1) AND id NOT BETWEEN 3 AND 3 ORDER BY id;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  const auto outcome =
+      action.execute("SELECT id FROM people WHERE (id BETWEEN 2 AND 4 OR id = "
+                     "1) AND id NOT BETWEEN 3 AND 3 ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 3U);
@@ -447,8 +454,9 @@ TEST(ExecuteQueryActionTest, ValidatesBothBetweenBoundsBeforeReadingRows) {
   auto action = makeQesAction(port, parser);
   const auto outcome =
       action.execute("SELECT * FROM people WHERE id BETWEEN 1 AND 'wrong';");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
                 .message.find("WHERE value type does not match column: id"),
             std::string::npos);
