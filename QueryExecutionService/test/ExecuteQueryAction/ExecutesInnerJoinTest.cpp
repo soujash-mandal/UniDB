@@ -51,6 +51,8 @@ struct InnerJoinFixture {
     port.schemas["orders"] = {{"id", SqlType::Int},
                               {"user_id", SqlType::Int},
                               {"amount", SqlType::Int}};
+    port.rows["users"] = {};
+    port.rows["orders"] = {};
   }
 
   void addUser(std::int64_t id, std::string name) {
@@ -181,7 +183,7 @@ TEST(ExecuteQueryActionInnerJoinTest, RejectsWhereUntilNextStage) {
   InnerJoinFixture fixture;
   const auto outcome =
       fixture.execute("SELECT * FROM users INNER JOIN orders "
-                      "ON users.id = orders.user_id WHERE users.id = 1");
+                      "ON users.id = orders.user_id WHERE id = 1");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
