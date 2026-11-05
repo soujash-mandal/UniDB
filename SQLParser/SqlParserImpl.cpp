@@ -372,40 +372,81 @@ private:
     WhereEquals predicate;
     predicate.columnName = current().text;
     ++position_;
-    switch (current().kind) {
-    case TokenKind::Equals:
-      predicate.comparison = ComparisonOperator::Equal;
-      break;
-    case TokenKind::NotEquals:
-      predicate.comparison = ComparisonOperator::NotEqual;
-      break;
-    case TokenKind::GreaterThan:
-      predicate.comparison = ComparisonOperator::GreaterThan;
-      break;
-    case TokenKind::LessThan:
-      predicate.comparison = ComparisonOperator::LessThan;
-      break;
-    case TokenKind::GreaterThanOrEqual:
-      predicate.comparison = ComparisonOperator::GreaterThanOrEqual;
-      break;
-    case TokenKind::LessThanOrEqual:
-      predicate.comparison = ComparisonOperator::LessThanOrEqual;
-      break;
-    default:
-      return SqlParseError{SqlParseErrorCode::SyntaxError,
-                           "Expected a comparison operator in WHERE predicate"};
+
+    bool isMembership = false;
+    bool isNegatedMembership = false;
+    if (matchKeyword("NOT")) {
+      isMembership = true;
+      isNegatedMembership = true;
+      if (!matchKeyword("IN")) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected IN after NOT in WHERE predicate"};
+      }
+    } else if (matchKeyword("IN")) {
+      isMembership = true;
     }
-    ++position_;
-    auto value = parseLiteral();
-    if (std::holds_alternative<SqlParseError>(value)) {
-      return std::get<SqlParseError>(std::move(value));
+
+    if (isMembership) {
+      predicate.comparison = isNegatedMembership ? ComparisonOperator::NotIn
+                                                 : ComparisonOperator::In;
+      if (!expect(TokenKind::LeftParen)) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected '(' after IN"};
+      }
+      if (current().kind == TokenKind::RightParen) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "IN list must contain at least one value"};
+      }
+      while (true) {
+        auto value = parseLiteral();
+        if (std::holds_alternative<SqlParseError>(value)) {
+          return std::get<SqlParseError>(std::move(value));
+        }
+        predicate.values.push_back(std::get<SqlValue>(std::move(value)));
+        if (!match(TokenKind::Comma)) {
+          break;
+        }
+      }
+      if (!expect(TokenKind::RightParen)) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected ')' after IN list"};
+      }
+    } else {
+      switch (current().kind) {
+      case TokenKind::Equals:
+        predicate.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        predicate.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        predicate.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        predicate.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        predicate.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        predicate.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
+      default:
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected a comparison operator, IN, or NOT IN "
+                             "in WHERE predicate"};
+      }
+      ++position_;
+      auto value = parseLiteral();
+      if (std::holds_alternative<SqlParseError>(value)) {
+        return std::get<SqlParseError>(std::move(value));
+      }
+      predicate.value = std::get<SqlValue>(std::move(value));
     }
 
     WhereExpression expression;
     expression.kind = WhereExpression::Kind::Predicate;
-    expression.predicate.columnName = std::move(predicate.columnName);
-    expression.predicate.comparison = predicate.comparison;
-    expression.predicate.value = std::get<SqlValue>(std::move(value));
+    expression.predicate = std::move(predicate);
     return expression;
   }
 

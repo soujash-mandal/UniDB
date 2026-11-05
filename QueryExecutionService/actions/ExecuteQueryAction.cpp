@@ -53,6 +53,16 @@ int compareSqlValues(const SqlValue &left, const SqlValue &right) {
 }
 
 bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
+  if (predicate.comparison == ComparisonOperator::In ||
+      predicate.comparison == ComparisonOperator::NotIn) {
+    const bool found =
+        std::any_of(predicate.values.begin(), predicate.values.end(),
+                    [&](const auto &value) {
+                      return compareSqlValues(rowValue, value) == 0;
+                    });
+    return predicate.comparison == ComparisonOperator::In ? found : !found;
+  }
+
   const int comparison = compareSqlValues(rowValue, predicate.value);
   switch (predicate.comparison) {
   case ComparisonOperator::Equal:
@@ -67,6 +77,9 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
     return comparison >= 0;
   case ComparisonOperator::LessThanOrEqual:
     return comparison <= 0;
+  case ComparisonOperator::In:
+  case ComparisonOperator::NotIn:
+    throw std::invalid_argument("IN predicates require a value list");
   }
   throw std::invalid_argument("Unknown WHERE comparison operator");
 }
@@ -96,11 +109,28 @@ compileWhereExpression(const WhereExpression &expression,
     }
     compiled.columnIndex =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
-    const bool valueIsInt =
-        std::holds_alternative<std::int64_t>(expression.predicate.value);
-    if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
-      throw std::invalid_argument("WHERE value type does not match column: " +
-                                  found->name);
+    const bool isMembership =
+        expression.predicate.comparison == ComparisonOperator::In ||
+        expression.predicate.comparison == ComparisonOperator::NotIn;
+    if (!isMembership) {
+      const bool valueIsInt =
+          std::holds_alternative<std::int64_t>(expression.predicate.value);
+      if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
+        throw std::invalid_argument("WHERE value type does not match column: " +
+                                    found->name);
+      }
+    }
+    if (isMembership) {
+      if (expression.predicate.values.empty()) {
+        throw std::invalid_argument("IN list must contain at least one value");
+      }
+      for (const auto &value : expression.predicate.values) {
+        const bool valueIsInt = std::holds_alternative<std::int64_t>(value);
+        if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
+          throw std::invalid_argument(
+              "WHERE value type does not match column: " + found->name);
+        }
+      }
     }
     compiled.predicate = expression.predicate;
     return compiled;
