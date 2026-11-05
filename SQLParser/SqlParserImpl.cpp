@@ -1,534 +1,415 @@
-#include "SqlParserImpl.h"
+#include "../SqlParserImpl.h"
 
-#include <cctype>
-#include <charconv>
+#include <gtest/gtest.h>
+
 #include <cstdint>
 #include <string>
-#include <system_error>
 #include <utility>
+#include <variant>
+#include <vector>
 
 namespace unidb::sql {
 namespace {
 
-using implementation::Token;
-using implementation::TokenKind;
+TEST(SqlParserTest, ParsesCreateTableCaseInsensitively) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("create TABLE users (id INT, name text);");
 
-SqlParseResult syntaxError(std::string message) {
-  return SqlParseError{SqlParseErrorCode::SyntaxError, std::move(message)};
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &statement = std::get<SqlStatement>(result);
+  ASSERT_TRUE(std::holds_alternative<CreateTableStatement>(statement));
+  const auto &create = std::get<CreateTableStatement>(statement);
+  EXPECT_EQ(create.tableName, "users");
+  ASSERT_EQ(create.columns.size(), 2U);
+  EXPECT_EQ(create.columns[0].name, "id");
+  EXPECT_EQ(create.columns[0].type, SqlType::Int);
+  EXPECT_EQ(create.columns[1].type, SqlType::Text);
 }
 
-SqlParseResult unsupported(std::string message) {
-  return SqlParseError{SqlParseErrorCode::UnsupportedStatement,
-                       std::move(message)};
+TEST(SqlParserTest, ParsesInsertWithSignedIntegerAndEscapedText) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("INSERT INTO users (id, name) VALUES (-42, 'O''Reilly')");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 1U);
+  ASSERT_EQ(insert.rows[0].size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(insert.rows[0][0]), -42);
+  EXPECT_EQ(std::get<std::string>(insert.rows[0][1]), "O'Reilly");
 }
 
-std::string upper(std::string value) {
-  for (char &ch : value) {
-    ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
-  }
-  return value;
+TEST(SqlParserTest, ParsesSelectAllAndOptionalEqualityPredicate) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SELECT * FROM users WHERE id = 7;");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  EXPECT_TRUE(select.selectAll);
+  EXPECT_EQ(select.tableName, "users");
+  ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+  const auto &where = std::get<WhereExpression>(select.where);
+  EXPECT_EQ(where.kind, WhereExpression::Kind::Predicate);
+  EXPECT_EQ(where.predicate.columnName, "id");
+  EXPECT_EQ(std::get<std::int64_t>(where.predicate.value), 7);
 }
 
-class Parser {
-public:
-  explicit Parser(const std::vector<Token> &tokens) : tokens_(tokens) {}
+TEST(SqlParserTest, ParsesSelectedColumns) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SELECT id, name FROM users");
 
-  SqlParseResult parse() {
-    if (current().kind == TokenKind::End) {
-      return syntaxError("SQL statement is empty");
-    }
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  EXPECT_FALSE(select.selectAll);
+  ASSERT_EQ(select.columnNames.size(), 2U);
+  EXPECT_EQ(select.columnNames[0], "id");
+  EXPECT_EQ(select.columnNames[1], "name");
+}
 
-    SqlParseResult result = syntaxError("Expected a supported SQL statement");
-    if (isKeyword("CREATE")) {
-      result = parseCreateTable();
-    } else if (isKeyword("INSERT")) {
-      result = parseInsert();
-    } else if (isKeyword("SELECT")) {
-      result = parseSelect();
-    } else {
-      return unsupported("Statement type is outside the V1 SQL subset");
-    }
+TEST(SqlParserTest, ReportsMalformedSyntax) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SELECT FROM users");
 
-    if (std::holds_alternative<SqlParseError>(result)) {
-      return result;
-    }
-    if (match(TokenKind::Semicolon) && current().kind != TokenKind::End) {
-      return syntaxError("Unexpected tokens after semicolon");
-    }
-    if (current().kind != TokenKind::End) {
-      if (current().kind == TokenKind::Unsupported || isKeyword("AND") ||
-          isKeyword("OR") || isKeyword("JOIN") || isKeyword("GROUP")) {
-        return unsupported("SQL syntax is outside the V1 supported subset");
-      }
-      return syntaxError("Unexpected token '" + current().text + "'");
-    }
-    return result;
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
+}
+
+TEST(SqlParserTest, ReportsUnsupportedStatementAndOperators) {
+  SqlParserImpl parser;
+  const auto join = parser.parse("SELECT * FROM users JOIN roles");
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(join));
+  EXPECT_EQ(std::get<SqlParseError>(join).code,
+            SqlParseErrorCode::UnsupportedStatement);
+
+  const auto comparison = parser.parse("SELECT * FROM users WHERE id > 2");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(comparison));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(comparison));
+  ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+  EXPECT_EQ(std::get<WhereExpression>(select.where).predicate.comparison,
+            ComparisonOperator::GreaterThan);
+}
+
+TEST(SqlParserTest, RejectsMismatchedInsertColumnAndValueCounts) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("INSERT INTO users (id, name) VALUES (1)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
+}
+
+TEST(SqlParserTest, RejectsUnsupportedLiteralTypes) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("INSERT INTO users (active) VALUES (TRUE)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::UnsupportedStatement);
+}
+
+TEST(SqlParserTest, ParsesEverySupportedWhereComparisonOperator) {
+  SqlParserImpl parser;
+  const std::vector<std::pair<std::string, ComparisonOperator>> cases{
+      {"=", ComparisonOperator::Equal},
+      {"!=", ComparisonOperator::NotEqual},
+      {">", ComparisonOperator::GreaterThan},
+      {"<", ComparisonOperator::LessThan},
+      {">=", ComparisonOperator::GreaterThanOrEqual},
+      {"<=", ComparisonOperator::LessThanOrEqual}};
+
+  for (const auto &[token, expected] : cases) {
+    const auto result =
+        parser.parse("SELECT id FROM users WHERE id " + token + " 7;");
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result))
+        << "operator: " << token;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+    EXPECT_EQ(std::get<WhereExpression>(select.where).predicate.comparison,
+              expected)
+        << "operator: " << token;
+  }
+}
+
+TEST(SqlParserTest, RejectsIncompleteWhereComparison) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SELECT * FROM users WHERE id >");
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
+}
+
+TEST(SqlParserTest, ParsesAndBeforeOrPrecedence) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM users WHERE id = 1 OR id = 2 AND name = 'B'");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &where = std::get<WhereExpression>(select.where);
+  ASSERT_EQ(where.kind, WhereExpression::Kind::Or);
+  ASSERT_EQ(where.children.size(), 2U);
+  EXPECT_EQ(where.children[0].kind, WhereExpression::Kind::Predicate);
+  ASSERT_EQ(where.children[1].kind, WhereExpression::Kind::And);
+  ASSERT_EQ(where.children[1].children.size(), 2U);
+}
+
+TEST(SqlParserTest, RejectsDanglingAndOrAndRepeatedConnectors) {
+  SqlParserImpl parser;
+  for (const auto *sql : {"SELECT * FROM users WHERE id = 1 AND",
+                          "SELECT * FROM users WHERE id = 1 OR",
+                          "SELECT * FROM users WHERE id = 1 AND OR id = 2"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, ParsesOrderByWithDefaultAscendingAndExplicitDirections) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM users ORDER BY name, id DESC;");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(select.orderBy.size(), 2U);
+  EXPECT_EQ(select.orderBy[0].columnName, "name");
+  EXPECT_TRUE(select.orderBy[0].ascending);
+  EXPECT_EQ(select.orderBy[1].columnName, "id");
+  EXPECT_FALSE(select.orderBy[1].ascending);
+}
+
+TEST(SqlParserTest, ParsesWhereBeforeOrderBy) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM users WHERE id > 1 ORDER BY name DESC");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+  ASSERT_EQ(select.orderBy.size(), 1U);
+  EXPECT_EQ(select.orderBy[0].columnName, "name");
+  EXPECT_FALSE(select.orderBy[0].ascending);
+}
+
+TEST(SqlParserTest, RejectsMalformedOrderByClauses) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT * FROM users ORDER", "SELECT * FROM users ORDER id",
+        "SELECT * FROM users ORDER BY", "SELECT * FROM users ORDER BY id,",
+        "SELECT * FROM users ORDER BY id ASC DESC"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, ParsesLimitAndOffsetAfterOrderBy) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM users ORDER BY id DESC LIMIT 5 OFFSET 2");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_TRUE(select.limit.has_value());
+  EXPECT_EQ(*select.limit, 5U);
+  EXPECT_EQ(select.offset, 2U);
+  ASSERT_EQ(select.orderBy.size(), 1U);
+  EXPECT_FALSE(select.orderBy[0].ascending);
+}
+
+TEST(SqlParserTest, ParsesLimitWithoutOffsetAndOffsetWithoutLimit) {
+  SqlParserImpl parser;
+  const auto limitResult = parser.parse("SELECT * FROM users LIMIT 0");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(limitResult));
+  const auto &limited =
+      std::get<SelectStatement>(std::get<SqlStatement>(limitResult));
+  ASSERT_TRUE(limited.limit.has_value());
+  EXPECT_EQ(*limited.limit, 0U);
+  EXPECT_EQ(limited.offset, 0U);
+
+  const auto offsetResult = parser.parse("SELECT * FROM users OFFSET 3");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(offsetResult));
+  const auto &offset =
+      std::get<SelectStatement>(std::get<SqlStatement>(offsetResult));
+  EXPECT_FALSE(offset.limit.has_value());
+  EXPECT_EQ(offset.offset, 3U);
+}
+
+TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT * FROM users LIMIT", "SELECT * FROM users LIMIT -1",
+        "SELECT * FROM users LIMIT '2'",
+        "SELECT * FROM users LIMIT 18446744073709551616",
+        "SELECT * FROM users LIMIT 1 LIMIT 2",
+        "SELECT * FROM users OFFSET 1 OFFSET 2",
+        "SELECT * FROM users LIMIT 1 OFFSET"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, ParsesMultipleInsertValueRows) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2, 'Grace')");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 2U);
+  ASSERT_EQ(insert.rows[0].size(), 2U);
+  ASSERT_EQ(insert.rows[1].size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(insert.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::string>(insert.rows[0][1]), "Ada");
+  EXPECT_EQ(std::get<std::int64_t>(insert.rows[1][0]), 2);
+  EXPECT_EQ(std::get<std::string>(insert.rows[1][1]), "Grace");
+}
+
+TEST(SqlParserTest, RejectsMalformedMultiRowInsertValues) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"INSERT INTO users (id, name) VALUES (1, 'Ada'),",
+        "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2)",
+        "INSERT INTO users (id, name) VALUES (1, 'Ada'), ()",
+        "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2, 'Grace'"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, ParsesParenthesizedWhereGroupsAndNestedPrecedence) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM users WHERE (id = 1 OR id = 2) AND "
+                   "(name = 'A' OR (id > 3 AND name = 'B'))");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &where = std::get<WhereExpression>(select.where);
+  ASSERT_EQ(where.kind, WhereExpression::Kind::And);
+  ASSERT_EQ(where.children.size(), 2U);
+  EXPECT_EQ(where.children[0].kind, WhereExpression::Kind::Or);
+  ASSERT_EQ(where.children[0].children.size(), 2U);
+  EXPECT_EQ(where.children[1].kind, WhereExpression::Kind::Or);
+  ASSERT_EQ(where.children[1].children.size(), 2U);
+  EXPECT_EQ(where.children[1].children[1].kind, WhereExpression::Kind::And);
+}
+
+TEST(SqlParserTest, ParenthesesOverrideAndBeforeOrPrecedence) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM users WHERE (id = 1 OR id = 2) AND "
+                   "name = 'B'");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &where = std::get<WhereExpression>(select.where);
+  ASSERT_EQ(where.kind, WhereExpression::Kind::And);
+  ASSERT_EQ(where.children.size(), 2U);
+  EXPECT_EQ(where.children[0].kind, WhereExpression::Kind::Or);
+  EXPECT_EQ(where.children[1].kind, WhereExpression::Kind::Predicate);
+}
+
+TEST(SqlParserTest, RejectsMalformedParenthesizedWhereExpressions) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT * FROM users WHERE (id = 1 OR name = 'A'",
+        "SELECT * FROM users WHERE id = 1)", "SELECT * FROM users WHERE ()",
+        "SELECT * FROM users WHERE (id = 1 AND)",
+        "SELECT * FROM users WHERE (OR id = 1)",
+        "SELECT * FROM users WHERE ((id = 1)"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, RejectsExcessivelyDeepWhereNesting) {
+  SqlParserImpl parser;
+  std::string sql = "SELECT * FROM users WHERE ";
+  for (int i = 0; i < 129; ++i) {
+    sql += "(";
+  }
+  sql += "id = 1";
+  for (int i = 0; i < 129; ++i) {
+    sql += ")";
   }
 
-private:
-  const Token &current() const { return tokens_[position_]; }
+  const auto result = parser.parse(sql);
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
+}
 
-  bool isKeyword(std::string_view keyword) const {
-    return current().kind == TokenKind::Identifier &&
-           upper(current().text) == keyword;
+TEST(SqlParserTest, ParsesInAndNotInLiteralLists) {
+  SqlParserImpl parser;
+  const auto inResult =
+      parser.parse("SELECT id FROM users WHERE id IN (1, 2, -3)");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(inResult));
+  const auto &inSelect =
+      std::get<SelectStatement>(std::get<SqlStatement>(inResult));
+  const auto &inPredicate =
+      std::get<WhereExpression>(inSelect.where).predicate;
+  EXPECT_EQ(inPredicate.comparison, ComparisonOperator::In);
+  ASSERT_EQ(inPredicate.values.size(), 3U);
+  EXPECT_EQ(std::get<std::int64_t>(inPredicate.values[0]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(inPredicate.values[1]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(inPredicate.values[2]), -3);
+
+  const auto notInResult =
+      parser.parse("SELECT name FROM users WHERE name NOT IN ('Ada', 'Grace')");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(notInResult));
+  const auto &notInSelect =
+      std::get<SelectStatement>(std::get<SqlStatement>(notInResult));
+  const auto &notInPredicate =
+      std::get<WhereExpression>(notInSelect.where).predicate;
+  EXPECT_EQ(notInPredicate.comparison, ComparisonOperator::NotIn);
+  ASSERT_EQ(notInPredicate.values.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(notInPredicate.values[0]), "Ada");
+  EXPECT_EQ(std::get<std::string>(notInPredicate.values[1]), "Grace");
+}
+
+TEST(SqlParserTest, RejectsMalformedInLists) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT * FROM users WHERE id IN ()",
+        "SELECT * FROM users WHERE id IN (1,)",
+        "SELECT * FROM users WHERE id IN (1, 2",
+        "SELECT * FROM users WHERE id IN 1",
+        "SELECT * FROM users WHERE id NOT 1",
+        "SELECT * FROM users WHERE id NOT IN (1, 2))",
+        "SELECT * FROM users WHERE id IN (1) AND"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
   }
-
-  bool matchKeyword(std::string_view keyword) {
-    if (!isKeyword(keyword)) {
-      return false;
-    }
-    ++position_;
-    return true;
-  }
-
-  bool match(TokenKind kind) {
-    if (current().kind != kind) {
-      return false;
-    }
-    ++position_;
-    return true;
-  }
-
-  bool expectKeyword(std::string_view keyword) { return matchKeyword(keyword); }
-
-  bool expect(TokenKind kind) { return match(kind); }
-
-  SqlParseResult parseCreateTable() {
-    ++position_; // CREATE
-    if (!expectKeyword("TABLE")) {
-      return unsupported("Only CREATE TABLE is supported in V1");
-    }
-    if (current().kind != TokenKind::Identifier) {
-      return syntaxError("Expected table name after CREATE TABLE");
-    }
-    CreateTableStatement statement;
-    statement.tableName = current().text;
-    ++position_;
-    if (!expect(TokenKind::LeftParen)) {
-      return syntaxError("Expected '(' after table name");
-    }
-    if (current().kind == TokenKind::RightParen) {
-      return syntaxError("CREATE TABLE requires at least one column");
-    }
-
-    while (true) {
-      if (current().kind != TokenKind::Identifier) {
-        return syntaxError("Expected column name");
-      }
-      ColumnDefinition column;
-      column.name = current().text;
-      ++position_;
-
-      if (isKeyword("INT")) {
-        column.type = SqlType::Int;
-        ++position_;
-      } else if (isKeyword("TEXT")) {
-        column.type = SqlType::Text;
-        ++position_;
-      } else if (current().kind == TokenKind::Identifier) {
-        return unsupported("Column type is outside the V1 supported subset");
-      } else {
-        return syntaxError("Expected INT or TEXT after column name");
-      }
-      statement.columns.push_back(std::move(column));
-
-      if (!match(TokenKind::Comma)) {
-        break;
-      }
-    }
-    if (!expect(TokenKind::RightParen)) {
-      return syntaxError("Expected ')' after column definitions");
-    }
-    return SqlStatement{std::move(statement)};
-  }
-
-  SqlParseResult parseInsert() {
-    ++position_; // INSERT
-    if (!expectKeyword("INTO")) {
-      return unsupported("Only INSERT INTO is supported in V1");
-    }
-    if (current().kind != TokenKind::Identifier) {
-      return syntaxError("Expected table name after INSERT INTO");
-    }
-
-    InsertStatement statement;
-    statement.tableName = current().text;
-    ++position_;
-    if (!expect(TokenKind::LeftParen)) {
-      return syntaxError("Expected '(' before INSERT column list");
-    }
-    if (current().kind == TokenKind::RightParen) {
-      return syntaxError("INSERT requires at least one column");
-    }
-    while (true) {
-      if (current().kind != TokenKind::Identifier) {
-        return syntaxError("Expected column name in INSERT column list");
-      }
-      statement.columnNames.push_back(current().text);
-      ++position_;
-      if (!match(TokenKind::Comma)) {
-        break;
-      }
-    }
-    if (!expect(TokenKind::RightParen)) {
-      return syntaxError("Expected ')' after INSERT column list");
-    }
-    if (!expectKeyword("VALUES")) {
-      return syntaxError("Expected VALUES after INSERT column list");
-    }
-    while (true) {
-      if (!expect(TokenKind::LeftParen)) {
-        return syntaxError("Expected '(' before INSERT values");
-      }
-      std::vector<SqlValue> row;
-      while (true) {
-        auto value = parseLiteral();
-        if (std::holds_alternative<SqlParseError>(value)) {
-          return std::get<SqlParseError>(std::move(value));
-        }
-        row.push_back(std::get<SqlValue>(std::move(value)));
-        if (!match(TokenKind::Comma)) {
-          break;
-        }
-      }
-      if (!expect(TokenKind::RightParen)) {
-        return syntaxError("Expected ')' after INSERT values");
-      }
-      if (statement.columnNames.size() != row.size()) {
-        return syntaxError("INSERT column and value counts must match");
-      }
-      statement.rows.push_back(std::move(row));
-      if (!match(TokenKind::Comma)) {
-        break;
-      }
-    }
-    return SqlStatement{std::move(statement)};
-  }
-
-  SqlParseResult parseSelect() {
-    ++position_; // SELECT
-    SelectStatement statement;
-    if (match(TokenKind::Star)) {
-      statement.selectAll = true;
-    } else {
-      if (current().kind != TokenKind::Identifier) {
-        return syntaxError("Expected '*' or column name after SELECT");
-      }
-      while (true) {
-        if (current().kind != TokenKind::Identifier) {
-          return syntaxError("Expected column name in SELECT list");
-        }
-        statement.columnNames.push_back(current().text);
-        ++position_;
-        if (!match(TokenKind::Comma)) {
-          break;
-        }
-      }
-    }
-    if (!expectKeyword("FROM")) {
-      return syntaxError("Expected FROM after SELECT list");
-    }
-    if (current().kind != TokenKind::Identifier) {
-      return syntaxError("Expected table name after FROM");
-    }
-    statement.tableName = current().text;
-    ++position_;
-
-    if (matchKeyword("WHERE")) {
-      auto expression = parseWhereOrExpression();
-      if (std::holds_alternative<SqlParseError>(expression)) {
-        return std::get<SqlParseError>(std::move(expression));
-      }
-      statement.where = std::get<WhereExpression>(std::move(expression));
-    }
-
-    if (matchKeyword("ORDER")) {
-      if (!expectKeyword("BY")) {
-        return syntaxError("Expected BY after ORDER");
-      }
-      while (true) {
-        if (current().kind != TokenKind::Identifier) {
-          return syntaxError("Expected column name after ORDER BY");
-        }
-        OrderByColumn order;
-        order.columnName = current().text;
-        ++position_;
-        if (matchKeyword("ASC")) {
-          order.ascending = true;
-        } else if (matchKeyword("DESC")) {
-          order.ascending = false;
-        }
-        statement.orderBy.push_back(std::move(order));
-        if (!match(TokenKind::Comma)) {
-          break;
-        }
-      }
-    }
-    if (matchKeyword("LIMIT")) {
-      auto limit = parseUnsignedInteger();
-      if (std::holds_alternative<SqlParseError>(limit)) {
-        return std::get<SqlParseError>(std::move(limit));
-      }
-      statement.limit = std::get<std::uint64_t>(limit);
-      if (matchKeyword("OFFSET")) {
-        auto offset = parseUnsignedInteger();
-        if (std::holds_alternative<SqlParseError>(offset)) {
-          return std::get<SqlParseError>(std::move(offset));
-        }
-        statement.offset = std::get<std::uint64_t>(offset);
-      }
-    } else if (matchKeyword("OFFSET")) {
-      auto offset = parseUnsignedInteger();
-      if (std::holds_alternative<SqlParseError>(offset)) {
-        return std::get<SqlParseError>(std::move(offset));
-      }
-      statement.offset = std::get<std::uint64_t>(offset);
-    }
-    return SqlStatement{std::move(statement)};
-  }
-
-  std::variant<WhereExpression, SqlParseError> parseWhereOrExpression() {
-    auto first = parseWhereAndExpression();
-    if (std::holds_alternative<SqlParseError>(first)) {
-      return std::get<SqlParseError>(std::move(first));
-    }
-
-    auto expression = std::get<WhereExpression>(std::move(first));
-    while (matchKeyword("OR")) {
-      auto next = parseWhereAndExpression();
-      if (std::holds_alternative<SqlParseError>(next)) {
-        return std::get<SqlParseError>(std::move(next));
-      }
-      if (expression.kind != WhereExpression::Kind::Or) {
-        WhereExpression parent;
-        parent.kind = WhereExpression::Kind::Or;
-        parent.children.push_back(std::move(expression));
-        expression = std::move(parent);
-      }
-      expression.children.push_back(std::get<WhereExpression>(std::move(next)));
-    }
-    return expression;
-  }
-
-  std::variant<WhereExpression, SqlParseError> parseWhereAndExpression() {
-    auto first = parseWherePrimary();
-    if (std::holds_alternative<SqlParseError>(first)) {
-      return std::get<SqlParseError>(std::move(first));
-    }
-
-    auto expression = std::get<WhereExpression>(std::move(first));
-    while (matchKeyword("AND")) {
-      auto next = parseWherePrimary();
-      if (std::holds_alternative<SqlParseError>(next)) {
-        return std::get<SqlParseError>(std::move(next));
-      }
-      if (expression.kind != WhereExpression::Kind::And) {
-        WhereExpression parent;
-        parent.kind = WhereExpression::Kind::And;
-        parent.children.push_back(std::move(expression));
-        expression = std::move(parent);
-      }
-      expression.children.push_back(std::get<WhereExpression>(std::move(next)));
-    }
-    return expression;
-  }
-
-  std::variant<WhereExpression, SqlParseError> parseWherePrimary() {
-    if (match(TokenKind::LeftParen)) {
-      if (++whereNestingDepth_ > 128) {
-        --whereNestingDepth_;
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "WHERE expression nesting exceeds 128 levels"};
-      }
-      if (current().kind == TokenKind::RightParen) {
-        --whereNestingDepth_;
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "WHERE expression group cannot be empty"};
-      }
-      auto expression = parseWhereOrExpression();
-      --whereNestingDepth_;
-      if (std::holds_alternative<SqlParseError>(expression)) {
-        return std::get<SqlParseError>(std::move(expression));
-      }
-      if (!expect(TokenKind::RightParen)) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected ')' to close WHERE expression"};
-      }
-      return std::get<WhereExpression>(std::move(expression));
-    }
-
-    if (current().kind == TokenKind::RightParen ||
-        current().kind == TokenKind::End || isKeyword("AND") ||
-        isKeyword("OR")) {
-      return SqlParseError{SqlParseErrorCode::SyntaxError,
-                           "Expected predicate in WHERE expression"};
-    }
-
-    if (current().kind != TokenKind::Identifier) {
-      return SqlParseError{SqlParseErrorCode::SyntaxError,
-                           "Expected column name in WHERE predicate"};
-    }
-
-    WhereEquals predicate;
-    predicate.columnName = current().text;
-    ++position_;
-
-    bool isMembership = false;
-    bool isNegatedMembership = false;
-    if (matchKeyword("NOT")) {
-      isMembership = true;
-      isNegatedMembership = true;
-      if (!matchKeyword("IN")) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected IN after NOT in WHERE predicate"};
-      }
-    } else if (matchKeyword("IN")) {
-      isMembership = true;
-    }
-
-    if (isMembership) {
-      predicate.comparison = isNegatedMembership
-                                 ? ComparisonOperator::NotIn
-                                 : ComparisonOperator::In;
-      if (!expect(TokenKind::LeftParen)) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected '(' after IN"};
-      }
-      if (current().kind == TokenKind::RightParen) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "IN list must contain at least one value"};
-      }
-      while (true) {
-        auto value = parseLiteral();
-        if (std::holds_alternative<SqlParseError>(value)) {
-          return std::get<SqlParseError>(std::move(value));
-        }
-        predicate.values.push_back(
-            std::get<SqlValue>(std::move(value)));
-        if (!match(TokenKind::Comma)) {
-          break;
-        }
-      }
-      if (!expect(TokenKind::RightParen)) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected ')' after IN list"};
-      }
-    } else {
-      switch (current().kind) {
-      case TokenKind::Equals:
-        predicate.comparison = ComparisonOperator::Equal;
-        break;
-      case TokenKind::NotEquals:
-        predicate.comparison = ComparisonOperator::NotEqual;
-        break;
-      case TokenKind::GreaterThan:
-        predicate.comparison = ComparisonOperator::GreaterThan;
-        break;
-      case TokenKind::LessThan:
-        predicate.comparison = ComparisonOperator::LessThan;
-        break;
-      case TokenKind::GreaterThanOrEqual:
-        predicate.comparison = ComparisonOperator::GreaterThanOrEqual;
-        break;
-      case TokenKind::LessThanOrEqual:
-        predicate.comparison = ComparisonOperator::LessThanOrEqual;
-        break;
-      default:
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected a comparison operator, IN, or NOT IN "
-                             "in WHERE predicate"};
-      }
-      ++position_;
-      auto value = parseLiteral();
-      if (std::holds_alternative<SqlParseError>(value)) {
-        return std::get<SqlParseError>(std::move(value));
-      }
-      predicate.value = std::get<SqlValue>(std::move(value));
-    }
-
-    WhereExpression expression;
-    expression.kind = WhereExpression::Kind::Predicate;
-    expression.predicate = std::move(predicate);
-    return expression;
-  }
-
-  std::variant<std::uint64_t, SqlParseError> parseUnsignedInteger() {
-    if (current().kind != TokenKind::Integer) {
-      return SqlParseError{
-          SqlParseErrorCode::SyntaxError,
-          "Expected a non-negative integer for LIMIT or OFFSET"};
-    }
-    std::uint64_t value{};
-    const auto &text = current().text;
-    const auto conversion =
-        std::from_chars(text.data(), text.data() + text.size(), value);
-    ++position_;
-    if (conversion.ec == std::errc::result_out_of_range) {
-      return SqlParseError{SqlParseErrorCode::SyntaxError,
-                           "LIMIT or OFFSET value is out of range"};
-    }
-    return value;
-  }
-
-  std::variant<SqlValue, SqlParseError> parseLiteral() {
-    if (match(TokenKind::Minus)) {
-      if (current().kind != TokenKind::Integer) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected digits after '-' in integer literal"};
-      }
-      const std::string text = "-" + current().text;
-      ++position_;
-      std::int64_t value{};
-      const auto conversion =
-          std::from_chars(text.data(), text.data() + text.size(), value);
-      if (conversion.ec == std::errc::result_out_of_range) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Integer literal is out of range"};
-      }
-      return SqlValue{value};
-    }
-    if (current().kind == TokenKind::Integer) {
-      std::int64_t value{};
-      const auto &text = current().text;
-      const auto conversion =
-          std::from_chars(text.data(), text.data() + text.size(), value);
-      ++position_;
-      if (conversion.ec == std::errc::result_out_of_range) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Integer literal is out of range"};
-      }
-      return SqlValue{value};
-    }
-    if (current().kind == TokenKind::String) {
-      std::string value = current().text;
-      ++position_;
-      return SqlValue{std::move(value)};
-    }
-    if (current().kind == TokenKind::Unsupported || isKeyword("NULL") ||
-        isKeyword("TRUE") || isKeyword("FALSE")) {
-      return SqlParseError{SqlParseErrorCode::UnsupportedStatement,
-                           "Literal type is outside the V1 supported subset"};
-    }
-    return SqlParseError{SqlParseErrorCode::SyntaxError,
-                         "Expected an integer or single-quoted text literal"};
-  }
-
-  const std::vector<Token> &tokens_;
-  std::size_t position_{0};
-  std::size_t whereNestingDepth_{0};
-};
+}
 
 } // namespace
-
-SqlParseResult SqlParserImpl::parse(std::string_view sql) const {
-  auto lexed = lexer_.tokenize(sql);
-  if (!lexed.error.empty()) {
-    return syntaxError(lexed.error);
-  }
-  if (lexed.unsupported) {
-    return unsupported("Operator or symbol is outside the V1 SQL subset");
-  }
-  return Parser(lexed.tokens).parse();
-}
-
 } // namespace unidb::sql
