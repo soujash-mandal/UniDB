@@ -204,4 +204,19 @@ TEST(ExecuteQueryActionJoinResolutionTest, SelectStarResolvesDuplicateNames) {
       "INNER JOIN execution is not available yet");
 }
 
+TEST(ExecuteQueryActionJoinResolutionTest, RejectsUnknownJoinTableReference) {
+  JoinResolutionFixture fixture;
+
+  const auto result = fixture.execute(
+      "SELECT users.name FROM users INNER JOIN orders "
+      "ON payments.id = orders.user_id");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          result));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(result).message,
+      "Unknown JOIN table reference: payments");
+}
+
 } // namespace
