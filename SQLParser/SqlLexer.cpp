@@ -94,6 +94,9 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
     case ',':
       kind = TokenKind::Comma;
       break;
+    case '.':
+      kind = TokenKind::Dot;
+      break;
     case ';':
       kind = TokenKind::Semicolon;
       break;
@@ -130,7 +133,6 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
     case '-':
       kind = TokenKind::Minus;
       break;
-    case '.':
     case '+':
     case '/':
       kind = TokenKind::Unsupported;
