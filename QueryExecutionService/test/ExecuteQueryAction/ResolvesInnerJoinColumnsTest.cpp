@@ -71,10 +71,10 @@ TEST(ExecuteQueryActionJoinResolutionTest,
           result));
   const auto &error =
       std::get<QueryExecutionService::QueryExecutionError>(result);
-  EXPECT_EQ(
-      error.code,
-      QueryExecutionService::QueryExecutionErrorCode::UnsupportedStatement);
-  EXPECT_EQ(error.message, "INNER JOIN execution is not available yet");
+  EXPECT_EQ(error.code,
+            QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
+  EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; "
+                           "column projection will be added in the next stage");
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "orders"}));
   EXPECT_EQ(fixture.port.selectCalls, 0U);
@@ -93,7 +93,8 @@ TEST(ExecuteQueryActionJoinResolutionTest,
           result));
   EXPECT_EQ(
       std::get<QueryExecutionService::QueryExecutionError>(result).message,
-      "INNER JOIN execution is not available yet");
+      "INNER JOIN currently supports SELECT * only; "
+      "column projection will be added in the next stage");
 }
 
 TEST(ExecuteQueryActionJoinResolutionTest, RejectsAmbiguousSelectColumns) {
@@ -197,11 +198,15 @@ TEST(ExecuteQueryActionJoinResolutionTest, SelectStarResolvesDuplicateNames) {
                                       "ON users.id = orders.user_id");
 
   ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           result));
-  EXPECT_EQ(
-      std::get<QueryExecutionService::QueryExecutionError>(result).message,
-      "INNER JOIN execution is not available yet");
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  EXPECT_EQ(rows.columns.size(), 5U);
+  EXPECT_EQ(rows.columns[0].name, "users.id");
+  EXPECT_EQ(rows.columns[2].name, "orders.id");
+  EXPECT_TRUE(rows.rows.empty());
+  EXPECT_EQ(fixture.port.selectCalls, 2U);
 }
 
 TEST(ExecuteQueryActionJoinResolutionTest, RejectsUnknownJoinTableReference) {

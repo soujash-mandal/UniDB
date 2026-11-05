@@ -115,7 +115,14 @@ exists in exactly one table. Output names remain unqualified when unique and
 become `table.column` when the name exists in both tables. An explicit `AS`
 alias overrides the generated name. Duplicate output names are rejected.
 
-These parser and schema-validation stages do not execute JOIN queries. Query
-execution returns an explicit unsupported-statement error until the nested-loop
-execution stage is merged. Qualified WHERE references are deferred. LEFT JOIN,
-table aliases, and non-equality join conditions remain unsupported.
+The execution stage currently supports `SELECT *` without a WHERE clause.
+It fetches both tables through the existing public RDB SELECT Action-backed port,
+decodes the rows, and performs an in-memory nested-loop equality join. Matching
+rows are returned with columns from the FROM table followed by columns from the
+joined table. A duplicate column name is qualified with its source table name.
+The join performs O(N × M) key comparisons for N left rows and M right rows and
+holds both decoded inputs plus the output rows in memory.
+
+Explicit SELECT projections and WHERE filtering on joined rows are deferred to
+the next integration stage. LEFT JOIN, table aliases, and non-equality join
+conditions remain unsupported.

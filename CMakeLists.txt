@@ -216,6 +216,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/SelectGroupByTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/RejectsInnerJoinUntilExecutionIsImplementedTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ResolvesInnerJoinColumnsTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/ExecutesInnerJoinTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/WhereFilteringTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ParenthesizedWhereExpressionsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
