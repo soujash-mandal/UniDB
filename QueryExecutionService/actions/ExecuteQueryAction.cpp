@@ -109,14 +109,18 @@ compileWhereExpression(const WhereExpression &expression,
     }
     compiled.columnIndex =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
-    const bool valueIsInt =
-        std::holds_alternative<std::int64_t>(expression.predicate.value);
-    if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
-      throw std::invalid_argument("WHERE value type does not match column: " +
-                                  found->name);
+    const bool isMembership =
+        expression.predicate.comparison == ComparisonOperator::In ||
+        expression.predicate.comparison == ComparisonOperator::NotIn;
+    if (!isMembership) {
+      const bool valueIsInt =
+          std::holds_alternative<std::int64_t>(expression.predicate.value);
+      if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
+        throw std::invalid_argument("WHERE value type does not match column: " +
+                                    found->name);
+      }
     }
-    if (expression.predicate.comparison == ComparisonOperator::In ||
-        expression.predicate.comparison == ComparisonOperator::NotIn) {
+    if (isMembership) {
       if (expression.predicate.values.empty()) {
         throw std::invalid_argument("IN list must contain at least one value");
       }
