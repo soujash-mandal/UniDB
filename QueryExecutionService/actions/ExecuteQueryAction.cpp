@@ -52,7 +52,47 @@ int compareSqlValues(const SqlValue &left, const SqlValue &right) {
   return (leftText > rightText) - (leftText < rightText);
 }
 
+bool matchesLikePattern(const std::string &value, const std::string &pattern) {
+  std::size_t valueIndex = 0;
+  std::size_t patternIndex = 0;
+  std::size_t lastPercent = std::string::npos;
+  std::size_t retryValueIndex = 0;
+
+  while (valueIndex < value.size()) {
+    if (patternIndex < pattern.size() &&
+        (pattern[patternIndex] == '_' ||
+         pattern[patternIndex] == value[valueIndex])) {
+      ++valueIndex;
+      ++patternIndex;
+    } else if (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
+      lastPercent = patternIndex++;
+      retryValueIndex = valueIndex;
+    } else if (lastPercent != std::string::npos) {
+      patternIndex = lastPercent + 1;
+      valueIndex = ++retryValueIndex;
+    } else {
+      return false;
+    }
+  }
+
+  while (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
+    ++patternIndex;
+  }
+  return patternIndex == pattern.size();
+}
+
 bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
+  if (predicate.comparison == ComparisonOperator::Like ||
+      predicate.comparison == ComparisonOperator::NotLike) {
+    const auto *textValue = std::get_if<std::string>(&rowValue);
+    const auto *pattern = std::get_if<std::string>(&predicate.value);
+    if (textValue == nullptr || pattern == nullptr) {
+      throw std::invalid_argument("LIKE predicates require TEXT values");
+    }
+    const bool matched = matchesLikePattern(*textValue, *pattern);
+    return predicate.comparison == ComparisonOperator::Like ? matched
+                                                            : !matched;
+  }
   if (predicate.comparison == ComparisonOperator::Between ||
       predicate.comparison == ComparisonOperator::NotBetween) {
     if (!predicate.upperBound.has_value()) {
@@ -95,6 +135,9 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
   case ComparisonOperator::Between:
   case ComparisonOperator::NotBetween:
     throw std::invalid_argument("BETWEEN predicates require two range bounds");
+  case ComparisonOperator::Like:
+  case ComparisonOperator::NotLike:
+    throw std::invalid_argument("LIKE predicates require a text pattern");
   }
   throw std::invalid_argument("Unknown WHERE comparison operator");
 }
@@ -130,6 +173,13 @@ compileWhereExpression(const WhereExpression &expression,
     const bool isRange =
         expression.predicate.comparison == ComparisonOperator::Between ||
         expression.predicate.comparison == ComparisonOperator::NotBetween;
+    const bool isLike =
+        expression.predicate.comparison == ComparisonOperator::Like ||
+        expression.predicate.comparison == ComparisonOperator::NotLike;
+    if (isLike && types[compiled.columnIndex] != SqlType::Text) {
+      throw std::invalid_argument("LIKE requires a TEXT column: " +
+                                  found->name);
+    }
     if (!isMembership) {
       const bool valueIsInt =
           std::holds_alternative<std::int64_t>(expression.predicate.value);
@@ -149,6 +199,10 @@ compileWhereExpression(const WhereExpression &expression,
         throw std::invalid_argument("WHERE value type does not match column: " +
                                     found->name);
       }
+    }
+    if (isLike &&
+        !std::holds_alternative<std::string>(expression.predicate.value)) {
+      throw std::invalid_argument("LIKE pattern must be TEXT");
     }
     if (isMembership) {
       if (expression.predicate.values.empty()) {

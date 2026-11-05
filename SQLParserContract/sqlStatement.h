@@ -38,7 +38,9 @@ enum class ComparisonOperator {
   In,
   NotIn,
   Between,
-  NotBetween
+  NotBetween,
+  Like,
+  NotLike
 };
 
 struct WhereEquals {

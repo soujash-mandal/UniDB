@@ -18,13 +18,14 @@ semicolon is optional.
 - `INSERT INTO table_name (column_name, ...) VALUES (literal, ...), (literal, ...)`
 - `SELECT * FROM table_name`
 - `SELECT column_name, ... FROM table_name`
-- Either SELECT form may include one simple equality predicate:
-  `WHERE column_name = literal`
+- Either SELECT form may include a WHERE expression with comparison operators,
+  IN / NOT IN, BETWEEN / NOT BETWEEN, and LIKE / NOT LIKE.
+- WHERE expressions support parentheses, AND, and OR (AND has higher
+  precedence than OR).
 
-Supported column types are `INT` and `TEXT`. Supported literals are signed
-integer values and single-quoted text values. V1 does not define `NULL`, floating
-point values, boolean values, expressions, joins, multiple predicates, or operators
-other than equality in the optional SELECT WHERE clause.
+Supported column types are INT and TEXT. Supported literals are signed
+integer values and single-quoted text values. V1 does not define NULL, floating
+point values, boolean values, joins, or subqueries.
 
 The parser describes statement syntax; table existence, column existence, type
 compatibility, and other execution-time validation belong to query execution and
@@ -40,3 +41,11 @@ database services.
 
 The parser contract has no dependency on UniDB storage services, the container,
 buffer pool, disk manager, or query execution.
+
+## LIKE pattern scope
+
+The optional SELECT WHERE clause supports `LIKE` and `NOT LIKE` on TEXT
+columns. In a pattern, `%` matches zero or more bytes and `_` matches exactly
+one byte. Matching is case-sensitive. There is no ESCAPE clause: backslash has
+no special pattern-escaping meaning, and literal percent/underscore escaping
+is not supported. LIKE patterns must be single-quoted TEXT literals.
