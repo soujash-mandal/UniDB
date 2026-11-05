@@ -433,6 +433,38 @@ void validateInnerJoinColumns(
 
 // Execute INNER JOIN entirely in QES using the existing public row-read port.
 // Both inputs and the joined result are in memory; matching is O(N x M).
+ResolvedJoinColumn resolveWhereJoinColumn(
+    const std::string &name, const std::string &leftTableName,
+    const std::vector<ColumnDefinition> &leftSchema,
+    const std::string &rightTableName,
+    const std::vector<ColumnDefinition> &rightSchema) {
+  const auto separator = name.find('.');
+  if (separator != std::string::npos) {
+    return resolveSelectedJoinColumn(name, leftTableName, leftSchema,
+                                     rightTableName, rightSchema);
+  }
+  const auto left = std::find_if(
+      leftSchema.begin(), leftSchema.end(),
+      [&](const auto &column) { return column.name == name; });
+  const auto right = std::find_if(
+      rightSchema.begin(), rightSchema.end(),
+      [&](const auto &column) { return column.name == name; });
+  const bool inLeft = left != leftSchema.end();
+  const bool inRight = right != rightSchema.end();
+  if (inLeft && inRight) {
+    throw std::invalid_argument("Ambiguous WHERE column: " + name);
+  }
+  if (!inLeft && !inRight) {
+    throw std::invalid_argument("Unknown WHERE column: " + name);
+  }
+  if (inLeft) {
+    return {&*left, leftTableName,
+            static_cast<std::size_t>(std::distance(leftSchema.begin(), left))};
+  }
+  return {&*right, rightTableName,
+          static_cast<std::size_t>(std::distance(rightSchema.begin(), right))};
+}
+
 WhereExpression qualifyJoinWhereColumns(
     const WhereExpression &expression, const std::string &leftTableName,
     const std::vector<ColumnDefinition> &leftSchema,
@@ -440,7 +472,7 @@ WhereExpression qualifyJoinWhereColumns(
     const std::vector<ColumnDefinition> &rightSchema) {
   WhereExpression qualified = expression;
   if (qualified.kind == WhereExpression::Kind::Predicate) {
-    const auto resolved = resolveSelectedJoinColumn(
+    const auto resolved = resolveWhereJoinColumn(
         qualified.predicate.columnName, leftTableName, leftSchema,
         rightTableName, rightSchema);
     qualified.predicate.columnName =
