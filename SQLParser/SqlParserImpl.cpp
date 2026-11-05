@@ -473,9 +473,10 @@ private:
         predicate.comparison = ComparisonOperator::LessThanOrEqual;
         break;
       default:
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected a comparison operator, IN, BETWEEN, or LIKE "
-                             "in WHERE predicate"};
+        return SqlParseError{
+            SqlParseErrorCode::SyntaxError,
+            "Expected a comparison operator, IN, BETWEEN, or LIKE "
+            "in WHERE predicate"};
       }
       ++position_;
       auto value = parseLiteral();

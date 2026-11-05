@@ -255,7 +255,6 @@ TEST(SqlParserTest, RejectsMalformedInLists) {
   }
 }
 
-
 TEST(SqlParserTest, ParsesLikeAndNotLikePatterns) {
   SqlParserImpl parser;
   const auto likeResult =

@@ -555,13 +555,15 @@ TEST(ExecuteQueryActionTest, RejectsUnknownColumnForInBeforeReadingRows) {
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
-
 TEST(ExecuteQueryActionTest, FiltersTextWithLikeWildcards) {
   FakeQesRdbServicePort port;
   for (const auto &[id, name] :
-       std::vector<std::pair<std::int64_t, std::string>>{
-           {1, "Ada"}, {2, "Adam"}, {3, "Madam"}, {4, "Grace"},
-           {5, "Al"}, {6, ""}}) {
+       std::vector<std::pair<std::int64_t, std::string>>{{1, "Ada"},
+                                                         {2, "Adam"},
+                                                         {3, "Madam"},
+                                                         {4, "Grace"},
+                                                         {5, "Al"},
+                                                         {6, ""}}) {
     port.rows.push_back(SqlTupleCodec::encode(
         {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
   }
@@ -622,13 +624,13 @@ TEST(ExecuteQueryActionTest, SupportsLikeEmptyAndWildcardOnlyPatterns) {
   ASSERT_EQ(emptyRows.size(), 1U);
   EXPECT_TRUE(std::get<std::string>(emptyRows[0][0]).empty());
 
-  const auto all = action.execute(
-      "SELECT name FROM people WHERE name LIKE '%';");
+  const auto all =
+      action.execute("SELECT name FROM people WHERE name LIKE '%';");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(all));
-  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(all)
-                .rows.size(),
-            3U);
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionResult>(all).rows.size(),
+      3U);
 }
 
 TEST(ExecuteQueryActionTest, SupportsNotLikeAndNestedPredicates) {

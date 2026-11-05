@@ -64,8 +64,7 @@ bool matchesLikePattern(const std::string &value, const std::string &pattern) {
          pattern[patternIndex] == value[valueIndex])) {
       ++valueIndex;
       ++patternIndex;
-    } else if (patternIndex < pattern.size() &&
-               pattern[patternIndex] == '%') {
+    } else if (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
       lastPercent = patternIndex++;
       retryValueIndex = valueIndex;
     } else if (lastPercent != std::string::npos) {
