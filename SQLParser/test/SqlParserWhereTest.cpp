@@ -255,5 +255,42 @@ TEST(SqlParserTest, RejectsMalformedInLists) {
   }
 }
 
+
+TEST(SqlParserTest, ParsesLikeAndNotLikePatterns) {
+  SqlParserImpl parser;
+  const auto likeResult =
+      parser.parse("SELECT name FROM users WHERE name LIKE 'A%_'");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(likeResult));
+  const auto &likeSelect =
+      std::get<SelectStatement>(std::get<SqlStatement>(likeResult));
+  const auto &like = std::get<WhereExpression>(likeSelect.where).predicate;
+  EXPECT_EQ(like.comparison, ComparisonOperator::Like);
+  EXPECT_EQ(std::get<std::string>(like.value), "A%_");
+
+  const auto notLikeResult =
+      parser.parse("SELECT name FROM users WHERE name NOT LIKE '%son'");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(notLikeResult));
+  const auto &notLikeSelect =
+      std::get<SelectStatement>(std::get<SqlStatement>(notLikeResult));
+  const auto &notLike =
+      std::get<WhereExpression>(notLikeSelect.where).predicate;
+  EXPECT_EQ(notLike.comparison, ComparisonOperator::NotLike);
+  EXPECT_EQ(std::get<std::string>(notLike.value), "%son");
+}
+
+TEST(SqlParserTest, RejectsMalformedLikePredicates) {
+  SqlParserImpl parser;
+  for (const auto *sql : {"SELECT * FROM users WHERE name LIKE",
+                          "SELECT * FROM users WHERE name LIKE 1",
+                          "SELECT * FROM users WHERE name NOT LIKE",
+                          "SELECT * FROM users WHERE name NOT LIKE 'A%' AND"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
 } // namespace
 } // namespace unidb::sql
