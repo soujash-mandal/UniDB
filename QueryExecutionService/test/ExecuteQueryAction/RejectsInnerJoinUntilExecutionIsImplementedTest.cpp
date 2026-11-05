@@ -9,7 +9,7 @@ TEST(ExecuteQueryActionTest, RejectsInnerJoinUntilExecutionIsImplemented) {
 
   const auto result =
       action.execute("SELECT users.id FROM users INNER JOIN orders "
-                     "ON users.id = orders.user_id");
+                     "ON users.id = orders.id");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
