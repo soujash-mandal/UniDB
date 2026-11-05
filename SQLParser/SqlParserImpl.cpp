@@ -375,18 +375,44 @@ private:
 
     bool isMembership = false;
     bool isNegatedMembership = false;
+    bool isRange = false;
+    bool isNegatedRange = false;
     if (matchKeyword("NOT")) {
-      isMembership = true;
-      isNegatedMembership = true;
-      if (!matchKeyword("IN")) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected IN after NOT in WHERE predicate"};
+      if (matchKeyword("IN")) {
+        isMembership = true;
+        isNegatedMembership = true;
+      } else if (matchKeyword("BETWEEN")) {
+        isRange = true;
+        isNegatedRange = true;
+      } else {
+        return SqlParseError{
+            SqlParseErrorCode::SyntaxError,
+            "Expected IN or BETWEEN after NOT in WHERE predicate"};
       }
     } else if (matchKeyword("IN")) {
       isMembership = true;
+    } else if (matchKeyword("BETWEEN")) {
+      isRange = true;
     }
 
-    if (isMembership) {
+    if (isRange) {
+      predicate.comparison = isNegatedRange ? ComparisonOperator::NotBetween
+                                            : ComparisonOperator::Between;
+      auto lowerBound = parseLiteral();
+      if (std::holds_alternative<SqlParseError>(lowerBound)) {
+        return std::get<SqlParseError>(std::move(lowerBound));
+      }
+      predicate.value = std::get<SqlValue>(std::move(lowerBound));
+      if (!matchKeyword("AND")) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected AND between BETWEEN range bounds"};
+      }
+      auto upperBound = parseLiteral();
+      if (std::holds_alternative<SqlParseError>(upperBound)) {
+        return std::get<SqlParseError>(std::move(upperBound));
+      }
+      predicate.upperBound = std::get<SqlValue>(std::move(upperBound));
+    } else if (isMembership) {
       predicate.comparison = isNegatedMembership ? ComparisonOperator::NotIn
                                                  : ComparisonOperator::In;
       if (!expect(TokenKind::LeftParen)) {

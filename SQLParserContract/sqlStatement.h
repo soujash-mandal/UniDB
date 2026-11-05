@@ -36,12 +36,15 @@ enum class ComparisonOperator {
   GreaterThanOrEqual,
   LessThanOrEqual,
   In,
-  NotIn
+  NotIn,
+  Between,
+  NotBetween
 };
 
 struct WhereEquals {
   std::string columnName;
   SqlValue value;
+  std::optional<SqlValue> upperBound;
   std::vector<SqlValue> values;
   ComparisonOperator comparison{ComparisonOperator::Equal};
 };
