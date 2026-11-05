@@ -104,11 +104,10 @@ TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
   }
 }
 
-
 TEST(SqlParserTest, ParsesDistinctAndColumnAliases) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT DISTINCT name AS username, id FROM users");
+  const auto result =
+      parser.parse("SELECT DISTINCT name AS username, id FROM users");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
@@ -144,12 +143,11 @@ TEST(SqlParserTest, ParsesDistinctStarAndAliasesWithoutDistinct) {
 
 TEST(SqlParserTest, RejectsMalformedSelectAliases) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT name AS FROM users",
-           "SELECT name AS 1 FROM users",
-           "SELECT name AS username, FROM users",
-           "SELECT * AS everything FROM users",
-           "SELECT DISTINCT AS username FROM users"}) {
+  for (const auto *sql :
+       {"SELECT name AS FROM users", "SELECT name AS 1 FROM users",
+        "SELECT name AS username, FROM users",
+        "SELECT * AS everything FROM users",
+        "SELECT DISTINCT AS username FROM users"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,

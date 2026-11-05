@@ -216,7 +216,8 @@ private:
       }
     } else {
       if (current().kind != TokenKind::Identifier) {
-        return syntaxError("Expected '*', DISTINCT, or column name after SELECT");
+        return syntaxError(
+            "Expected '*', DISTINCT, or column name after SELECT");
       }
       while (true) {
         if (current().kind != TokenKind::Identifier) {

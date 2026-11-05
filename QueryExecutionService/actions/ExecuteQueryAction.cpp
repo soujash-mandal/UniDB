@@ -410,7 +410,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
       if (!select->columnAliases.empty() &&
           select->columnAliases.size() != select->columnNames.size()) {
-        throw std::invalid_argument("SELECT alias count does not match columns");
+        throw std::invalid_argument(
+            "SELECT alias count does not match columns");
       }
       std::unordered_set<std::string> outputNames;
       for (std::size_t index = 0; index < selectedColumns.size(); ++index) {
@@ -441,9 +442,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       if (select->distinct &&
           std::find(selectedIndexes.begin(), selectedIndexes.end(),
                     orderIndex) == selectedIndexes.end()) {
-        throw std::invalid_argument(
-            "ORDER BY column must appear in SELECT list when DISTINCT is used: " +
-            order.columnName);
+        throw std::invalid_argument("ORDER BY column must appear in SELECT "
+                                    "list when DISTINCT is used: " +
+                                    order.columnName);
       }
       orderIndexes.emplace_back(orderIndex, order.ascending);
     }
@@ -463,16 +464,16 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     if (select->distinct) {
       std::set<std::vector<SqlValue>> seenProjections;
       matchedRows.erase(
-          std::remove_if(matchedRows.begin(), matchedRows.end(),
-                         [&](const auto &row) {
-                           std::vector<SqlValue> projection;
-                           projection.reserve(selectedIndexes.size());
-                           for (const auto index : selectedIndexes) {
-                             projection.push_back(row[index]);
-                           }
-                           return !seenProjections.insert(std::move(projection))
-                                       .second;
-                         }),
+          std::remove_if(
+              matchedRows.begin(), matchedRows.end(),
+              [&](const auto &row) {
+                std::vector<SqlValue> projection;
+                projection.reserve(selectedIndexes.size());
+                for (const auto index : selectedIndexes) {
+                  projection.push_back(row[index]);
+                }
+                return !seenProjections.insert(std::move(projection)).second;
+              }),
           matchedRows.end());
     }
 

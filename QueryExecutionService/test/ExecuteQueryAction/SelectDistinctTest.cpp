@@ -12,8 +12,7 @@ TEST(ExecuteQueryActionTest, DistinctRemovesDuplicatesFromSelectedProjection) {
   FakeQesRdbServicePort port;
   for (const auto &[id, name] :
        std::vector<std::pair<std::int64_t, std::string>>{
-           {1, "Ada"}, {2, "Grace"}, {3, "Ada"}, {4, "Linus"},
-           {5, "Grace"}}) {
+           {1, "Ada"}, {2, "Grace"}, {3, "Ada"}, {4, "Linus"}, {5, "Grace"}}) {
     port.rows.push_back(SqlTupleCodec::encode(
         {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
   }
@@ -36,7 +35,8 @@ TEST(ExecuteQueryActionTest, DistinctRemovesDuplicatesFromSelectedProjection) {
   EXPECT_EQ(port.selectCalls, 1U);
 }
 
-TEST(ExecuteQueryActionTest, DistinctUsesAllProjectedColumnsAndKeepsEmptyResults) {
+TEST(ExecuteQueryActionTest,
+     DistinctUsesAllProjectedColumnsAndKeepsEmptyResults) {
   FakeQesRdbServicePort port;
   port.rows.push_back(SqlTupleCodec::encode(
       {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
@@ -56,8 +56,8 @@ TEST(ExecuteQueryActionTest, DistinctUsesAllProjectedColumnsAndKeepsEmptyResults
       std::get<QueryExecutionService::QueryExecutionResult>(distinctPair).rows;
   ASSERT_EQ(pairRows.size(), 2U);
 
-  const auto empty = action.execute(
-      "SELECT DISTINCT name FROM people WHERE id > 100;");
+  const auto empty =
+      action.execute("SELECT DISTINCT name FROM people WHERE id > 100;");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           empty));

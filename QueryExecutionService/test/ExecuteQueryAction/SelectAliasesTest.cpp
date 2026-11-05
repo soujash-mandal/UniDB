@@ -33,8 +33,8 @@ TEST(ExecuteQueryActionTest, RejectsDuplicateOutputAliasesBeforeReadingRows) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT name AS label, id AS label FROM people;");
+  const auto outcome =
+      action.execute("SELECT name AS label, id AS label FROM people;");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));
@@ -49,8 +49,7 @@ TEST(ExecuteQueryActionTest, RejectsAliasCollidingWithAnotherOutputName) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome =
-      action.execute("SELECT name AS id, id FROM people;");
+  const auto outcome = action.execute("SELECT name AS id, id FROM people;");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));
