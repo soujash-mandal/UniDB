@@ -467,6 +467,32 @@ resolveWhereJoinColumn(const std::string &name,
 }
 
 WhereExpression
+normalizeSingleTableWhereColumns(const WhereExpression &expression,
+                                 const std::string &tableName) {
+  WhereExpression normalized = expression;
+  if (normalized.kind == WhereExpression::Kind::Predicate) {
+    const auto separator = normalized.predicate.columnName.find('.');
+    if (separator != std::string::npos) {
+      const std::string qualifier =
+          normalized.predicate.columnName.substr(0, separator);
+      if (qualifier != tableName ||
+          normalized.predicate.columnName.find('.', separator + 1) !=
+              std::string::npos) {
+        throw std::invalid_argument("Unknown WHERE table reference: " +
+                                    qualifier);
+      }
+      normalized.predicate.columnName =
+          normalized.predicate.columnName.substr(separator + 1);
+    }
+    return normalized;
+  }
+  for (auto &child : normalized.children) {
+    child = normalizeSingleTableWhereColumns(child, tableName);
+  }
+  return normalized;
+}
+
+WhereExpression
 qualifyJoinWhereColumns(const WhereExpression &expression,
                         const std::string &leftTableName,
                         const std::vector<ColumnDefinition> &leftSchema,
@@ -760,7 +786,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const auto *where = std::get_if<WhereExpression>(&select->where);
     std::optional<CompiledWhereExpression> compiledWhere;
     if (where != nullptr) {
-      compiledWhere = compileWhereExpression(*where, schema, types);
+      const auto normalized =
+          normalizeSingleTableWhereColumns(*where, select->tableName);
+      compiledWhere = compileWhereExpression(normalized, schema, types);
     }
 
     std::vector<std::size_t> selectedIndexes;
