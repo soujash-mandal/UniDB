@@ -34,9 +34,10 @@ TEST(SqlParserTest, ParsesInsertWithSignedIntegerAndEscapedText) {
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &insert =
       std::get<InsertStatement>(std::get<SqlStatement>(result));
-  ASSERT_EQ(insert.values.size(), 2U);
-  EXPECT_EQ(std::get<std::int64_t>(insert.values[0]), -42);
-  EXPECT_EQ(std::get<std::string>(insert.values[1]), "O'Reilly");
+  ASSERT_EQ(insert.rows.size(), 1U);
+  ASSERT_EQ(insert.rows[0].size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(insert.rows[0][0]), -42);
+  EXPECT_EQ(std::get<std::string>(insert.rows[0][1]), "O'Reilly");
 }
 
 TEST(SqlParserTest, ParsesSelectAllAndOptionalEqualityPredicate) {
@@ -256,6 +257,38 @@ TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
         "SELECT * FROM users LIMIT 1 LIMIT 2",
         "SELECT * FROM users OFFSET 1 OFFSET 2",
         "SELECT * FROM users LIMIT 1 OFFSET"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, ParsesMultipleInsertValueRows) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2, 'Grace')");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 2U);
+  ASSERT_EQ(insert.rows[0].size(), 2U);
+  ASSERT_EQ(insert.rows[1].size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(insert.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::string>(insert.rows[0][1]), "Ada");
+  EXPECT_EQ(std::get<std::int64_t>(insert.rows[1][0]), 2);
+  EXPECT_EQ(std::get<std::string>(insert.rows[1][1]), "Grace");
+}
+
+TEST(SqlParserTest, RejectsMalformedMultiRowInsertValues) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"INSERT INTO users (id, name) VALUES (1, 'Ada'),",
+        "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2)",
+        "INSERT INTO users (id, name) VALUES (1, 'Ada'), ()",
+        "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2, 'Grace'"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,
