@@ -164,22 +164,55 @@ TEST(ExecuteQueryActionInnerJoinTest, ReturnsNoRowsWhenRightTableIsEmpty) {
                   .rows.empty());
 }
 
-TEST(ExecuteQueryActionInnerJoinTest, RejectsProjectionUntilNextStage) {
+TEST(ExecuteQueryActionInnerJoinTest, ProjectsQualifiedAndUnqualifiedColumns) {
   InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+  fixture.addUser(2, "Lin");
+  fixture.addOrder(10, 1, 250);
+  fixture.addOrder(11, 2, 80);
+
   const auto outcome =
-      fixture.execute("SELECT users.name FROM users INNER JOIN orders "
-                      "ON users.id = orders.user_id");
+      fixture.execute("SELECT users.name, amount AS total FROM users "
+                      "INNER JOIN orders ON users.id = orders.user_id");
 
   ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
-  EXPECT_EQ(
-      std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
-      "INNER JOIN currently supports SELECT * only; column projection "
-      "will be added in the next stage");
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.columns.size(), 2U);
+  EXPECT_EQ(result.columns[0].name, "name");
+  EXPECT_EQ(result.columns[1].name, "total");
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(result.rows[0],
+            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
+  EXPECT_EQ(result.rows[1],
+            (std::vector<SqlValue>{std::string{"Lin"}, std::int64_t{80}}));
 }
 
-TEST(ExecuteQueryActionInnerJoinTest, RejectsWhereUntilNextStage) {
+TEST(ExecuteQueryActionInnerJoinTest, FiltersJoinedRowsWithQualifiedWhereColumns) {
+  InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+  fixture.addUser(2, "Lin");
+  fixture.addOrder(10, 1, 250);
+  fixture.addOrder(11, 2, 80);
+
+  const auto outcome =
+      fixture.execute("SELECT users.name, orders.amount FROM users "
+                      "INNER JOIN orders ON users.id = orders.user_id "
+                      "WHERE orders.amount > 100");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 1U);
+  EXPECT_EQ(result.rows[0],
+            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
+}
+
+TEST(ExecuteQueryActionInnerJoinTest, RejectsAmbiguousUnqualifiedWhereColumn) {
   InnerJoinFixture fixture;
   const auto outcome =
       fixture.execute("SELECT * FROM users INNER JOIN orders "
@@ -190,7 +223,7 @@ TEST(ExecuteQueryActionInnerJoinTest, RejectsWhereUntilNextStage) {
           outcome));
   EXPECT_EQ(
       std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
-      "WHERE with INNER JOIN will be added in the next stage");
+      "Ambiguous SELECT column: id");
 }
 
 } // namespace
