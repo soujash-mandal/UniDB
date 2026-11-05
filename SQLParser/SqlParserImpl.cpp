@@ -321,10 +321,10 @@ private:
           return std::get<SqlParseError>(std::move(reference));
         }
         const auto &column = std::get<ColumnReference>(reference);
-        statement.columnNames.push_back(
-            column.tableName.has_value()
-                ? *column.tableName + "." + column.columnName
-                : column.columnName);
+        statement.columnNames.push_back(column.tableName.has_value()
+                                            ? *column.tableName + "." +
+                                                  column.columnName
+                                            : column.columnName);
         std::optional<std::string> alias;
         if (matchKeyword("AS")) {
           if (current().kind != TokenKind::Identifier) {
