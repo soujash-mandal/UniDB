@@ -3,10 +3,17 @@
 #include "../../SQLParserContract/sqlStatement.h"
 
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace QueryExecutionService {
+
+class RowInsertedButPostInsertUpdateFailed : public std::runtime_error {
+public:
+  explicit RowInsertedButPostInsertUpdateFailed(const std::string &message)
+      : std::runtime_error(message) {}
+};
 
 class RdbServicePort {
 public:
