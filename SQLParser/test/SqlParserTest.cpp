@@ -392,6 +392,48 @@ TEST(SqlParserTest, ParsesInAndNotInLiteralLists) {
   EXPECT_EQ(std::get<std::string>(notInPredicate.values[1]), "Grace");
 }
 
+TEST(SqlParserTest, ParsesBetweenAndNotBetweenRangePredicates) {
+  SqlParserImpl parser;
+  const auto betweenResult =
+      parser.parse("SELECT id FROM users WHERE id BETWEEN -2 AND 10");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(betweenResult));
+  const auto &betweenSelect =
+      std::get<SelectStatement>(std::get<SqlStatement>(betweenResult));
+  const auto &between = std::get<WhereExpression>(betweenSelect.where).predicate;
+  EXPECT_EQ(between.comparison, ComparisonOperator::Between);
+  EXPECT_EQ(std::get<std::int64_t>(between.value), -2);
+  ASSERT_TRUE(between.upperBound.has_value());
+  EXPECT_EQ(std::get<std::int64_t>(*between.upperBound), 10);
+
+  const auto notBetweenResult = parser.parse(
+      "SELECT name FROM users WHERE name NOT BETWEEN 'Ada' AND 'Grace'");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(notBetweenResult));
+  const auto &notBetweenSelect =
+      std::get<SelectStatement>(std::get<SqlStatement>(notBetweenResult));
+  const auto &notBetween =
+      std::get<WhereExpression>(notBetweenSelect.where).predicate;
+  EXPECT_EQ(notBetween.comparison, ComparisonOperator::NotBetween);
+  EXPECT_EQ(std::get<std::string>(notBetween.value), "Ada");
+  ASSERT_TRUE(notBetween.upperBound.has_value());
+  EXPECT_EQ(std::get<std::string>(*notBetween.upperBound), "Grace");
+}
+
+TEST(SqlParserTest, RejectsMalformedBetweenPredicates) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT * FROM users WHERE id BETWEEN 1",
+           "SELECT * FROM users WHERE id BETWEEN AND 3",
+           "SELECT * FROM users WHERE id BETWEEN 1 AND",
+           "SELECT * FROM users WHERE id NOT BETWEEN 1",
+           "SELECT * FROM users WHERE id NOT IN 1",
+           "SELECT * FROM users WHERE id BETWEEN 1 OR id = 2"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError) << sql;
+  }
+}
+
 TEST(SqlParserTest, RejectsMalformedInLists) {
   SqlParserImpl parser;
   for (const auto *sql : {"SELECT * FROM users WHERE id IN ()",
