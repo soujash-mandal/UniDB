@@ -375,6 +375,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
+    if (select->innerJoin.has_value()) {
+      return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
+                                 "INNER JOIN execution is not available yet"};
+    }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
 

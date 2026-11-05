@@ -28,7 +28,8 @@ semicolon is optional.
 
 Supported column types are INT and TEXT. Supported literals are signed
 integer values and single-quoted text values. V1 does not define NULL, floating
-point values, boolean values, joins, or subqueries.
+point values, boolean values, or subqueries. INNER JOIN syntax is being introduced
+in stages; parser support alone does not make JOIN executable.
 
 The parser describes statement syntax; table existence, column existence, type
 compatibility, and other execution-time validation belong to query execution and
@@ -96,3 +97,18 @@ the SELECT aggregate. WHERE is applied before grouping; HAVING is applied after
 each group is aggregated. DISTINCT, ORDER BY, LIMIT, and OFFSET are not
 supported with grouped queries. Results are returned in grouping-key order;
 this implementation uses an in-memory full scan and grouping map.
+
+
+## INNER JOIN parser groundwork
+
+The parser recognizes a single equality-based
+`FROM left_table INNER JOIN right_table ON left_table.column = right_table.column`
+clause. SELECT-list columns may be table-qualified (for example,
+`SELECT users.id, orders.amount`). The AST preserves the joined table and both
+qualified ON-column references.
+
+This parser-only stage does not execute JOIN queries. Query execution returns an
+explicit unsupported-statement error until the later JOIN execution PRs are
+merged. JOIN column resolution, ambiguous-name handling, and qualified WHERE
+references are deferred to those stages. LEFT JOIN, table aliases, and non-equality
+join conditions remain unsupported.
