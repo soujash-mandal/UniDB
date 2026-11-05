@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -17,6 +18,7 @@ using unidb::sql::AggregateFunction;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
+using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
@@ -384,8 +386,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
     std::vector<std::size_t> selectedIndexes;
     std::vector<ColumnDefinition> selectedColumns;
-    if (select->aggregate.has_value()) {
-      // Aggregate queries produce a single computed output column.
+    if (select->aggregate.has_value() && select->groupBy.empty()) {
+      // Ungrouped aggregate queries produce a single computed output column.
     } else if (select->selectAll) {
       selectedIndexes.reserve(schema.size());
       selectedColumns = schema;
@@ -454,6 +456,38 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     }
 
     std::optional<std::size_t> aggregateIndex;
+    std::vector<std::size_t> groupIndexes;
+    if (select->having.has_value() && select->groupBy.empty()) {
+      throw std::invalid_argument("HAVING requires GROUP BY");
+    }
+    if (!select->groupBy.empty()) {
+      if (!select->aggregate.has_value()) {
+        throw std::invalid_argument(
+            "GROUP BY requires one aggregate expression in SELECT");
+      }
+      if (select->distinct || !select->orderBy.empty() ||
+          select->limit.has_value() || select->offset != 0) {
+        throw std::invalid_argument(
+            "Grouped aggregate SELECT cannot be combined with DISTINCT, "
+            "ORDER BY, LIMIT, or OFFSET");
+      }
+      if (select->columnNames != select->groupBy) {
+        throw std::invalid_argument(
+            "SELECT columns must exactly match GROUP BY columns");
+      }
+      for (const auto &groupColumn : select->groupBy) {
+        const auto found =
+            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+              return column.name == groupColumn;
+            });
+        if (found == schema.end()) {
+          throw std::invalid_argument("Unknown GROUP BY column: " +
+                                      groupColumn);
+        }
+        groupIndexes.push_back(
+            static_cast<std::size_t>(std::distance(schema.begin(), found)));
+      }
+    }
     if (select->aggregate.has_value()) {
       const auto &aggregate = *select->aggregate;
       if (select->distinct || !select->orderBy.empty() ||
@@ -482,6 +516,25 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
            types[*aggregateIndex] != SqlType::Int)) {
         throw std::invalid_argument("SUM and AVG require an INT column");
       }
+      if (!select->groupBy.empty() && select->having.has_value()) {
+        const auto &having = *select->having;
+        if (having.aggregate.function != aggregate.function ||
+            having.aggregate.columnName != aggregate.columnName) {
+          throw std::invalid_argument(
+              "HAVING aggregate must match the SELECT aggregate");
+        }
+        const SqlType resultType =
+            aggregate.function == AggregateFunction::Min ||
+                    aggregate.function == AggregateFunction::Max
+                ? types[*aggregateIndex]
+                : SqlType::Int;
+        const bool valueIsInt =
+            std::holds_alternative<std::int64_t>(having.value);
+        if ((resultType == SqlType::Int) != valueIsInt) {
+          throw std::invalid_argument(
+              "HAVING value type does not match aggregate result type");
+        }
+      }
     }
 
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
@@ -494,6 +547,128 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         continue;
       }
       matchedRows.push_back(std::move(decoded));
+    }
+
+    if (!select->groupBy.empty()) {
+      const auto &aggregate = *select->aggregate;
+      const std::string functionName =
+          aggregate.function == AggregateFunction::Count ? "COUNT"
+          : aggregate.function == AggregateFunction::Min ? "MIN"
+          : aggregate.function == AggregateFunction::Max ? "MAX"
+          : aggregate.function == AggregateFunction::Sum ? "SUM"
+                                                         : "AVG";
+      const SqlType aggregateType =
+          aggregate.function == AggregateFunction::Min ||
+                  aggregate.function == AggregateFunction::Max
+              ? types[*aggregateIndex]
+              : SqlType::Int;
+      using GroupRows = std::map<std::vector<SqlValue>,
+                                 std::vector<const std::vector<SqlValue> *>>;
+      GroupRows groups;
+      for (const auto &row : matchedRows) {
+        std::vector<SqlValue> key;
+        key.reserve(groupIndexes.size());
+        for (const auto index : groupIndexes) {
+          key.push_back(row[index]);
+        }
+        groups[std::move(key)].push_back(&row);
+      }
+
+      QueryExecutionResult result;
+      result.kind = QueryExecutionResultKind::Rows;
+      result.message = "Rows selected";
+      result.columns = selectedColumns;
+      const std::string aggregateName = aggregate.alias.value_or(
+          functionName + "(" +
+          (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
+          ")");
+      if (std::any_of(result.columns.begin(), result.columns.end(),
+                      [&](const auto &column) {
+                        return column.name == aggregateName;
+                      })) {
+        throw std::invalid_argument("Duplicate SELECT output column name: " +
+                                    aggregateName);
+      }
+      result.columns.push_back({aggregateName, aggregateType});
+
+      for (const auto &[key, rows] : groups) {
+        SqlValue aggregateValue = std::int64_t{0};
+        if (aggregate.function == AggregateFunction::Count) {
+          aggregateValue = static_cast<std::int64_t>(rows.size());
+        } else {
+          if (rows.empty()) {
+            continue;
+          }
+          if (aggregate.function == AggregateFunction::Min ||
+              aggregate.function == AggregateFunction::Max) {
+            aggregateValue = (*rows.front())[*aggregateIndex];
+            for (const auto *row : rows) {
+              const int comparison =
+                  compareSqlValues((*row)[*aggregateIndex], aggregateValue);
+              if ((aggregate.function == AggregateFunction::Min &&
+                   comparison < 0) ||
+                  (aggregate.function == AggregateFunction::Max &&
+                   comparison > 0)) {
+                aggregateValue = (*row)[*aggregateIndex];
+              }
+            }
+          } else {
+            std::int64_t sum = 0;
+            for (const auto *row : rows) {
+              const auto value =
+                  std::get<std::int64_t>((*row)[*aggregateIndex]);
+              if ((value > 0 &&
+                   sum > std::numeric_limits<std::int64_t>::max() - value) ||
+                  (value < 0 &&
+                   sum < std::numeric_limits<std::int64_t>::min() - value)) {
+                throw std::invalid_argument("SUM result exceeds INT64 range");
+              }
+              sum += value;
+            }
+            if (aggregate.function == AggregateFunction::Avg) {
+              sum /= static_cast<std::int64_t>(rows.size());
+            }
+            aggregateValue = sum;
+          }
+        }
+
+        if (select->having.has_value()) {
+          const int comparison =
+              compareSqlValues(aggregateValue, select->having->value);
+          bool matches = false;
+          switch (select->having->comparison) {
+          case ComparisonOperator::Equal:
+            matches = comparison == 0;
+            break;
+          case ComparisonOperator::NotEqual:
+            matches = comparison != 0;
+            break;
+          case ComparisonOperator::GreaterThan:
+            matches = comparison > 0;
+            break;
+          case ComparisonOperator::LessThan:
+            matches = comparison < 0;
+            break;
+          case ComparisonOperator::GreaterThanOrEqual:
+            matches = comparison >= 0;
+            break;
+          case ComparisonOperator::LessThanOrEqual:
+            matches = comparison <= 0;
+            break;
+          default:
+            throw std::invalid_argument(
+                "HAVING supports only basic comparison operators");
+          }
+          if (!matches) {
+            continue;
+          }
+        }
+
+        auto outputRow = key;
+        outputRow.push_back(std::move(aggregateValue));
+        result.rows.push_back(std::move(outputRow));
+      }
+      return result;
     }
 
     if (select->aggregate.has_value()) {

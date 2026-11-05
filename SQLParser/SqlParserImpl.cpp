@@ -57,7 +57,7 @@ public:
     }
     if (current().kind != TokenKind::End) {
       if (current().kind == TokenKind::Unsupported || isKeyword("AND") ||
-          isKeyword("OR") || isKeyword("JOIN") || isKeyword("GROUP")) {
+          isKeyword("OR") || isKeyword("JOIN")) {
         return unsupported("SQL syntax is outside the V1 supported subset");
       }
       return syntaxError("Unexpected token '" + current().text + "'");
@@ -205,53 +205,70 @@ private:
     return SqlStatement{std::move(statement)};
   }
 
+  bool isAggregateStart() const {
+    return current().kind == TokenKind::Identifier &&
+           (upper(current().text) == "COUNT" ||
+            upper(current().text) == "MIN" || upper(current().text) == "MAX" ||
+            upper(current().text) == "SUM" || upper(current().text) == "AVG");
+  }
+
+  std::variant<AggregateExpression, SqlParseError> parseAggregateCall() {
+    const std::string functionName = upper(current().text);
+    ++position_;
+    if (!expect(TokenKind::LeftParen)) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected '(' after aggregate function"};
+    }
+    AggregateExpression aggregate;
+    if (functionName == "COUNT") {
+      aggregate.function = AggregateFunction::Count;
+    } else if (functionName == "MIN") {
+      aggregate.function = AggregateFunction::Min;
+    } else if (functionName == "MAX") {
+      aggregate.function = AggregateFunction::Max;
+    } else if (functionName == "SUM") {
+      aggregate.function = AggregateFunction::Sum;
+    } else {
+      aggregate.function = AggregateFunction::Avg;
+    }
+    if (match(TokenKind::Star)) {
+      if (aggregate.function != AggregateFunction::Count) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Only COUNT supports '*'"};
+      }
+    } else {
+      if (current().kind != TokenKind::Identifier) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected column name in aggregate function"};
+      }
+      aggregate.columnName = current().text;
+      ++position_;
+    }
+    if (!expect(TokenKind::RightParen)) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected ')' after aggregate argument"};
+    }
+    if (matchKeyword("AS")) {
+      if (current().kind != TokenKind::Identifier) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected alias after AS"};
+      }
+      aggregate.alias = current().text;
+      ++position_;
+    }
+    return aggregate;
+  }
+
   SqlParseResult parseSelect() {
     ++position_; // SELECT
     SelectStatement statement;
     statement.distinct = matchKeyword("DISTINCT");
-    if (current().kind == TokenKind::Identifier &&
-        (upper(current().text) == "COUNT" || upper(current().text) == "MIN" ||
-         upper(current().text) == "MAX" || upper(current().text) == "SUM" ||
-         upper(current().text) == "AVG")) {
-      const std::string functionName = upper(current().text);
-      ++position_;
-      if (!expect(TokenKind::LeftParen)) {
-        return syntaxError("Expected '(' after aggregate function");
+    if (isAggregateStart()) {
+      auto aggregate = parseAggregateCall();
+      if (std::holds_alternative<SqlParseError>(aggregate)) {
+        return std::get<SqlParseError>(std::move(aggregate));
       }
-      unidb::sql::AggregateExpression aggregate;
-      if (functionName == "COUNT") {
-        aggregate.function = unidb::sql::AggregateFunction::Count;
-      } else if (functionName == "MIN") {
-        aggregate.function = unidb::sql::AggregateFunction::Min;
-      } else if (functionName == "MAX") {
-        aggregate.function = unidb::sql::AggregateFunction::Max;
-      } else if (functionName == "SUM") {
-        aggregate.function = unidb::sql::AggregateFunction::Sum;
-      } else {
-        aggregate.function = unidb::sql::AggregateFunction::Avg;
-      }
-      if (match(TokenKind::Star)) {
-        if (aggregate.function != unidb::sql::AggregateFunction::Count) {
-          return syntaxError("Only COUNT supports '*'");
-        }
-      } else {
-        if (current().kind != TokenKind::Identifier) {
-          return syntaxError("Expected column name in aggregate function");
-        }
-        aggregate.columnName = current().text;
-        ++position_;
-      }
-      if (!expect(TokenKind::RightParen)) {
-        return syntaxError("Expected ')' after aggregate argument");
-      }
-      if (matchKeyword("AS")) {
-        if (current().kind != TokenKind::Identifier) {
-          return syntaxError("Expected alias after AS");
-        }
-        aggregate.alias = current().text;
-        ++position_;
-      }
-      statement.aggregate = std::move(aggregate);
+      statement.aggregate = std::get<AggregateExpression>(std::move(aggregate));
     } else if (match(TokenKind::Star)) {
       statement.selectAll = true;
       if (matchKeyword("AS")) {
@@ -260,9 +277,18 @@ private:
     } else {
       if (current().kind != TokenKind::Identifier) {
         return syntaxError(
-            "Expected '*', DISTINCT, or column name after SELECT");
+            "Expected '*', aggregate, or column name after SELECT");
       }
       while (true) {
+        if (isAggregateStart()) {
+          auto aggregate = parseAggregateCall();
+          if (std::holds_alternative<SqlParseError>(aggregate)) {
+            return std::get<SqlParseError>(std::move(aggregate));
+          }
+          statement.aggregate =
+              std::get<AggregateExpression>(std::move(aggregate));
+          break;
+        }
         if (current().kind != TokenKind::Identifier) {
           return syntaxError("Expected column name in SELECT list");
         }
@@ -297,6 +323,63 @@ private:
         return std::get<SqlParseError>(std::move(expression));
       }
       statement.where = std::get<WhereExpression>(std::move(expression));
+    }
+
+    if (matchKeyword("GROUP")) {
+      if (!expectKeyword("BY")) {
+        return syntaxError("Expected BY after GROUP");
+      }
+      while (true) {
+        if (current().kind != TokenKind::Identifier) {
+          return syntaxError("Expected column name after GROUP BY");
+        }
+        statement.groupBy.push_back(current().text);
+        ++position_;
+        if (!match(TokenKind::Comma)) {
+          break;
+        }
+      }
+    }
+
+    if (matchKeyword("HAVING")) {
+      if (!isAggregateStart()) {
+        return syntaxError("HAVING must start with an aggregate function");
+      }
+      auto aggregate = parseAggregateCall();
+      if (std::holds_alternative<SqlParseError>(aggregate)) {
+        return std::get<SqlParseError>(std::move(aggregate));
+      }
+      HavingExpression having;
+      having.aggregate = std::get<AggregateExpression>(std::move(aggregate));
+      switch (current().kind) {
+      case TokenKind::Equals:
+        having.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        having.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        having.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        having.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        having.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        having.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
+      default:
+        return syntaxError("Expected comparison operator in HAVING");
+      }
+      ++position_;
+      auto value = parseLiteral();
+      if (std::holds_alternative<SqlParseError>(value)) {
+        return std::get<SqlParseError>(std::move(value));
+      }
+      having.value = std::get<SqlValue>(std::move(value));
+      statement.having = std::move(having);
     }
 
     if (matchKeyword("ORDER")) {

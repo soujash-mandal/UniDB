@@ -79,3 +79,20 @@ an empty filtered result; SUM reports an error if its result exceeds INT64.
 NULL values are not supported, so COUNT(column) counts every matched row.
 Aggregate evaluation scans rows returned by the existing public RDB SELECT
 action; it does not use indexes.
+
+## GROUP BY and HAVING
+
+Grouped queries support one or more grouping columns and one aggregate expression
+in the SELECT list, for example:
+`SELECT department, COUNT(*) FROM employees GROUP BY department`.
+Every selected non-aggregate column must appear in GROUP BY, and the selected
+grouping columns must match the GROUP BY list in the same order. Supported
+aggregates are COUNT, MIN, MAX, SUM, and AVG with the same type and empty-group
+semantics as ungrouped aggregates.
+
+A single HAVING condition may compare the selected aggregate expression with an
+INT or TEXT literal using =, !=, >, <, >=, or <=. The HAVING aggregate must match
+the SELECT aggregate. WHERE is applied before grouping; HAVING is applied after
+each group is aggregated. DISTINCT, ORDER BY, LIMIT, and OFFSET are not
+supported with grouped queries. Results are returned in grouping-key order;
+this implementation uses an in-memory full scan and grouping map.
