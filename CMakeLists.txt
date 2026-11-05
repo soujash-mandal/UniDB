@@ -210,6 +210,8 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/InsertsValuesInSchemaOrderTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectStarDecodesRowsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectProjectionTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/SelectDistinctTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/SelectAliasesTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/WhereFilteringTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ParenthesizedWhereExpressionsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
