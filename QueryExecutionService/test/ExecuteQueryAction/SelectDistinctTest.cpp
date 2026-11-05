@@ -3,6 +3,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
+
 TEST(ExecuteQueryActionTest, DistinctRemovesDuplicatesFromSelectedProjection) {
   FakeQesRdbServicePort port;
   for (const auto &[id, name] :
