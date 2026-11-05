@@ -72,6 +72,12 @@ struct AggregateExpression {
   std::optional<std::string> alias;
 };
 
+struct HavingExpression {
+  AggregateExpression aggregate;
+  ComparisonOperator comparison{ComparisonOperator::Equal};
+  SqlValue value;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
@@ -80,6 +86,8 @@ struct SelectStatement {
   std::vector<std::optional<std::string>> columnAliases;
   bool distinct{false};
   std::optional<AggregateExpression> aggregate;
+  std::vector<std::string> groupBy;
+  std::optional<HavingExpression> having;
   std::string tableName;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
