@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -62,6 +63,8 @@ struct SelectStatement {
   // supported.
   std::variant<std::monostate, WhereExpression> where;
   std::vector<OrderByColumn> orderBy;
+  std::optional<std::uint64_t> limit;
+  std::uint64_t offset{0};
 };
 
 using SqlStatement =

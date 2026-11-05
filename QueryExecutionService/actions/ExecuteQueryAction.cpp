@@ -285,6 +285,16 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                        });
     }
 
+    const std::size_t offset = select->offset > matchedRows.size()
+                                   ? matchedRows.size()
+                                   : static_cast<std::size_t>(select->offset);
+    if (offset > 0) {
+      matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
+    }
+    if (select->limit.has_value() && *select->limit < matchedRows.size()) {
+      matchedRows.resize(static_cast<std::size_t>(*select->limit));
+    }
+
     QueryExecutionResult result;
     result.kind = QueryExecutionResultKind::Rows;
     result.message = "Rows selected";
