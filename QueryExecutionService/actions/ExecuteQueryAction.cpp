@@ -77,6 +77,9 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
     return comparison >= 0;
   case ComparisonOperator::LessThanOrEqual:
     return comparison <= 0;
+  case ComparisonOperator::In:
+  case ComparisonOperator::NotIn:
+    throw std::invalid_argument("IN predicates require a value list");
   }
   throw std::invalid_argument("Unknown WHERE comparison operator");
 }
