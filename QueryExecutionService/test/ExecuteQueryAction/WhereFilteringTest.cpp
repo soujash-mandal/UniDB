@@ -283,7 +283,6 @@ TEST(ExecuteQueryActionTest, RejectsUnknownOrderByColumnBeforeReadingRows) {
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
-
 TEST(ExecuteQueryActionTest, AppliesLimitAndOffsetAfterFilteringAndOrdering) {
   FakeQesRdbServicePort port;
   for (const std::int64_t id : {5, 1, 4, 2, 3}) {
