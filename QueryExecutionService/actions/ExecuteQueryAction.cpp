@@ -177,6 +177,10 @@ compileWhereExpression(const WhereExpression &expression,
     const bool isLike =
         expression.predicate.comparison == ComparisonOperator::Like ||
         expression.predicate.comparison == ComparisonOperator::NotLike;
+    if (isLike && types[compiled.columnIndex] != SqlType::Text) {
+      throw std::invalid_argument("LIKE requires a TEXT column: " +
+                                  found->name);
+    }
     if (!isMembership) {
       const bool valueIsInt =
           std::holds_alternative<std::int64_t>(expression.predicate.value);
@@ -184,10 +188,6 @@ compileWhereExpression(const WhereExpression &expression,
         throw std::invalid_argument("WHERE value type does not match column: " +
                                     found->name);
       }
-    }
-    if (isLike && types[compiled.columnIndex] != SqlType::Text) {
-      throw std::invalid_argument("LIKE requires a TEXT column: " +
-                                  found->name);
     }
     if (isRange) {
       if (!expression.predicate.upperBound.has_value()) {
