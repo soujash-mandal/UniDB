@@ -44,9 +44,11 @@ struct WhereEquals {
 };
 
 struct WhereExpression {
-  // Each inner group is joined by AND; groups are joined by OR.
-  // This representation encodes SQL's AND-before-OR precedence.
-  std::vector<std::vector<WhereEquals>> disjunctions;
+  enum class Kind { Predicate, And, Or };
+
+  Kind kind{Kind::Predicate};
+  WhereEquals predicate;
+  std::vector<WhereExpression> children;
 };
 
 struct OrderByColumn {
@@ -59,8 +61,7 @@ struct SelectStatement {
   bool selectAll{false};
   std::vector<std::string> columnNames;
   std::string tableName;
-  // AND binds more tightly than OR. Parenthesized expressions are not yet
-  // supported.
+  // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
   std::vector<OrderByColumn> orderBy;
   std::optional<std::uint64_t> limit;
