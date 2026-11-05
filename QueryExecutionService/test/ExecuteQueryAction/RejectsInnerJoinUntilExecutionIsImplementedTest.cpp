@@ -18,7 +18,7 @@ TEST(ExecuteQueryActionTest, RejectsInnerJoinProjectionUntilNextStage) {
       std::get<QueryExecutionService::QueryExecutionError>(result);
   EXPECT_EQ(
       error.code,
-      QueryExecutionService::QueryExecutionErrorCode::UnsupportedStatement);
+      QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
   EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; "
                            "column projection will be added in the next stage");
   EXPECT_EQ(port.getSchemaCalls, 2U);
