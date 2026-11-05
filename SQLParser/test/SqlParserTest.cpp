@@ -250,8 +250,7 @@ TEST(SqlParserTest, ParsesLimitWithoutOffsetAndOffsetWithoutLimit) {
 TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
   SqlParserImpl parser;
   for (const auto *sql :
-       {"SELECT * FROM users LIMIT",
-        "SELECT * FROM users LIMIT -1",
+       {"SELECT * FROM users LIMIT", "SELECT * FROM users LIMIT -1",
         "SELECT * FROM users LIMIT '2'",
         "SELECT * FROM users LIMIT 18446744073709551616",
         "SELECT * FROM users LIMIT 1 LIMIT 2",

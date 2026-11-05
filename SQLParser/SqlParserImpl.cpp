@@ -344,8 +344,9 @@ private:
 
   std::variant<std::uint64_t, SqlParseError> parseUnsignedInteger() {
     if (current().kind != TokenKind::Integer) {
-      return SqlParseError{SqlParseErrorCode::SyntaxError,
-                           "Expected a non-negative integer for LIMIT or OFFSET"};
+      return SqlParseError{
+          SqlParseErrorCode::SyntaxError,
+          "Expected a non-negative integer for LIMIT or OFFSET"};
     }
     std::uint64_t value{};
     const auto &text = current().text;

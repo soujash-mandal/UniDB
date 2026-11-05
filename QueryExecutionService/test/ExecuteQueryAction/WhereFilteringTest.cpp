@@ -319,9 +319,8 @@ TEST(ExecuteQueryActionTest, HandlesZeroLimitAndOffsetBeyondEnd) {
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           zeroLimit));
-  EXPECT_TRUE(
-      std::get<QueryExecutionService::QueryExecutionResult>(zeroLimit)
-          .rows.empty());
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(zeroLimit)
+                  .rows.empty());
 
   const auto beyondEnd = action.execute("SELECT * FROM people OFFSET 10;");
   ASSERT_TRUE(
