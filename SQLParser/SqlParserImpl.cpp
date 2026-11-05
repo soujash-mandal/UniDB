@@ -57,7 +57,7 @@ public:
     }
     if (current().kind != TokenKind::End) {
       if (current().kind == TokenKind::Unsupported || isKeyword("AND") ||
-          isKeyword("OR") || isKeyword("JOIN") || isKeyword("GROUP")) {
+          isKeyword("OR") || isKeyword("JOIN")) {
         return unsupported("SQL syntax is outside the V1 supported subset");
       }
       return syntaxError("Unexpected token '" + current().text + "'");
