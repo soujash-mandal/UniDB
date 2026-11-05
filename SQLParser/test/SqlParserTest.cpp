@@ -214,10 +214,6 @@ TEST(SqlParserTest, RejectsMalformedOrderByClauses) {
   }
 }
 
-} // namespace
-} // namespace unidb::sql
-
-
 TEST(SqlParserTest, ParsesLimitAndOffsetAfterOrderBy) {
   SqlParserImpl parser;
   const auto result =
@@ -268,3 +264,7 @@ TEST(SqlParserTest, RejectsMalformedLimitAndOffsetClauses) {
         << sql;
   }
 }
+
+
+} // namespace
+} // namespace unidb::sql
