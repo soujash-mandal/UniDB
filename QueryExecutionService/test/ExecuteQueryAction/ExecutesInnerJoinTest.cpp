@@ -106,15 +106,13 @@ TEST(ExecuteQueryActionInnerJoinTest,
                                    std::int64_t{11}, std::int64_t{1},
                                    std::int64_t{300}}));
   EXPECT_EQ(result.rows[2],
-            (std::vector<SqlValue>{std::int64_t{1},
-                                   std::string{"Ada duplicate key"},
-                                   std::int64_t{10}, std::int64_t{1},
-                                   std::int64_t{250}}));
+            (std::vector<SqlValue>{
+                std::int64_t{1}, std::string{"Ada duplicate key"},
+                std::int64_t{10}, std::int64_t{1}, std::int64_t{250}}));
   EXPECT_EQ(result.rows[3],
-            (std::vector<SqlValue>{std::int64_t{1},
-                                   std::string{"Ada duplicate key"},
-                                   std::int64_t{11}, std::int64_t{1},
-                                   std::int64_t{300}}));
+            (std::vector<SqlValue>{
+                std::int64_t{1}, std::string{"Ada duplicate key"},
+                std::int64_t{11}, std::int64_t{1}, std::int64_t{300}}));
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "orders"}));
   EXPECT_EQ(fixture.port.rowRequests,
