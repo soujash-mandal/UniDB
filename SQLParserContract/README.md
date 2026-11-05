@@ -107,8 +107,15 @@ clause. SELECT-list columns may be table-qualified (for example,
 `SELECT users.id, orders.amount`). The AST preserves the joined table and both
 qualified ON-column references.
 
-This parser-only stage does not execute JOIN queries. Query execution returns an
-explicit unsupported-statement error until the later JOIN execution PRs are
-merged. JOIN column resolution, ambiguous-name handling, and qualified WHERE
-references are deferred to those stages. LEFT JOIN, table aliases, and non-equality
-join conditions remain unsupported.
+The next validation stage resolves both table schemas through the
+existing RDB public Action-backed port. The ON clause must reference one column
+from each table, and both columns must have the same type. SELECT-list references
+may be qualified; unqualified references are accepted only when the column name
+exists in exactly one table. Output names remain unqualified when unique and
+become `table.column` when the name exists in both tables. An explicit `AS`
+alias overrides the generated name. Duplicate output names are rejected.
+
+These parser and schema-validation stages do not execute JOIN queries. Query
+execution returns an explicit unsupported-statement error until the nested-loop
+execution stage is merged. Qualified WHERE references are deferred. LEFT JOIN,
+table aliases, and non-equality join conditions remain unsupported.
