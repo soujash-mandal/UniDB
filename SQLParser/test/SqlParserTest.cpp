@@ -171,5 +171,50 @@ TEST(SqlParserTest, RejectsDanglingAndOrAndRepeatedConnectors) {
   }
 }
 
+TEST(SqlParserTest, ParsesOrderByWithDefaultAscendingAndExplicitDirections) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM users ORDER BY name, id DESC;");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(select.orderBy.size(), 2U);
+  EXPECT_EQ(select.orderBy[0].columnName, "name");
+  EXPECT_TRUE(select.orderBy[0].ascending);
+  EXPECT_EQ(select.orderBy[1].columnName, "id");
+  EXPECT_FALSE(select.orderBy[1].ascending);
+}
+
+TEST(SqlParserTest, ParsesWhereBeforeOrderBy) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM users WHERE id > 1 ORDER BY name DESC");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+  ASSERT_EQ(select.orderBy.size(), 1U);
+  EXPECT_EQ(select.orderBy[0].columnName, "name");
+  EXPECT_FALSE(select.orderBy[0].ascending);
+}
+
+TEST(SqlParserTest, RejectsMalformedOrderByClauses) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT * FROM users ORDER",
+           "SELECT * FROM users ORDER id",
+           "SELECT * FROM users ORDER BY",
+           "SELECT * FROM users ORDER BY id,",
+           "SELECT * FROM users ORDER BY id ASC DESC"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
 } // namespace
 } // namespace unidb::sql
