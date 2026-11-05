@@ -119,8 +119,9 @@ TEST(ExecuteQueryActionTest, CombinesWherePredicatesWithAndAndOr) {
   auto action = makeQesAction(port, parser);
   const auto andOutcome =
       action.execute("SELECT id FROM people WHERE id >= 2 AND name = 'B';");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      andOutcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          andOutcome));
   const auto &andResult =
       std::get<QueryExecutionService::QueryExecutionResult>(andOutcome);
   ASSERT_EQ(andResult.rows.size(), 2U);
@@ -129,8 +130,9 @@ TEST(ExecuteQueryActionTest, CombinesWherePredicatesWithAndAndOr) {
 
   const auto orOutcome =
       action.execute("SELECT id FROM people WHERE id = 1 OR id = 4;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      orOutcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          orOutcome));
   const auto &orResult =
       std::get<QueryExecutionService::QueryExecutionResult>(orOutcome);
   ASSERT_EQ(orResult.rows.size(), 2U);
@@ -150,8 +152,9 @@ TEST(ExecuteQueryActionTest, AppliesAndBeforeOrWhenEvaluatingWhere) {
   auto action = makeQesAction(port, parser);
   const auto outcome = action.execute(
       "SELECT id FROM people WHERE id = 1 OR id >= 2 AND name = 'B';");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 3U);
@@ -166,11 +169,11 @@ TEST(ExecuteQueryActionTest, ValidatesEveryCompoundPredicateBeforeReadingRows) {
   auto action = makeQesAction(port, parser);
   const auto outcome =
       action.execute("SELECT * FROM people WHERE id = 1 OR missing = 2;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
-  EXPECT_NE(
-      std::get<QueryExecutionService::QueryExecutionError>(outcome).message.find(
-          "Unknown WHERE column: missing"),
-      std::string::npos);
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("Unknown WHERE column: missing"),
+            std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }

@@ -13,8 +13,7 @@ TEST(ExecuteQueryActionTest, RejectsParenthesizedWhereExpressions) {
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));
-  EXPECT_EQ(
-      std::get<QueryExecutionService::QueryExecutionError>(outcome).code,
-      QueryExecutionService::QueryExecutionErrorCode::SyntaxError);
+  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionError>(outcome).code,
+            QueryExecutionService::QueryExecutionErrorCode::SyntaxError);
   EXPECT_EQ(port.selectCalls, 0U);
 }

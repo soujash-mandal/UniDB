@@ -183,8 +183,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         auto &compiledConjunction = compiledWhere.emplace_back();
         compiledConjunction.reserve(conjunction.size());
         for (const auto &predicate : conjunction) {
-          const auto found =
-              std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+          const auto found = std::find_if(
+              schema.begin(), schema.end(), [&](const auto &column) {
                 return column.name == predicate.columnName;
               });
           if (found == schema.end()) {
@@ -246,12 +246,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         const bool matchesExpression = std::any_of(
             compiledWhere.begin(), compiledWhere.end(),
             [&](const auto &conjunction) {
-              return std::all_of(
-                  conjunction.begin(), conjunction.end(),
-                  [&](const auto &compiled) {
-                    return matchesWhere(decoded[compiled.first],
-                                        compiled.second);
-                  });
+              return std::all_of(conjunction.begin(), conjunction.end(),
+                                 [&](const auto &compiled) {
+                                   return matchesWhere(decoded[compiled.first],
+                                                       compiled.second);
+                                 });
             });
         if (!matchesExpression) {
           continue;

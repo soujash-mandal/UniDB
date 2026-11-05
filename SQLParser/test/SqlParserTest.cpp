@@ -89,8 +89,9 @@ TEST(SqlParserTest, ReportsUnsupportedStatementAndOperators) {
   const auto &select =
       std::get<SelectStatement>(std::get<SqlStatement>(comparison));
   ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
-  EXPECT_EQ(std::get<WhereExpression>(select.where).disjunctions[0][0].comparison,
-            ComparisonOperator::GreaterThan);
+  EXPECT_EQ(
+      std::get<WhereExpression>(select.where).disjunctions[0][0].comparison,
+      ComparisonOperator::GreaterThan);
 }
 
 TEST(SqlParserTest, RejectsMismatchedInsertColumnAndValueCounts) {
@@ -129,7 +130,9 @@ TEST(SqlParserTest, ParsesEverySupportedWhereComparisonOperator) {
     const auto &select =
         std::get<SelectStatement>(std::get<SqlStatement>(result));
     ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
-    EXPECT_EQ(std::get<WhereExpression>(select.where).disjunctions[0][0].comparison, expected)
+    EXPECT_EQ(
+        std::get<WhereExpression>(select.where).disjunctions[0][0].comparison,
+        expected)
         << "operator: " << token;
   }
 }
@@ -157,14 +160,14 @@ TEST(SqlParserTest, ParsesAndBeforeOrPrecedence) {
 
 TEST(SqlParserTest, RejectsDanglingAndOrAndRepeatedConnectors) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT * FROM users WHERE id = 1 AND",
-           "SELECT * FROM users WHERE id = 1 OR",
-           "SELECT * FROM users WHERE id = 1 AND OR id = 2"}) {
+  for (const auto *sql : {"SELECT * FROM users WHERE id = 1 AND",
+                          "SELECT * FROM users WHERE id = 1 OR",
+                          "SELECT * FROM users WHERE id = 1 AND OR id = 2"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,
-              SqlParseErrorCode::SyntaxError) << sql;
+              SqlParseErrorCode::SyntaxError)
+        << sql;
   }
 }
 
