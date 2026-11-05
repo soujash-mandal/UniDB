@@ -516,6 +516,25 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
            types[*aggregateIndex] != SqlType::Int)) {
         throw std::invalid_argument("SUM and AVG require an INT column");
       }
+      if (!select->groupBy.empty() && select->having.has_value()) {
+        const auto &having = *select->having;
+        if (having.aggregate.function != aggregate.function ||
+            having.aggregate.columnName != aggregate.columnName) {
+          throw std::invalid_argument(
+              "HAVING aggregate must match the SELECT aggregate");
+        }
+        const SqlType resultType =
+            aggregate.function == AggregateFunction::Min ||
+                    aggregate.function == AggregateFunction::Max
+                ? types[*aggregateIndex]
+                : SqlType::Int;
+        const bool valueIsInt =
+            std::holds_alternative<std::int64_t>(having.value);
+        if ((resultType == SqlType::Int) != valueIsInt) {
+          throw std::invalid_argument(
+              "HAVING value type does not match aggregate result type");
+        }
+      }
     }
 
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
@@ -532,15 +551,6 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
     if (!select->groupBy.empty()) {
       const auto &aggregate = *select->aggregate;
-      if (select->having.has_value()) {
-        const auto &having = *select->having;
-        if (having.aggregate.function != aggregate.function ||
-            having.aggregate.columnName != aggregate.columnName) {
-          throw std::invalid_argument(
-              "HAVING aggregate must match the SELECT aggregate");
-        }
-      }
-
       const std::string functionName =
           aggregate.function == AggregateFunction::Count ? "COUNT"
           : aggregate.function == AggregateFunction::Min ? "MIN"
@@ -552,15 +562,6 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                   aggregate.function == AggregateFunction::Max
               ? types[*aggregateIndex]
               : SqlType::Int;
-      if (select->having.has_value()) {
-        const bool havingValueIsInt =
-            std::holds_alternative<std::int64_t>(select->having->value);
-        if ((aggregateType == SqlType::Int) != havingValueIsInt) {
-          throw std::invalid_argument(
-              "HAVING value type does not match aggregate result type");
-        }
-      }
-
       using GroupRows = std::map<std::vector<SqlValue>,
                                  std::vector<const std::vector<SqlValue> *>>;
       GroupRows groups;
