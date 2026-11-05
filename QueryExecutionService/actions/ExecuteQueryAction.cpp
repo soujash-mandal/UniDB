@@ -178,8 +178,13 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     std::uint32_t insertedRows = 0;
     try {
       for (const auto &bytes : encodedRows) {
-        rdbServicePort.insertRow(insert->tableName, bytes);
-        ++insertedRows;
+        try {
+          rdbServicePort.insertRow(insert->tableName, bytes);
+          ++insertedRows;
+        } catch (const RowInsertedButPostInsertUpdateFailed &) {
+          ++insertedRows;
+          throw;
+        }
       }
     } catch (const std::exception &error) {
       return executionError("INSERT failed after " +
