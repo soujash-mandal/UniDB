@@ -223,7 +223,7 @@ TEST(ExecuteQueryActionInnerJoinTest, RejectsAmbiguousUnqualifiedWhereColumn) {
           outcome));
   EXPECT_EQ(
       std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
-      "Ambiguous SELECT column: id");
+      "Ambiguous WHERE column: id");
 }
 
 } // namespace
