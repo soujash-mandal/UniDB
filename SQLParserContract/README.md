@@ -62,3 +62,20 @@ each ORDER BY column must also appear in the SELECT list. Duplicate output
 column names (including duplicate aliases or alias/name collisions) are rejected.
 Aliases are introduced with the explicit `AS` keyword and are returned as the
 result column names; the underlying column types and values are unchanged.
+
+## Aggregate functions without GROUP BY
+
+A SELECT list may contain one aggregate expression: `COUNT(*)`,
+`COUNT(column)`, `MIN(column)`, `MAX(column)`, `SUM(column)`, or
+`AVG(column)`. An explicit `AS` alias is supported. Aggregate queries may
+include WHERE, but cannot be combined with DISTINCT, ORDER BY, LIMIT, or OFFSET.
+GROUP BY and HAVING are not part of this change.
+
+COUNT returns an INT count (zero for an empty filtered result). MIN and MAX
+support INT and TEXT columns. SUM and AVG require INT columns. AVG returns an
+INT using truncating integer division because the V1 value model has no
+fractional numeric type. MIN, MAX, SUM, and AVG return an execution error for
+an empty filtered result; SUM reports an error if its result exceeds INT64.
+NULL values are not supported, so COUNT(column) counts every matched row.
+Aggregate evaluation scans rows returned by the existing public RDB SELECT
+action; it does not use indexes.

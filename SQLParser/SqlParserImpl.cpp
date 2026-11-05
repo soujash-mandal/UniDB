@@ -209,7 +209,50 @@ private:
     ++position_; // SELECT
     SelectStatement statement;
     statement.distinct = matchKeyword("DISTINCT");
-    if (match(TokenKind::Star)) {
+    if (current().kind == TokenKind::Identifier &&
+        (upper(current().text) == "COUNT" || upper(current().text) == "MIN" ||
+         upper(current().text) == "MAX" || upper(current().text) == "SUM" ||
+         upper(current().text) == "AVG")) {
+      const std::string functionName = upper(current().text);
+      ++position_;
+      if (!expect(TokenKind::LeftParen)) {
+        return syntaxError("Expected '(' after aggregate function");
+      }
+      unidb::sql::AggregateExpression aggregate;
+      if (functionName == "COUNT") {
+        aggregate.function = unidb::sql::AggregateFunction::Count;
+      } else if (functionName == "MIN") {
+        aggregate.function = unidb::sql::AggregateFunction::Min;
+      } else if (functionName == "MAX") {
+        aggregate.function = unidb::sql::AggregateFunction::Max;
+      } else if (functionName == "SUM") {
+        aggregate.function = unidb::sql::AggregateFunction::Sum;
+      } else {
+        aggregate.function = unidb::sql::AggregateFunction::Avg;
+      }
+      if (match(TokenKind::Star)) {
+        if (aggregate.function != unidb::sql::AggregateFunction::Count) {
+          return syntaxError("Only COUNT supports '*'");
+        }
+      } else {
+        if (current().kind != TokenKind::Identifier) {
+          return syntaxError("Expected column name in aggregate function");
+        }
+        aggregate.columnName = current().text;
+        ++position_;
+      }
+      if (!expect(TokenKind::RightParen)) {
+        return syntaxError("Expected ')' after aggregate argument");
+      }
+      if (matchKeyword("AS")) {
+        if (current().kind != TokenKind::Identifier) {
+          return syntaxError("Expected alias after AS");
+        }
+        aggregate.alias = current().text;
+        ++position_;
+      }
+      statement.aggregate = std::move(aggregate);
+    } else if (match(TokenKind::Star)) {
       statement.selectAll = true;
       if (matchKeyword("AS")) {
         return syntaxError("SELECT * cannot have a column alias");

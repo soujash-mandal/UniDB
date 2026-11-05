@@ -3,6 +3,7 @@
 #include "../adapter/SqlTupleCodec.h"
 
 #include <algorithm>
+#include <limits>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -12,6 +13,7 @@
 namespace QueryExecutionService {
 namespace {
 
+using unidb::sql::AggregateFunction;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
@@ -382,7 +384,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
     std::vector<std::size_t> selectedIndexes;
     std::vector<ColumnDefinition> selectedColumns;
-    if (select->selectAll) {
+    if (select->aggregate.has_value()) {
+      // Aggregate queries produce a single computed output column.
+    } else if (select->selectAll) {
       selectedIndexes.reserve(schema.size());
       selectedColumns = schema;
       for (std::size_t index = 0; index < schema.size(); ++index) {
@@ -449,6 +453,37 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       orderIndexes.emplace_back(orderIndex, order.ascending);
     }
 
+    std::optional<std::size_t> aggregateIndex;
+    if (select->aggregate.has_value()) {
+      const auto &aggregate = *select->aggregate;
+      if (select->distinct || !select->orderBy.empty() ||
+          select->limit.has_value() || select->offset != 0) {
+        throw std::invalid_argument(
+            "Aggregate SELECT cannot be combined with DISTINCT, ORDER BY, "
+            "LIMIT, or OFFSET");
+      }
+      if (aggregate.columnName.has_value()) {
+        const auto found =
+            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+              return column.name == *aggregate.columnName;
+            });
+        if (found == schema.end()) {
+          throw std::invalid_argument("Unknown aggregate column: " +
+                                      *aggregate.columnName);
+        }
+        aggregateIndex =
+            static_cast<std::size_t>(std::distance(schema.begin(), found));
+      } else if (aggregate.function != AggregateFunction::Count) {
+        throw std::invalid_argument("Only COUNT supports '*'");
+      }
+      if ((aggregate.function == AggregateFunction::Sum ||
+           aggregate.function == AggregateFunction::Avg) &&
+          (!aggregateIndex.has_value() ||
+           types[*aggregateIndex] != SqlType::Int)) {
+        throw std::invalid_argument("SUM and AVG require an INT column");
+      }
+    }
+
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
     std::vector<std::vector<SqlValue>> matchedRows;
     matchedRows.reserve(encodedRows.size());
@@ -459,6 +494,71 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         continue;
       }
       matchedRows.push_back(std::move(decoded));
+    }
+
+    if (select->aggregate.has_value()) {
+      const auto &aggregate = *select->aggregate;
+      const std::string functionName =
+          aggregate.function == AggregateFunction::Count ? "COUNT"
+          : aggregate.function == AggregateFunction::Min ? "MIN"
+          : aggregate.function == AggregateFunction::Max ? "MAX"
+          : aggregate.function == AggregateFunction::Sum ? "SUM"
+                                                         : "AVG";
+      const std::string outputName = aggregate.alias.value_or(
+          functionName + "(" +
+          (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
+          ")");
+      QueryExecutionResult result;
+      result.kind = QueryExecutionResultKind::Rows;
+      result.message = "Rows selected";
+      const SqlType outputType =
+          aggregate.function == AggregateFunction::Min ||
+                  aggregate.function == AggregateFunction::Max
+              ? types[*aggregateIndex]
+              : SqlType::Int;
+      result.columns.push_back({outputName, outputType});
+
+      if (aggregate.function == AggregateFunction::Count) {
+        result.rows.push_back({static_cast<std::int64_t>(matchedRows.size())});
+        return result;
+      }
+      if (matchedRows.empty()) {
+        throw std::invalid_argument(
+            functionName + " cannot be evaluated on an empty result set");
+      }
+
+      if (aggregate.function == AggregateFunction::Min ||
+          aggregate.function == AggregateFunction::Max) {
+        SqlValue value = matchedRows.front()[*aggregateIndex];
+        for (const auto &row : matchedRows) {
+          const int comparison = compareSqlValues(row[*aggregateIndex], value);
+          if ((aggregate.function == AggregateFunction::Min &&
+               comparison < 0) ||
+              (aggregate.function == AggregateFunction::Max &&
+               comparison > 0)) {
+            value = row[*aggregateIndex];
+          }
+        }
+        result.rows.push_back({std::move(value)});
+        return result;
+      }
+
+      std::int64_t sum = 0;
+      for (const auto &row : matchedRows) {
+        const auto value = std::get<std::int64_t>(row[*aggregateIndex]);
+        if ((value > 0 &&
+             sum > std::numeric_limits<std::int64_t>::max() - value) ||
+            (value < 0 &&
+             sum < std::numeric_limits<std::int64_t>::min() - value)) {
+          throw std::invalid_argument("SUM result exceeds INT64 range");
+        }
+        sum += value;
+      }
+      if (aggregate.function == AggregateFunction::Avg) {
+        sum /= static_cast<std::int64_t>(matchedRows.size());
+      }
+      result.rows.push_back({sum});
+      return result;
     }
 
     if (select->distinct) {

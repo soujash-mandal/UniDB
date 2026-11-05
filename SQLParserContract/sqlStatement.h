@@ -64,6 +64,14 @@ struct OrderByColumn {
   bool ascending{true};
 };
 
+enum class AggregateFunction { Count, Min, Max, Sum, Avg };
+
+struct AggregateExpression {
+  AggregateFunction function;
+  std::optional<std::string> columnName;
+  std::optional<std::string> alias;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
@@ -71,6 +79,7 @@ struct SelectStatement {
   // Parallel to columnNames; nullopt means no explicit alias.
   std::vector<std::optional<std::string>> columnAliases;
   bool distinct{false};
+  std::optional<AggregateExpression> aggregate;
   std::string tableName;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
