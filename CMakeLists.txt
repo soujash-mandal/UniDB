@@ -217,7 +217,9 @@ add_executable(tests
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp
-    SQLParser/test/SqlParserTest.cpp
+    SQLParser/test/SqlParserStatementTest.cpp
+    SQLParser/test/SqlParserWhereTest.cpp
+    SQLParser/test/SqlParserSelectClauseTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
