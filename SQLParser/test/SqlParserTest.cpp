@@ -335,8 +335,7 @@ TEST(SqlParserTest, RejectsMalformedParenthesizedWhereExpressions) {
   SqlParserImpl parser;
   for (const auto *sql :
        {"SELECT * FROM users WHERE (id = 1 OR name = 'A'",
-        "SELECT * FROM users WHERE id = 1)",
-        "SELECT * FROM users WHERE ()",
+        "SELECT * FROM users WHERE id = 1)", "SELECT * FROM users WHERE ()",
         "SELECT * FROM users WHERE (id = 1 AND)",
         "SELECT * FROM users WHERE (OR id = 1)",
         "SELECT * FROM users WHERE ((id = 1)"}) {
