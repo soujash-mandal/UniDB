@@ -279,9 +279,11 @@ TEST(SqlParserTest, ParsesLikeAndNotLikePatterns) {
 
 TEST(SqlParserTest, RejectsMalformedLikePredicates) {
   SqlParserImpl parser;
-  for (const auto *sql : {"SELECT * FROM users WHERE name LIKE",
-                          "SELECT * FROM users WHERE name NOT LIKE",
-                          "SELECT * FROM users WHERE name NOT LIKE 'A%' AND"}) {
+  const std::vector<const char *> queries{
+      "SELECT * FROM users WHERE name LIKE",
+      "SELECT * FROM users WHERE name NOT LIKE",
+      "SELECT * FROM users WHERE name NOT LIKE 'A%' AND"};
+  for (const auto *sql : queries) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,
