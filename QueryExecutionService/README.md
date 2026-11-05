@@ -4,7 +4,9 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 
 ## Actions
 
-- `ExecuteQueryAction` — execute `CREATE TABLE`, `INSERT INTO ... VALUES (...)`, and `SELECT *` / `SELECT column, ...` with a single `WHERE` comparison, returning structured results or errors.
+- `ExecuteQueryAction` — execute `CREATE TABLE`, `INSERT INTO ... VALUES (...)`, and `SELECT *` / `SELECT column, ...` with `WHERE` comparisons combined using `AND` / `OR`, returning structured results or errors.
+
+`AND` has higher precedence than `OR`. Parenthesized WHERE expressions are not supported yet. WHERE evaluation currently scans all rows returned by the existing RDB Action.
 
 ## Ports
 
