@@ -103,13 +103,34 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
     case '=':
       kind = TokenKind::Equals;
       break;
+    case '!':
+      if (index + 1 < sql.size() && sql[index + 1] == '=') {
+        kind = TokenKind::NotEquals;
+        ++index;
+      } else {
+        kind = TokenKind::Unsupported;
+      }
+      break;
+    case '>':
+      if (index + 1 < sql.size() && sql[index + 1] == '=') {
+        kind = TokenKind::GreaterThanOrEqual;
+        ++index;
+      } else {
+        kind = TokenKind::GreaterThan;
+      }
+      break;
+    case '<':
+      if (index + 1 < sql.size() && sql[index + 1] == '=') {
+        kind = TokenKind::LessThanOrEqual;
+        ++index;
+      } else {
+        kind = TokenKind::LessThan;
+      }
+      break;
     case '-':
       kind = TokenKind::Minus;
       break;
     case '.':
-    case '>':
-    case '<':
-    case '!':
     case '+':
     case '/':
       kind = TokenKind::Unsupported;
@@ -120,7 +141,7 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
       return result;
     }
 
-    add(kind, std::string(1, ch), index);
+    add(kind, std::string(sql.substr(start, index - start + 1)), start);
     if (kind == TokenKind::Unsupported) {
       result.unsupported = true;
     }

@@ -3,6 +3,7 @@
 #include "../adapter/SqlTupleCodec.h"
 
 #include <algorithm>
+#include <optional>
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
@@ -11,12 +12,14 @@ namespace QueryExecutionService {
 namespace {
 
 using unidb::sql::ColumnDefinition;
+using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
 using unidb::sql::InsertStatement;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
+using unidb::sql::WhereEquals;
 
 QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
@@ -32,6 +35,39 @@ std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
     types.push_back(column.type);
   }
   return types;
+}
+
+int compareSqlValues(const SqlValue &left, const SqlValue &right) {
+  if (left.index() != right.index()) {
+    throw std::invalid_argument(
+        "WHERE comparison value type does not match column type");
+  }
+  if (const auto *leftInt = std::get_if<std::int64_t>(&left)) {
+    const auto rightInt = std::get<std::int64_t>(right);
+    return (*leftInt > rightInt) - (*leftInt < rightInt);
+  }
+  const auto &leftText = std::get<std::string>(left);
+  const auto &rightText = std::get<std::string>(right);
+  return (leftText > rightText) - (leftText < rightText);
+}
+
+bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
+  const int comparison = compareSqlValues(rowValue, predicate.value);
+  switch (predicate.comparison) {
+  case ComparisonOperator::Equal:
+    return comparison == 0;
+  case ComparisonOperator::NotEqual:
+    return comparison != 0;
+  case ComparisonOperator::GreaterThan:
+    return comparison > 0;
+  case ComparisonOperator::LessThan:
+    return comparison < 0;
+  case ComparisonOperator::GreaterThanOrEqual:
+    return comparison >= 0;
+  case ComparisonOperator::LessThanOrEqual:
+    return comparison <= 0;
+  }
+  throw std::invalid_argument("Unknown WHERE comparison operator");
 }
 
 QueryExecutionResult commandResult(std::string message,
@@ -134,13 +170,29 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
-    if (!std::holds_alternative<std::monostate>(select->where)) {
-      return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
-                                 "WHERE predicates are not supported yet"};
-    }
-
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
+
+    std::optional<std::size_t> filterIndex;
+    const WhereEquals *predicate = std::get_if<WhereEquals>(&select->where);
+    if (predicate != nullptr) {
+      const auto found =
+          std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+            return column.name == predicate->columnName;
+          });
+      if (found == schema.end()) {
+        throw std::invalid_argument("Unknown WHERE column: " +
+                                    predicate->columnName);
+      }
+      filterIndex =
+          static_cast<std::size_t>(std::distance(schema.begin(), found));
+      const bool valueIsInt =
+          std::holds_alternative<std::int64_t>(predicate->value);
+      if ((types[*filterIndex] == SqlType::Int) != valueIsInt) {
+        throw std::invalid_argument("WHERE value type does not match column: " +
+                                    found->name);
+      }
+    }
 
     std::vector<std::size_t> selectedIndexes;
     std::vector<ColumnDefinition> selectedColumns;
@@ -180,6 +232,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     result.rows.reserve(encodedRows.size());
     for (const auto &bytes : encodedRows) {
       const auto decoded = SqlTupleCodec::decode(types, bytes);
+      if (predicate != nullptr &&
+          !matchesWhere(decoded[*filterIndex], *predicate)) {
+        continue;
+      }
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
       for (const auto index : selectedIndexes) {

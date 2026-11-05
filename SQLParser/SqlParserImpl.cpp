@@ -235,12 +235,31 @@ private:
       WhereEquals where;
       where.columnName = current().text;
       ++position_;
-      if (current().kind == TokenKind::Unsupported) {
-        return unsupported("Only equality predicates are supported in V1");
+      switch (current().kind) {
+      case TokenKind::Equals:
+        where.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        where.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        where.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        where.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        where.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        where.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
+      case TokenKind::Unsupported:
+        return unsupported("WHERE comparison operator is not supported");
+      default:
+        return syntaxError("Expected a comparison operator in WHERE predicate");
       }
-      if (!expect(TokenKind::Equals)) {
-        return syntaxError("Expected '=' in WHERE predicate");
-      }
+      ++position_;
       auto value = parseLiteral();
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
