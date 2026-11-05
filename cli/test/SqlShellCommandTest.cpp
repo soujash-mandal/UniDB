@@ -1,5 +1,5 @@
-#include "../SqlShell.h"
 #include "../../QueryExecutionService/test/ExecuteQueryAction/ExecuteQueryActionTestSupport.h"
+#include "../SqlShell.h"
 
 #include <gtest/gtest.h>
 
