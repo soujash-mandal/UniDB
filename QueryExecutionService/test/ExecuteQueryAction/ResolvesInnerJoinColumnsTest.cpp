@@ -93,7 +93,8 @@ TEST(ExecuteQueryActionJoinResolutionTest,
           result));
   EXPECT_EQ(
       std::get<QueryExecutionService::QueryExecutionError>(result).message,
-      "INNER JOIN execution is not available yet");
+      "INNER JOIN currently supports SELECT * only; "
+      "column projection will be added in the next stage");
 }
 
 TEST(ExecuteQueryActionJoinResolutionTest, RejectsAmbiguousSelectColumns) {
