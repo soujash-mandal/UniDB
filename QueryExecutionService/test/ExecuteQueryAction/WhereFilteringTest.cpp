@@ -592,6 +592,26 @@ TEST(ExecuteQueryActionTest, FiltersTextWithLikeWildcards) {
   EXPECT_EQ(std::get<std::string>(containsRows[0][0]), "Adam");
   EXPECT_EQ(std::get<std::string>(containsRows[1][0]), "Madam");
 
+  const auto exact =
+      action.execute("SELECT name FROM people WHERE name LIKE 'Ada';");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          exact));
+  const auto &exactRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(exact).rows;
+  ASSERT_EQ(exactRows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(exactRows[0][0]), "Ada");
+
+  const auto suffix =
+      action.execute("SELECT name FROM people WHERE name LIKE '%ce';");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          suffix));
+  const auto &suffixRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(suffix).rows;
+  ASSERT_EQ(suffixRows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(suffixRows[0][0]), "Grace");
+
   const auto oneCharacter = action.execute(
       "SELECT name FROM people WHERE name LIKE 'A_' ORDER BY id;");
   ASSERT_TRUE(
