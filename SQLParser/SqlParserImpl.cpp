@@ -385,8 +385,9 @@ private:
         isRange = true;
         isNegatedRange = true;
       } else {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected IN or BETWEEN after NOT in WHERE predicate"};
+        return SqlParseError{
+            SqlParseErrorCode::SyntaxError,
+            "Expected IN or BETWEEN after NOT in WHERE predicate"};
       }
     } else if (matchKeyword("IN")) {
       isMembership = true;
