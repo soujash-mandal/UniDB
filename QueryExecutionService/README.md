@@ -4,9 +4,9 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 
 ## Actions
 
-- `ExecuteQueryAction` — execute `CREATE TABLE`, `INSERT INTO ... VALUES (...)`, and `SELECT` with projections, `WHERE` comparisons combined using `AND` / `OR`, and `ORDER BY` sorting, returning structured results or errors.
+- `ExecuteQueryAction` — execute `CREATE TABLE`, `INSERT INTO ... VALUES (...)`, and `SELECT` with projections, `WHERE` comparisons combined using `AND` / `OR`, and `ORDER BY`, `LIMIT`, and `OFFSET`, returning structured results or errors.
 
-`AND` has higher precedence than `OR`. Parenthesized WHERE expressions are not supported yet. `ORDER BY` supports one or more INT/TEXT columns with `ASC` / `DESC` (ascending by default). WHERE filtering and ORDER BY sorting operate on the rows returned by the existing RDB Action; sorting is performed in memory after filtering.
+`AND` has higher precedence than `OR`. Parenthesized WHERE expressions are not supported yet. `ORDER BY` supports one or more INT/TEXT columns with `ASC` / `DESC` (ascending by default). WHERE filtering and ORDER BY sorting operate on the rows returned by the existing RDB Action; sorting is performed in memory after filtering. `LIMIT` and `OFFSET` are applied after sorting; `OFFSET` may be used without `LIMIT` and defaults to zero.
 
 ## Ports
 
