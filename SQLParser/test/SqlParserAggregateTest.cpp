@@ -11,7 +11,8 @@ TEST(SqlParserTest, ParsesAggregateFunctionsAndAliases) {
   SqlParserImpl parser;
   const auto result = parser.parse("SELECT COUNT(*) AS total FROM users");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &select = std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
   ASSERT_TRUE(select.aggregate.has_value());
   EXPECT_EQ(select.aggregate->function, AggregateFunction::Count);
   EXPECT_FALSE(select.aggregate->columnName.has_value());
@@ -30,10 +31,8 @@ TEST(SqlParserTest, ParsesAggregateFunctionsAndAliases) {
 
 TEST(SqlParserTest, RejectsMalformedAggregateExpressions) {
   SqlParserImpl parser;
-  for (const auto *sql : {"SELECT COUNT(*) users",
-                          "SELECT SUM(*) FROM users",
-                          "SELECT COUNT( FROM users",
-                          "SELECT MIN() FROM users",
+  for (const auto *sql : {"SELECT COUNT(*) users", "SELECT SUM(*) FROM users",
+                          "SELECT COUNT( FROM users", "SELECT MIN() FROM users",
                           "SELECT COUNT(*) AS FROM users"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
