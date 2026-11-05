@@ -372,8 +372,7 @@ TEST(SqlParserTest, ParsesInAndNotInLiteralLists) {
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(inResult));
   const auto &inSelect =
       std::get<SelectStatement>(std::get<SqlStatement>(inResult));
-  const auto &inPredicate =
-      std::get<WhereExpression>(inSelect.where).predicate;
+  const auto &inPredicate = std::get<WhereExpression>(inSelect.where).predicate;
   EXPECT_EQ(inPredicate.comparison, ComparisonOperator::In);
   ASSERT_EQ(inPredicate.values.size(), 3U);
   EXPECT_EQ(std::get<std::int64_t>(inPredicate.values[0]), 1);
@@ -395,14 +394,13 @@ TEST(SqlParserTest, ParsesInAndNotInLiteralLists) {
 
 TEST(SqlParserTest, RejectsMalformedInLists) {
   SqlParserImpl parser;
-  for (const auto *sql :
-       {"SELECT * FROM users WHERE id IN ()",
-        "SELECT * FROM users WHERE id IN (1,)",
-        "SELECT * FROM users WHERE id IN (1, 2",
-        "SELECT * FROM users WHERE id IN 1",
-        "SELECT * FROM users WHERE id NOT 1",
-        "SELECT * FROM users WHERE id NOT IN (1, 2))",
-        "SELECT * FROM users WHERE id IN (1) AND"}) {
+  for (const auto *sql : {"SELECT * FROM users WHERE id IN ()",
+                          "SELECT * FROM users WHERE id IN (1,)",
+                          "SELECT * FROM users WHERE id IN (1, 2",
+                          "SELECT * FROM users WHERE id IN 1",
+                          "SELECT * FROM users WHERE id NOT 1",
+                          "SELECT * FROM users WHERE id NOT IN (1, 2))",
+                          "SELECT * FROM users WHERE id IN (1) AND"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,

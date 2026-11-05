@@ -387,9 +387,8 @@ private:
     }
 
     if (isMembership) {
-      predicate.comparison = isNegatedMembership
-                                 ? ComparisonOperator::NotIn
-                                 : ComparisonOperator::In;
+      predicate.comparison = isNegatedMembership ? ComparisonOperator::NotIn
+                                                 : ComparisonOperator::In;
       if (!expect(TokenKind::LeftParen)) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected '(' after IN"};

@@ -374,18 +374,20 @@ TEST(ExecuteQueryActionTest, FiltersIntegerAndTextValuesWithInAndNotIn) {
 
   const auto integerIn = action.execute(
       "SELECT id FROM people WHERE id IN (1, 3, 99) ORDER BY id;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(integerIn));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          integerIn));
   const auto &integerInResult =
       std::get<QueryExecutionService::QueryExecutionResult>(integerIn);
   ASSERT_EQ(integerInResult.rows.size(), 2U);
   EXPECT_EQ(std::get<std::int64_t>(integerInResult.rows[0][0]), 1);
   EXPECT_EQ(std::get<std::int64_t>(integerInResult.rows[1][0]), 3);
 
-  const auto textNotIn = action.execute(
-      "SELECT name FROM people WHERE name NOT IN ('Ada', 'Linus') ORDER BY id;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(textNotIn));
+  const auto textNotIn = action.execute("SELECT name FROM people WHERE name "
+                                        "NOT IN ('Ada', 'Linus') ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          textNotIn));
   const auto &textNotInResult =
       std::get<QueryExecutionService::QueryExecutionResult>(textNotIn);
   ASSERT_EQ(textNotInResult.rows.size(), 2U);
@@ -407,8 +409,9 @@ TEST(ExecuteQueryActionTest, SupportsInPredicatesInsideNestedWhereExpressions) {
   const auto outcome = action.execute(
       "SELECT id FROM people WHERE (id IN (1, 2) OR name NOT IN ('Ken')) "
       "AND id > 1 ORDER BY id;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
@@ -424,8 +427,9 @@ TEST(ExecuteQueryActionTest, ValidatesAllInListValuesBeforeReadingRows) {
   const auto outcome =
       action.execute("SELECT * FROM people WHERE id IN (1, 'wrong', 3);");
 
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionError>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
                 .message.find("WHERE value type does not match column: id"),
             std::string::npos);
@@ -440,8 +444,9 @@ TEST(ExecuteQueryActionTest, RejectsUnknownColumnForInBeforeReadingRows) {
   const auto outcome =
       action.execute("SELECT * FROM people WHERE missing IN (1, 2);");
 
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionError>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
                 .message.find("Unknown WHERE column: missing"),
             std::string::npos);
