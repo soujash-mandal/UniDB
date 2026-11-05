@@ -75,6 +75,7 @@ TEST(ExecuteQueryActionInnerJoinTest,
      JoinsMatchingRowsAndBuildsQualifiedMetadata) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
+  fixture.addUser(1, "Ada duplicate key");
   fixture.addUser(2, "Lin");
   fixture.addOrder(10, 1, 250);
   fixture.addOrder(11, 1, 300);
@@ -95,13 +96,23 @@ TEST(ExecuteQueryActionInnerJoinTest,
   EXPECT_EQ(result.columns[2].name, "orders.id");
   EXPECT_EQ(result.columns[3].name, "user_id");
   EXPECT_EQ(result.columns[4].name, "amount");
-  ASSERT_EQ(result.rows.size(), 2U);
+  ASSERT_EQ(result.rows.size(), 4U);
   EXPECT_EQ(result.rows[0],
             (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
                                    std::int64_t{10}, std::int64_t{1},
                                    std::int64_t{250}}));
   EXPECT_EQ(result.rows[1],
             (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
+                                   std::int64_t{11}, std::int64_t{1},
+                                   std::int64_t{300}}));
+  EXPECT_EQ(result.rows[2],
+            (std::vector<SqlValue>{std::int64_t{1},
+                                   std::string{"Ada duplicate key"},
+                                   std::int64_t{10}, std::int64_t{1},
+                                   std::int64_t{250}}));
+  EXPECT_EQ(result.rows[3],
+            (std::vector<SqlValue>{std::int64_t{1},
+                                   std::string{"Ada duplicate key"},
                                    std::int64_t{11}, std::int64_t{1},
                                    std::int64_t{300}}));
   EXPECT_EQ(fixture.port.schemaRequests,
