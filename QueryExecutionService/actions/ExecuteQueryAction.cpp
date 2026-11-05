@@ -499,14 +499,15 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     if (select->aggregate.has_value()) {
       const auto &aggregate = *select->aggregate;
       const std::string functionName =
-          aggregate.function == AggregateFunction::Count ? "COUNT" :
-          aggregate.function == AggregateFunction::Min ? "MIN" :
-          aggregate.function == AggregateFunction::Max ? "MAX" :
-          aggregate.function == AggregateFunction::Sum ? "SUM" : "AVG";
-      const std::string outputName =
-          aggregate.alias.value_or(functionName + "(" +
-              (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
-              ")");
+          aggregate.function == AggregateFunction::Count ? "COUNT"
+          : aggregate.function == AggregateFunction::Min ? "MIN"
+          : aggregate.function == AggregateFunction::Max ? "MAX"
+          : aggregate.function == AggregateFunction::Sum ? "SUM"
+                                                         : "AVG";
+      const std::string outputName = aggregate.alias.value_or(
+          functionName + "(" +
+          (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
+          ")");
       QueryExecutionResult result;
       result.kind = QueryExecutionResultKind::Rows;
       result.message = "Rows selected";
@@ -518,8 +519,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       result.columns.push_back({outputName, outputType});
 
       if (aggregate.function == AggregateFunction::Count) {
-        result.rows.push_back(
-            {static_cast<std::int64_t>(matchedRows.size())});
+        result.rows.push_back({static_cast<std::int64_t>(matchedRows.size())});
         return result;
       }
       if (matchedRows.empty()) {
@@ -531,8 +531,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           aggregate.function == AggregateFunction::Max) {
         SqlValue value = matchedRows.front()[*aggregateIndex];
         for (const auto &row : matchedRows) {
-          const int comparison =
-              compareSqlValues(row[*aggregateIndex], value);
+          const int comparison = compareSqlValues(row[*aggregateIndex], value);
           if ((aggregate.function == AggregateFunction::Min &&
                comparison < 0) ||
               (aggregate.function == AggregateFunction::Max &&
