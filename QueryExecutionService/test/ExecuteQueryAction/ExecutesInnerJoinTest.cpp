@@ -54,9 +54,9 @@ struct InnerJoinFixture {
   }
 
   void addUser(std::int64_t id, std::string name) {
-    port.rows["users"].push_back(SqlTupleCodec::encode(
-        {SqlType::Int, SqlType::Text},
-        {SqlValue{id}, SqlValue{std::move(name)}}));
+    port.rows["users"].push_back(
+        SqlTupleCodec::encode({SqlType::Int, SqlType::Text},
+                              {SqlValue{id}, SqlValue{std::move(name)}}));
   }
 
   void addOrder(std::int64_t id, std::int64_t userId, std::int64_t amount) {
@@ -71,7 +71,8 @@ struct InnerJoinFixture {
   }
 };
 
-TEST(ExecuteQueryActionInnerJoinTest, JoinsMatchingRowsAndBuildsQualifiedMetadata) {
+TEST(ExecuteQueryActionInnerJoinTest,
+     JoinsMatchingRowsAndBuildsQualifiedMetadata) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
   fixture.addUser(2, "Lin");
@@ -79,12 +80,12 @@ TEST(ExecuteQueryActionInnerJoinTest, JoinsMatchingRowsAndBuildsQualifiedMetadat
   fixture.addOrder(11, 1, 300);
   fixture.addOrder(12, 3, 400);
 
-  const auto outcome = fixture.execute(
-      "SELECT * FROM users INNER JOIN orders "
-      "ON users.id = orders.user_id");
+  const auto outcome = fixture.execute("SELECT * FROM users INNER JOIN orders "
+                                       "ON users.id = orders.user_id");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.kind, QueryExecutionService::QueryExecutionResultKind::Rows);
@@ -114,67 +115,71 @@ TEST(ExecuteQueryActionInnerJoinTest, ReturnsNoRowsWhenNoKeysMatch) {
   fixture.addUser(1, "Ada");
   fixture.addOrder(10, 2, 250);
 
-  const auto outcome = fixture.execute(
-      "SELECT * FROM users INNER JOIN orders "
-      "ON users.id = orders.user_id");
+  const auto outcome = fixture.execute("SELECT * FROM users INNER JOIN orders "
+                                       "ON users.id = orders.user_id");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
-  EXPECT_TRUE(
-      std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows.empty());
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
+                  .rows.empty());
 }
 
 TEST(ExecuteQueryActionInnerJoinTest, ReturnsNoRowsWhenLeftTableIsEmpty) {
   InnerJoinFixture fixture;
   fixture.addOrder(10, 1, 250);
 
-  const auto outcome = fixture.execute(
-      "SELECT * FROM users INNER JOIN orders "
-      "ON users.id = orders.user_id");
+  const auto outcome = fixture.execute("SELECT * FROM users INNER JOIN orders "
+                                       "ON users.id = orders.user_id");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
-  EXPECT_TRUE(
-      std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows.empty());
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
+                  .rows.empty());
 }
 
 TEST(ExecuteQueryActionInnerJoinTest, ReturnsNoRowsWhenRightTableIsEmpty) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
 
-  const auto outcome = fixture.execute(
-      "SELECT * FROM users INNER JOIN orders "
-      "ON users.id = orders.user_id");
+  const auto outcome = fixture.execute("SELECT * FROM users INNER JOIN orders "
+                                       "ON users.id = orders.user_id");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
-  EXPECT_TRUE(
-      std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows.empty());
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
+                  .rows.empty());
 }
 
 TEST(ExecuteQueryActionInnerJoinTest, RejectsProjectionUntilNextStage) {
   InnerJoinFixture fixture;
-  const auto outcome = fixture.execute(
-      "SELECT users.name FROM users INNER JOIN orders "
-      "ON users.id = orders.user_id");
+  const auto outcome =
+      fixture.execute("SELECT users.name FROM users INNER JOIN orders "
+                      "ON users.id = orders.user_id");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
-  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
-            "INNER JOIN currently supports SELECT * only; column projection "
-            "will be added in the next stage");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
+      "INNER JOIN currently supports SELECT * only; column projection "
+      "will be added in the next stage");
 }
 
 TEST(ExecuteQueryActionInnerJoinTest, RejectsWhereUntilNextStage) {
   InnerJoinFixture fixture;
-  const auto outcome = fixture.execute(
-      "SELECT * FROM users INNER JOIN orders "
-      "ON users.id = orders.user_id WHERE users.id = 1");
+  const auto outcome =
+      fixture.execute("SELECT * FROM users INNER JOIN orders "
+                      "ON users.id = orders.user_id WHERE users.id = 1");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
-  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
-            "WHERE with INNER JOIN will be added in the next stage");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
+      "WHERE with INNER JOIN will be added in the next stage");
 }
 
 } // namespace

@@ -431,20 +431,18 @@ void validateInnerJoinColumns(
   }
 }
 
-
-QueryExecutionResult executeInnerJoinSelectAll(
-    RdbServicePort &rdbServicePort, const SelectStatement &select,
-    const std::vector<ColumnDefinition> &leftSchema,
-    const std::vector<ColumnDefinition> &rightSchema) {
+QueryExecutionResult
+executeInnerJoinSelectAll(RdbServicePort &rdbServicePort,
+                          const SelectStatement &select,
+                          const std::vector<ColumnDefinition> &leftSchema,
+                          const std::vector<ColumnDefinition> &rightSchema) {
   const auto &join = *select.innerJoin;
   const auto leftTypes = schemaTypes(leftSchema);
   const auto rightTypes = schemaTypes(rightSchema);
-  const auto leftKey =
-      resolveJoinColumn(join.left, select.tableName, leftSchema, join.tableName,
-                        rightSchema);
-  const auto rightKey =
-      resolveJoinColumn(join.right, select.tableName, leftSchema, join.tableName,
-                        rightSchema);
+  const auto leftKey = resolveJoinColumn(
+      join.left, select.tableName, leftSchema, join.tableName, rightSchema);
+  const auto rightKey = resolveJoinColumn(
+      join.right, select.tableName, leftSchema, join.tableName, rightSchema);
 
   const std::size_t leftKeyIndex =
       leftKey.tableName == select.tableName ? leftKey.index : rightKey.index;
@@ -472,9 +470,9 @@ QueryExecutionResult executeInnerJoinSelectAll(
   result.columns.reserve(leftSchema.size() + rightSchema.size());
 
   for (const auto &column : leftSchema) {
-    const bool duplicated =
-        std::any_of(rightSchema.begin(), rightSchema.end(),
-                    [&](const auto &right) { return right.name == column.name; });
+    const bool duplicated = std::any_of(
+        rightSchema.begin(), rightSchema.end(),
+        [&](const auto &right) { return right.name == column.name; });
     result.columns.push_back(
         {duplicated ? select.tableName + "." + column.name : column.name,
          column.type});
@@ -490,7 +488,8 @@ QueryExecutionResult executeInnerJoinSelectAll(
 
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
-      if (compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]) != 0) {
+      if (compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]) !=
+          0) {
         continue;
       }
       std::vector<SqlValue> joinedRow;
@@ -647,7 +646,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             "WHERE with INNER JOIN will be added in the next stage");
       }
       return executeInnerJoinSelectAll(rdbServicePort, *select, leftSchema,
-                                        rightSchema);
+                                       rightSchema);
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);

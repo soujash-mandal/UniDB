@@ -19,7 +19,8 @@ TEST(ExecuteQueryActionTest, RejectsInnerJoinProjectionUntilNextStage) {
   EXPECT_EQ(
       error.code,
       QueryExecutionService::QueryExecutionErrorCode::UnsupportedStatement);
-  EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; column projection will be added in the next stage");
+  EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; "
+                           "column projection will be added in the next stage");
   EXPECT_EQ(port.getSchemaCalls, 2U);
   EXPECT_EQ(port.selectCalls, 0U);
 }
