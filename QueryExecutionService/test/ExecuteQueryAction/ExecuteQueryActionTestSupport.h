@@ -22,6 +22,8 @@ public:
   std::vector<char> insertedBytes;
   std::vector<std::vector<char>> rows;
   bool fail = false;
+  uint32_t failOnInsertCall = 0;
+  std::vector<std::vector<char>> insertedRows;
 
   uint32_t
   createTable(const unidb::sql::CreateTableStatement &statement) override {
@@ -49,7 +51,8 @@ public:
     ++insertCalls;
     tableName = name;
     insertedBytes = bytes;
-    if (fail) {
+    insertedRows.push_back(bytes);
+    if (fail || (failOnInsertCall != 0 && insertCalls == failOnInsertCall)) {
       throw std::runtime_error("fake RDB failure");
     }
   }
