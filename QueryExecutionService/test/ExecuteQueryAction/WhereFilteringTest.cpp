@@ -282,3 +282,83 @@ TEST(ExecuteQueryActionTest, RejectsUnknownOrderByColumnBeforeReadingRows) {
             std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+
+TEST(ExecuteQueryActionTest, AppliesLimitAndOffsetAfterFilteringAndOrdering) {
+  FakeQesRdbServicePort port;
+  for (const std::int64_t id : {5, 1, 4, 2, 3}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+        {id, std::string("user") + std::to_string(id)}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT id FROM people WHERE id > 1 ORDER BY id DESC LIMIT 2 OFFSET 1;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 4);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 3);
+}
+
+TEST(ExecuteQueryActionTest, HandlesZeroLimitAndOffsetBeyondEnd) {
+  FakeQesRdbServicePort port;
+  for (const std::int64_t id : {1, 2, 3}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+        {id, std::string("user") + std::to_string(id)}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto zeroLimit = action.execute("SELECT * FROM people LIMIT 0;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          zeroLimit));
+  EXPECT_TRUE(
+      std::get<QueryExecutionService::QueryExecutionResult>(zeroLimit)
+          .rows.empty());
+
+  const auto beyondEnd = action.execute("SELECT * FROM people OFFSET 10;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          beyondEnd));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(beyondEnd);
+  EXPECT_TRUE(result.rows.empty());
+  ASSERT_EQ(result.columns.size(), 2U);
+}
+
+TEST(ExecuteQueryActionTest, AppliesOffsetWithoutLimitAndDefaultsOffsetToZero) {
+  FakeQesRdbServicePort port;
+  for (const std::int64_t id : {1, 2, 3}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+        {id, std::string("user") + std::to_string(id)}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto offset = action.execute("SELECT id FROM people OFFSET 1;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          offset));
+  const auto &offsetResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(offset);
+  ASSERT_EQ(offsetResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(offsetResult.rows[0][0]), 2);
+
+  const auto limit = action.execute("SELECT id FROM people LIMIT 1;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          limit));
+  const auto &limitResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(limit);
+  ASSERT_EQ(limitResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::int64_t>(limitResult.rows[0][0]), 1);
+}
