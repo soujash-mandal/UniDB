@@ -431,6 +431,78 @@ void validateInnerJoinColumns(
   }
 }
 
+
+QueryExecutionResult executeInnerJoinSelectAll(
+    RdbServicePort &rdbServicePort, const SelectStatement &select,
+    const std::vector<ColumnDefinition> &leftSchema,
+    const std::vector<ColumnDefinition> &rightSchema) {
+  const auto &join = *select.innerJoin;
+  const auto leftTypes = schemaTypes(leftSchema);
+  const auto rightTypes = schemaTypes(rightSchema);
+  const auto leftKey =
+      resolveJoinColumn(join.left, select.tableName, leftSchema, join.tableName,
+                        rightSchema);
+  const auto rightKey =
+      resolveJoinColumn(join.right, select.tableName, leftSchema, join.tableName,
+                        rightSchema);
+
+  const std::size_t leftKeyIndex =
+      leftKey.tableName == select.tableName ? leftKey.index : rightKey.index;
+  const std::size_t rightKeyIndex =
+      leftKey.tableName == join.tableName ? leftKey.index : rightKey.index;
+
+  const auto leftEncodedRows = rdbServicePort.selectAllRows(select.tableName);
+  const auto rightEncodedRows = rdbServicePort.selectAllRows(join.tableName);
+
+  std::vector<std::vector<SqlValue>> leftRows;
+  leftRows.reserve(leftEncodedRows.size());
+  for (const auto &bytes : leftEncodedRows) {
+    leftRows.push_back(SqlTupleCodec::decode(leftTypes, bytes));
+  }
+
+  std::vector<std::vector<SqlValue>> rightRows;
+  rightRows.reserve(rightEncodedRows.size());
+  for (const auto &bytes : rightEncodedRows) {
+    rightRows.push_back(SqlTupleCodec::decode(rightTypes, bytes));
+  }
+
+  QueryExecutionResult result;
+  result.kind = QueryExecutionResultKind::Rows;
+  result.message = "Rows selected";
+  result.columns.reserve(leftSchema.size() + rightSchema.size());
+
+  for (const auto &column : leftSchema) {
+    const bool duplicated =
+        std::any_of(rightSchema.begin(), rightSchema.end(),
+                    [&](const auto &right) { return right.name == column.name; });
+    result.columns.push_back(
+        {duplicated ? select.tableName + "." + column.name : column.name,
+         column.type});
+  }
+  for (const auto &column : rightSchema) {
+    const bool duplicated =
+        std::any_of(leftSchema.begin(), leftSchema.end(),
+                    [&](const auto &left) { return left.name == column.name; });
+    result.columns.push_back(
+        {duplicated ? join.tableName + "." + column.name : column.name,
+         column.type});
+  }
+
+  for (const auto &leftRow : leftRows) {
+    for (const auto &rightRow : rightRows) {
+      if (compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]) != 0) {
+        continue;
+      }
+      std::vector<SqlValue> joinedRow;
+      joinedRow.reserve(leftRow.size() + rightRow.size());
+      joinedRow.insert(joinedRow.end(), leftRow.begin(), leftRow.end());
+      joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
+      result.rows.push_back(std::move(joinedRow));
+    }
+  }
+  return result;
+}
+
 QueryExecutionResult commandResult(std::string message,
                                    uint32_t affectedRows = 0) {
   QueryExecutionResult result;
@@ -564,8 +636,18 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       schemaTypes(leftSchema);
       schemaTypes(rightSchema);
       validateInnerJoinColumns(*select, leftSchema, rightSchema);
-      return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
-                                 "INNER JOIN execution is not available yet"};
+
+      if (!select->selectAll) {
+        throw std::invalid_argument(
+            "INNER JOIN currently supports SELECT * only; column projection "
+            "will be added in the next stage");
+      }
+      if (!std::holds_alternative<std::monostate>(select->where)) {
+        throw std::invalid_argument(
+            "WHERE with INNER JOIN will be added in the next stage");
+      }
+      return executeInnerJoinSelectAll(rdbServicePort, *select, leftSchema,
+                                        rightSchema);
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
