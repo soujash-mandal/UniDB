@@ -226,6 +226,7 @@ add_executable(tests
     SQLParser/test/SqlParserSelectClauseTest.cpp
     SQLParser/test/SqlParserAggregateTest.cpp
     SQLParser/test/SqlParserGroupByTest.cpp
+    SQLParser/test/SqlParserJoinTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
