@@ -318,8 +318,9 @@ TEST(SqlParserTest, ParsesParenthesizedWhereGroupsAndNestedPrecedence) {
 
 TEST(SqlParserTest, ParenthesesOverrideAndBeforeOrPrecedence) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT id FROM users WHERE (id = 1 OR id = 2) AND name = 'B'");
+  const auto result =
+      parser.parse("SELECT id FROM users WHERE (id = 1 OR id = 2) AND "
+                   "name = 'B'");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
