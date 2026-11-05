@@ -48,6 +48,11 @@ struct WhereExpression {
   std::vector<std::vector<WhereEquals>> disjunctions;
 };
 
+struct OrderByColumn {
+  std::string columnName;
+  bool ascending{true};
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
@@ -56,6 +61,7 @@ struct SelectStatement {
   // AND binds more tightly than OR. Parenthesized expressions are not yet
   // supported.
   std::variant<std::monostate, WhereExpression> where;
+  std::vector<OrderByColumn> orderBy;
 };
 
 using SqlStatement =
