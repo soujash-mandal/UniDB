@@ -229,43 +229,72 @@ private:
     ++position_;
 
     if (matchKeyword("WHERE")) {
-      if (current().kind != TokenKind::Identifier) {
-        return syntaxError("Expected column name after WHERE");
+      WhereExpression expression;
+      expression.disjunctions.emplace_back();
+
+      const auto parsePredicate =
+          [this]() -> std::variant<WhereEquals, SqlParseError> {
+        if (current().kind != TokenKind::Identifier) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected column name in WHERE predicate"};
+        }
+        WhereEquals predicate;
+        predicate.columnName = current().text;
+        ++position_;
+        switch (current().kind) {
+        case TokenKind::Equals:
+          predicate.comparison = ComparisonOperator::Equal;
+          break;
+        case TokenKind::NotEquals:
+          predicate.comparison = ComparisonOperator::NotEqual;
+          break;
+        case TokenKind::GreaterThan:
+          predicate.comparison = ComparisonOperator::GreaterThan;
+          break;
+        case TokenKind::LessThan:
+          predicate.comparison = ComparisonOperator::LessThan;
+          break;
+        case TokenKind::GreaterThanOrEqual:
+          predicate.comparison = ComparisonOperator::GreaterThanOrEqual;
+          break;
+        case TokenKind::LessThanOrEqual:
+          predicate.comparison = ComparisonOperator::LessThanOrEqual;
+          break;
+        default:
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected a comparison operator in WHERE "
+                               "predicate"};
+        }
+        ++position_;
+        auto value = parseLiteral();
+        if (std::holds_alternative<SqlParseError>(value)) {
+          return std::get<SqlParseError>(std::move(value));
+        }
+        predicate.value = std::get<SqlValue>(std::move(value));
+        return predicate;
+      };
+
+      auto first = parsePredicate();
+      if (std::holds_alternative<SqlParseError>(first)) {
+        return std::get<SqlParseError>(std::move(first));
       }
-      WhereEquals where;
-      where.columnName = current().text;
-      ++position_;
-      switch (current().kind) {
-      case TokenKind::Equals:
-        where.comparison = ComparisonOperator::Equal;
-        break;
-      case TokenKind::NotEquals:
-        where.comparison = ComparisonOperator::NotEqual;
-        break;
-      case TokenKind::GreaterThan:
-        where.comparison = ComparisonOperator::GreaterThan;
-        break;
-      case TokenKind::LessThan:
-        where.comparison = ComparisonOperator::LessThan;
-        break;
-      case TokenKind::GreaterThanOrEqual:
-        where.comparison = ComparisonOperator::GreaterThanOrEqual;
-        break;
-      case TokenKind::LessThanOrEqual:
-        where.comparison = ComparisonOperator::LessThanOrEqual;
-        break;
-      case TokenKind::Unsupported:
-        return unsupported("WHERE comparison operator is not supported");
-      default:
-        return syntaxError("Expected a comparison operator in WHERE predicate");
+      expression.disjunctions.back().push_back(
+          std::get<WhereEquals>(std::move(first)));
+
+      while (isKeyword("AND") || isKeyword("OR")) {
+        const bool isAnd = matchKeyword("AND");
+        if (!isAnd) {
+          ++position_; // OR
+          expression.disjunctions.emplace_back();
+        }
+        auto next = parsePredicate();
+        if (std::holds_alternative<SqlParseError>(next)) {
+          return std::get<SqlParseError>(std::move(next));
+        }
+        expression.disjunctions.back().push_back(
+            std::get<WhereEquals>(std::move(next)));
       }
-      ++position_;
-      auto value = parseLiteral();
-      if (std::holds_alternative<SqlParseError>(value)) {
-        return std::get<SqlParseError>(std::move(value));
-      }
-      where.value = std::get<SqlValue>(std::move(value));
-      statement.where = std::move(where);
+      statement.where = std::move(expression);
     }
     return SqlStatement{std::move(statement)};
   }
