@@ -554,3 +554,133 @@ TEST(ExecuteQueryActionTest, RejectsUnknownColumnForInBeforeReadingRows) {
             std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+
+TEST(ExecuteQueryActionTest, FiltersTextWithLikeWildcards) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "Ada"}, {2, "Adam"}, {3, "Madam"}, {4, "Grace"},
+           {5, "Al"}, {6, ""}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto prefix = action.execute(
+      "SELECT name FROM people WHERE name LIKE 'Ad%' ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          prefix));
+  const auto &prefixRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(prefix).rows;
+  ASSERT_EQ(prefixRows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(prefixRows[0][0]), "Ada");
+  EXPECT_EQ(std::get<std::string>(prefixRows[1][0]), "Adam");
+
+  const auto contains = action.execute(
+      "SELECT name FROM people WHERE name LIKE '%dam%' ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          contains));
+  const auto &containsRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(contains).rows;
+  ASSERT_EQ(containsRows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(containsRows[0][0]), "Adam");
+  EXPECT_EQ(std::get<std::string>(containsRows[1][0]), "Madam");
+
+  const auto oneCharacter = action.execute(
+      "SELECT name FROM people WHERE name LIKE 'A_' ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          oneCharacter));
+  const auto &oneCharacterRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(oneCharacter).rows;
+  ASSERT_EQ(oneCharacterRows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(oneCharacterRows[0][0]), "Al");
+}
+
+TEST(ExecuteQueryActionTest, SupportsLikeEmptyAndWildcardOnlyPatterns) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, ""}, {2, "Ada"}, {3, "Grace"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto empty =
+      action.execute("SELECT name FROM people WHERE name LIKE '';");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          empty));
+  const auto &emptyRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(empty).rows;
+  ASSERT_EQ(emptyRows.size(), 1U);
+  EXPECT_TRUE(std::get<std::string>(emptyRows[0][0]).empty());
+
+  const auto all = action.execute(
+      "SELECT name FROM people WHERE name LIKE '%';");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(all));
+  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(all)
+                .rows.size(),
+            3U);
+}
+
+TEST(ExecuteQueryActionTest, SupportsNotLikeAndNestedPredicates) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "Ada"}, {2, "Adam"}, {3, "Grace"}, {4, "Linus"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT name FROM people WHERE (name NOT LIKE 'A%' OR id = 1) "
+      "AND id > 1 ORDER BY id;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
+  ASSERT_EQ(rows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(rows[0][0]), "Grace");
+  EXPECT_EQ(std::get<std::string>(rows[1][0]), "Linus");
+}
+
+TEST(ExecuteQueryActionTest, RejectsLikeOnIntegerColumnBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT * FROM people WHERE id LIKE '1%';");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("LIKE requires a TEXT column: id"),
+            std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
+
+TEST(ExecuteQueryActionTest, RejectsNonTextLikePatternBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT * FROM people WHERE name LIKE 1;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("WHERE value type does not match column: name"),
+            std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
