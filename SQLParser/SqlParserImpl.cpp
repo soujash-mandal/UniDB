@@ -235,72 +235,11 @@ private:
     ++position_;
 
     if (matchKeyword("WHERE")) {
-      WhereExpression expression;
-      expression.disjunctions.emplace_back();
-
-      const auto parsePredicate =
-          [this]() -> std::variant<WhereEquals, SqlParseError> {
-        if (current().kind != TokenKind::Identifier) {
-          return SqlParseError{SqlParseErrorCode::SyntaxError,
-                               "Expected column name in WHERE predicate"};
-        }
-        WhereEquals predicate;
-        predicate.columnName = current().text;
-        ++position_;
-        switch (current().kind) {
-        case TokenKind::Equals:
-          predicate.comparison = ComparisonOperator::Equal;
-          break;
-        case TokenKind::NotEquals:
-          predicate.comparison = ComparisonOperator::NotEqual;
-          break;
-        case TokenKind::GreaterThan:
-          predicate.comparison = ComparisonOperator::GreaterThan;
-          break;
-        case TokenKind::LessThan:
-          predicate.comparison = ComparisonOperator::LessThan;
-          break;
-        case TokenKind::GreaterThanOrEqual:
-          predicate.comparison = ComparisonOperator::GreaterThanOrEqual;
-          break;
-        case TokenKind::LessThanOrEqual:
-          predicate.comparison = ComparisonOperator::LessThanOrEqual;
-          break;
-        default:
-          return SqlParseError{SqlParseErrorCode::SyntaxError,
-                               "Expected a comparison operator in WHERE "
-                               "predicate"};
-        }
-        ++position_;
-        auto value = parseLiteral();
-        if (std::holds_alternative<SqlParseError>(value)) {
-          return std::get<SqlParseError>(std::move(value));
-        }
-        predicate.value = std::get<SqlValue>(std::move(value));
-        return predicate;
-      };
-
-      auto first = parsePredicate();
-      if (std::holds_alternative<SqlParseError>(first)) {
-        return std::get<SqlParseError>(std::move(first));
+      auto expression = parseWhereOrExpression();
+      if (std::holds_alternative<SqlParseError>(expression)) {
+        return std::get<SqlParseError>(std::move(expression));
       }
-      expression.disjunctions.back().push_back(
-          std::get<WhereEquals>(std::move(first)));
-
-      while (isKeyword("AND") || isKeyword("OR")) {
-        const bool isAnd = matchKeyword("AND");
-        if (!isAnd) {
-          ++position_; // OR
-          expression.disjunctions.emplace_back();
-        }
-        auto next = parsePredicate();
-        if (std::holds_alternative<SqlParseError>(next)) {
-          return std::get<SqlParseError>(std::move(next));
-        }
-        expression.disjunctions.back().push_back(
-            std::get<WhereEquals>(std::move(next)));
-      }
-      statement.where = std::move(expression);
+      statement.where = std::get<WhereExpression>(std::move(expression));
     }
 
     if (matchKeyword("ORDER")) {
@@ -346,6 +285,130 @@ private:
       statement.offset = std::get<std::uint64_t>(offset);
     }
     return SqlStatement{std::move(statement)};
+  }
+
+  std::variant<WhereExpression, SqlParseError> parseWhereOrExpression() {
+    auto first = parseWhereAndExpression();
+    if (std::holds_alternative<SqlParseError>(first)) {
+      return std::get<SqlParseError>(std::move(first));
+    }
+
+    auto expression = std::get<WhereExpression>(std::move(first));
+    while (matchKeyword("OR")) {
+      auto next = parseWhereAndExpression();
+      if (std::holds_alternative<SqlParseError>(next)) {
+        return std::get<SqlParseError>(std::move(next));
+      }
+      if (expression.kind != WhereExpression::Kind::Or) {
+        WhereExpression parent;
+        parent.kind = WhereExpression::Kind::Or;
+        parent.children.push_back(std::move(expression));
+        expression = std::move(parent);
+      }
+      expression.children.push_back(
+          std::get<WhereExpression>(std::move(next)));
+    }
+    return expression;
+  }
+
+  std::variant<WhereExpression, SqlParseError> parseWhereAndExpression() {
+    auto first = parseWherePrimary();
+    if (std::holds_alternative<SqlParseError>(first)) {
+      return std::get<SqlParseError>(std::move(first));
+    }
+
+    auto expression = std::get<WhereExpression>(std::move(first));
+    while (matchKeyword("AND")) {
+      auto next = parseWherePrimary();
+      if (std::holds_alternative<SqlParseError>(next)) {
+        return std::get<SqlParseError>(std::move(next));
+      }
+      if (expression.kind != WhereExpression::Kind::And) {
+        WhereExpression parent;
+        parent.kind = WhereExpression::Kind::And;
+        parent.children.push_back(std::move(expression));
+        expression = std::move(parent);
+      }
+      expression.children.push_back(
+          std::get<WhereExpression>(std::move(next)));
+    }
+    return expression;
+  }
+
+  std::variant<WhereExpression, SqlParseError> parseWherePrimary() {
+    if (match(TokenKind::LeftParen)) {
+      if (++whereNestingDepth_ > 128) {
+        --whereNestingDepth_;
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "WHERE expression nesting exceeds 128 levels"};
+      }
+      if (current().kind == TokenKind::RightParen) {
+        --whereNestingDepth_;
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "WHERE expression group cannot be empty"};
+      }
+      auto expression = parseWhereOrExpression();
+      --whereNestingDepth_;
+      if (std::holds_alternative<SqlParseError>(expression)) {
+        return std::get<SqlParseError>(std::move(expression));
+      }
+      if (!expect(TokenKind::RightParen)) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected ')' to close WHERE expression"};
+      }
+      return std::get<WhereExpression>(std::move(expression));
+    }
+
+    if (current().kind == TokenKind::RightParen ||
+        current().kind == TokenKind::End || isKeyword("AND") ||
+        isKeyword("OR")) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected predicate in WHERE expression"};
+    }
+
+    if (current().kind != TokenKind::Identifier) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected column name in WHERE predicate"};
+    }
+
+    WhereEquals predicate;
+    predicate.columnName = current().text;
+    ++position_;
+    switch (current().kind) {
+    case TokenKind::Equals:
+      predicate.comparison = ComparisonOperator::Equal;
+      break;
+    case TokenKind::NotEquals:
+      predicate.comparison = ComparisonOperator::NotEqual;
+      break;
+    case TokenKind::GreaterThan:
+      predicate.comparison = ComparisonOperator::GreaterThan;
+      break;
+    case TokenKind::LessThan:
+      predicate.comparison = ComparisonOperator::LessThan;
+      break;
+    case TokenKind::GreaterThanOrEqual:
+      predicate.comparison = ComparisonOperator::GreaterThanOrEqual;
+      break;
+    case TokenKind::LessThanOrEqual:
+      predicate.comparison = ComparisonOperator::LessThanOrEqual;
+      break;
+    default:
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected a comparison operator in WHERE predicate"};
+    }
+    ++position_;
+    auto value = parseLiteral();
+    if (std::holds_alternative<SqlParseError>(value)) {
+      return std::get<SqlParseError>(std::move(value));
+    }
+
+    WhereExpression expression;
+    expression.kind = WhereExpression::Kind::Predicate;
+    expression.predicate.columnName = std::move(predicate.columnName);
+    expression.predicate.comparison = predicate.comparison;
+    expression.predicate.value = std::get<SqlValue>(std::move(value));
+    return expression;
   }
 
   std::variant<std::uint64_t, SqlParseError> parseUnsignedInteger() {
@@ -411,6 +474,7 @@ private:
 
   const std::vector<Token> &tokens_;
   std::size_t position_{0};
+  std::size_t whereNestingDepth_{0};
 };
 
 } // namespace
