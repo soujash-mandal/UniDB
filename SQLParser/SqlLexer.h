@@ -13,6 +13,7 @@ enum class TokenKind {
   LeftParen,
   RightParen,
   Comma,
+  Dot,
   Semicolon,
   Star,
   Equals,
