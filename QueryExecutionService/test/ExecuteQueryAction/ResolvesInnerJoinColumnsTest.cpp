@@ -207,9 +207,9 @@ TEST(ExecuteQueryActionJoinResolutionTest, SelectStarResolvesDuplicateNames) {
 TEST(ExecuteQueryActionJoinResolutionTest, RejectsUnknownJoinTableReference) {
   JoinResolutionFixture fixture;
 
-  const auto result = fixture.execute(
-      "SELECT users.name FROM users INNER JOIN orders "
-      "ON payments.id = orders.user_id");
+  const auto result =
+      fixture.execute("SELECT users.name FROM users INNER JOIN orders "
+                      "ON payments.id = orders.user_id");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
