@@ -451,27 +451,15 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       orderIndexes.emplace_back(orderIndex, order.ascending);
     }
 
-    const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
-    std::vector<std::vector<SqlValue>> matchedRows;
-    matchedRows.reserve(encodedRows.size());
-    for (const auto &bytes : encodedRows) {
-      auto decoded = SqlTupleCodec::decode(types, bytes);
-      if (compiledWhere.has_value() &&
-          !matchesWhereExpression(decoded, *compiledWhere)) {
-        continue;
-      }
-      matchedRows.push_back(std::move(decoded));
-    }
-
+    std::optional<std::size_t> aggregateIndex;
     if (select->aggregate.has_value()) {
+      const auto &aggregate = *select->aggregate;
       if (select->distinct || !select->orderBy.empty() ||
           select->limit.has_value() || select->offset != 0) {
         throw std::invalid_argument(
             "Aggregate SELECT cannot be combined with DISTINCT, ORDER BY, "
             "LIMIT, or OFFSET");
       }
-      const auto &aggregate = *select->aggregate;
-      std::optional<std::size_t> aggregateIndex;
       if (aggregate.columnName.has_value()) {
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
@@ -486,14 +474,28 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       } else if (aggregate.function != AggregateFunction::Count) {
         throw std::invalid_argument("Only COUNT supports '*'");
       }
-
       if ((aggregate.function == AggregateFunction::Sum ||
            aggregate.function == AggregateFunction::Avg) &&
           (!aggregateIndex.has_value() ||
            types[*aggregateIndex] != SqlType::Int)) {
         throw std::invalid_argument("SUM and AVG require an INT column");
       }
+    }
 
+    const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
+    std::vector<std::vector<SqlValue>> matchedRows;
+    matchedRows.reserve(encodedRows.size());
+    for (const auto &bytes : encodedRows) {
+      auto decoded = SqlTupleCodec::decode(types, bytes);
+      if (compiledWhere.has_value() &&
+          !matchesWhereExpression(decoded, *compiledWhere)) {
+        continue;
+      }
+      matchedRows.push_back(std::move(decoded));
+    }
+
+    if (select->aggregate.has_value()) {
+      const auto &aggregate = *select->aggregate;
       const std::string functionName =
           aggregate.function == AggregateFunction::Count ? "COUNT" :
           aggregate.function == AggregateFunction::Min ? "MIN" :
