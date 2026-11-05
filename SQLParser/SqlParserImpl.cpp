@@ -377,6 +377,8 @@ private:
     bool isNegatedMembership = false;
     bool isRange = false;
     bool isNegatedRange = false;
+    bool isLike = false;
+    bool isNegatedLike = false;
     if (matchKeyword("NOT")) {
       if (matchKeyword("IN")) {
         isMembership = true;
@@ -384,18 +386,31 @@ private:
       } else if (matchKeyword("BETWEEN")) {
         isRange = true;
         isNegatedRange = true;
+      } else if (matchKeyword("LIKE")) {
+        isLike = true;
+        isNegatedLike = true;
       } else {
         return SqlParseError{
             SqlParseErrorCode::SyntaxError,
-            "Expected IN or BETWEEN after NOT in WHERE predicate"};
+            "Expected IN, BETWEEN, or LIKE after NOT in WHERE predicate"};
       }
     } else if (matchKeyword("IN")) {
       isMembership = true;
     } else if (matchKeyword("BETWEEN")) {
       isRange = true;
+    } else if (matchKeyword("LIKE")) {
+      isLike = true;
     }
 
-    if (isRange) {
+    if (isLike) {
+      predicate.comparison = isNegatedLike ? ComparisonOperator::NotLike
+                                           : ComparisonOperator::Like;
+      auto pattern = parseLiteral();
+      if (std::holds_alternative<SqlParseError>(pattern)) {
+        return std::get<SqlParseError>(std::move(pattern));
+      }
+      predicate.value = std::get<SqlValue>(std::move(pattern));
+    } else if (isRange) {
       predicate.comparison = isNegatedRange ? ComparisonOperator::NotBetween
                                             : ComparisonOperator::Between;
       auto lowerBound = parseLiteral();
@@ -459,7 +474,7 @@ private:
         break;
       default:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected a comparison operator, IN, or NOT IN "
+                             "Expected a comparison operator, IN, BETWEEN, or LIKE "
                              "in WHERE predicate"};
       }
       ++position_;
