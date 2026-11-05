@@ -360,3 +360,90 @@ TEST(ExecuteQueryActionTest, AppliesOffsetWithoutLimitAndDefaultsOffsetToZero) {
   ASSERT_EQ(limitResult.rows.size(), 1U);
   EXPECT_EQ(std::get<std::int64_t>(limitResult.rows[0][0]), 1);
 }
+
+TEST(ExecuteQueryActionTest, FiltersIntegerAndTextValuesWithInAndNotIn) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "Ada"}, {2, "Grace"}, {3, "Linus"}, {4, "Ken"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto integerIn = action.execute(
+      "SELECT id FROM people WHERE id IN (1, 3, 99) ORDER BY id;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(integerIn));
+  const auto &integerInResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(integerIn);
+  ASSERT_EQ(integerInResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(integerInResult.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(integerInResult.rows[1][0]), 3);
+
+  const auto textNotIn = action.execute(
+      "SELECT name FROM people WHERE name NOT IN ('Ada', 'Linus') ORDER BY id;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(textNotIn));
+  const auto &textNotInResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(textNotIn);
+  ASSERT_EQ(textNotInResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(textNotInResult.rows[0][0]), "Grace");
+  EXPECT_EQ(std::get<std::string>(textNotInResult.rows[1][0]), "Ken");
+}
+
+TEST(ExecuteQueryActionTest, SupportsInPredicatesInsideNestedWhereExpressions) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {1, "Ada"}, {2, "Grace"}, {3, "Linus"}, {4, "Ken"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT id FROM people WHERE (id IN (1, 2) OR name NOT IN ('Ken')) "
+      "AND id > 1 ORDER BY id;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 3);
+}
+
+TEST(ExecuteQueryActionTest, ValidatesAllInListValuesBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT * FROM people WHERE id IN (1, 'wrong', 3);");
+
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionError>(outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("WHERE value type does not match column: id"),
+            std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
+
+TEST(ExecuteQueryActionTest, RejectsUnknownColumnForInBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT * FROM people WHERE missing IN (1, 2);");
+
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionError>(outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("Unknown WHERE column: missing"),
+            std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
