@@ -33,7 +33,7 @@ TEST(SqlParserJoinTest, ParsesInnerJoinBeforeWhereClause) {
   SqlParserImpl parser;
   const auto result =
       parser.parse("SELECT users.name FROM users INNER JOIN orders "
-                   "ON users.id = orders.user_id WHERE users.id > 10");
+                   "ON users.id = orders.user_id WHERE id > 10");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
