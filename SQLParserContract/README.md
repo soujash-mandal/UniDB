@@ -40,3 +40,11 @@ database services.
 
 The parser contract has no dependency on UniDB storage services, the container,
 buffer pool, disk manager, or query execution.
+
+## LIKE pattern scope
+
+The optional SELECT WHERE clause supports `LIKE` and `NOT LIKE` on TEXT
+columns. In a pattern, `%` matches zero or more bytes and `_` matches exactly
+one byte. Matching is case-sensitive. There is no ESCAPE clause: backslash has
+no special pattern-escaping meaning, and literal percent/underscore escaping
+is not supported. LIKE patterns must be single-quoted TEXT literals.
