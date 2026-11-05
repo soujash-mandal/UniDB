@@ -61,8 +61,9 @@ TEST(ExecuteQueryActionTest, ValidatesEveryInsertRowBeforeWritingAnyRows) {
   const auto outcome = action.execute(
       "INSERT INTO people (id, name) VALUES (1, 'Ada'), ('wrong', 'Grace');");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   EXPECT_EQ(port.insertCalls, 0U);
 }
 
@@ -75,8 +76,9 @@ TEST(ExecuteQueryActionTest, ReportsPartialCommitWhenLaterInsertFails) {
   const auto outcome = action.execute(
       "INSERT INTO people (id, name) VALUES (1, 'Ada'), (2, 'Grace');");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   const auto &error =
       std::get<QueryExecutionService::QueryExecutionError>(outcome);
   EXPECT_NE(error.message.find("failed after 1 row(s) were inserted"),
@@ -93,8 +95,9 @@ TEST(ExecuteQueryActionTest, CountsRowCommittedBeforePostInsertFailure) {
   const auto outcome = action.execute(
       "INSERT INTO people (id, name) VALUES (1, 'Ada'), (2, 'Grace');");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   const auto &error =
       std::get<QueryExecutionService::QueryExecutionError>(outcome);
   EXPECT_NE(error.message.find("failed after 2 row(s) were inserted"),

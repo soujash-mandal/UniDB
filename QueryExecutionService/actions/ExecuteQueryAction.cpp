@@ -136,13 +136,14 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     encodedRows.reserve(insert->rows.size());
     for (const auto &values : insert->rows) {
       if (insert->columnNames.size() != values.size()) {
-        throw std::invalid_argument("INSERT column and value counts must match");
+        throw std::invalid_argument(
+            "INSERT column and value counts must match");
       }
 
       std::vector<SqlValue> orderedValues(schema.size());
       std::vector<bool> assigned(schema.size(), false);
-      for (std::size_t inputIndex = 0;
-           inputIndex < insert->columnNames.size(); ++inputIndex) {
+      for (std::size_t inputIndex = 0; inputIndex < insert->columnNames.size();
+           ++inputIndex) {
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == insert->columnNames[inputIndex];
