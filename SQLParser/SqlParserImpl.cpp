@@ -1,6 +1,7 @@
 #include "SqlParserImpl.h"
 
 #include <cctype>
+#include <cstdint>
 #include <charconv>
 #include <string>
 #include <system_error>
@@ -56,8 +57,7 @@ public:
     }
     if (current().kind != TokenKind::End) {
       if (current().kind == TokenKind::Unsupported || isKeyword("AND") ||
-          isKeyword("OR") || isKeyword("JOIN") || isKeyword("ORDER") ||
-          isKeyword("GROUP") || isKeyword("LIMIT")) {
+          isKeyword("OR") || isKeyword("JOIN") || isKeyword("GROUP")) {
         return unsupported("SQL syntax is outside the V1 supported subset");
       }
       return syntaxError("Unexpected token '" + current().text + "'");
@@ -319,7 +319,44 @@ private:
         }
       }
     }
+    if (matchKeyword("LIMIT")) {
+      auto limit = parseUnsignedInteger();
+      if (std::holds_alternative<SqlParseError>(limit)) {
+        return std::get<SqlParseError>(std::move(limit));
+      }
+      statement.limit = std::get<std::uint64_t>(limit);
+      if (matchKeyword("OFFSET")) {
+        auto offset = parseUnsignedInteger();
+        if (std::holds_alternative<SqlParseError>(offset)) {
+          return std::get<SqlParseError>(std::move(offset));
+        }
+        statement.offset = std::get<std::uint64_t>(offset);
+      }
+    } else if (matchKeyword("OFFSET")) {
+      auto offset = parseUnsignedInteger();
+      if (std::holds_alternative<SqlParseError>(offset)) {
+        return std::get<SqlParseError>(std::move(offset));
+      }
+      statement.offset = std::get<std::uint64_t>(offset);
+    }
     return SqlStatement{std::move(statement)};
+  }
+
+  std::variant<std::uint64_t, SqlParseError> parseUnsignedInteger() {
+    if (current().kind != TokenKind::Integer) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected a non-negative integer for LIMIT or OFFSET"};
+    }
+    std::uint64_t value{};
+    const auto &text = current().text;
+    const auto conversion =
+        std::from_chars(text.data(), text.data() + text.size(), value);
+    ++position_;
+    if (conversion.ec == std::errc::result_out_of_range) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "LIMIT or OFFSET value is out of range"};
+    }
+    return value;
   }
 
   std::variant<SqlValue, SqlParseError> parseLiteral() {
