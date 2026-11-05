@@ -78,6 +78,17 @@ struct HavingExpression {
   SqlValue value;
 };
 
+struct ColumnReference {
+  std::optional<std::string> tableName;
+  std::string columnName;
+};
+
+struct InnerJoinClause {
+  std::string tableName;
+  ColumnReference left;
+  ColumnReference right;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
@@ -89,6 +100,7 @@ struct SelectStatement {
   std::vector<std::string> groupBy;
   std::optional<HavingExpression> having;
   std::string tableName;
+  std::optional<InnerJoinClause> innerJoin;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
   std::vector<OrderByColumn> orderBy;
