@@ -212,6 +212,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/SelectProjectionTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectDistinctTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAliasesTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/SelectAggregatesTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/WhereFilteringTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ParenthesizedWhereExpressionsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
@@ -222,6 +223,7 @@ add_executable(tests
     SQLParser/test/SqlParserStatementTest.cpp
     SQLParser/test/SqlParserWhereTest.cpp
     SQLParser/test/SqlParserSelectClauseTest.cpp
+    SQLParser/test/SqlParserAggregateTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
