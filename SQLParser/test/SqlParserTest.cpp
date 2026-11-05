@@ -4,7 +4,9 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
 namespace unidb::sql {
 namespace {
@@ -81,9 +83,12 @@ TEST(SqlParserTest, ReportsUnsupportedStatementAndOperators) {
             SqlParseErrorCode::UnsupportedStatement);
 
   const auto comparison = parser.parse("SELECT * FROM users WHERE id > 2");
-  ASSERT_TRUE(std::holds_alternative<SqlParseError>(comparison));
-  EXPECT_EQ(std::get<SqlParseError>(comparison).code,
-            SqlParseErrorCode::UnsupportedStatement);
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(comparison));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(comparison));
+  ASSERT_TRUE(std::holds_alternative<WhereEquals>(select.where));
+  EXPECT_EQ(std::get<WhereEquals>(select.where).comparison,
+            ComparisonOperator::GreaterThan);
 }
 
 TEST(SqlParserTest, RejectsMismatchedInsertColumnAndValueCounts) {
@@ -102,6 +107,37 @@ TEST(SqlParserTest, RejectsUnsupportedLiteralTypes) {
   ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
   EXPECT_EQ(std::get<SqlParseError>(result).code,
             SqlParseErrorCode::UnsupportedStatement);
+}
+
+TEST(SqlParserTest, ParsesEverySupportedWhereComparisonOperator) {
+  SqlParserImpl parser;
+  const std::vector<std::pair<std::string, ComparisonOperator>> cases{
+      {"=", ComparisonOperator::Equal},
+      {"!=", ComparisonOperator::NotEqual},
+      {">", ComparisonOperator::GreaterThan},
+      {"<", ComparisonOperator::LessThan},
+      {">=", ComparisonOperator::GreaterThanOrEqual},
+      {"<=", ComparisonOperator::LessThanOrEqual}};
+
+  for (const auto &[token, expected] : cases) {
+    const auto result =
+        parser.parse("SELECT id FROM users WHERE id " + token + " 7;");
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result))
+        << "operator: " << token;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(std::holds_alternative<WhereEquals>(select.where));
+    EXPECT_EQ(std::get<WhereEquals>(select.where).comparison, expected)
+        << "operator: " << token;
+  }
+}
+
+TEST(SqlParserTest, RejectsIncompleteWhereComparison) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SELECT * FROM users WHERE id >");
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
 }
 
 } // namespace

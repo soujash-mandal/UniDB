@@ -16,6 +16,11 @@ enum class TokenKind {
   Semicolon,
   Star,
   Equals,
+  NotEquals,
+  GreaterThan,
+  LessThan,
+  GreaterThanOrEqual,
+  LessThanOrEqual,
   Minus,
   Unsupported,
   End

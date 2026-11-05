@@ -210,6 +210,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/InsertsValuesInSchemaOrderTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectStarDecodesRowsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectProjectionTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/WhereFilteringTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/RejectsUnsupportedSelectFormsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp

@@ -27,9 +27,19 @@ struct InsertStatement {
   std::vector<SqlValue> values;
 };
 
+enum class ComparisonOperator {
+  Equal,
+  NotEqual,
+  GreaterThan,
+  LessThan,
+  GreaterThanOrEqual,
+  LessThanOrEqual
+};
+
 struct WhereEquals {
   std::string columnName;
   SqlValue value;
+  ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
 struct SelectStatement {
@@ -37,7 +47,7 @@ struct SelectStatement {
   bool selectAll{false};
   std::vector<std::string> columnNames;
   std::string tableName;
-  // V1 supports at most one equality predicate.
+  // V1 supports at most one comparison predicate.
   std::variant<std::monostate, WhereEquals> where;
 };
 
