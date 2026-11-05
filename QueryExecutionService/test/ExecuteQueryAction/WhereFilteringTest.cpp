@@ -177,3 +177,107 @@ TEST(ExecuteQueryActionTest, ValidatesEveryCompoundPredicateBeforeReadingRows) {
             std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+TEST(ExecuteQueryActionTest, SortsRowsAscendingAndDescending) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {3, "C"}, {1, "A"}, {4, "D"}, {2, "B"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto ascending = action.execute(
+      "SELECT id FROM people ORDER BY id ASC;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          ascending));
+  const auto &ascendingResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(ascending);
+  ASSERT_EQ(ascendingResult.rows.size(), 4U);
+  for (std::size_t i = 0; i < ascendingResult.rows.size(); ++i) {
+    EXPECT_EQ(std::get<std::int64_t>(ascendingResult.rows[i][0]),
+              static_cast<std::int64_t>(i + 1));
+  }
+
+  const auto descending =
+      action.execute("SELECT id FROM people ORDER BY id DESC;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          descending));
+  const auto &descendingResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(descending);
+  ASSERT_EQ(descendingResult.rows.size(), 4U);
+  for (std::size_t i = 0; i < descendingResult.rows.size(); ++i) {
+    EXPECT_EQ(std::get<std::int64_t>(descendingResult.rows[i][0]),
+              static_cast<std::int64_t>(4 - i));
+  }
+}
+
+TEST(ExecuteQueryActionTest, SortsByMultipleColumnsAndAllowsUnselectedSortColumn) {
+  FakeQesRdbServicePort port;
+  for (const auto &[id, name] :
+       std::vector<std::pair<std::int64_t, std::string>>{
+           {3, "B"}, {1, "A"}, {4, "B"}, {2, "A"}}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text}, {id, name}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT id FROM people ORDER BY name ASC, id DESC;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 4U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[2][0]), 4);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[3][0]), 3);
+  ASSERT_EQ(result.columns.size(), 1U);
+  EXPECT_EQ(result.columns[0].name, "id");
+}
+
+TEST(ExecuteQueryActionTest, AppliesWhereFilteringBeforeOrdering) {
+  FakeQesRdbServicePort port;
+  for (const std::int64_t id : {4, 1, 3, 2}) {
+    port.rows.push_back(SqlTupleCodec::encode(
+        {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+        {id, std::string("user") + std::to_string(id)}));
+  }
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT id FROM people WHERE id > 1 ORDER BY id ASC;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 3U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 3);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[2][0]), 4);
+}
+
+TEST(ExecuteQueryActionTest, RejectsUnknownOrderByColumnBeforeReadingRows) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT id FROM people ORDER BY missing DESC;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("Unknown ORDER BY column: missing"),
+            std::string::npos);
+  EXPECT_EQ(port.selectCalls, 0U);
+}
