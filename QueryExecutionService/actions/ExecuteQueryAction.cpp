@@ -20,6 +20,7 @@ using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
 using unidb::sql::WhereEquals;
+using unidb::sql::WhereExpression;
 
 QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
@@ -173,24 +174,33 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);
 
-    std::optional<std::size_t> filterIndex;
-    const WhereEquals *predicate = std::get_if<WhereEquals>(&select->where);
-    if (predicate != nullptr) {
-      const auto found =
-          std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-            return column.name == predicate->columnName;
-          });
-      if (found == schema.end()) {
-        throw std::invalid_argument("Unknown WHERE column: " +
-                                    predicate->columnName);
-      }
-      filterIndex =
-          static_cast<std::size_t>(std::distance(schema.begin(), found));
-      const bool valueIsInt =
-          std::holds_alternative<std::int64_t>(predicate->value);
-      if ((types[*filterIndex] == SqlType::Int) != valueIsInt) {
-        throw std::invalid_argument("WHERE value type does not match column: " +
-                                    found->name);
+    using CompiledPredicate = std::pair<std::size_t, WhereEquals>;
+    std::vector<std::vector<CompiledPredicate>> compiledWhere;
+    const auto *where = std::get_if<WhereExpression>(&select->where);
+    if (where != nullptr) {
+      compiledWhere.reserve(where->disjunctions.size());
+      for (const auto &conjunction : where->disjunctions) {
+        auto &compiledConjunction = compiledWhere.emplace_back();
+        compiledConjunction.reserve(conjunction.size());
+        for (const auto &predicate : conjunction) {
+          const auto found =
+              std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
+                return column.name == predicate.columnName;
+              });
+          if (found == schema.end()) {
+            throw std::invalid_argument("Unknown WHERE column: " +
+                                        predicate.columnName);
+          }
+          const auto filterIndex =
+              static_cast<std::size_t>(std::distance(schema.begin(), found));
+          const bool valueIsInt =
+              std::holds_alternative<std::int64_t>(predicate.value);
+          if ((types[filterIndex] == SqlType::Int) != valueIsInt) {
+            throw std::invalid_argument(
+                "WHERE value type does not match column: " + found->name);
+          }
+          compiledConjunction.emplace_back(filterIndex, predicate);
+        }
       }
     }
 
@@ -232,9 +242,20 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     result.rows.reserve(encodedRows.size());
     for (const auto &bytes : encodedRows) {
       const auto decoded = SqlTupleCodec::decode(types, bytes);
-      if (predicate != nullptr &&
-          !matchesWhere(decoded[*filterIndex], *predicate)) {
-        continue;
+      if (where != nullptr) {
+        const bool matchesExpression = std::any_of(
+            compiledWhere.begin(), compiledWhere.end(),
+            [&](const auto &conjunction) {
+              return std::all_of(
+                  conjunction.begin(), conjunction.end(),
+                  [&](const auto &compiled) {
+                    return matchesWhere(decoded[compiled.first],
+                                        compiled.second);
+                  });
+            });
+        if (!matchesExpression) {
+          continue;
+        }
       }
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
