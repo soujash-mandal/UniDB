@@ -384,7 +384,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
     std::vector<std::size_t> selectedIndexes;
     std::vector<ColumnDefinition> selectedColumns;
-    if (select->selectAll) {
+    if (select->aggregate.has_value()) {
+      // Aggregate queries produce a single computed output column.
+    } else if (select->selectAll) {
       selectedIndexes.reserve(schema.size());
       selectedColumns = schema;
       for (std::size_t index = 0; index < schema.size(); ++index) {
