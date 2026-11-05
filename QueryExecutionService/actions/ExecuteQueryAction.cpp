@@ -433,22 +433,23 @@ void validateInnerJoinColumns(
 
 // Execute INNER JOIN entirely in QES using the existing public row-read port.
 // Both inputs and the joined result are in memory; matching is O(N x M).
-ResolvedJoinColumn resolveWhereJoinColumn(
-    const std::string &name, const std::string &leftTableName,
-    const std::vector<ColumnDefinition> &leftSchema,
-    const std::string &rightTableName,
-    const std::vector<ColumnDefinition> &rightSchema) {
+ResolvedJoinColumn
+resolveWhereJoinColumn(const std::string &name,
+                       const std::string &leftTableName,
+                       const std::vector<ColumnDefinition> &leftSchema,
+                       const std::string &rightTableName,
+                       const std::vector<ColumnDefinition> &rightSchema) {
   const auto separator = name.find('.');
   if (separator != std::string::npos) {
     return resolveSelectedJoinColumn(name, leftTableName, leftSchema,
                                      rightTableName, rightSchema);
   }
-  const auto left = std::find_if(
-      leftSchema.begin(), leftSchema.end(),
-      [&](const auto &column) { return column.name == name; });
-  const auto right = std::find_if(
-      rightSchema.begin(), rightSchema.end(),
-      [&](const auto &column) { return column.name == name; });
+  const auto left =
+      std::find_if(leftSchema.begin(), leftSchema.end(),
+                   [&](const auto &column) { return column.name == name; });
+  const auto right =
+      std::find_if(rightSchema.begin(), rightSchema.end(),
+                   [&](const auto &column) { return column.name == name; });
   const bool inLeft = left != leftSchema.end();
   const bool inRight = right != rightSchema.end();
   if (inLeft && inRight) {
@@ -465,16 +466,17 @@ ResolvedJoinColumn resolveWhereJoinColumn(
           static_cast<std::size_t>(std::distance(rightSchema.begin(), right))};
 }
 
-WhereExpression qualifyJoinWhereColumns(
-    const WhereExpression &expression, const std::string &leftTableName,
-    const std::vector<ColumnDefinition> &leftSchema,
-    const std::string &rightTableName,
-    const std::vector<ColumnDefinition> &rightSchema) {
+WhereExpression
+qualifyJoinWhereColumns(const WhereExpression &expression,
+                        const std::string &leftTableName,
+                        const std::vector<ColumnDefinition> &leftSchema,
+                        const std::string &rightTableName,
+                        const std::vector<ColumnDefinition> &rightSchema) {
   WhereExpression qualified = expression;
   if (qualified.kind == WhereExpression::Kind::Predicate) {
-    const auto resolved = resolveWhereJoinColumn(
-        qualified.predicate.columnName, leftTableName, leftSchema,
-        rightTableName, rightSchema);
+    const auto resolved =
+        resolveWhereJoinColumn(qualified.predicate.columnName, leftTableName,
+                               leftSchema, rightTableName, rightSchema);
     qualified.predicate.columnName =
         resolved.tableName + "." + resolved.column->name;
     return qualified;
@@ -509,8 +511,7 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   joinedSchema.reserve(leftSchema.size() + rightSchema.size());
   joinedTypes.reserve(leftTypes.size() + rightTypes.size());
   for (const auto &column : leftSchema) {
-    joinedSchema.push_back(
-        {select.tableName + "." + column.name, column.type});
+    joinedSchema.push_back({select.tableName + "." + column.name, column.type});
     joinedTypes.push_back(column.type);
   }
   for (const auto &column : rightSchema) {
@@ -522,8 +523,8 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
     const auto qualified = qualifyJoinWhereColumns(
         *where, select.tableName, leftSchema, join.tableName, rightSchema);
-    compiledWhere = compileWhereExpression(qualified, joinedSchema,
-                                            joinedTypes);
+    compiledWhere =
+        compileWhereExpression(qualified, joinedSchema, joinedTypes);
   }
 
   std::vector<std::size_t> selectedIndexes;
@@ -537,11 +538,9 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
       const auto &sourceColumn =
           isLeft ? leftSchema[index] : rightSchema[index - leftSchema.size()];
       const auto &otherSchema = isLeft ? rightSchema : leftSchema;
-      const bool duplicated =
-          std::any_of(otherSchema.begin(), otherSchema.end(),
-                      [&](const auto &other) {
-                        return other.name == sourceColumn.name;
-                      });
+      const bool duplicated = std::any_of(
+          otherSchema.begin(), otherSchema.end(),
+          [&](const auto &other) { return other.name == sourceColumn.name; });
       const std::string &tableName = isLeft ? select.tableName : join.tableName;
       selectedColumns.push_back(
           {duplicated ? tableName + "." + sourceColumn.name : sourceColumn.name,
@@ -551,13 +550,12 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     selectedIndexes.reserve(select.columnNames.size());
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved = resolveSelectedJoinColumn(
-          select.columnNames[index], select.tableName, leftSchema,
-          join.tableName, rightSchema);
-      selectedIndexes.push_back(
-          resolved.tableName == select.tableName
-              ? resolved.index
-              : leftSchema.size() + resolved.index);
+      const auto resolved =
+          resolveSelectedJoinColumn(select.columnNames[index], select.tableName,
+                                    leftSchema, join.tableName, rightSchema);
+      selectedIndexes.push_back(resolved.tableName == select.tableName
+                                    ? resolved.index
+                                    : leftSchema.size() + resolved.index);
       const bool duplicated =
           std::any_of(leftSchema.begin(), leftSchema.end(),
                       [&](const auto &column) {
@@ -597,7 +595,8 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   result.columns = std::move(selectedColumns);
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
-      if (compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]) != 0) {
+      if (compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]) !=
+          0) {
         continue;
       }
       std::vector<SqlValue> joinedRow;
@@ -753,8 +752,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       schemaTypes(rightSchema);
       validateInnerJoinColumns(*select, leftSchema, rightSchema);
 
-      return executeInnerJoin(rdbServicePort, *select, leftSchema,
-                               rightSchema);
+      return executeInnerJoin(rdbServicePort, *select, leftSchema, rightSchema);
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto types = schemaTypes(schema);

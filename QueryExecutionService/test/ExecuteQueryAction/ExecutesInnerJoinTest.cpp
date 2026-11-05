@@ -190,7 +190,8 @@ TEST(ExecuteQueryActionInnerJoinTest, ProjectsQualifiedAndUnqualifiedColumns) {
             (std::vector<SqlValue>{std::string{"Lin"}, std::int64_t{80}}));
 }
 
-TEST(ExecuteQueryActionInnerJoinTest, FiltersJoinedRowsWithQualifiedWhereColumns) {
+TEST(ExecuteQueryActionInnerJoinTest,
+     FiltersJoinedRowsWithQualifiedWhereColumns) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
   fixture.addUser(2, "Lin");
