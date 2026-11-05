@@ -2,7 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
 #include <variant>
+#include <vector>
 
 namespace unidb::sql {
 namespace {
@@ -44,14 +46,16 @@ TEST(SqlParserJoinTest, ParsesInnerJoinBeforeWhereClause) {
 
 TEST(SqlParserJoinTest, RejectsMalformedInnerJoinClauses) {
   SqlParserImpl parser;
-  for (const auto *sql : {"SELECT a.x FROM a INNER b ON a.x = b.y",
-                          "SELECT a.x FROM a INNER JOIN ON a.x = b.y",
-                          "SELECT a.x FROM a INNER JOIN b a.x = b.y",
-                          "SELECT a.x FROM a INNER JOIN b ON x = b.y",
-                          "SELECT a.x FROM a INNER JOIN b ON a.x = y",
-                          "SELECT a.x FROM a INNER JOIN b ON a.x > b.y",
-                          "SELECT a.x FROM a INNER JOIN b ON a.x =",
-                          "SELECT a.x FROM a INNER JOIN b ON a. = b.y"}) {
+  const std::vector<std::string> invalidQueries{
+      "SELECT a.x FROM a INNER b ON a.x = b.y",
+      "SELECT a.x FROM a INNER JOIN ON a.x = b.y",
+      "SELECT a.x FROM a INNER JOIN b a.x = b.y",
+      "SELECT a.x FROM a INNER JOIN b ON x = b.y",
+      "SELECT a.x FROM a INNER JOIN b ON a.x = y",
+      "SELECT a.x FROM a INNER JOIN b ON a.x > b.y",
+      "SELECT a.x FROM a INNER JOIN b ON a.x =",
+      "SELECT a.x FROM a INNER JOIN b ON a. = b.y"};
+  for (const auto &sql : invalidQueries) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
   }
