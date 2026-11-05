@@ -189,8 +189,8 @@ TEST(ExecuteQueryActionTest, SortsRowsAscendingAndDescending) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto ascending = action.execute(
-      "SELECT id FROM people ORDER BY id ASC;");
+  const auto ascending =
+      action.execute("SELECT id FROM people ORDER BY id ASC;");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           ascending));
@@ -216,7 +216,8 @@ TEST(ExecuteQueryActionTest, SortsRowsAscendingAndDescending) {
   }
 }
 
-TEST(ExecuteQueryActionTest, SortsByMultipleColumnsAndAllowsUnselectedSortColumn) {
+TEST(ExecuteQueryActionTest,
+     SortsByMultipleColumnsAndAllowsUnselectedSortColumn) {
   FakeQesRdbServicePort port;
   for (const auto &[id, name] :
        std::vector<std::pair<std::int64_t, std::string>>{
@@ -253,8 +254,8 @@ TEST(ExecuteQueryActionTest, AppliesWhereFilteringBeforeOrdering) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT id FROM people WHERE id > 1 ORDER BY id ASC;");
+  const auto outcome =
+      action.execute("SELECT id FROM people WHERE id > 1 ORDER BY id ASC;");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));

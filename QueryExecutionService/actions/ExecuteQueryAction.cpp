@@ -272,17 +272,17 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     }
 
     if (!orderIndexes.empty()) {
-      std::stable_sort(
-          matchedRows.begin(), matchedRows.end(),
-          [&](const auto &left, const auto &right) {
-            for (const auto &[index, ascending] : orderIndexes) {
-              const int comparison = compareSqlValues(left[index], right[index]);
-              if (comparison != 0) {
-                return ascending ? comparison < 0 : comparison > 0;
-              }
-            }
-            return false;
-          });
+      std::stable_sort(matchedRows.begin(), matchedRows.end(),
+                       [&](const auto &left, const auto &right) {
+                         for (const auto &[index, ascending] : orderIndexes) {
+                           const int comparison =
+                               compareSqlValues(left[index], right[index]);
+                           if (comparison != 0) {
+                             return ascending ? comparison < 0 : comparison > 0;
+                           }
+                         }
+                         return false;
+                       });
     }
 
     QueryExecutionResult result;

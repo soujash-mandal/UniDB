@@ -188,8 +188,8 @@ TEST(SqlParserTest, ParsesOrderByWithDefaultAscendingAndExplicitDirections) {
 
 TEST(SqlParserTest, ParsesWhereBeforeOrderBy) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT id FROM users WHERE id > 1 ORDER BY name DESC");
+  const auto result =
+      parser.parse("SELECT id FROM users WHERE id > 1 ORDER BY name DESC");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
@@ -202,12 +202,10 @@ TEST(SqlParserTest, ParsesWhereBeforeOrderBy) {
 
 TEST(SqlParserTest, RejectsMalformedOrderByClauses) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT * FROM users ORDER",
-           "SELECT * FROM users ORDER id",
-           "SELECT * FROM users ORDER BY",
-           "SELECT * FROM users ORDER BY id,",
-           "SELECT * FROM users ORDER BY id ASC DESC"}) {
+  for (const auto *sql :
+       {"SELECT * FROM users ORDER", "SELECT * FROM users ORDER id",
+        "SELECT * FROM users ORDER BY", "SELECT * FROM users ORDER BY id,",
+        "SELECT * FROM users ORDER BY id ASC DESC"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,
