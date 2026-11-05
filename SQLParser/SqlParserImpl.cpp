@@ -296,6 +296,29 @@ private:
       }
       statement.where = std::move(expression);
     }
+
+    if (matchKeyword("ORDER")) {
+      if (!expectKeyword("BY")) {
+        return syntaxError("Expected BY after ORDER");
+      }
+      while (true) {
+        if (current().kind != TokenKind::Identifier) {
+          return syntaxError("Expected column name after ORDER BY");
+        }
+        OrderByColumn order;
+        order.columnName = current().text;
+        ++position_;
+        if (matchKeyword("ASC")) {
+          order.ascending = true;
+        } else if (matchKeyword("DESC")) {
+          order.ascending = false;
+        }
+        statement.orderBy.push_back(std::move(order));
+        if (!match(TokenKind::Comma)) {
+          break;
+        }
+      }
+    }
     return SqlStatement{std::move(statement)};
   }
 
