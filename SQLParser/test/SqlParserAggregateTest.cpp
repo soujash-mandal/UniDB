@@ -30,7 +30,7 @@ TEST(SqlParserTest, ParsesAggregateFunctionsAndAliases) {
 
 TEST(SqlParserTest, RejectsMalformedAggregateExpressions) {
   SqlParserImpl parser;
-  for (const auto *sql : {"SELECT COUNT FROM users",
+  for (const auto *sql : {"SELECT COUNT(*) users",
                           "SELECT SUM(*) FROM users",
                           "SELECT COUNT( FROM users",
                           "SELECT MIN() FROM users",
