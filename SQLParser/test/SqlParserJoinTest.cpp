@@ -45,17 +45,14 @@ TEST(SqlParserJoinTest, ParsesInnerJoinBeforeWhereClause) {
 TEST(SqlParserJoinTest, RejectsMalformedInnerJoinClauses) {
   SqlParserImpl parser;
   for (const auto *sql :
-       {"SELECT users.id FROM users INNER orders ON users.id = orders.user_id",
-        "SELECT users.id FROM users INNER JOIN ON users.id = orders.user_id",
-        "SELECT users.id FROM users INNER JOIN orders users.id = "
-        "orders.user_id",
-        "SELECT users.id FROM users INNER JOIN orders ON id = orders.user_id",
-        "SELECT users.id FROM users INNER JOIN orders ON users.id = user_id",
-        "SELECT users.id FROM users INNER JOIN orders ON users.id > "
-        "orders.user_id",
-        "SELECT users.id FROM users INNER JOIN orders ON users.id =",
-        "SELECT users.id FROM users INNER JOIN orders ON users. = "
-        "orders.user_id"}) {
+       {"SELECT a.x FROM a INNER b ON a.x = b.y",
+        "SELECT a.x FROM a INNER JOIN ON a.x = b.y",
+        "SELECT a.x FROM a INNER JOIN b a.x = b.y",
+        "SELECT a.x FROM a INNER JOIN b ON x = b.y",
+        "SELECT a.x FROM a INNER JOIN b ON a.x = y",
+        "SELECT a.x FROM a INNER JOIN b ON a.x > b.y",
+        "SELECT a.x FROM a INNER JOIN b ON a.x =",
+        "SELECT a.x FROM a INNER JOIN b ON a. = b.y"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
   }
