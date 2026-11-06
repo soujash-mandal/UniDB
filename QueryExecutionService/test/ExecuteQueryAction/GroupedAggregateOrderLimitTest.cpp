@@ -90,7 +90,8 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
 
   const auto outcome =
       action.execute("SELECT department, SUM(salary) AS payroll FROM employees "
-                     "GROUP BY department ORDER BY payroll DESC LIMIT 1 OFFSET 1;");
+                     "GROUP BY department ORDER BY payroll DESC "
+                     "LIMIT 1 OFFSET 1;");
   ASSERT_TRUE(std::holds_alternative<
               QueryExecutionService::QueryExecutionResult>(outcome));
   const auto &result =
@@ -113,6 +114,6 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
                      "GROUP BY department OFFSET 1;");
   ASSERT_TRUE(std::holds_alternative<
               QueryExecutionService::QueryExecutionResult>(outcome));
-  EXPECT_TRUE(
-      std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows.empty());
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
+                  .rows.empty());
 }
