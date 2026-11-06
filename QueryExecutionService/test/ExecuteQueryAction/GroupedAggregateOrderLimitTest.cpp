@@ -67,10 +67,10 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 3U);
   EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "eng");
-  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 2);
-  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][2]), 1);
-  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 1);
-  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][2]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][2]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][2]), 1);
   EXPECT_EQ(std::get<std::string>(result.rows[2][0]), "sales");
 }
 
