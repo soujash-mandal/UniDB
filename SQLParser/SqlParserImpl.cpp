@@ -411,24 +411,6 @@ private:
       }
       return std::get<IntegerExpression>(std::move(expression));
     }
-    if (match(TokenKind::Minus)) {
-      if (current().kind != TokenKind::Integer) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected integer literal after '-'"};
-      }
-      const std::string text = "-" + current().text;
-      ++position_;
-      std::int64_t value{};
-      const auto conversion =
-          std::from_chars(text.data(), text.data() + text.size(), value);
-      if (conversion.ec == std::errc::result_out_of_range) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Integer literal is out of range"};
-      }
-      IntegerExpression expression;
-      expression.literal = value;
-      return expression;
-    }
     if (current().kind == TokenKind::Integer) {
       const auto &text = current().text;
       std::int64_t value{};
@@ -460,8 +442,55 @@ private:
                          "Expected an integer literal, column, or '('"};
   }
 
+  std::variant<IntegerExpression, SqlParseError> parseIntegerUnary() {
+    if (current().kind != TokenKind::Plus &&
+        current().kind != TokenKind::Minus) {
+      return parseIntegerPrimary();
+    }
+
+    const auto operation = current().kind == TokenKind::Plus
+                               ? IntegerUnaryOperator::Positive
+                               : IntegerUnaryOperator::Negative;
+    ++position_;
+
+    // A negative literal may use the full signed range, including INT64_MIN.
+    if (operation == IntegerUnaryOperator::Negative &&
+        current().kind == TokenKind::Integer) {
+      const std::string text = "-" + current().text;
+      ++position_;
+      std::int64_t value{};
+      const auto conversion =
+          std::from_chars(text.data(), text.data() + text.size(), value);
+      if (conversion.ec == std::errc::result_out_of_range) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Integer literal is out of range"};
+      }
+      IntegerExpression expression;
+      expression.literal = value;
+      return expression;
+    }
+
+    if (++unaryNestingDepth_ > 128) {
+      --unaryNestingDepth_;
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Integer unary operator nesting exceeds 128 levels"};
+    }
+    auto operand = parseIntegerUnary();
+    --unaryNestingDepth_;
+    if (std::holds_alternative<SqlParseError>(operand)) {
+      return std::get<SqlParseError>(std::move(operand));
+    }
+
+    IntegerExpression expression;
+    expression.kind = IntegerExpression::Kind::Unary;
+    expression.unaryOperation = operation;
+    expression.operand = std::make_shared<IntegerExpression>(
+        std::get<IntegerExpression>(std::move(operand)));
+    return expression;
+  }
+
   std::variant<IntegerExpression, SqlParseError> parseIntegerMultiplicative() {
-    auto first = parseIntegerPrimary();
+    auto first = parseIntegerUnary();
     if (std::holds_alternative<SqlParseError>(first)) {
       return std::get<SqlParseError>(std::move(first));
     }
@@ -472,7 +501,7 @@ private:
                                  ? IntegerBinaryOperator::Multiply
                                  : IntegerBinaryOperator::Divide;
       ++position_;
-      auto next = parseIntegerPrimary();
+      auto next = parseIntegerUnary();
       if (std::holds_alternative<SqlParseError>(next)) {
         return std::get<SqlParseError>(std::move(next));
       }
@@ -1050,6 +1079,7 @@ private:
   std::size_t position_{0};
   std::size_t whereNestingDepth_{0};
   std::size_t expressionNestingDepth_{0};
+  std::size_t unaryNestingDepth_{0};
 };
 
 } // namespace
