@@ -21,6 +21,8 @@ semicolon is optional.
 - `SELECT DISTINCT column_name, ... FROM table_name`
 - `SELECT column_name AS alias, ... FROM table_name`
 - `SELECT DISTINCT * FROM table_name`
+- Searched CASE expressions in projections:
+  `SELECT CASE WHEN condition THEN literal [WHEN condition THEN literal ...] ELSE literal END AS alias FROM table_name`
 - `SELECT ... UNION SELECT ...` (duplicate rows removed)
 - `SELECT ... UNION ALL SELECT ...` (duplicates preserved; branch order retained)
 - Either SELECT form may include a WHERE expression with comparison operators,
@@ -163,3 +165,19 @@ throughout: mixing `UNION` and `UNION ALL` in one statement is rejected.
 ORDER BY, LIMIT, and OFFSET apply within each SELECT branch; ordering or
 limiting the combined set-operation result is not supported. Execution is
 in-memory and does not use indexes.
+
+
+## CASE WHEN expressions
+
+A SELECT projection may contain a searched CASE expression with one or more
+WHEN branches and a mandatory ELSE branch. Each WHEN condition uses the same
+comparison, IN, BETWEEN, LIKE, AND, OR, and parenthesis rules as WHERE. Conditions
+are checked in order; the result from the first matching branch is returned,
+otherwise ELSE is returned.
+
+THEN and ELSE results must be INT or TEXT literals and all result values in one
+CASE expression must have the same type. ELSE is mandatory because SQL NULL is
+not supported by the current value model. CASE expressions can be mixed with
+ordinary projected columns and may have an AS output alias. CASE with JOIN and
+SELECT DISTINCT is not supported yet. Evaluation is performed in memory after
+the existing RDB SELECT action returns rows; WHERE filtering occurs first.
