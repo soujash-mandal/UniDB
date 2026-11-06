@@ -215,6 +215,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/CaseWhenTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/IntegerArithmeticTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/TextFunctionsTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/OrderByAliasesTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectDistinctTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAliasesTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAggregatesTest.cpp

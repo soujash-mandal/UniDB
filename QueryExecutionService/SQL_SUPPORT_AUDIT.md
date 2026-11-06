@@ -98,3 +98,8 @@ TEXT column reference per function. UPPER/LOWER use ASCII-only case conversion;
 LENGTH counts bytes. Results are computed in memory, with no RDBService or
 persisted-value changes. JOIN and DISTINCT combinations remain unsupported in
 this first increment.
+
+
+## ORDER BY projection aliases (SIM-77 PR 8a)
+
+ORDER BY can resolve a SELECT output name before resolving a source-column name. This includes explicit aliases and default output names for computed projections. QES evaluates each projection once per filtered row, then sorts using the projected value for alias terms and the decoded source value for ordinary column terms. Multiple terms retain left-to-right priority and stable ordering. This remains an in-memory operation over rows read through the existing public RDB SELECT Action; no RDBService or storage changes are involved. Direct expression syntax inside ORDER BY is not included in this alias-focused increment.

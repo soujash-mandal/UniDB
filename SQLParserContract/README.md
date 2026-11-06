@@ -211,3 +211,17 @@ overridden with `AS`.
 Scalar text functions are evaluated in memory after rows are fetched through
 the existing public RDB SELECT action. They do not change persisted values or
 storage formats. They are not yet supported with JOIN or SELECT DISTINCT.
+
+
+## ORDER BY projection aliases
+
+`ORDER BY` may refer to an output name from the SELECT projection, including
+an explicit `AS` alias or the default name of a computed projection. This allows
+sorting by integer arithmetic, CASE, and scalar text-function results without
+repeating their expressions. When an output name is also a source-column name,
+the SELECT output name takes precedence. If no output name matches, the term is
+resolved as a source column as before.
+
+Multiple ordering terms are evaluated from left to right; each term honors
+`ASC` or `DESC`, and stable sorting preserves input order when all terms compare
+equal. Sorting remains in memory after filtering and projection evaluation.
