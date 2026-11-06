@@ -148,7 +148,7 @@ private:
            isKeyword("ON") || isKeyword("WHERE") || isKeyword("GROUP") ||
            isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
            isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
-           isKeyword("UNION");
+           isKeyword("UNION") || isKeyword("CROSS");
   }
 
   SqlParseResult parseCreateTable() {
@@ -748,8 +748,38 @@ private:
       join.right = std::get<ColumnReference>(std::move(right));
       statement.innerJoins.push_back(std::move(join));
     }
+    if (matchKeyword("CROSS")) {
+      if (!statement.innerJoins.empty()) {
+        return unsupported("Mixing CROSS JOIN and INNER JOIN is not supported");
+      }
+      if (!expectKeyword("JOIN")) {
+        return syntaxError("Expected JOIN after CROSS");
+      }
+      if (current().kind != TokenKind::Identifier) {
+        return syntaxError("Expected joined table name after CROSS JOIN");
+      }
+      CrossJoinClause join;
+      join.tableName = current().text;
+      ++position_;
+      if (matchKeyword("AS")) {
+        if (current().kind != TokenKind::Identifier ||
+            isReservedTableAliasKeyword()) {
+          return syntaxError("Expected table alias after AS");
+        }
+        join.tableAlias = current().text;
+        ++position_;
+      } else if (current().kind == TokenKind::Identifier &&
+                 !isReservedTableAliasKeyword()) {
+        join.tableAlias = current().text;
+        ++position_;
+      }
+      statement.crossJoin = std::move(join);
+      if (isKeyword("CROSS") || isKeyword("INNER")) {
+        return unsupported("Only one CROSS JOIN is supported per SELECT");
+      }
+    }
     if (isKeyword("JOIN"))
-      return unsupported("Only explicit INNER JOIN syntax is supported");
+      return unsupported("Only explicit INNER JOIN or CROSS JOIN syntax is supported");
 
     if (matchKeyword("WHERE")) {
       auto expression = parseWhereOrExpression();
