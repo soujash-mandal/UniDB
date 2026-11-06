@@ -393,6 +393,131 @@ private:
     return expression;
   }
 
+  std::variant<IntegerExpression, SqlParseError> parseIntegerPrimary() {
+    if (match(TokenKind::LeftParen)) {
+      if (++expressionNestingDepth_ > 128) {
+        --expressionNestingDepth_;
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Integer expression nesting exceeds 128 levels"};
+      }
+      auto expression = parseIntegerAdditive();
+      --expressionNestingDepth_;
+      if (std::holds_alternative<SqlParseError>(expression)) {
+        return std::get<SqlParseError>(std::move(expression));
+      }
+      if (!expect(TokenKind::RightParen)) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected ')' to close integer expression"};
+      }
+      return std::get<IntegerExpression>(std::move(expression));
+    }
+    if (match(TokenKind::Minus)) {
+      if (current().kind != TokenKind::Integer) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected integer literal after '-'"};
+      }
+      const std::string text = "-" + current().text;
+      ++position_;
+      std::int64_t value{};
+      const auto conversion =
+          std::from_chars(text.data(), text.data() + text.size(), value);
+      if (conversion.ec == std::errc::result_out_of_range) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Integer literal is out of range"};
+      }
+      IntegerExpression expression;
+      expression.literal = value;
+      return expression;
+    }
+    if (current().kind == TokenKind::Integer) {
+      const auto &text = current().text;
+      std::int64_t value{};
+      const auto conversion =
+          std::from_chars(text.data(), text.data() + text.size(), value);
+      ++position_;
+      if (conversion.ec == std::errc::result_out_of_range) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Integer literal is out of range"};
+      }
+      IntegerExpression expression;
+      expression.literal = value;
+      return expression;
+    }
+    if (current().kind == TokenKind::Identifier) {
+      auto reference = parseColumnReference(false);
+      if (std::holds_alternative<SqlParseError>(reference)) {
+        return std::get<SqlParseError>(std::move(reference));
+      }
+      const auto &column = std::get<ColumnReference>(reference);
+      IntegerExpression expression;
+      expression.kind = IntegerExpression::Kind::Column;
+      expression.columnName = column.tableName.has_value()
+                                  ? *column.tableName + "." + column.columnName
+                                  : column.columnName;
+      return expression;
+    }
+    return SqlParseError{SqlParseErrorCode::SyntaxError,
+                         "Expected an integer literal, column, or '('"};
+  }
+
+  std::variant<IntegerExpression, SqlParseError> parseIntegerMultiplicative() {
+    auto first = parseIntegerPrimary();
+    if (std::holds_alternative<SqlParseError>(first)) {
+      return std::get<SqlParseError>(std::move(first));
+    }
+    auto expression = std::get<IntegerExpression>(std::move(first));
+    while (current().kind == TokenKind::Star ||
+           current().kind == TokenKind::Slash) {
+      const auto operation = current().kind == TokenKind::Star
+                                 ? IntegerBinaryOperator::Multiply
+                                 : IntegerBinaryOperator::Divide;
+      ++position_;
+      auto next = parseIntegerPrimary();
+      if (std::holds_alternative<SqlParseError>(next)) {
+        return std::get<SqlParseError>(std::move(next));
+      }
+      IntegerExpression parent;
+      parent.kind = IntegerExpression::Kind::Binary;
+      parent.operation = operation;
+      parent.left = std::make_shared<IntegerExpression>(std::move(expression));
+      parent.right = std::make_shared<IntegerExpression>(
+          std::get<IntegerExpression>(std::move(next)));
+      expression = std::move(parent);
+    }
+    return expression;
+  }
+
+  std::variant<IntegerExpression, SqlParseError> parseIntegerAdditive() {
+    auto first = parseIntegerMultiplicative();
+    if (std::holds_alternative<SqlParseError>(first)) {
+      return std::get<SqlParseError>(std::move(first));
+    }
+    auto expression = std::get<IntegerExpression>(std::move(first));
+    while (current().kind == TokenKind::Plus ||
+           current().kind == TokenKind::Minus) {
+      const auto operation = current().kind == TokenKind::Plus
+                                 ? IntegerBinaryOperator::Add
+                                 : IntegerBinaryOperator::Subtract;
+      ++position_;
+      auto next = parseIntegerMultiplicative();
+      if (std::holds_alternative<SqlParseError>(next)) {
+        return std::get<SqlParseError>(std::move(next));
+      }
+      IntegerExpression parent;
+      parent.kind = IntegerExpression::Kind::Binary;
+      parent.operation = operation;
+      parent.left = std::make_shared<IntegerExpression>(std::move(expression));
+      parent.right = std::make_shared<IntegerExpression>(
+          std::get<IntegerExpression>(std::move(next)));
+      expression = std::move(parent);
+    }
+    return expression;
+  }
+
+  std::variant<IntegerExpression, SqlParseError> parseIntegerExpression() {
+    return parseIntegerAdditive();
+  }
+
   SqlParseResult parseSelect() {
     ++position_; // SELECT
     SelectStatement statement;
@@ -409,9 +534,12 @@ private:
         return syntaxError("SELECT * cannot have a column alias");
       }
     } else {
-      if (current().kind != TokenKind::Identifier) {
-        return syntaxError(
-            "Expected '*', aggregate, CASE, or column name after SELECT");
+      if (current().kind != TokenKind::Identifier &&
+          current().kind != TokenKind::Integer &&
+          current().kind != TokenKind::LeftParen &&
+          current().kind != TokenKind::Minus) {
+        return syntaxError("Expected '*', aggregate, CASE, column, or integer "
+                           "expression after SELECT");
       }
       while (true) {
         if (isAggregateStart()) {
@@ -432,16 +560,21 @@ private:
           statement.columnNames.emplace_back();
           statement.caseExpressions.push_back(
               std::get<CaseExpression>(std::move(caseExpression)));
+          statement.integerExpressions.push_back(std::nullopt);
         } else {
-          auto reference = parseColumnReference(false);
-          if (std::holds_alternative<SqlParseError>(reference)) {
-            return std::get<SqlParseError>(std::move(reference));
+          auto expression = parseIntegerExpression();
+          if (std::holds_alternative<SqlParseError>(expression)) {
+            return std::get<SqlParseError>(std::move(expression));
           }
-          const auto &column = std::get<ColumnReference>(reference);
-          statement.columnNames.push_back(column.tableName.has_value()
-                                              ? *column.tableName + "." +
-                                                    column.columnName
-                                              : column.columnName);
+          auto parsedExpression =
+              std::get<IntegerExpression>(std::move(expression));
+          if (parsedExpression.kind == IntegerExpression::Kind::Column) {
+            statement.columnNames.push_back(parsedExpression.columnName);
+            statement.integerExpressions.push_back(std::nullopt);
+          } else {
+            statement.columnNames.emplace_back();
+            statement.integerExpressions.push_back(std::move(parsedExpression));
+          }
           statement.caseExpressions.push_back(std::nullopt);
         }
         std::optional<std::string> alias;
@@ -916,6 +1049,7 @@ private:
   const std::vector<Token> &tokens_;
   std::size_t position_{0};
   std::size_t whereNestingDepth_{0};
+  std::size_t expressionNestingDepth_{0};
 };
 
 } // namespace

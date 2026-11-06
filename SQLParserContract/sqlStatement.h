@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <variant>
@@ -100,6 +101,18 @@ struct CaseExpression {
   SqlValue elseResult;
 };
 
+enum class IntegerBinaryOperator { Add, Subtract, Multiply, Divide };
+
+struct IntegerExpression {
+  enum class Kind { Literal, Column, Binary };
+  Kind kind{Kind::Literal};
+  std::int64_t literal{0};
+  std::string columnName;
+  IntegerBinaryOperator operation{IntegerBinaryOperator::Add};
+  std::shared_ptr<IntegerExpression> left;
+  std::shared_ptr<IntegerExpression> right;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
@@ -108,6 +121,8 @@ struct SelectStatement {
   std::vector<std::optional<std::string>> columnAliases;
   // Parallel to columnNames; a value means the item is a CASE expression.
   std::vector<std::optional<CaseExpression>> caseExpressions;
+  // Parallel to columnNames; populated for computed integer expressions.
+  std::vector<std::optional<IntegerExpression>> integerExpressions;
   bool distinct{false};
   std::optional<AggregateExpression> aggregate;
   std::vector<std::string> groupBy;
