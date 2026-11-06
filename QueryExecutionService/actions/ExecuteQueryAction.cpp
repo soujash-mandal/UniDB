@@ -21,7 +21,6 @@ using unidb::sql::CreateTableStatement;
 using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
 using unidb::sql::SelectStatement;
-using unidb::sql::CaseExpression;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
