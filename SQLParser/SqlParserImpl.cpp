@@ -65,8 +65,8 @@ public:
           if (const auto *error = std::get_if<SqlParseError>(&nextResult)) {
             return *error;
           }
-          const auto *nextSelect = std::get_if<SelectStatement>(
-              &std::get<SqlStatement>(nextResult));
+          const auto *nextSelect =
+              std::get_if<SelectStatement>(&std::get<SqlStatement>(nextResult));
           if (nextSelect == nullptr) {
             return syntaxError("UNION ALL requires SELECT branches");
           }

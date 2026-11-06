@@ -10,8 +10,8 @@
 
 TEST(ExecuteQueryActionUnionAllTest, CombinesRowsAndPreservesDuplicates) {
   FakeQesRdbServicePort port;
-  const std::vector<unidb::sql::SqlType> types{
-      unidb::sql::SqlType::Int, unidb::sql::SqlType::Text};
+  const std::vector<unidb::sql::SqlType> types{unidb::sql::SqlType::Int,
+                                               unidb::sql::SqlType::Text};
   port.rows.push_back(
       SqlTupleCodec::encode(types, {std::int64_t{7}, std::string("Ada")}));
   port.rows.push_back(
@@ -19,9 +19,9 @@ TEST(ExecuteQueryActionUnionAllTest, CombinesRowsAndPreservesDuplicates) {
 
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
-  const auto outcome = action.execute(
-      "SELECT name FROM people WHERE id = 7 "
-      "UNION ALL SELECT name FROM people WHERE id = 7;");
+  const auto outcome =
+      action.execute("SELECT name FROM people WHERE id = 7 "
+                     "UNION ALL SELECT name FROM people WHERE id = 7;");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(

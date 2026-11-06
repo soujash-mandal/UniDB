@@ -807,8 +807,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               std::get_if<QueryExecutionError>(&branchOutcome)) {
         return *error;
       }
-      const auto &branchResult =
-          std::get<QueryExecutionResult>(branchOutcome);
+      const auto &branchResult = std::get<QueryExecutionResult>(branchOutcome);
       if (branchResult.kind != QueryExecutionResultKind::Rows) {
         throw std::invalid_argument("UNION ALL branches must return rows");
       }
