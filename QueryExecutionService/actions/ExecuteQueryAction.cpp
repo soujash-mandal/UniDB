@@ -1331,8 +1331,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
       if (select->distinct) {
         throw std::invalid_argument(
-            "Grouped aggregate SELECT cannot be combined with DISTINCT, "
-            "ORDER BY, LIMIT, or OFFSET");
+            "Grouped aggregate SELECT cannot be combined with DISTINCT");
       }
       if (select->columnNames != select->groupBy) {
         throw std::invalid_argument(
