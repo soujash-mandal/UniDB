@@ -16,8 +16,7 @@ TEST(ExecuteQueryActionTest, ExecutesInnerJoinProjectionAfterProjectionStage) {
           result));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(result);
-  EXPECT_EQ(rows.kind,
-            QueryExecutionService::QueryExecutionResultKind::Rows);
+  EXPECT_EQ(rows.kind, QueryExecutionService::QueryExecutionResultKind::Rows);
   ASSERT_EQ(rows.columns.size(), 1U);
   EXPECT_EQ(rows.columns[0].name, "users.id");
   EXPECT_TRUE(rows.rows.empty());
