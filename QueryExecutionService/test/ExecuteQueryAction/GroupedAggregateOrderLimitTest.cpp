@@ -8,8 +8,8 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
   FakeQesRdbServicePort port;
   port.schema = {{"department", unidb::sql::SqlType::Text},
                  {"salary", unidb::sql::SqlType::Int}};
-  const auto types = std::vector<unidb::sql::SqlType>{
-      unidb::sql::SqlType::Text, unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{10}}),
       SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{20}}),
@@ -22,8 +22,9 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
   const auto outcome =
       action.execute("SELECT department, SUM(salary) AS payroll FROM employees "
                      "GROUP BY department ORDER BY payroll DESC;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 3U);
@@ -40,18 +41,18 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
   port.schema = {{"department", unidb::sql::SqlType::Text},
                  {"level", unidb::sql::SqlType::Int},
                  {"salary", unidb::sql::SqlType::Int}};
-  const auto types = std::vector<unidb::sql::SqlType>{
-      unidb::sql::SqlType::Text, unidb::sql::SqlType::Int,
-      unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
-      SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{1},
-                                    std::int64_t{10}}),
-      SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{1},
-                                    std::int64_t{20}}),
-      SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{2},
-                                    std::int64_t{30}}),
-      SqlTupleCodec::encode(types, {std::string("sales"), std::int64_t{1},
-                                    std::int64_t{40}})};
+      SqlTupleCodec::encode(
+          types, {std::string("eng"), std::int64_t{1}, std::int64_t{10}}),
+      SqlTupleCodec::encode(
+          types, {std::string("eng"), std::int64_t{1}, std::int64_t{20}}),
+      SqlTupleCodec::encode(
+          types, {std::string("eng"), std::int64_t{2}, std::int64_t{30}}),
+      SqlTupleCodec::encode(
+          types, {std::string("sales"), std::int64_t{1}, std::int64_t{40}})};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -59,8 +60,9 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
       action.execute("SELECT department, level, COUNT(*) AS total "
                      "FROM employees GROUP BY department, level "
                      "ORDER BY employees.department ASC, total DESC;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 3U);
@@ -77,8 +79,8 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
   FakeQesRdbServicePort port;
   port.schema = {{"department", unidb::sql::SqlType::Text},
                  {"salary", unidb::sql::SqlType::Int}};
-  const auto types = std::vector<unidb::sql::SqlType>{
-      unidb::sql::SqlType::Text, unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{10}}),
       SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{20}}),
@@ -92,8 +94,9 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
       action.execute("SELECT department, SUM(salary) AS payroll FROM employees "
                      "GROUP BY department ORDER BY payroll DESC "
                      "LIMIT 1 OFFSET 1;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 1U);
@@ -112,8 +115,9 @@ TEST(ExecuteQueryActionGroupedOrderLimitTest,
   const auto outcome =
       action.execute("SELECT department, COUNT(*) FROM employees "
                      "GROUP BY department OFFSET 1;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
                   .rows.empty());
 }

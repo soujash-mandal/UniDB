@@ -1284,9 +1284,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         select->tableAlias.value_or(select->tableName);
     if (select->groupBy.empty()) {
       for (const auto &order : select->orderBy) {
-        const auto alias = std::find_if(
-            selectedColumns.begin(), selectedColumns.end(),
-            [&](const auto &column) { return column.name == order.columnName; });
+        const auto alias =
+            std::find_if(selectedColumns.begin(), selectedColumns.end(),
+                         [&](const auto &column) {
+                           return column.name == order.columnName;
+                         });
         if (alias != selectedColumns.end()) {
           const auto projectionIndex = static_cast<std::size_t>(
               std::distance(selectedColumns.begin(), alias));
@@ -1315,7 +1317,6 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
         orderIndexes.push_back({orderIndex, order.ascending, false});
       }
-
     }
 
     std::optional<std::size_t> aggregateIndex;
@@ -1422,9 +1423,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           ")");
       groupedOrderIndexes.reserve(select->orderBy.size());
       for (const auto &order : select->orderBy) {
-        const auto projected = std::find_if(
-            selectedColumns.begin(), selectedColumns.end(),
-            [&](const auto &column) { return column.name == order.columnName; });
+        const auto projected =
+            std::find_if(selectedColumns.begin(), selectedColumns.end(),
+                         [&](const auto &column) {
+                           return column.name == order.columnName;
+                         });
         if (projected != selectedColumns.end()) {
           groupedOrderIndexes.push_back(
               {static_cast<std::size_t>(
@@ -1441,18 +1444,16 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         const auto normalizedOrderColumn =
             normalizeSingleTableColumnName(order.columnName, tableQualifier);
         const auto groupIndex = std::find_if(
-            groupIndexes.begin(), groupIndexes.end(),
-            [&](const auto index) {
+            groupIndexes.begin(), groupIndexes.end(), [&](const auto index) {
               return schema[index].name == normalizedOrderColumn;
             });
         if (groupIndex == groupIndexes.end()) {
           throw std::invalid_argument("Unknown GROUP BY ORDER BY column: " +
                                       order.columnName);
         }
-        groupedOrderIndexes.push_back(
-            {static_cast<std::size_t>(
-                 std::distance(groupIndexes.begin(), groupIndex)),
-             order.ascending});
+        groupedOrderIndexes.push_back({static_cast<std::size_t>(std::distance(
+                                           groupIndexes.begin(), groupIndex)),
+                                       order.ascending});
       }
     }
 
@@ -1603,15 +1604,13 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             });
       }
 
-      const std::size_t offset =
-          select->offset > result.rows.size()
-              ? result.rows.size()
-              : static_cast<std::size_t>(select->offset);
+      const std::size_t offset = select->offset > result.rows.size()
+                                     ? result.rows.size()
+                                     : static_cast<std::size_t>(select->offset);
       if (offset > 0) {
         result.rows.erase(result.rows.begin(), result.rows.begin() + offset);
       }
-      if (select->limit.has_value() &&
-          *select->limit < result.rows.size()) {
+      if (select->limit.has_value() && *select->limit < result.rows.size()) {
         result.rows.resize(static_cast<std::size_t>(*select->limit));
       }
       return result;
