@@ -63,9 +63,9 @@ TEST(SqlParserJoinTest, RejectsMalformedInnerJoinClauses) {
 
 TEST(SqlParserJoinTest, ParsesTableAliasesWithAndWithoutAs) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT u.id FROM users AS u INNER JOIN orders o "
-      "ON u.id = o.user_id");
+  const auto result =
+      parser.parse("SELECT u.id FROM users AS u INNER JOIN orders o "
+                   "ON u.id = o.user_id");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
@@ -83,9 +83,9 @@ TEST(SqlParserJoinTest, ParsesTableAliasesWithAndWithoutAs) {
 
 TEST(SqlParserJoinTest, RejectsMissingAliasAfterAs) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT * FROM users AS",
-           "SELECT * FROM users INNER JOIN orders AS ON users.id = orders.id"}) {
+  for (const auto *sql :
+       {"SELECT * FROM users AS",
+        "SELECT * FROM users INNER JOIN orders AS ON users.id = orders.id"}) {
     EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
         << sql;
   }

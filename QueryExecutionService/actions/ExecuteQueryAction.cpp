@@ -350,8 +350,7 @@ void validateInnerJoinColumns(
   const auto &join = *select.innerJoin;
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
-  const std::string rightQualifier =
-      join.tableAlias.value_or(join.tableName);
+  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
   if (leftQualifier == rightQualifier) {
     throw std::invalid_argument("JOIN table aliases must be distinct");
   }
@@ -361,10 +360,10 @@ void validateInnerJoinColumns(
         "Joining a table to itself requires distinct table aliases");
   }
 
-  const auto leftKey = resolveJoinColumn(
-      join.left, leftQualifier, leftSchema, rightQualifier, rightSchema);
-  const auto rightKey = resolveJoinColumn(
-      join.right, leftQualifier, leftSchema, rightQualifier, rightSchema);
+  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
+                                         rightQualifier, rightSchema);
+  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
+                                          rightQualifier, rightSchema);
   if (leftKey.tableName == rightKey.tableName) {
     throw std::invalid_argument(
         "INNER JOIN ON must compare columns from both tables");
@@ -475,7 +474,7 @@ resolveWhereJoinColumn(const std::string &name,
 }
 
 std::string normalizeSingleTableColumnName(const std::string &name,
-                                         const std::string &tableQualifier) {
+                                           const std::string &tableQualifier) {
   const auto separator = name.find('.');
   if (separator == std::string::npos) {
     return name;
@@ -543,14 +542,13 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   const auto &join = *select.innerJoin;
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
-  const std::string rightQualifier =
-      join.tableAlias.value_or(join.tableName);
+  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
   const auto leftTypes = schemaTypes(leftSchema);
   const auto rightTypes = schemaTypes(rightSchema);
-  const auto leftKey = resolveJoinColumn(
-      join.left, leftQualifier, leftSchema, rightQualifier, rightSchema);
-  const auto rightKey = resolveJoinColumn(
-      join.right, leftQualifier, leftSchema, rightQualifier, rightSchema);
+  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
+                                         rightQualifier, rightSchema);
+  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
+                                          rightQualifier, rightSchema);
   const std::size_t leftKeyIndex =
       leftKey.tableName == leftQualifier ? leftKey.index : rightKey.index;
   const std::size_t rightKeyIndex =

@@ -94,11 +94,11 @@ private:
   bool expect(TokenKind kind) { return match(kind); }
 
   bool isReservedTableAliasKeyword() const {
-    return isKeyword("AS") || isKeyword("INNER") ||
-           isKeyword("JOIN") || isKeyword("ON") || isKeyword("WHERE") ||
-           isKeyword("GROUP") || isKeyword("HAVING") || isKeyword("ORDER") ||
-           isKeyword("LIMIT") || isKeyword("OFFSET") || isKeyword("ASC") ||
-           isKeyword("DESC") || isKeyword("UNION");
+    return isKeyword("AS") || isKeyword("INNER") || isKeyword("JOIN") ||
+           isKeyword("ON") || isKeyword("WHERE") || isKeyword("GROUP") ||
+           isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
+           isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
+           isKeyword("UNION");
   }
 
   SqlParseResult parseCreateTable() {

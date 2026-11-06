@@ -251,7 +251,8 @@ TEST(ExecuteQueryActionJoinResolutionTest, ResolvesTableAliasesInJoinAndWhere) {
   EXPECT_EQ(fixture.port.selectCalls, 2U);
 }
 
-TEST(ExecuteQueryActionJoinResolutionTest, SupportsSelfJoinWithDistinctAliases) {
+TEST(ExecuteQueryActionJoinResolutionTest,
+     SupportsSelfJoinWithDistinctAliases) {
   JoinResolutionFixture fixture;
 
   const auto result = fixture.execute(
@@ -284,7 +285,6 @@ TEST(ExecuteQueryActionJoinResolutionTest,
       std::get<QueryExecutionService::QueryExecutionResult>(result);
   ASSERT_EQ(rows.columns.size(), 1U);
   EXPECT_EQ(rows.columns[0].name, "id");
-  EXPECT_EQ(fixture.port.schemaRequests,
-            (std::vector<std::string>{"users"}));
+  EXPECT_EQ(fixture.port.schemaRequests, (std::vector<std::string>{"users"}));
   EXPECT_EQ(fixture.port.selectCalls, 1U);
 }
