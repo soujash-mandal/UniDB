@@ -46,8 +46,8 @@ TEST(SqlParserIntegerExpressionTest, ParsesIntegerLiteralExpressions) {
 
 TEST(SqlParserIntegerExpressionTest, ParsesUnaryPositiveAndNegativeOperators) {
   SqlParserImpl parser;
-  const auto result =
-      parser.parse("SELECT +id, -(id + 1), --5, -9223372036854775808 FROM users");
+  const auto result = parser.parse(
+      "SELECT +id, -(id + 1), --5, -9223372036854775808 FROM users");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
@@ -66,7 +66,8 @@ TEST(SqlParserIntegerExpressionTest, ParsesUnaryPositiveAndNegativeOperators) {
             std::numeric_limits<std::int64_t>::min());
 }
 
-TEST(SqlParserIntegerExpressionTest, RejectsUnaryOperatorOverflowAndMalformedInput) {
+TEST(SqlParserIntegerExpressionTest,
+     RejectsUnaryOperatorOverflowAndMalformedInput) {
   SqlParserImpl parser;
   for (const auto *sql : {
            "SELECT + FROM users",

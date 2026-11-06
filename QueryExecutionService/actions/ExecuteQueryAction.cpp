@@ -21,8 +21,8 @@ using unidb::sql::CreateTableStatement;
 using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
 using unidb::sql::IntegerBinaryOperator;
-using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::IntegerExpression;
+using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
@@ -538,9 +538,9 @@ compileIntegerExpression(const IntegerExpression &expression,
       throw std::invalid_argument("Malformed unary integer expression");
     }
     compiled.unaryOperation = expression.unaryOperation;
-    compiled.operand = std::make_shared<CompiledIntegerExpression>(
-        compileIntegerExpression(*expression.operand, schema, types,
-                                 tableQualifier));
+    compiled.operand =
+        std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+            *expression.operand, schema, types, tableQualifier));
     return compiled;
   }
   if (!expression.left || !expression.right) {
@@ -569,8 +569,7 @@ evaluateIntegerExpression(const std::vector<SqlValue> &row,
     if (!expression.operand) {
       throw std::invalid_argument("Malformed unary integer expression");
     }
-    const auto operand =
-        evaluateIntegerExpression(row, *expression.operand);
+    const auto operand = evaluateIntegerExpression(row, *expression.operand);
     if (expression.unaryOperation == IntegerUnaryOperator::Positive) {
       return operand;
     }

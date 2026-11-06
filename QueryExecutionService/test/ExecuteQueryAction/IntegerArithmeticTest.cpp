@@ -120,8 +120,8 @@ TEST(ExecuteQueryActionIntegerArithmeticTest, RejectsNegationOfInt64Minimum) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT -(-9223372036854775808) FROM people");
+  const auto outcome =
+      action.execute("SELECT -(-9223372036854775808) FROM people");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
