@@ -487,6 +487,13 @@ private:
         OrderByColumn order;
         order.columnName = current().text;
         ++position_;
+        if (match(TokenKind::Dot)) {
+          if (current().kind != TokenKind::Identifier) {
+            return syntaxError("Expected column name after ORDER BY qualifier");
+          }
+          order.columnName += "." + current().text;
+          ++position_;
+        }
         if (matchKeyword("ASC")) {
           order.ascending = true;
         } else if (matchKeyword("DESC")) {
