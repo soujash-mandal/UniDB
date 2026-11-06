@@ -142,7 +142,7 @@ struct SelectStatement {
   std::optional<HavingExpression> having;
   std::string tableName;
   std::optional<std::string> tableAlias;
-  std::optional<InnerJoinClause> innerJoin;
+  std::vector<InnerJoinClause> innerJoins;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
   std::vector<OrderByColumn> orderBy;

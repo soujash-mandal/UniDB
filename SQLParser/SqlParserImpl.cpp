@@ -694,21 +694,18 @@ private:
       ++position_;
     }
 
-    if (matchKeyword("INNER")) {
-      if (!expectKeyword("JOIN")) {
+    while (matchKeyword("INNER")) {
+      if (!expectKeyword("JOIN"))
         return syntaxError("Expected JOIN after INNER");
-      }
-      if (current().kind != TokenKind::Identifier) {
+      if (current().kind != TokenKind::Identifier)
         return syntaxError("Expected joined table name after INNER JOIN");
-      }
       InnerJoinClause join;
       join.tableName = current().text;
       ++position_;
       if (matchKeyword("AS")) {
         if (current().kind != TokenKind::Identifier ||
-            isReservedTableAliasKeyword()) {
+            isReservedTableAliasKeyword())
           return syntaxError("Expected table alias after AS");
-        }
         join.tableAlias = current().text;
         ++position_;
       } else if (current().kind == TokenKind::Identifier &&
@@ -716,13 +713,11 @@ private:
         join.tableAlias = current().text;
         ++position_;
       }
-      if (!expectKeyword("ON")) {
+      if (!expectKeyword("ON"))
         return syntaxError("Expected ON after joined table name");
-      }
       auto left = parseColumnReference(true);
-      if (std::holds_alternative<SqlParseError>(left)) {
+      if (std::holds_alternative<SqlParseError>(left))
         return std::get<SqlParseError>(std::move(left));
-      }
       join.left = std::get<ColumnReference>(std::move(left));
       switch (current().kind) {
       case TokenKind::Equals:
@@ -748,14 +743,13 @@ private:
       }
       ++position_;
       auto right = parseColumnReference(true);
-      if (std::holds_alternative<SqlParseError>(right)) {
+      if (std::holds_alternative<SqlParseError>(right))
         return std::get<SqlParseError>(std::move(right));
-      }
       join.right = std::get<ColumnReference>(std::move(right));
-      statement.innerJoin = std::move(join);
-    } else if (isKeyword("JOIN")) {
-      return unsupported("Only explicit INNER JOIN syntax is supported");
+      statement.innerJoins.push_back(std::move(join));
     }
+    if (isKeyword("JOIN"))
+      return unsupported("Only explicit INNER JOIN syntax is supported");
 
     if (matchKeyword("WHERE")) {
       auto expression = parseWhereOrExpression();
