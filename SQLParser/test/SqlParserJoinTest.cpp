@@ -81,6 +81,19 @@ TEST(SqlParserJoinTest, ParsesTableAliasesWithAndWithoutAs) {
   EXPECT_EQ(*select.innerJoin->right.tableName, "o");
 }
 
+TEST(SqlParserJoinTest, ParsesQualifiedOrderByColumn) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT u.id FROM users u ORDER BY u.id DESC");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(select.orderBy.size(), 1U);
+  EXPECT_EQ(select.orderBy[0].columnName, "u.id");
+  EXPECT_FALSE(select.orderBy[0].ascending);
+}
+
 TEST(SqlParserJoinTest, RejectsMissingAliasAfterAs) {
   SqlParserImpl parser;
   for (const auto *sql :
