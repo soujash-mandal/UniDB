@@ -58,6 +58,9 @@ evaluateIntegerExpression(const std::vector<SqlValue> &row,
     }
     return -operand;
   }
+  if (!expression.left || !expression.right) {
+    throw std::invalid_argument("Malformed integer arithmetic expression");
+  }
   const auto left = evaluateIntegerExpression(row, *expression.left);
   const auto right = evaluateIntegerExpression(row, *expression.right);
   std::int64_t result{};

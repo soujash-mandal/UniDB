@@ -290,8 +290,6 @@ std::string normalizeSingleTableColumnName(const std::string &name,
   return name.substr(separator + 1);
 }
 
-
-
 domain::CompiledTextFunction
 compileTextFunction(const TextFunctionExpression &expression,
                     const std::vector<ColumnDefinition> &schema,
@@ -313,7 +311,9 @@ compileTextFunction(const TextFunctionExpression &expression,
                                 expression.columnName);
   }
   return {expression.function, index};
-}std::string textFunctionName(TextFunction function) {
+}
+
+std::string textFunctionName(TextFunction function) {
   switch (function) {
   case TextFunction::Upper:
     return "UPPER";
@@ -324,8 +324,6 @@ compileTextFunction(const TextFunctionExpression &expression,
   }
   throw std::invalid_argument("Unknown scalar text function");
 }
-
-
 
 domain::CompiledIntegerExpression
 compileIntegerExpression(const IntegerExpression &expression,
@@ -378,7 +376,9 @@ compileIntegerExpression(const IntegerExpression &expression,
       std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
           *expression.right, schema, types, tableQualifier));
   return compiled;
-}WhereExpression
+}
+
+WhereExpression
 normalizeSingleTableWhereColumns(const WhereExpression &expression,
                                  const std::string &tableName) {
   WhereExpression normalized = expression;
