@@ -733,12 +733,6 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
   const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
-  if (leftQualifier == rightQualifier ||
-      (select.tableName == join.tableName && !select.tableAlias &&
-       !join.tableAlias)) {
-    throw std::invalid_argument(
-        "CROSS JOIN of the same table requires distinct aliases");
-  }
   const auto leftTypes = schemaTypes(leftSchema);
   const auto rightTypes = schemaTypes(rightSchema);
   const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
@@ -894,6 +888,15 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
                  const std::vector<ColumnDefinition> &leftSchema,
                  const std::vector<ColumnDefinition> &rightSchema) {
   const auto &join = *select.crossJoin;
+  const std::string leftQualifier =
+      select.tableAlias.value_or(select.tableName);
+  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
+  if (leftQualifier == rightQualifier ||
+      (select.tableName == join.tableName && !select.tableAlias &&
+       !join.tableAlias)) {
+    throw std::invalid_argument(
+        "CROSS JOIN of the same table requires distinct aliases");
+  }
   if (select.aggregate || !select.groupBy.empty() || select.having ||
       select.distinct || !select.orderBy.empty() || select.limit ||
       select.offset != 0 ||
