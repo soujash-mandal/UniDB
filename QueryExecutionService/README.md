@@ -18,3 +18,6 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 - `SqlTupleCodec` — encodes and decodes V1 INT/TEXT values in tuple storage format.
 
 QES must not depend directly on CatalogService, TupleService, BufferPoolManager, or DiskManager.
+
+
+Grouped aggregate SELECT now supports in-memory `ORDER BY` on projected grouping columns and the aggregate output alias, including multiple ASC/DESC terms. `LIMIT` and `OFFSET` are applied after HAVING and ordering. `DISTINCT` remains unsupported for grouped aggregate queries.

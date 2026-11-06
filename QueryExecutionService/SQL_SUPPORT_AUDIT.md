@@ -103,3 +103,8 @@ this first increment.
 ## ORDER BY projection aliases (SIM-77 PR 8a)
 
 ORDER BY can resolve a SELECT output name before resolving a source-column name. This includes explicit aliases and default output names for computed projections. QES evaluates each projection once per filtered row, then sorts using the projected value for alias terms and the decoded source value for ordinary column terms. Multiple terms retain left-to-right priority and stable ordering. This remains an in-memory operation over rows read through the existing public RDB SELECT Action; no RDBService or storage changes are involved. Direct expression syntax inside ORDER BY is not included in this alias-focused increment.
+
+
+## Grouped aggregate ORDER BY / LIMIT / OFFSET (SIM-77 follow-up)
+
+Grouped aggregate queries can order by projected grouping columns or the aggregate output alias. Multiple terms support ASC/DESC and stable tie ordering. LIMIT and OFFSET are applied after HAVING and sorting. DISTINCT remains unsupported. The implementation operates only on QES result rows produced from the existing RDB public SELECT Action; no storage or RDBService changes are required.
