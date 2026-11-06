@@ -3,7 +3,6 @@
 #include "../adapter/SqlTupleCodec.h"
 
 #include <algorithm>
-#include <cctype>
 #include <limits>
 #include <map>
 #include <optional>
