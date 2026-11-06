@@ -109,8 +109,8 @@ set(UNIDB_SOURCES
     RdbService/adapter/AllocateNextTableIdAdapter.cpp
     RdbService/adapter/GetCatalogRootPageIdAdapter.cpp
 
-    QueryExecutionService/parser/SqlLexer.cpp
-    QueryExecutionService/parser/SqlParserImpl.cpp
+    QueryExecutionService/domain/parser/SqlLexer.cpp
+    QueryExecutionService/domain/parser/SqlParserImpl.cpp
     CatalogService/actions/GetTableByNameAction.cpp
     CatalogService/actions/UpdateTableAction.cpp
 )
@@ -237,16 +237,16 @@ add_executable(tests
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp
-    QueryExecutionService/parser/test/SqlParserStatementTest.cpp
-    QueryExecutionService/parser/test/SqlParserWhereTest.cpp
-    QueryExecutionService/parser/test/SqlParserSelectClauseTest.cpp
-    QueryExecutionService/parser/test/SqlParserAggregateTest.cpp
-    QueryExecutionService/parser/test/SqlParserGroupByTest.cpp
-    QueryExecutionService/parser/test/SqlParserJoinTest.cpp
-    QueryExecutionService/parser/test/SqlParserUnionTest.cpp
-    QueryExecutionService/parser/test/SqlParserCaseTest.cpp
-    QueryExecutionService/parser/test/SqlParserIntegerExpressionTest.cpp
-    QueryExecutionService/parser/test/SqlParserTextFunctionTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserStatementTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserWhereTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserSelectClauseTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserAggregateTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserGroupByTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserJoinTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserUnionTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserCaseTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserIntegerExpressionTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserTextFunctionTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
