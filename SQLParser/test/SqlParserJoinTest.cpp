@@ -63,3 +63,33 @@ TEST(SqlParserJoinTest, RejectsMalformedInnerJoinClauses) {
 
 } // namespace
 } // namespace unidb::sql
+
+TEST(SqlParserJoinTest, ParsesTableAliasesWithAndWithoutAs) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT u.id FROM users AS u INNER JOIN orders o "
+      "ON u.id = o.user_id");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_TRUE(select.tableAlias.has_value());
+  EXPECT_EQ(*select.tableAlias, "u");
+  ASSERT_TRUE(select.innerJoin.has_value());
+  ASSERT_TRUE(select.innerJoin->tableAlias.has_value());
+  EXPECT_EQ(*select.innerJoin->tableAlias, "o");
+  ASSERT_TRUE(select.innerJoin->left.tableName.has_value());
+  EXPECT_EQ(*select.innerJoin->left.tableName, "u");
+  ASSERT_TRUE(select.innerJoin->right.tableName.has_value());
+  EXPECT_EQ(*select.innerJoin->right.tableName, "o");
+}
+
+TEST(SqlParserJoinTest, RejectsMissingAliasAfterAs) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT * FROM users AS",
+           "SELECT * FROM users INNER JOIN orders AS ON users.id = orders.id"}) {
+    EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
+        << sql;
+  }
+}
