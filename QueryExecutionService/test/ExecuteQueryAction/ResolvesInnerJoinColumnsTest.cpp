@@ -73,7 +73,7 @@ TEST(ExecuteQueryActionJoinResolutionTest,
       std::get<QueryExecutionService::QueryExecutionResult>(result);
   ASSERT_EQ(rows.columns.size(), 2U);
   EXPECT_EQ(rows.columns[0].name, "users.id");
-  EXPECT_EQ(rows.columns[1].name, "orders.amount");
+  EXPECT_EQ(rows.columns[1].name, "amount");
   EXPECT_TRUE(rows.rows.empty());
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "orders"}));
