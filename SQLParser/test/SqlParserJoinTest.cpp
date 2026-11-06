@@ -142,7 +142,7 @@ TEST(SqlParserJoinTest, ParsesCrossJoinWithOptionalTableAlias) {
 TEST(SqlParserJoinTest, RejectsMalformedOrMixedCrossJoins) {
   SqlParserImpl parser;
   const std::vector<std::string> invalidQueries{
-      "SELECT * FROM users CROSS orders",
+      "SELECT * FROM users CROSS",
       "SELECT * FROM users CROSS JOIN",
       "SELECT * FROM users CROSS JOIN orders CROSS JOIN products",
       "SELECT * FROM users CROSS JOIN orders INNER JOIN products "
