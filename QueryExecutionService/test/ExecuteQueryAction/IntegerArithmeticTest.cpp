@@ -87,3 +87,51 @@ TEST(ExecuteQueryActionIntegerArithmeticTest,
           outcome));
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+TEST(ExecuteQueryActionIntegerArithmeticTest, EvaluatesUnaryOperators) {
+  FakeQesRdbServicePort port;
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{7}, std::string("user")}));
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT +id, -id, -(id + 1), --id FROM people");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome))
+      << (std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+              outcome)
+              ? std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                    .message
+              : "Unexpected query outcome");
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 1U);
+  ASSERT_EQ(result.rows[0].size(), 4U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 7);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), -7);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][2]), -8);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][3]), 7);
+}
+
+TEST(ExecuteQueryActionIntegerArithmeticTest, RejectsNegationOfInt64Minimum) {
+  FakeQesRdbServicePort port;
+  port.rows.push_back(SqlTupleCodec::encode(
+      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
+      {std::int64_t{1}, std::string("user")}));
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT -(-9223372036854775808) FROM people");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("negation exceeds INT64 range"),
+            std::string::npos);
+}

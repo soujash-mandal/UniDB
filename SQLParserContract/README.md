@@ -181,3 +181,14 @@ not supported by the current value model. CASE expressions can be mixed with
 ordinary projected columns and may have an AS output alias. CASE with JOIN and
 SELECT DISTINCT is not supported yet. Evaluation is performed in memory after
 the existing RDB SELECT action returns rows; WHERE filtering occurs first.
+
+
+## Unary integer operators
+
+Integer projection expressions support unary plus and minus. Unary operators
+bind more tightly than multiplication and division, and may be repeated
+(e.g. `--value`). Unary plus leaves the operand unchanged. Unary minus
+negates the operand and returns a query execution error if negating
+`INT64_MIN` would exceed the signed 64-bit range. The literal
+`-9223372036854775808` is accepted as the minimum signed 64-bit value;
+positive literals outside the signed 64-bit range are rejected.

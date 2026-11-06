@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <limits>
+
 #include <variant>
 
 namespace unidb::sql {
@@ -39,6 +42,42 @@ TEST(SqlParserIntegerExpressionTest, ParsesIntegerLiteralExpressions) {
   ASSERT_TRUE(select.integerExpressions[0].has_value());
   EXPECT_EQ(select.integerExpressions[0]->operation,
             IntegerBinaryOperator::Subtract);
+}
+
+TEST(SqlParserIntegerExpressionTest, ParsesUnaryPositiveAndNegativeOperators) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT +id, -(id + 1), --5, -9223372036854775808 FROM users");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(select.integerExpressions.size(), 4U);
+  ASSERT_TRUE(select.integerExpressions[0].has_value());
+  EXPECT_EQ(select.integerExpressions[0]->kind, IntegerExpression::Kind::Unary);
+  EXPECT_EQ(select.integerExpressions[0]->unaryOperation,
+            IntegerUnaryOperator::Positive);
+  ASSERT_TRUE(select.integerExpressions[1].has_value());
+  EXPECT_EQ(select.integerExpressions[1]->unaryOperation,
+            IntegerUnaryOperator::Negative);
+  ASSERT_TRUE(select.integerExpressions[2].has_value());
+  EXPECT_EQ(select.integerExpressions[2]->kind, IntegerExpression::Kind::Unary);
+  EXPECT_EQ(select.integerExpressions[3]->literal,
+            std::numeric_limits<std::int64_t>::min());
+}
+
+TEST(SqlParserIntegerExpressionTest,
+     RejectsUnaryOperatorOverflowAndMalformedInput) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT + FROM users",
+           "SELECT - FROM users",
+           "SELECT +9223372036854775808 FROM users",
+           "SELECT -9223372036854775809 FROM users",
+       }) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+  }
 }
 
 TEST(SqlParserIntegerExpressionTest, RejectsMalformedAndOutOfRangeExpressions) {

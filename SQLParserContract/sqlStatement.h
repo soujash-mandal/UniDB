@@ -102,13 +102,16 @@ struct CaseExpression {
 };
 
 enum class IntegerBinaryOperator { Add, Subtract, Multiply, Divide };
+enum class IntegerUnaryOperator { Positive, Negative };
 
 struct IntegerExpression {
-  enum class Kind { Literal, Column, Binary };
+  enum class Kind { Literal, Column, Unary, Binary };
   Kind kind{Kind::Literal};
   std::int64_t literal{0};
   std::string columnName;
   IntegerBinaryOperator operation{IntegerBinaryOperator::Add};
+  IntegerUnaryOperator unaryOperation{IntegerUnaryOperator::Positive};
+  std::shared_ptr<IntegerExpression> operand;
   std::shared_ptr<IntegerExpression> left;
   std::shared_ptr<IntegerExpression> right;
 };

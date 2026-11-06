@@ -22,6 +22,7 @@ using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
 using unidb::sql::IntegerBinaryOperator;
 using unidb::sql::IntegerExpression;
+using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
@@ -496,6 +497,8 @@ struct CompiledIntegerExpression {
   std::int64_t literal{0};
   std::size_t columnIndex{0};
   IntegerBinaryOperator operation{IntegerBinaryOperator::Add};
+  IntegerUnaryOperator unaryOperation{IntegerUnaryOperator::Positive};
+  std::shared_ptr<CompiledIntegerExpression> operand;
   std::shared_ptr<CompiledIntegerExpression> left;
   std::shared_ptr<CompiledIntegerExpression> right;
 };
@@ -530,6 +533,16 @@ compileIntegerExpression(const IntegerExpression &expression,
     compiled.columnIndex = index;
     return compiled;
   }
+  if (expression.kind == IntegerExpression::Kind::Unary) {
+    if (!expression.operand) {
+      throw std::invalid_argument("Malformed unary integer expression");
+    }
+    compiled.unaryOperation = expression.unaryOperation;
+    compiled.operand =
+        std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+            *expression.operand, schema, types, tableQualifier));
+    return compiled;
+  }
   if (!expression.left || !expression.right) {
     throw std::invalid_argument("Malformed integer arithmetic expression");
   }
@@ -551,6 +564,19 @@ evaluateIntegerExpression(const std::vector<SqlValue> &row,
   }
   if (expression.kind == IntegerExpression::Kind::Column) {
     return std::get<std::int64_t>(row.at(expression.columnIndex));
+  }
+  if (expression.kind == IntegerExpression::Kind::Unary) {
+    if (!expression.operand) {
+      throw std::invalid_argument("Malformed unary integer expression");
+    }
+    const auto operand = evaluateIntegerExpression(row, *expression.operand);
+    if (expression.unaryOperation == IntegerUnaryOperator::Positive) {
+      return operand;
+    }
+    if (operand == std::numeric_limits<std::int64_t>::min()) {
+      throw std::invalid_argument("Integer negation exceeds INT64 range");
+    }
+    return -operand;
   }
   const auto left = evaluateIntegerExpression(row, *expression.left);
   const auto right = evaluateIntegerExpression(row, *expression.right);
@@ -1053,7 +1079,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           const auto alias = itemIndex < select->columnAliases.size()
                                  ? select->columnAliases[itemIndex]
                                  : std::optional<std::string>{};
-          selectedColumns.push_back({alias.value_or("EXPR"), SqlType::Int});
+          selectedColumns.push_back(
+              {alias.value_or("EXPR" + std::to_string(itemIndex + 1)),
+               SqlType::Int});
           compiledCases.push_back(std::nullopt);
           compiledIntegers.push_back(compiled);
           continue;
