@@ -228,3 +228,8 @@ resolved as a source column as before.
 Multiple ordering terms are evaluated from left to right; each term honors
 `ASC` or `DESC`, and stable sorting preserves input order when all terms compare
 equal. Sorting remains in memory after filtering and projection evaluation.
+
+
+### INNER JOIN predicates
+
+INNER JOIN ON supports equality and the basic comparison operators `!=`, `>`, `<`, `>=`, and `<=`. Both operands must be qualified columns from the two joined tables and must have matching SQL types. Execution remains a nested-loop join with O(N × M) comparisons.
