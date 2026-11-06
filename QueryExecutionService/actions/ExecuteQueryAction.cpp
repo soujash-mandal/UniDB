@@ -1079,7 +1079,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           const auto alias = itemIndex < select->columnAliases.size()
                                  ? select->columnAliases[itemIndex]
                                  : std::optional<std::string>{};
-          selectedColumns.push_back({alias.value_or("EXPR"), SqlType::Int});
+          selectedColumns.push_back(
+              {alias.value_or("EXPR" + std::to_string(itemIndex + 1)),
+               SqlType::Int});
           compiledCases.push_back(std::nullopt);
           compiledIntegers.push_back(compiled);
           continue;
