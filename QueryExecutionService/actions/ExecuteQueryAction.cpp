@@ -1273,11 +1273,27 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           "SELECT DISTINCT cannot be combined with CASE expressions yet");
     }
 
-    std::vector<std::pair<std::size_t, bool>> orderIndexes;
+    struct OrderIndex {
+      std::size_t index;
+      bool ascending;
+      bool projected;
+    };
+    std::vector<OrderIndex> orderIndexes;
     orderIndexes.reserve(select->orderBy.size());
     const std::string tableQualifier =
         select->tableAlias.value_or(select->tableName);
     for (const auto &order : select->orderBy) {
+      const auto alias = std::find_if(
+          selectedColumns.begin(), selectedColumns.end(),
+          [&](const auto &column) { return column.name == order.columnName; });
+      if (alias != selectedColumns.end()) {
+        const auto projectionIndex = static_cast<std::size_t>(
+            std::distance(selectedColumns.begin(), alias));
+        orderIndexes.push_back(
+            {projectionIndex, order.ascending, true});
+        continue;
+      }
+
       const auto normalizedOrderColumn =
           normalizeSingleTableColumnName(order.columnName, tableQualifier);
       const auto found =
@@ -1285,7 +1301,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             return column.name == normalizedOrderColumn;
           });
       if (found == schema.end()) {
-        throw std::invalid_argument("Unknown ORDER BY column: " +
+        throw std::invalid_argument("Unknown ORDER BY column or alias: " +
                                     order.columnName);
       }
       const auto orderIndex =
@@ -1297,7 +1313,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                                     "list when DISTINCT is used: " +
                                     order.columnName);
       }
-      orderIndexes.emplace_back(orderIndex, order.ascending);
+      orderIndexes.push_back({orderIndex, order.ascending, false});
     }
 
     std::optional<std::size_t> aggregateIndex;
@@ -1607,36 +1623,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           matchedRows.end());
     }
 
-    if (!orderIndexes.empty()) {
-      std::stable_sort(matchedRows.begin(), matchedRows.end(),
-                       [&](const auto &left, const auto &right) {
-                         for (const auto &[index, ascending] : orderIndexes) {
-                           const int comparison =
-                               compareSqlValues(left[index], right[index]);
-                           if (comparison != 0) {
-                             return ascending ? comparison < 0 : comparison > 0;
-                           }
-                         }
-                         return false;
-                       });
-    }
-
-    const std::size_t offset = select->offset > matchedRows.size()
-                                   ? matchedRows.size()
-                                   : static_cast<std::size_t>(select->offset);
-    if (offset > 0) {
-      matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
-    }
-    if (select->limit.has_value() && *select->limit < matchedRows.size()) {
-      matchedRows.resize(static_cast<std::size_t>(*select->limit));
-    }
-
-    QueryExecutionResult result;
-    result.kind = QueryExecutionResultKind::Rows;
-    result.message = "Rows selected";
-    result.columns = std::move(selectedColumns);
-    result.rows.reserve(matchedRows.size());
-    for (const auto &decoded : matchedRows) {
+    const auto projectRow = [&](const std::vector<SqlValue> &decoded) {
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
       for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
@@ -1668,8 +1655,71 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           projected.push_back(decoded[selectedIndexes[index]]);
         }
       }
-      result.rows.push_back(std::move(projected));
+      return projected;
+    };
+
+    std::vector<std::vector<SqlValue>> projectedRows;
+    projectedRows.reserve(matchedRows.size());
+    for (const auto &row : matchedRows) {
+      projectedRows.push_back(projectRow(row));
     }
+
+    if (!orderIndexes.empty()) {
+      std::vector<std::size_t> rowOrder(matchedRows.size());
+      for (std::size_t index = 0; index < rowOrder.size(); ++index) {
+        rowOrder[index] = index;
+      }
+      std::stable_sort(rowOrder.begin(), rowOrder.end(),
+                       [&](std::size_t leftIndex, std::size_t rightIndex) {
+                         for (const auto &order : orderIndexes) {
+                           const auto &left =
+                               order.projected
+                                   ? projectedRows[leftIndex][order.index]
+                                   : matchedRows[leftIndex][order.index];
+                           const auto &right =
+                               order.projected
+                                   ? projectedRows[rightIndex][order.index]
+                                   : matchedRows[rightIndex][order.index];
+                           const int comparison = compareSqlValues(left, right);
+                           if (comparison != 0) {
+                             return order.ascending ? comparison < 0
+                                                    : comparison > 0;
+                           }
+                         }
+                         return false;
+                       });
+
+      std::vector<std::vector<SqlValue>> sortedRows;
+      std::vector<std::vector<SqlValue>> sortedProjections;
+      sortedRows.reserve(matchedRows.size());
+      sortedProjections.reserve(projectedRows.size());
+      for (const auto index : rowOrder) {
+        sortedRows.push_back(std::move(matchedRows[index]));
+        sortedProjections.push_back(std::move(projectedRows[index]));
+      }
+      matchedRows = std::move(sortedRows);
+      projectedRows = std::move(sortedProjections);
+    }
+
+    const std::size_t offset = select->offset > matchedRows.size()
+                                   ? matchedRows.size()
+                                   : static_cast<std::size_t>(select->offset);
+    if (offset > 0) {
+      matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
+      projectedRows.erase(projectedRows.begin(),
+                          projectedRows.begin() + offset);
+    }
+    if (select->limit.has_value() && *select->limit < matchedRows.size()) {
+      const auto limit = static_cast<std::size_t>(*select->limit);
+      matchedRows.resize(limit);
+      projectedRows.resize(limit);
+    }
+
+    QueryExecutionResult result;
+    result.kind = QueryExecutionResultKind::Rows;
+    result.message = "Rows selected";
+    result.columns = std::move(selectedColumns);
+    result.rows = std::move(projectedRows);
     return result;
   }
 
