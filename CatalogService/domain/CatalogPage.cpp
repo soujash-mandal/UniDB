@@ -167,6 +167,20 @@ Table CatalogPage::getByName(const std::string &name) {
   throw std::runtime_error("Table not found");
 }
 
+std::vector<Table> CatalogPage::getTables() {
+  Header header;
+  std::memcpy(&header, bytes, sizeof(Header));
+  std::vector<Table> tables;
+  tables.reserve(header.tableCount);
+  for (uint32_t i = 0; i < header.tableCount; ++i) {
+    Entry entry;
+    std::memcpy(&entry, bytes + sizeof(Header) + i * sizeof(Entry), sizeof(Entry));
+    std::vector<char> payload(bytes + entry.offset, bytes + entry.offset + entry.size);
+    tables.push_back(deserializeTable(std::move(payload)));
+  }
+  return tables;
+}
+
 void CatalogPage::update(Table table) {
   std::vector<char> replacement = serializeTable(table);
   Header header;

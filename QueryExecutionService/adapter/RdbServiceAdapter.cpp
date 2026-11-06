@@ -36,10 +36,12 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
 RdbServiceAdapter::RdbServiceAdapter(
     uint32_t metadataPageId, RdbService::CreateTableAction &createTableAction,
     RdbService::GetTableDefinitionAction &getTableDefinitionAction,
+    RdbService::GetAllTableDefinitionsAction &getAllTableDefinitionsAction,
     RdbService::InsertRowAction &insertRowAction,
     RdbService::SelectAllRowsAction &selectAllRowsAction)
     : metadataPageId(metadataPageId), createTableAction(createTableAction),
       getTableDefinitionAction(getTableDefinitionAction),
+      getAllTableDefinitionsAction(getAllTableDefinitionsAction),
       insertRowAction(insertRowAction),
       selectAllRowsAction(selectAllRowsAction) {}
 
@@ -67,6 +69,14 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
     columns.push_back({column.name, fromRdbType(column.type)});
   }
   return columns;
+}
+
+std::vector<std::string> RdbServiceAdapter::listTableNames() {
+  const auto tables = getAllTableDefinitionsAction.execute(metadataPageId);
+  std::vector<std::string> names;
+  names.reserve(tables.size());
+  for (const auto &table : tables) names.push_back(table.name);
+  return names;
 }
 
 void RdbServiceAdapter::insertRow(const std::string &tableName,

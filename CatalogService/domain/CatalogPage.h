@@ -42,6 +42,7 @@ public:
   void insert(Table table);
   Table get(CatalogTableId tableId);
   Table getByName(const std::string &name);
+  std::vector<Table> getTables();
   void update(Table table);
   bool containsTableName(std::string name);
   bool containsTableId(CatalogTableId tableId);

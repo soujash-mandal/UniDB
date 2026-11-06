@@ -55,6 +55,7 @@ set(UNIDB_SOURCES
     CatalogService/actions/CreateRootCatalogPageAction.cpp
     CatalogService/actions/CreateTableAction.cpp
     CatalogService/actions/GetTableAction.cpp
+    CatalogService/actions/GetAllTablesAction.cpp
     CatalogService/actions/DropTableAction.cpp
 
     SpaceMapService/domain/SpaceMapPage.cpp
@@ -89,12 +90,14 @@ set(UNIDB_SOURCES
     RdbService/actions/InitializeRdbAction.cpp
     RdbService/actions/CreateTableAction.cpp
     RdbService/actions/GetTableDefinitionAction.cpp
+    RdbService/actions/GetAllTableDefinitionsAction.cpp
     RdbService/actions/SelectAllRowsAction.cpp
     RdbService/actions/InsertRowAction.cpp
     RdbService/adapter/CreateRdbMetadataPageAdapter.cpp
     RdbService/adapter/CreateRootCatalogPageAdapter.cpp
     RdbService/adapter/CreateCatalogTableAdapter.cpp
     RdbService/adapter/GetCatalogTableByNameAdapter.cpp
+    RdbService/adapter/GetCatalogTablesAdapter.cpp
     RdbService/adapter/UpdateCatalogTableAdapter.cpp
     RdbService/adapter/CreateSpaceMapPageAdapter.cpp
     RdbService/adapter/FindPageWithSpaceAdapter.cpp
@@ -234,6 +237,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/ParenthesizedWhereExpressionsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/ShowsTablesThroughContainerTest.cpp
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp

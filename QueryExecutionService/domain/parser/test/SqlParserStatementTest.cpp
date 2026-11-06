@@ -11,6 +11,19 @@
 namespace unidb::sql {
 namespace {
 
+TEST(SqlParserTest, ParsesShowTablesCaseInsensitively) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("show tables;");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  EXPECT_TRUE(std::holds_alternative<ShowTablesStatement>(std::get<SqlStatement>(result)));
+}
+TEST(SqlParserTest, RejectsUnsupportedShowCommand) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SHOW DATABASES;");
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code, SqlParseErrorCode::UnsupportedStatement);
+}
+
 TEST(SqlParserTest, ParsesCreateTableCaseInsensitively) {
   SqlParserImpl parser;
   const auto result = parser.parse("create TABLE users (id INT, name text);");

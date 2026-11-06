@@ -21,6 +21,7 @@ public:
   std::vector<unidb::sql::ColumnDefinition> createdColumns;
   std::vector<char> insertedBytes;
   std::vector<std::vector<char>> rows;
+  std::vector<std::string> tableNames{"people"};
   bool fail = false;
   uint32_t failOnInsertCall = 0;
   uint32_t commitThenFailOnInsertCall = 0;
@@ -45,6 +46,11 @@ public:
       throw std::runtime_error("fake RDB failure");
     }
     return schema;
+  }
+
+  std::vector<std::string> listTableNames() override {
+    if (fail) throw std::runtime_error("fake RDB failure");
+    return tableNames;
   }
 
   void insertRow(const std::string &name,

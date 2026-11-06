@@ -23,6 +23,7 @@ public:
   createTable(const unidb::sql::CreateTableStatement &statement) = 0;
   virtual std::vector<unidb::sql::ColumnDefinition>
   getTableDefinition(const std::string &tableName) = 0;
+  virtual std::vector<std::string> listTableNames() = 0;
   virtual void insertRow(const std::string &tableName,
                          const std::vector<char> &tupleBytes) = 0;
   virtual std::vector<std::vector<char>>

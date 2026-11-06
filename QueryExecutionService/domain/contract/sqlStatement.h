@@ -23,6 +23,8 @@ struct CreateTableStatement {
   std::vector<ColumnDefinition> columns;
 };
 
+struct ShowTablesStatement {};
+
 struct InsertStatement {
   std::string tableName;
   std::vector<std::string> columnNames;
@@ -167,7 +169,8 @@ struct UnionStatement {
 };
 
 using SqlStatement =
-    std::variant<CreateTableStatement, InsertStatement, SelectStatement,
+    std::variant<CreateTableStatement, InsertStatement, ShowTablesStatement,
+                 SelectStatement,
                  UnionAllStatement, UnionStatement>;
 
 } // namespace unidb::sql

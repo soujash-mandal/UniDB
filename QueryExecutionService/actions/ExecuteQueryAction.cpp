@@ -27,6 +27,7 @@ using unidb::sql::IntegerBinaryOperator;
 using unidb::sql::IntegerExpression;
 using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SelectStatement;
+using unidb::sql::ShowTablesStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
@@ -1015,6 +1016,16 @@ QueryExecutionOutcome ExecuteQueryAction::execute(std::string_view sql) const {
 
 QueryExecutionOutcome
 ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
+  if (std::holds_alternative<ShowTablesStatement>(statement)) {
+    QueryExecutionResult result;
+    result.kind = QueryExecutionResultKind::Rows;
+    result.message = "Tables listed";
+    result.columns.push_back({"table_name", SqlType::Text});
+    for (const auto &name : rdbServicePort.listTableNames())
+      result.rows.push_back({SqlValue{name}});
+    return result;
+  }
+
   if (const auto *create = std::get_if<CreateTableStatement>(&statement)) {
     if (create->columns.empty()) {
       throw std::invalid_argument("CREATE TABLE requires at least one column");

@@ -39,6 +39,7 @@
 #include "../CatalogService/actions/CreateRootCatalogPageAction.h"
 #include "../CatalogService/actions/CreateTableAction.h"
 #include "../CatalogService/actions/GetTableByNameAction.h"
+#include "../CatalogService/actions/GetAllTablesAction.h"
 #include "../CatalogService/actions/UpdateTableAction.h"
 #include "../CatalogService/adapter/BufferPoolFetchPageAdapter.h"
 #include "../CatalogService/adapter/BufferPoolNewPageAdapter.h"
@@ -52,6 +53,7 @@
 
 #include "../RdbService/actions/CreateTableAction.h"
 #include "../RdbService/actions/GetTableDefinitionAction.h"
+#include "../RdbService/actions/GetAllTableDefinitionsAction.h"
 #include "../RdbService/actions/InitializeRdbAction.h"
 #include "../RdbService/actions/InsertRowAction.h"
 #include "../RdbService/actions/SelectAllRowsAction.h"
@@ -66,6 +68,7 @@
 #include "../RdbService/adapter/GetAllTuplesAdapter.h"
 #include "../RdbService/adapter/GetCatalogRootPageIdAdapter.h"
 #include "../RdbService/adapter/GetCatalogTableByNameAdapter.h"
+#include "../RdbService/adapter/GetCatalogTablesAdapter.h"
 #include "../RdbService/adapter/GetTablePagesAdapter.h"
 #include "../RdbService/adapter/UpdateCatalogTableAdapter.h"
 #include "../RdbService/adapter/UpdateFreeSpaceAdapter.h"
@@ -166,6 +169,7 @@ private:
 
   CreateTableAction createTable;
   GetTableByNameAction getTableByName;
+  GetAllTablesAction getAllTables;
   UpdateTableAction updateTable;
 
   TupleBufferPoolFetchPageAdapter tupleFetchPageAdapter;
@@ -188,8 +192,10 @@ private:
   AllocateNextTableIdAdapter allocateNextTableIdAdapter;
   CreateCatalogTableAdapter createCatalogTableAdapter;
   GetCatalogTableByNameAdapter getCatalogTableByNameAdapter;
+  GetCatalogTablesAdapter getCatalogTablesAdapter;
   RdbService::CreateTableAction rdbCreateTable;
   RdbService::GetTableDefinitionAction rdbGetTableDefinition;
+  RdbService::GetAllTableDefinitionsAction rdbGetAllTableDefinitions;
 
   CreateTuplePageAction createTuplePage;
   CreateTupleAction createTuple;

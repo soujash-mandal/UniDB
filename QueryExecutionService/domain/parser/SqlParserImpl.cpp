@@ -39,7 +39,9 @@ public:
     }
 
     SqlParseResult result = syntaxError("Expected a supported SQL statement");
-    if (isKeyword("CREATE")) {
+    if (isKeyword("SHOW")) {
+      result = parseShowTables();
+    } else if (isKeyword("CREATE")) {
       result = parseCreateTable();
     } else if (isKeyword("INSERT")) {
       result = parseInsert();
@@ -149,6 +151,12 @@ private:
            isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
            isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
            isKeyword("UNION") || isKeyword("CROSS");
+  }
+
+  SqlParseResult parseShowTables() {
+    ++position_; // SHOW
+    if (!expectKeyword("TABLES")) return unsupported("Only SHOW TABLES is supported");
+    return SqlStatement{ShowTablesStatement{}};
   }
 
   SqlParseResult parseCreateTable() {
