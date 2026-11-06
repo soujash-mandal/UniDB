@@ -50,9 +50,12 @@ struct InnerJoinFixture {
     port.schemas["users"] = {{"id", SqlType::Int}, {"name", SqlType::Text}};
     port.schemas["orders"] = {{"id", SqlType::Int},
                               {"user_id", SqlType::Int},
+                              {"product_id", SqlType::Int},
                               {"amount", SqlType::Int}};
+    port.schemas["products"] = {{"id", SqlType::Int}, {"name", SqlType::Text}};
     port.rows["users"] = {};
     port.rows["orders"] = {};
+    port.rows["products"] = {};
   }
 
   void addUser(std::int64_t id, std::string name) {
@@ -64,7 +67,21 @@ struct InnerJoinFixture {
   void addOrder(std::int64_t id, std::int64_t userId, std::int64_t amount) {
     port.rows["orders"].push_back(SqlTupleCodec::encode(
         {SqlType::Int, SqlType::Int, SqlType::Int},
-        {SqlValue{id}, SqlValue{userId}, SqlValue{amount}}));
+        {SqlValue{id}, SqlValue{userId}, SqlValue{std::int64_t{0}}, SqlValue{amount}}));
+  }
+
+
+  void addOrderWithProduct(std::int64_t id, std::int64_t userId,
+                           std::int64_t productId, std::int64_t amount) {
+    port.rows["orders"].push_back(SqlTupleCodec::encode(
+        {SqlType::Int, SqlType::Int, SqlType::Int, SqlType::Int},
+        {SqlValue{id}, SqlValue{userId}, SqlValue{productId}, SqlValue{amount}}));
+  }
+
+  void addProduct(std::int64_t id, std::string name) {
+    port.rows["products"].push_back(SqlTupleCodec::encode(
+        {SqlType::Int, SqlType::Text},
+        {SqlValue{id}, SqlValue{std::move(name)}}));
   }
 
   QueryExecutionService::QueryExecutionOutcome execute(std::string_view sql) {
