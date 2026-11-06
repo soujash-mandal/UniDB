@@ -566,7 +566,8 @@ private:
       if (current().kind != TokenKind::Identifier &&
           current().kind != TokenKind::Integer &&
           current().kind != TokenKind::LeftParen &&
-          current().kind != TokenKind::Minus) {
+          current().kind != TokenKind::Minus &&
+          current().kind != TokenKind::Plus) {
         return syntaxError("Expected '*', aggregate, CASE, column, or integer "
                            "expression after SELECT");
       }
