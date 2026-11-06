@@ -795,7 +795,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
   if (const auto *unionAll = std::get_if<UnionAllStatement>(&statement)) {
     if (unionAll->selects.size() < 2) {
-      throw std::invalid_argument("UNION ALL requires at least two SELECT branches");
+      throw std::invalid_argument(
+          "UNION ALL requires at least two SELECT branches");
     }
 
     QueryExecutionResult combined;
@@ -823,7 +824,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               "UNION ALL branches must return the same number of columns");
         }
         for (std::size_t index = 0; index < combined.columns.size(); ++index) {
-          if (branchResult.columns[index].type != combined.columns[index].type) {
+          if (branchResult.columns[index].type !=
+              combined.columns[index].type) {
             throw std::invalid_argument(
                 "UNION ALL columns must have matching types at each position");
           }
