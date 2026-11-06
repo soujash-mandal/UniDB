@@ -43,9 +43,8 @@ TEST(ExecuteQueryActionUnionTest, RejectsDifferentColumnCounts) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome =
-      action.execute("SELECT id FROM people UNION "
-                     "SELECT id, name FROM people;");
+  const auto outcome = action.execute("SELECT id FROM people UNION "
+                                      "SELECT id, name FROM people;");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
