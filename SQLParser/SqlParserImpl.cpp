@@ -778,8 +778,10 @@ private:
         return unsupported("Only one CROSS JOIN is supported per SELECT");
       }
     }
-    if (isKeyword("JOIN"))
-      return unsupported("Only explicit INNER JOIN or CROSS JOIN syntax is supported");
+    if (isKeyword("JOIN")) {
+      return unsupported(
+          "Only explicit INNER JOIN or CROSS JOIN syntax is supported");
+    }
 
     if (matchKeyword("WHERE")) {
       auto expression = parseWhereOrExpression();
