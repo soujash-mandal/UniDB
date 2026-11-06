@@ -57,8 +57,8 @@ Move both modules under QES, but preserve two separate responsibilities and use 
 
 ### Proposed final layout
 
-- `QueryExecutionService/contract/sqlParser.h`
-- `QueryExecutionService/contract/sqlStatement.h`
+- `QueryExecutionService/domain/contract/sqlParser.h`
+- `QueryExecutionService/domain/contract/sqlStatement.h`
 - `QueryExecutionService/domain/parser/SqlLexer.h`
 - `QueryExecutionService/domain/parser/SqlLexer.cpp`
 - `QueryExecutionService/domain/parser/SqlParserImpl.h`
@@ -125,6 +125,11 @@ For implementation PRs:
 The final ownership decision places the SQL parser implementation inside QES domain:
 
 - `QueryExecutionService/domain/parser/` owns the lexer, parser implementation, and parser unit tests.
-- `QueryExecutionService/contract/` remains separate and owns the parser interface and typed SQL statement/value representations.
+- `QueryExecutionService/domain/contract/` owns the parser interface and typed SQL statement/value representations.
 - Parser code remains infrastructure-independent: it may depend on the parser contract and standard C++ only; it must not access database services, Actions, ports, adapters, the Container, or storage.
 - The parser belongs under `domain/` as an infrastructure-independent part of QES, while retaining a distinct `parser/` subfolder because syntax analysis is a separate responsibility from predicate, expression, and aggregate semantics.
+
+
+## 8. Contract placement decision
+
+The parser contract is part of QES domain because its interface and typed SQL statement/value representations are infrastructure-independent. The final layout is `domain/contract/` for the parser interface and typed representations, `domain/parser/` for the lexer/parser implementation and parser tests, and `actions/` for query execution orchestration. The parser implementation depends on the domain contract. Neither contract nor parser accesses database services, storage, adapters, or the Container.

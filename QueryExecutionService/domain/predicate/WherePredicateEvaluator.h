@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../contract/sqlStatement.h"
+#include "../contract/sqlStatement.h"
 
 #include <cstddef>
 #include <vector>

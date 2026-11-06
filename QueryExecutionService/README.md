@@ -30,8 +30,8 @@ The parser is responsible for SQL syntax; the other domain components implement 
 
 ## Parser contract
 
-- `contract/` contains the parser interface and typed SQL statement/value representations.
-- The implementation under `domain/parser/` depends on that contract. Neither the contract nor parser implementation executes queries or accesses database services.
+- `domain/contract/` contains the parser interface and typed SQL statement/value representations.
+- The implementation under `domain/parser/` depends on `domain/contract/`. Neither the contract nor parser implementation executes queries or accesses database services.
 
 ## Service boundary
 
