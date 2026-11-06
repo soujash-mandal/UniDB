@@ -838,7 +838,6 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     return combined;
   }
 
-
   if (const auto *unionDistinct = std::get_if<UnionStatement>(&statement)) {
     if (unionDistinct->selects.size() < 2) {
       throw std::invalid_argument(
