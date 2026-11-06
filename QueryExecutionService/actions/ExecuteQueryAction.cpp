@@ -361,8 +361,9 @@ compileIntegerExpression(const IntegerExpression &expression,
     }
     compiled.unaryOperation = expression.unaryOperation;
     compiled.operand =
-        std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
-            *expression.operand, schema, types, tableQualifier));
+        std::make_shared<domain::CompiledIntegerExpression>(
+            compileIntegerExpression(*expression.operand, schema, types,
+                                     tableQualifier));
     return compiled;
   }
   if (!expression.left || !expression.right) {
@@ -370,11 +371,13 @@ compileIntegerExpression(const IntegerExpression &expression,
   }
   compiled.operation = expression.operation;
   compiled.left =
-      std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
-          *expression.left, schema, types, tableQualifier));
+      std::make_shared<domain::CompiledIntegerExpression>(
+          compileIntegerExpression(*expression.left, schema, types,
+                                   tableQualifier));
   compiled.right =
-      std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
-          *expression.right, schema, types, tableQualifier));
+      std::make_shared<domain::CompiledIntegerExpression>(
+          compileIntegerExpression(*expression.right, schema, types,
+                                   tableQualifier));
   return compiled;
 }
 
@@ -1240,8 +1243,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     std::vector<ColumnDefinition> selectedColumns;
     std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
         compiledCases;
-    std::vector<std::optional<domain::CompiledIntegerExpression>> compiledIntegers;
-    std::vector<std::optional<domain::CompiledTextFunction>> compiledTextFunctions;
+    std::vector<std::optional<domain::CompiledIntegerExpression>>
+        compiledIntegers;
+    std::vector<std::optional<domain::CompiledTextFunction>>
+        compiledTextFunctions;
     if (select->aggregate.has_value() && select->groupBy.empty()) {
       // Ungrouped aggregate queries produce a single computed output column.
     } else if (select->selectAll) {
@@ -1850,11 +1855,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         if (index < compiledTextFunctions.size() &&
             compiledTextFunctions[index].has_value()) {
           projected.push_back(
-              evaluateTextFunction(decoded, *compiledTextFunctions[index]));
+              domain::evaluateTextFunction(decoded, *compiledTextFunctions[index]));
         } else if (index < compiledIntegers.size() &&
                    compiledIntegers[index].has_value()) {
           projected.push_back(
-              evaluateIntegerExpression(decoded, *compiledIntegers[index]));
+              domain::evaluateIntegerExpression(decoded, *compiledIntegers[index]));
         } else if (index < compiledCases.size() &&
                    compiledCases[index].has_value()) {
           const auto &caseExpression = *select->caseExpressions[index];
