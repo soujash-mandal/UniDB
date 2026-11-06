@@ -56,7 +56,7 @@ TEST(SqlAggregateCalculatorTest, CalculatesSumAndTruncatedIntegerAverage) {
             5);
 
   const std::vector<SqlValue> negativeValues{std::int64_t{-4},
-                                            std::int64_t{-3}};
+                                             std::int64_t{-3}};
   EXPECT_EQ(std::get<std::int64_t>(
                 calculateAggregate(AggregateFunction::Avg, negativeValues, 2)),
             -3);
@@ -65,15 +65,13 @@ TEST(SqlAggregateCalculatorTest, CalculatesSumAndTruncatedIntegerAverage) {
 TEST(SqlAggregateCalculatorTest, RejectsSumOverflow) {
   const std::vector<SqlValue> positiveOverflow{
       std::numeric_limits<std::int64_t>::max(), std::int64_t{1}};
-  EXPECT_THROW(
-      calculateAggregate(AggregateFunction::Sum, positiveOverflow, 2),
-      std::invalid_argument);
+  EXPECT_THROW(calculateAggregate(AggregateFunction::Sum, positiveOverflow, 2),
+               std::invalid_argument);
 
   const std::vector<SqlValue> negativeOverflow{
       std::numeric_limits<std::int64_t>::min(), std::int64_t{-1}};
-  EXPECT_THROW(
-      calculateAggregate(AggregateFunction::Sum, negativeOverflow, 2),
-      std::invalid_argument);
+  EXPECT_THROW(calculateAggregate(AggregateFunction::Sum, negativeOverflow, 2),
+               std::invalid_argument);
 }
 
 TEST(SqlAggregateCalculatorTest, RejectsNonCountAggregatesOnEmptyInput) {
