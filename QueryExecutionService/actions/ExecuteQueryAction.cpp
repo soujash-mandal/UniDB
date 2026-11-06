@@ -24,11 +24,11 @@ using unidb::sql::IntegerBinaryOperator;
 using unidb::sql::IntegerExpression;
 using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SelectStatement;
-using unidb::sql::TextFunction;
-using unidb::sql::TextFunctionExpression;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
+using unidb::sql::TextFunction;
+using unidb::sql::TextFunctionExpression;
 using unidb::sql::UnionAllStatement;
 using unidb::sql::UnionStatement;
 using unidb::sql::WhereEquals;
@@ -1645,7 +1645,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           projected.push_back(
               evaluateTextFunction(decoded, *compiledTextFunctions[index]));
         } else if (index < compiledIntegers.size() &&
-            compiledIntegers[index].has_value()) {
+                   compiledIntegers[index].has_value()) {
           projected.push_back(
               evaluateIntegerExpression(decoded, *compiledIntegers[index]));
         } else if (index < compiledCases.size() &&

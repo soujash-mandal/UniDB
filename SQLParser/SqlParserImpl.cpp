@@ -307,8 +307,7 @@ private:
     return reference;
   }
 
-  std::variant<TextFunctionExpression, SqlParseError>
-  parseTextFunction() {
+  std::variant<TextFunctionExpression, SqlParseError> parseTextFunction() {
     const auto name = upper(current().text);
     ++position_;
     if (!expect(TokenKind::LeftParen)) {
@@ -328,9 +327,9 @@ private:
                            "Expected ')' after text function argument"};
     }
     TextFunctionExpression expression;
-    expression.function = name == "UPPER" ? TextFunction::Upper
+    expression.function = name == "UPPER"   ? TextFunction::Upper
                           : name == "LOWER" ? TextFunction::Lower
-                                             : TextFunction::Length;
+                                            : TextFunction::Length;
     const auto &column = std::get<ColumnReference>(reference);
     expression.columnName = column.tableName.has_value()
                                 ? *column.tableName + "." + column.columnName

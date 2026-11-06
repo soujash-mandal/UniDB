@@ -9,9 +9,9 @@ namespace {
 
 TEST(SqlParserTextFunctionTest, ParsesSupportedTextFunctionsAndAliases) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT UPPER(name) AS upper_name, LOWER(users.name), "
-      "LENGTH(name) AS name_size FROM users");
+  const auto result =
+      parser.parse("SELECT UPPER(name) AS upper_name, LOWER(users.name), "
+                   "LENGTH(name) AS name_size FROM users");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =

@@ -15,8 +15,8 @@ TEST(ExecuteQueryActionTextFunctionsTest, EvaluatesUpperLowerAndByteLength) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome =
-      action.execute("SELECT UPPER(name), LOWER(name), LENGTH(name) FROM people");
+  const auto outcome = action.execute(
+      "SELECT UPPER(name), LOWER(name), LENGTH(name) FROM people");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
@@ -73,4 +73,3 @@ TEST(ExecuteQueryActionTextFunctionsTest, RejectsIntegerColumnArguments) {
                 .message.find("require TEXT columns"),
             std::string::npos);
 }
-
