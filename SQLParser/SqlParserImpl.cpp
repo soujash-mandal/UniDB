@@ -52,14 +52,30 @@ public:
       if (const auto *firstSelect =
               std::get_if<SelectStatement>(&parsedStatement);
           firstSelect != nullptr && isKeyword("UNION")) {
+        const bool unionAllMode = [&]() {
+          const auto savedPosition = position_;
+          ++position_; // UNION
+          const bool hasAll = matchKeyword("ALL");
+          position_ = savedPosition;
+          return hasAll;
+        }();
         UnionAllStatement unionAll;
-        unionAll.selects.push_back(*firstSelect);
+        UnionStatement unionDistinct;
+        if (unionAllMode) {
+          unionAll.selects.push_back(*firstSelect);
+        } else {
+          unionDistinct.selects.push_back(*firstSelect);
+        }
+
         while (matchKeyword("UNION")) {
-          if (!matchKeyword("ALL")) {
-            return unsupported("Only UNION ALL is currently supported");
+          const bool nextIsAll = matchKeyword("ALL");
+          if (nextIsAll != unionAllMode) {
+            return unsupported(
+                "Mixing UNION and UNION ALL in one query is not supported");
           }
           if (!isKeyword("SELECT")) {
-            return syntaxError("Expected SELECT after UNION ALL");
+            return syntaxError(unionAllMode ? "Expected SELECT after UNION ALL"
+                                            : "Expected SELECT after UNION");
           }
           auto nextResult = parseSelect();
           if (const auto *error = std::get_if<SqlParseError>(&nextResult)) {
@@ -68,11 +84,16 @@ public:
           const auto *nextSelect =
               std::get_if<SelectStatement>(&std::get<SqlStatement>(nextResult));
           if (nextSelect == nullptr) {
-            return syntaxError("UNION ALL requires SELECT branches");
+            return syntaxError("Set operations require SELECT branches");
           }
-          unionAll.selects.push_back(*nextSelect);
+          if (unionAllMode) {
+            unionAll.selects.push_back(*nextSelect);
+          } else {
+            unionDistinct.selects.push_back(*nextSelect);
+          }
         }
-        result = SqlStatement{std::move(unionAll)};
+        result = unionAllMode ? SqlStatement{std::move(unionAll)}
+                              : SqlStatement{std::move(unionDistinct)};
       }
     } else {
       return unsupported("Statement type is outside the V1 SQL subset");
