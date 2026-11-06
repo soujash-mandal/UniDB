@@ -124,5 +124,37 @@ TEST(SqlParserJoinTest, RejectsMissingAliasAfterAs) {
   }
 }
 
+TEST(SqlParserJoinTest, ParsesCrossJoinWithOptionalTableAlias) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT u.id FROM users AS u CROSS JOIN orders o");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_TRUE(select.crossJoin.has_value());
+  EXPECT_EQ(select.crossJoin->tableName, "orders");
+  ASSERT_TRUE(select.crossJoin->tableAlias.has_value());
+  EXPECT_EQ(*select.crossJoin->tableAlias, "o");
+  EXPECT_TRUE(select.innerJoins.empty());
+}
+
+TEST(SqlParserJoinTest, RejectsMalformedOrMixedCrossJoins) {
+  SqlParserImpl parser;
+  const std::vector<std::string> invalidQueries{
+      "SELECT * FROM users "
+      "CROSS",
+      "SELECT * FROM users CROSS JOIN",
+      "SELECT * FROM users CROSS JOIN orders CROSS JOIN products",
+      "SELECT * FROM users CROSS JOIN orders INNER JOIN products "
+      "ON users.id = products.id",
+      "SELECT * FROM users INNER JOIN orders ON users.id = orders.id "
+      "CROSS JOIN products"};
+  for (const auto &sql : invalidQueries) {
+    EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
+        << sql;
+  }
+}
+
 } // namespace
 } // namespace unidb::sql

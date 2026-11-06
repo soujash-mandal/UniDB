@@ -151,6 +151,33 @@ two input tables are fetched. LEFT JOIN and non-equality join conditions remain
 unsupported.
 
 
+
+## CROSS JOIN
+
+A SELECT may contain one explicit CROSS JOIN between two tables:
+
+```sql
+SELECT u.name, o.amount
+FROM users AS u
+CROSS JOIN orders o
+WHERE u.id = 1
+```
+
+CROSS JOIN returns the Cartesian product: every row from the left input is
+paired with every row from the right input. Rows are emitted deterministically
+in left-input order, then right-input order. An empty input produces no rows.
+Qualified and unambiguous unqualified projections, projection aliases, and
+WHERE filtering are supported.
+
+The implementation fetches both inputs through the existing public RDB SELECT
+Action-backed port and evaluates the product in QES memory. To bound memory and
+execution cost, candidate products above 1,000,000 rows are rejected with a
+query execution error. The check is performed before WHERE filtering because
+the Cartesian candidate count is the resource being bounded. CROSS JOIN cannot
+currently be mixed with INNER JOIN, repeated in one SELECT, or combined with
+DISTINCT, aggregate/grouped projections, computed projections, ORDER BY, LIMIT,
+or OFFSET. It does not change RDBService or persisted data.
+
 ## UNION and UNION ALL
 
 A set-operation query contains two or more SELECT branches. Every branch is

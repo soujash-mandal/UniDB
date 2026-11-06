@@ -92,6 +92,11 @@ struct InnerJoinClause {
   ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
+struct CrossJoinClause {
+  std::string tableName;
+  std::optional<std::string> tableAlias;
+};
+
 struct CaseWhenClause {
   WhereExpression condition;
   SqlValue result;
@@ -143,6 +148,7 @@ struct SelectStatement {
   std::string tableName;
   std::optional<std::string> tableAlias;
   std::vector<InnerJoinClause> innerJoins;
+  std::optional<CrossJoinClause> crossJoin;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
   std::vector<OrderByColumn> orderBy;
