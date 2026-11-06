@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../parser/SqlParserImpl.h"
 #include "../../actions/ExecuteQueryAction.h"
+#include "../../parser/SqlParserImpl.h"
 #include "../../port/RdbServicePort.h"
 
 #include <stdexcept>
