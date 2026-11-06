@@ -61,9 +61,6 @@ TEST(SqlParserJoinTest, RejectsMalformedInnerJoinClauses) {
   }
 }
 
-} // namespace
-} // namespace unidb::sql
-
 TEST(SqlParserJoinTest, ParsesTableAliasesWithAndWithoutAs) {
   SqlParserImpl parser;
   const auto result = parser.parse(
@@ -93,3 +90,6 @@ TEST(SqlParserJoinTest, RejectsMissingAliasAfterAs) {
         << sql;
   }
 }
+
+} // namespace
+} // namespace unidb::sql
