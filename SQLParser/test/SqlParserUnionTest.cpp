@@ -39,7 +39,8 @@ TEST(SqlParserUnionTest, ParsesMultipleUnionAllBranches) {
 TEST(SqlParserUnionTest, RejectsUnionWithoutAll) {
   SqlParserImpl parser;
   const auto result =
-      parser.parse("SELECT id FROM first_table UNION SELECT id FROM second_table");
+      parser.parse("SELECT id FROM first_table UNION "
+      "SELECT id FROM second_table");
 
   ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
   EXPECT_EQ(std::get<SqlParseError>(result).code,
