@@ -911,9 +911,7 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     throw std::invalid_argument(
         "CROSS JOIN currently supports simple SELECT projections and WHERE");
   }
-  const std::string leftQualifier =
-      select.tableAlias.value_or(select.tableName);
-  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
+
   const auto leftTypes = schemaTypes(leftSchema);
   const auto rightTypes = schemaTypes(rightSchema);
   // Use fully-qualified internal names so WHERE can resolve either qualified
