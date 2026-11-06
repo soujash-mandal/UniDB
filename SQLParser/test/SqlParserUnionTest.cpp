@@ -36,14 +36,51 @@ TEST(SqlParserUnionTest, ParsesMultipleUnionAllBranches) {
   EXPECT_EQ(unionAll->selects.size(), 3U);
 }
 
-TEST(SqlParserUnionTest, RejectsUnionWithoutAll) {
+TEST(SqlParserUnionTest, ParsesUnionWithoutAll) {
   SqlParserImpl parser;
   const auto result = parser.parse(
       "SELECT id FROM first_table UNION SELECT id FROM second_table");
 
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto *unionStatement =
+      std::get_if<UnionStatement>(&std::get<SqlStatement>(result));
+  ASSERT_NE(unionStatement, nullptr);
+  ASSERT_EQ(unionStatement->selects.size(), 2U);
+  EXPECT_EQ(unionStatement->selects[0].tableName, "first_table");
+  EXPECT_EQ(unionStatement->selects[1].tableName, "second_table");
+}
+
+TEST(SqlParserUnionTest, ParsesMultipleUnionBranches) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM first_table UNION SELECT id FROM second_table "
+      "UNION SELECT id FROM third_table");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto *unionStatement =
+      std::get_if<UnionStatement>(&std::get<SqlStatement>(result));
+  ASSERT_NE(unionStatement, nullptr);
+  EXPECT_EQ(unionStatement->selects.size(), 3U);
+}
+
+TEST(SqlParserUnionTest, RejectsMixedUnionAndUnionAllBranches) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM first_table UNION SELECT id FROM second_table "
+      "UNION ALL SELECT id FROM third_table");
+
   ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
   EXPECT_EQ(std::get<SqlParseError>(result).code,
             SqlParseErrorCode::UnsupportedStatement);
+}
+
+TEST(SqlParserUnionTest, RejectsMissingSelectAfterUnion) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("SELECT id FROM first_table UNION");
+
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
 }
 
 TEST(SqlParserUnionTest, RejectsMissingSelectAfterUnionAll) {
