@@ -124,7 +124,6 @@ TEST(SqlParserJoinTest, RejectsMissingAliasAfterAs) {
   }
 }
 
-
 TEST(SqlParserJoinTest, ParsesCrossJoinWithOptionalTableAlias) {
   SqlParserImpl parser;
   const auto result =
