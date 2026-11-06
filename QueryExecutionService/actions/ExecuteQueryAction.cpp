@@ -888,6 +888,20 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
                  const std::vector<ColumnDefinition> &leftSchema,
                  const std::vector<ColumnDefinition> &rightSchema) {
   const auto &join = *select.crossJoin;
+  if (select.aggregate || !select.groupBy.empty() || select.having ||
+      select.distinct || !select.orderBy.empty() || select.limit ||
+      select.offset != 0 ||
+      !std::all_of(select.integerExpressions.begin(),
+                   select.integerExpressions.end(),
+                   [](const auto &value) { return !value.has_value(); }) ||
+      !std::all_of(select.textFunctions.begin(), select.textFunctions.end(),
+                   [](const auto &value) { return !value.has_value(); }) ||
+      !std::all_of(select.caseExpressions.begin(),
+                   select.caseExpressions.end(),
+                   [](const auto &value) { return !value.has_value(); })) {
+    throw std::invalid_argument(
+        "CROSS JOIN currently supports simple SELECT projections and WHERE");
+  }
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
   const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
@@ -1474,6 +1488,20 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
+    if (select->crossJoin.has_value()) {
+      if (!select->innerJoins.empty()) {
+        throw std::invalid_argument(
+            "Mixing CROSS JOIN and INNER JOIN is not supported");
+      }
+      const auto leftSchema =
+          rdbServicePort.getTableDefinition(select->tableName);
+      const auto rightSchema =
+          rdbServicePort.getTableDefinition(select->crossJoin->tableName);
+      schemaTypes(leftSchema);
+      schemaTypes(rightSchema);
+      return executeCrossJoin(rdbServicePort, *select, leftSchema,
+                              rightSchema);
+    }
     if (!select->innerJoins.empty()) {
       std::vector<std::vector<ColumnDefinition>> schemas;
       schemas.push_back(rdbServicePort.getTableDefinition(select->tableName));
