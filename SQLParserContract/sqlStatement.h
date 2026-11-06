@@ -120,7 +120,8 @@ struct UnionStatement {
   std::vector<SelectStatement> selects;
 };
 
-using SqlStatement = std::variant<CreateTableStatement, InsertStatement,
-                                  SelectStatement, UnionAllStatement, UnionStatement>;
+using SqlStatement =
+    std::variant<CreateTableStatement, InsertStatement, SelectStatement,
+                 UnionAllStatement, UnionStatement>;
 
 } // namespace unidb::sql
