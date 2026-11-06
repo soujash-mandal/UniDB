@@ -115,7 +115,12 @@ struct UnionAllStatement {
   std::vector<SelectStatement> selects;
 };
 
+struct UnionStatement {
+  // Each branch is evaluated independently; duplicate rows are removed.
+  std::vector<SelectStatement> selects;
+};
+
 using SqlStatement = std::variant<CreateTableStatement, InsertStatement,
-                                  SelectStatement, UnionAllStatement>;
+                                  SelectStatement, UnionAllStatement, UnionStatement>;
 
 } // namespace unidb::sql
