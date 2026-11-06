@@ -3,6 +3,7 @@
 #include "../adapter/SqlTupleCodec.h"
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <map>
 #include <optional>
@@ -923,7 +924,7 @@ QueryExecutionResult executeMultipleInnerJoins(
         const auto &sc=schemas[j+1];
         auto it=std::find_if(sc.begin(),sc.end(),[&](const auto &c){return c.name==ref.columnName;});
         if(it==sc.end()) throw std::invalid_argument("Unknown JOIN column: "+*ref.tableName+"."+ref.columnName);
-        return {0,&*it};
+        return {static_cast<std::size_t>(std::distance(sc.begin(),it)),&*it};
       }
       auto q=std::find(qualifiers.begin(),qualifiers.end(),*ref.tableName);
       if(q==qualifiers.end()) throw std::invalid_argument("Unknown JOIN table reference: "+*ref.tableName);
@@ -993,8 +994,6 @@ QueryExecutionResult executeMultipleInnerJoins(
   if(select.selectAll) {
     for(std::size_t i=0;i<combinedSchema.size();++i) {
       projection.push_back(i);
-      const auto &raw=schemas[std::distance(combinedSchema.begin(),combinedSchema.begin()+i) < 0 ? 0 : 0];
-      (void)raw;
       const auto &name=combinedSchema[i].name;
       const auto dot=name.find('.');
       const auto col=name.substr(dot+1);
