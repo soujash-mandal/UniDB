@@ -1,12 +1,12 @@
 #include "ExecuteQueryAction.h"
 
 #include "../adapter/SqlTupleCodec.h"
+#include "../domain/aggregate/SqlAggregateCalculator.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
 
 #include <algorithm>
 #include <functional>
-#include <limits>
 #include <map>
 #include <optional>
 #include <set>
@@ -1651,45 +1651,15 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       result.columns.push_back({aggregateName, aggregateType});
 
       for (const auto &[key, rows] : groups) {
-        SqlValue aggregateValue = std::int64_t{0};
-        if (aggregate.function == AggregateFunction::Count) {
-          aggregateValue = static_cast<std::int64_t>(rows.size());
-        } else {
-          if (rows.empty()) {
-            continue;
-          }
-          if (aggregate.function == AggregateFunction::Min ||
-              aggregate.function == AggregateFunction::Max) {
-            aggregateValue = (*rows.front())[*aggregateIndex];
-            for (const auto *row : rows) {
-              const int comparison = domain::compareSqlValues(
-                  (*row)[*aggregateIndex], aggregateValue);
-              if ((aggregate.function == AggregateFunction::Min &&
-                   comparison < 0) ||
-                  (aggregate.function == AggregateFunction::Max &&
-                   comparison > 0)) {
-                aggregateValue = (*row)[*aggregateIndex];
-              }
-            }
-          } else {
-            std::int64_t sum = 0;
-            for (const auto *row : rows) {
-              const auto value =
-                  std::get<std::int64_t>((*row)[*aggregateIndex]);
-              if ((value > 0 &&
-                   sum > std::numeric_limits<std::int64_t>::max() - value) ||
-                  (value < 0 &&
-                   sum < std::numeric_limits<std::int64_t>::min() - value)) {
-                throw std::invalid_argument("SUM result exceeds INT64 range");
-              }
-              sum += value;
-            }
-            if (aggregate.function == AggregateFunction::Avg) {
-              sum /= static_cast<std::int64_t>(rows.size());
-            }
-            aggregateValue = sum;
+        std::vector<SqlValue> aggregateValues;
+        if (aggregate.function != AggregateFunction::Count) {
+          aggregateValues.reserve(rows.size());
+          for (const auto *row : rows) {
+            aggregateValues.push_back((*row)[*aggregateIndex]);
           }
         }
+        SqlValue aggregateValue = domain::calculateAggregate(
+            aggregate.function, aggregateValues, rows.size());
 
         if (select->having.has_value()) {
           const int comparison =
@@ -1777,47 +1747,15 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               : SqlType::Int;
       result.columns.push_back({outputName, outputType});
 
-      if (aggregate.function == AggregateFunction::Count) {
-        result.rows.push_back({static_cast<std::int64_t>(matchedRows.size())});
-        return result;
-      }
-      if (matchedRows.empty()) {
-        throw std::invalid_argument(
-            functionName + " cannot be evaluated on an empty result set");
-      }
-
-      if (aggregate.function == AggregateFunction::Min ||
-          aggregate.function == AggregateFunction::Max) {
-        SqlValue value = matchedRows.front()[*aggregateIndex];
+      std::vector<SqlValue> aggregateValues;
+      if (aggregate.function != AggregateFunction::Count) {
+        aggregateValues.reserve(matchedRows.size());
         for (const auto &row : matchedRows) {
-          const int comparison =
-              domain::compareSqlValues(row[*aggregateIndex], value);
-          if ((aggregate.function == AggregateFunction::Min &&
-               comparison < 0) ||
-              (aggregate.function == AggregateFunction::Max &&
-               comparison > 0)) {
-            value = row[*aggregateIndex];
-          }
+          aggregateValues.push_back(row[*aggregateIndex]);
         }
-        result.rows.push_back({std::move(value)});
-        return result;
       }
-
-      std::int64_t sum = 0;
-      for (const auto &row : matchedRows) {
-        const auto value = std::get<std::int64_t>(row[*aggregateIndex]);
-        if ((value > 0 &&
-             sum > std::numeric_limits<std::int64_t>::max() - value) ||
-            (value < 0 &&
-             sum < std::numeric_limits<std::int64_t>::min() - value)) {
-          throw std::invalid_argument("SUM result exceeds INT64 range");
-        }
-        sum += value;
-      }
-      if (aggregate.function == AggregateFunction::Avg) {
-        sum /= static_cast<std::int64_t>(matchedRows.size());
-      }
-      result.rows.push_back({sum});
+      result.rows.push_back({domain::calculateAggregate(
+          aggregate.function, aggregateValues, matchedRows.size())});
       return result;
     }
 

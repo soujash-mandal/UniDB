@@ -1,0 +1,82 @@
+#include "../../domain/aggregate/SqlAggregateCalculator.h"
+
+#include <gtest/gtest.h>
+
+#include <cstdint>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace {
+using QueryExecutionService::domain::calculateAggregate;
+using unidb::sql::AggregateFunction;
+using unidb::sql::SqlValue;
+} // namespace
+
+TEST(SqlAggregateCalculatorTest, CountsRowsIncludingEmptyInput) {
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, {}, 7)),
+            7);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, {}, 0)),
+            0);
+}
+
+TEST(SqlAggregateCalculatorTest, CalculatesMinimumAndMaximumForIntegers) {
+  const std::vector<SqlValue> values{std::int64_t{8}, std::int64_t{-2},
+                                     std::int64_t{5}};
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Min, values, 3)),
+            -2);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Max, values, 3)),
+            8);
+}
+
+TEST(SqlAggregateCalculatorTest, CalculatesMinimumAndMaximumForText) {
+  const std::vector<SqlValue> values{std::string("pear"), std::string("apple"),
+                                     std::string("orange")};
+  EXPECT_EQ(std::get<std::string>(
+                calculateAggregate(AggregateFunction::Min, values, 3)),
+            "apple");
+  EXPECT_EQ(std::get<std::string>(
+                calculateAggregate(AggregateFunction::Max, values, 3)),
+            "pear");
+}
+
+TEST(SqlAggregateCalculatorTest, CalculatesSumAndTruncatedIntegerAverage) {
+  const std::vector<SqlValue> values{std::int64_t{3}, std::int64_t{8},
+                                     std::int64_t{4}};
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Sum, values, 3)),
+            15);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Avg, values, 3)),
+            5);
+
+  const std::vector<SqlValue> negativeValues{std::int64_t{-4},
+                                             std::int64_t{-3}};
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Avg, negativeValues, 2)),
+            -3);
+}
+
+TEST(SqlAggregateCalculatorTest, RejectsSumOverflow) {
+  const std::vector<SqlValue> positiveOverflow{
+      std::numeric_limits<std::int64_t>::max(), std::int64_t{1}};
+  EXPECT_THROW(calculateAggregate(AggregateFunction::Sum, positiveOverflow, 2),
+               std::invalid_argument);
+
+  const std::vector<SqlValue> negativeOverflow{
+      std::numeric_limits<std::int64_t>::min(), std::int64_t{-1}};
+  EXPECT_THROW(calculateAggregate(AggregateFunction::Sum, negativeOverflow, 2),
+               std::invalid_argument);
+}
+
+TEST(SqlAggregateCalculatorTest, RejectsNonCountAggregatesOnEmptyInput) {
+  for (const auto function : {AggregateFunction::Min, AggregateFunction::Max,
+                              AggregateFunction::Sum, AggregateFunction::Avg}) {
+    EXPECT_THROW(calculateAggregate(function, {}, 0), std::invalid_argument);
+  }
+}
