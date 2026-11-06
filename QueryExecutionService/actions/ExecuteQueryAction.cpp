@@ -1657,10 +1657,15 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       return projected;
     };
 
+    const bool ordersByProjection = std::any_of(
+        orderIndexes.begin(), orderIndexes.end(),
+        [](const auto &order) { return order.projected; });
     std::vector<std::vector<SqlValue>> projectedRows;
-    projectedRows.reserve(matchedRows.size());
-    for (const auto &row : matchedRows) {
-      projectedRows.push_back(projectRow(row));
+    if (ordersByProjection) {
+      projectedRows.reserve(matchedRows.size());
+      for (const auto &row : matchedRows) {
+        projectedRows.push_back(projectRow(row));
+      }
     }
 
     if (!orderIndexes.empty()) {
@@ -1689,13 +1694,19 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       std::vector<std::vector<SqlValue>> sortedRows;
       std::vector<std::vector<SqlValue>> sortedProjections;
       sortedRows.reserve(matchedRows.size());
-      sortedProjections.reserve(projectedRows.size());
+      if (ordersByProjection) {
+        sortedProjections.reserve(projectedRows.size());
+      }
       for (const auto index : rowOrder) {
         sortedRows.push_back(std::move(matchedRows[index]));
-        sortedProjections.push_back(std::move(projectedRows[index]));
+        if (ordersByProjection) {
+          sortedProjections.push_back(std::move(projectedRows[index]));
+        }
       }
       matchedRows = std::move(sortedRows);
-      projectedRows = std::move(sortedProjections);
+      if (ordersByProjection) {
+        projectedRows = std::move(sortedProjections);
+      }
     }
 
     const std::size_t offset = select->offset > matchedRows.size()
@@ -1703,13 +1714,23 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                                    : static_cast<std::size_t>(select->offset);
     if (offset > 0) {
       matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
-      projectedRows.erase(projectedRows.begin(),
-                          projectedRows.begin() + offset);
+      if (ordersByProjection) {
+        projectedRows.erase(projectedRows.begin(),
+                            projectedRows.begin() + offset);
+      }
     }
     if (select->limit.has_value() && *select->limit < matchedRows.size()) {
       const auto limit = static_cast<std::size_t>(*select->limit);
       matchedRows.resize(limit);
-      projectedRows.resize(limit);
+      if (ordersByProjection) {
+        projectedRows.resize(limit);
+      }
+    }
+    if (!ordersByProjection) {
+      projectedRows.reserve(matchedRows.size());
+      for (const auto &row : matchedRows) {
+        projectedRows.push_back(projectRow(row));
+      }
     }
 
     QueryExecutionResult result;
