@@ -1322,7 +1322,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
            ++itemIndex) {
         if (itemIndex < select->textFunctions.size() &&
             select->textFunctions[itemIndex].has_value()) {
-          if (select->innerJoin.has_value()) {
+          if (!select->innerJoins.empty()) {
             throw std::invalid_argument(
                 "Scalar text functions are not yet supported with JOIN");
           }
@@ -1347,7 +1347,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
         if (itemIndex < select->integerExpressions.size() &&
             select->integerExpressions[itemIndex].has_value()) {
-          if (select->innerJoin.has_value()) {
+          if (!select->innerJoins.empty()) {
             throw std::invalid_argument(
                 "Integer expressions are not yet supported with JOIN");
           }
@@ -1368,7 +1368,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
         if (itemIndex < select->caseExpressions.size() &&
             select->caseExpressions[itemIndex].has_value()) {
-          if (select->innerJoin.has_value()) {
+          if (!select->innerJoins.empty()) {
             throw std::invalid_argument(
                 "CASE expressions are not yet supported with JOIN");
           }
