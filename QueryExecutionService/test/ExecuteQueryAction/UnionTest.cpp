@@ -8,7 +8,8 @@
 #include <variant>
 #include <vector>
 
-TEST(ExecuteQueryActionUnionTest, RemovesDuplicateRowsAndPreservesFirstOccurrence) {
+TEST(ExecuteQueryActionUnionTest,
+     RemovesDuplicateRowsAndPreservesFirstOccurrence) {
   FakeQesRdbServicePort port;
   const std::vector<unidb::sql::SqlType> types{unidb::sql::SqlType::Int,
                                                unidb::sql::SqlType::Text};
@@ -43,7 +44,8 @@ TEST(ExecuteQueryActionUnionTest, RejectsDifferentColumnCounts) {
   auto action = makeQesAction(port, parser);
 
   const auto outcome =
-      action.execute("SELECT id FROM people UNION SELECT id, name FROM people;");
+      action.execute("SELECT id FROM people UNION "
+                     "SELECT id, name FROM people;");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
