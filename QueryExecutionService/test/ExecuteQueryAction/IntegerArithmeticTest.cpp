@@ -101,7 +101,12 @@ TEST(ExecuteQueryActionIntegerArithmeticTest, EvaluatesUnaryOperators) {
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-          outcome));
+          outcome))
+      << (std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+              outcome)
+              ? std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                    .message
+              : "Unexpected query outcome");
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 1U);
