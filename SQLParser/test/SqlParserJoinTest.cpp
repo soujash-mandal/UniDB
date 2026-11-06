@@ -22,14 +22,14 @@ TEST(SqlParserJoinTest, ParsesInnerJoinWithQualifiedOnColumns) {
   ASSERT_EQ(select.columnNames.size(), 2U);
   EXPECT_EQ(select.columnNames[0], "users.id");
   EXPECT_EQ(select.columnNames[1], "orders.amount");
-  ASSERT_TRUE(select.innerJoin.has_value());
-  EXPECT_EQ(select.innerJoin->tableName, "orders");
-  ASSERT_TRUE(select.innerJoin->left.tableName.has_value());
-  EXPECT_EQ(*select.innerJoin->left.tableName, "users");
-  EXPECT_EQ(select.innerJoin->left.columnName, "id");
-  ASSERT_TRUE(select.innerJoin->right.tableName.has_value());
-  EXPECT_EQ(*select.innerJoin->right.tableName, "orders");
-  EXPECT_EQ(select.innerJoin->right.columnName, "user_id");
+  ASSERT_TRUE(!select.innerJoins.empty());
+  EXPECT_EQ(select.innerJoins[0].tableName, "orders");
+  ASSERT_TRUE(select.innerJoins[0].left.tableName.has_value());
+  EXPECT_EQ(*select.innerJoins[0].left.tableName, "users");
+  EXPECT_EQ(select.innerJoins[0].left.columnName, "id");
+  ASSERT_TRUE(select.innerJoins[0].right.tableName.has_value());
+  EXPECT_EQ(*select.innerJoins[0].right.tableName, "orders");
+  EXPECT_EQ(select.innerJoins[0].right.columnName, "user_id");
 }
 
 TEST(SqlParserJoinTest, ParsesInnerJoinBeforeWhereClause) {
@@ -41,7 +41,7 @@ TEST(SqlParserJoinTest, ParsesInnerJoinBeforeWhereClause) {
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
       std::get<SelectStatement>(std::get<SqlStatement>(result));
-  ASSERT_TRUE(select.innerJoin.has_value());
+  ASSERT_TRUE(!select.innerJoins.empty());
   EXPECT_TRUE(std::holds_alternative<WhereExpression>(select.where));
 }
 
@@ -76,8 +76,8 @@ TEST(SqlParserJoinTest, ParsesNonEqualityJoinComparisons) {
     ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << op;
     const auto &select =
         std::get<SelectStatement>(std::get<SqlStatement>(result));
-    ASSERT_TRUE(select.innerJoin.has_value());
-    EXPECT_EQ(select.innerJoin->comparison, expected);
+    ASSERT_TRUE(!select.innerJoins.empty());
+    EXPECT_EQ(select.innerJoins[0].comparison, expected);
   }
 }
 
@@ -92,13 +92,13 @@ TEST(SqlParserJoinTest, ParsesTableAliasesWithAndWithoutAs) {
       std::get<SelectStatement>(std::get<SqlStatement>(result));
   ASSERT_TRUE(select.tableAlias.has_value());
   EXPECT_EQ(*select.tableAlias, "u");
-  ASSERT_TRUE(select.innerJoin.has_value());
-  ASSERT_TRUE(select.innerJoin->tableAlias.has_value());
-  EXPECT_EQ(*select.innerJoin->tableAlias, "o");
-  ASSERT_TRUE(select.innerJoin->left.tableName.has_value());
-  EXPECT_EQ(*select.innerJoin->left.tableName, "u");
-  ASSERT_TRUE(select.innerJoin->right.tableName.has_value());
-  EXPECT_EQ(*select.innerJoin->right.tableName, "o");
+  ASSERT_TRUE(!select.innerJoins.empty());
+  ASSERT_TRUE(select.innerJoins[0].tableAlias.has_value());
+  EXPECT_EQ(*select.innerJoins[0].tableAlias, "o");
+  ASSERT_TRUE(select.innerJoins[0].left.tableName.has_value());
+  EXPECT_EQ(*select.innerJoins[0].left.tableName, "u");
+  ASSERT_TRUE(select.innerJoins[0].right.tableName.has_value());
+  EXPECT_EQ(*select.innerJoins[0].right.tableName, "o");
 }
 
 TEST(SqlParserJoinTest, ParsesQualifiedOrderByColumn) {
