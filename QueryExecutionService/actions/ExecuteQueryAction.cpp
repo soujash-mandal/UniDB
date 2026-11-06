@@ -3,6 +3,7 @@
 #include "../adapter/SqlTupleCodec.h"
 
 #include <algorithm>
+#include <cctype>
 #include <limits>
 #include <map>
 #include <optional>
@@ -24,6 +25,8 @@ using unidb::sql::IntegerBinaryOperator;
 using unidb::sql::IntegerExpression;
 using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SelectStatement;
+using unidb::sql::TextFunction;
+using unidb::sql::TextFunctionExpression;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
@@ -490,6 +493,71 @@ std::string normalizeSingleTableColumnName(const std::string &name,
                                 name.substr(0, separator));
   }
   return name.substr(separator + 1);
+}
+
+struct CompiledTextFunction {
+  TextFunction function{TextFunction::Upper};
+  std::size_t columnIndex{0};
+};
+
+CompiledTextFunction
+compileTextFunction(const TextFunctionExpression &expression,
+                    const std::vector<ColumnDefinition> &schema,
+                    const std::vector<SqlType> &types,
+                    const std::string &tableQualifier) {
+  const auto name =
+      normalizeSingleTableColumnName(expression.columnName, tableQualifier);
+  const auto found =
+      std::find_if(schema.begin(), schema.end(),
+                   [&](const auto &column) { return column.name == name; });
+  if (found == schema.end()) {
+    throw std::invalid_argument("Unknown SELECT column: " +
+                                expression.columnName);
+  }
+  const auto index =
+      static_cast<std::size_t>(std::distance(schema.begin(), found));
+  if (types[index] != SqlType::Text) {
+    throw std::invalid_argument("Scalar text functions require TEXT columns: " +
+                                expression.columnName);
+  }
+  return {expression.function, index};
+}
+
+SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
+                              const CompiledTextFunction &expression) {
+  const auto &value = std::get<std::string>(row.at(expression.columnIndex));
+  if (expression.function == TextFunction::Length) {
+    if (value.size() >
+        static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max())) {
+      throw std::invalid_argument("LENGTH result exceeds INT64 range");
+    }
+    return static_cast<std::int64_t>(value.size());
+  }
+
+  std::string result = value;
+  for (char &character : result) {
+    const auto byte = static_cast<unsigned char>(character);
+    if (expression.function == TextFunction::Upper && byte >= 'a' &&
+        byte <= 'z') {
+      character = static_cast<char>(byte - ('a' - 'A'));
+    } else if (expression.function == TextFunction::Lower && byte >= 'A' &&
+               byte <= 'Z') {
+      character = static_cast<char>(byte + ('a' - 'A'));
+    }
+  }
+  return result;
+}
+
+std::string textFunctionName(TextFunction function) {
+  switch (function) {
+  case TextFunction::Upper:
+    return "UPPER";
+  case TextFunction::Lower:
+    return "LOWER";
+  case TextFunction::Length:
+    return "LENGTH";
+  }
+  throw std::invalid_argument("Unknown scalar text function");
 }
 
 struct CompiledIntegerExpression {
@@ -1036,6 +1104,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     std::vector<std::optional<std::vector<CompiledWhereExpression>>>
         compiledCases;
     std::vector<std::optional<CompiledIntegerExpression>> compiledIntegers;
+    std::vector<std::optional<CompiledTextFunction>> compiledTextFunctions;
     if (select->aggregate.has_value() && select->groupBy.empty()) {
       // Ungrouped aggregate queries produce a single computed output column.
     } else if (select->selectAll) {
@@ -1062,10 +1131,41 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         throw std::invalid_argument(
             "SELECT integer expression count does not match columns");
       }
+      if (!select->textFunctions.empty() &&
+          select->textFunctions.size() != select->columnNames.size()) {
+        throw std::invalid_argument(
+            "SELECT text function count does not match columns");
+      }
       compiledCases.reserve(select->columnNames.size());
       compiledIntegers.reserve(select->columnNames.size());
+      compiledTextFunctions.reserve(select->columnNames.size());
       for (std::size_t itemIndex = 0; itemIndex < select->columnNames.size();
            ++itemIndex) {
+        if (itemIndex < select->textFunctions.size() &&
+            select->textFunctions[itemIndex].has_value()) {
+          if (select->innerJoin.has_value()) {
+            throw std::invalid_argument(
+                "Scalar text functions are not yet supported with JOIN");
+          }
+          const auto &expression = *select->textFunctions[itemIndex];
+          const auto compiled =
+              compileTextFunction(expression, schema, types, tableQualifier);
+          selectedIndexes.push_back(schema.size());
+          const auto alias = itemIndex < select->columnAliases.size()
+                                 ? select->columnAliases[itemIndex]
+                                 : std::optional<std::string>{};
+          const auto functionName = textFunctionName(expression.function);
+          const auto outputType = expression.function == TextFunction::Length
+                                      ? SqlType::Int
+                                      : SqlType::Text;
+          selectedColumns.push_back(
+              {alias.value_or(functionName + "(" + expression.columnName + ")"),
+               outputType});
+          compiledCases.push_back(std::nullopt);
+          compiledIntegers.push_back(std::nullopt);
+          compiledTextFunctions.push_back(compiled);
+          continue;
+        }
         if (itemIndex < select->integerExpressions.size() &&
             select->integerExpressions[itemIndex].has_value()) {
           if (select->innerJoin.has_value()) {
@@ -1084,6 +1184,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                SqlType::Int});
           compiledCases.push_back(std::nullopt);
           compiledIntegers.push_back(compiled);
+          compiledTextFunctions.push_back(std::nullopt);
           continue;
         }
         if (itemIndex < select->caseExpressions.size() &&
@@ -1115,6 +1216,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                resultIsInt ? SqlType::Int : SqlType::Text});
           compiledCases.push_back(std::move(branches));
           compiledIntegers.push_back(std::nullopt);
+          compiledTextFunctions.push_back(std::nullopt);
           continue;
         }
         const auto &columnName = select->columnNames[itemIndex];
@@ -1133,6 +1235,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         selectedColumns.push_back(*found);
         compiledCases.push_back(std::nullopt);
         compiledIntegers.push_back(std::nullopt);
+        compiledTextFunctions.push_back(std::nullopt);
       }
 
       if (!select->columnAliases.empty() &&
@@ -1159,6 +1262,13 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const bool hasCaseExpression = std::any_of(
         select->caseExpressions.begin(), select->caseExpressions.end(),
         [](const auto &expression) { return expression.has_value(); });
+    const bool hasTextFunction = std::any_of(
+        select->textFunctions.begin(), select->textFunctions.end(),
+        [](const auto &expression) { return expression.has_value(); });
+    if (hasTextFunction && select->distinct) {
+      throw std::invalid_argument(
+          "SELECT DISTINCT cannot be combined with scalar text functions yet");
+    }
     if (hasCaseExpression && select->distinct) {
       throw std::invalid_argument(
           "SELECT DISTINCT cannot be combined with CASE expressions yet");
@@ -1531,7 +1641,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
       for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
-        if (index < compiledIntegers.size() &&
+        if (index < compiledTextFunctions.size() &&
+            compiledTextFunctions[index].has_value()) {
+          projected.push_back(
+              evaluateTextFunction(decoded, *compiledTextFunctions[index]));
+        } else if (index < compiledIntegers.size() &&
             compiledIntegers[index].has_value()) {
           projected.push_back(
               evaluateIntegerExpression(decoded, *compiledIntegers[index]));
