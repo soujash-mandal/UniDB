@@ -316,16 +316,15 @@ TEST(ExecuteQueryActionInnerJoinTest, ExecutesMultipleInnerJoinsLeftToRight) {
             (std::vector<std::string>{"users", "orders", "products"}));
 }
 
-TEST(ExecuteQueryActionCrossJoinTest,
-     ReturnsCartesianProductInDeterministicOrder) {
+TEST(ExecuteQueryActionCrossJoinTest, CartesianProductOrder) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
   fixture.addUser(2, "Lin");
   fixture.addOrder(10, 1, 250);
   fixture.addOrder(11, 2, 80);
 
-  const auto outcome =
-      fixture.execute("SELECT * FROM users CROSS JOIN orders");
+  const auto outcome = fixture.execute(
+      "SELECT * FROM users CROSS JOIN orders");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
@@ -358,8 +357,7 @@ TEST(ExecuteQueryActionCrossJoinTest,
             (std::vector<std::string>{"users", "orders"}));
 }
 
-TEST(ExecuteQueryActionCrossJoinTest,
-     SupportsProjectionAliasesAndWhere) {
+TEST(ExecuteQueryActionCrossJoinTest, ProjectionAliasesAndWhere) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
   fixture.addUser(2, "Lin");
@@ -367,8 +365,10 @@ TEST(ExecuteQueryActionCrossJoinTest,
   fixture.addOrder(11, 2, 80);
 
   const auto outcome = fixture.execute(
-      "SELECT u.name AS person, o.amount AS total FROM users u "
-      "CROSS JOIN orders o WHERE u.id = 2 AND o.amount > 50");
+      "SELECT u.name AS person, "
+      "o.amount AS total FROM users u "
+      "CROSS JOIN orders o "
+      "WHERE u.id = 2 AND o.amount > 50");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
@@ -396,8 +396,7 @@ TEST(ExecuteQueryActionCrossJoinTest, EmptyInputProducesNoRows) {
                   .rows.empty());
 }
 
-TEST(ExecuteQueryActionCrossJoinTest,
-     RejectsProductsAboveSafetyLimit) {
+TEST(ExecuteQueryActionCrossJoinTest, RejectsProductsAboveSafetyLimit) {
   InnerJoinFixture fixture;
   for (std::int64_t id = 0; id < 1001; ++id) {
     fixture.addUser(id, "user");
