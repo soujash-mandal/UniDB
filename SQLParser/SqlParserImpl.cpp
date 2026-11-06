@@ -93,6 +93,13 @@ private:
 
   bool expect(TokenKind kind) { return match(kind); }
 
+  bool isReservedTableAliasKeyword() const {
+    return isKeyword("INNER") || isKeyword("JOIN") || isKeyword("ON") ||
+           isKeyword("WHERE") || isKeyword("GROUP") ||
+           isKeyword("HAVING") || isKeyword("ORDER") ||
+           isKeyword("LIMIT") || isKeyword("OFFSET");
+  }
+
   SqlParseResult parseCreateTable() {
     ++position_; // CREATE
     if (!expectKeyword("TABLE")) {
@@ -347,6 +354,18 @@ private:
     }
     statement.tableName = current().text;
     ++position_;
+    if (matchKeyword("AS")) {
+      if (current().kind != TokenKind::Identifier ||
+          isReservedTableAliasKeyword()) {
+        return syntaxError("Expected table alias after AS");
+      }
+      statement.tableAlias = current().text;
+      ++position_;
+    } else if (current().kind == TokenKind::Identifier &&
+               !isReservedTableAliasKeyword()) {
+      statement.tableAlias = current().text;
+      ++position_;
+    }
 
     if (matchKeyword("INNER")) {
       if (!expectKeyword("JOIN")) {
@@ -358,6 +377,18 @@ private:
       InnerJoinClause join;
       join.tableName = current().text;
       ++position_;
+      if (matchKeyword("AS")) {
+        if (current().kind != TokenKind::Identifier ||
+            isReservedTableAliasKeyword()) {
+          return syntaxError("Expected table alias after AS");
+        }
+        join.tableAlias = current().text;
+        ++position_;
+      } else if (current().kind == TokenKind::Identifier &&
+                 !isReservedTableAliasKeyword()) {
+        join.tableAlias = current().text;
+        ++position_;
+      }
       if (!expectKeyword("ON")) {
         return syntaxError("Expected ON after joined table name");
       }
