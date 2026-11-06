@@ -88,7 +88,7 @@
 
 #include "../QueryExecutionService/actions/ExecuteQueryAction.h"
 #include "../QueryExecutionService/adapter/RdbServiceAdapter.h"
-#include "../SQLParser/SqlParserImpl.h"
+#include "../QueryExecutionService/parser/SqlParserImpl.h"
 
 class Container {
 public:

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../QueryExecutionService/contract/sqlParser.h"
+#include "../contract/sqlParser.h"
 #include "SqlLexer.h"
 
 namespace unidb::sql {
