@@ -96,8 +96,11 @@ TEST(WherePredicateEvaluatorTest, EvaluatesNestedAndOrExpressions) {
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(expression, schema, types)));
 
+  WhereExpression idDoesNotMatch;
+  idDoesNotMatch.predicate = WhereEquals{
+      "id", std::int64_t{99}, std::nullopt, {}, ComparisonOperator::Equal};
   expression.kind = WhereExpression::Kind::Or;
-  expression.children = {idMatch, WhereExpression{}};
+  expression.children = {idDoesNotMatch, nameMatch};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(expression, schema, types)));
 }
