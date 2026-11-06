@@ -90,12 +90,24 @@ struct InnerJoinClause {
   ColumnReference right;
 };
 
+struct CaseWhenClause {
+  WhereExpression condition;
+  SqlValue result;
+};
+
+struct CaseExpression {
+  std::vector<CaseWhenClause> branches;
+  SqlValue elseResult;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
   std::vector<std::string> columnNames;
   // Parallel to columnNames; nullopt means no explicit alias.
   std::vector<std::optional<std::string>> columnAliases;
+  // Parallel to columnNames; a value means the item is a CASE expression.
+  std::vector<std::optional<CaseExpression>> caseExpressions;
   bool distinct{false};
   std::optional<AggregateExpression> aggregate;
   std::vector<std::string> groupBy;
