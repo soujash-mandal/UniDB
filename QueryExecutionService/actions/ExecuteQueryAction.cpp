@@ -21,6 +21,7 @@ using unidb::sql::CreateTableStatement;
 using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
 using unidb::sql::SelectStatement;
+using unidb::sql::CaseExpression;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
@@ -913,6 +914,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
     std::vector<std::size_t> selectedIndexes;
     std::vector<ColumnDefinition> selectedColumns;
+    std::vector<std::optional<std::vector<CompiledWhereExpression>>>
+        compiledCases;
     if (select->aggregate.has_value() && select->groupBy.empty()) {
       // Ungrouped aggregate queries produce a single computed output column.
     } else if (select->selectAll) {
@@ -929,7 +932,43 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       selectedColumns.reserve(select->columnNames.size());
       const std::string tableQualifier =
           select->tableAlias.value_or(select->tableName);
-      for (const auto &columnName : select->columnNames) {
+      if (!select->caseExpressions.empty() &&
+          select->caseExpressions.size() != select->columnNames.size()) {
+        throw std::invalid_argument(
+            "SELECT CASE expression count does not match columns");
+      }
+      compiledCases.reserve(select->columnNames.size());
+      for (std::size_t itemIndex = 0;
+           itemIndex < select->columnNames.size(); ++itemIndex) {
+        if (itemIndex < select->caseExpressions.size() &&
+            select->caseExpressions[itemIndex].has_value()) {
+          if (select->innerJoin.has_value()) {
+            throw std::invalid_argument(
+                "CASE expressions are not yet supported with JOIN");
+          }
+          const auto &caseExpression = *select->caseExpressions[itemIndex];
+          const SqlValue &elseValue = caseExpression.elseResult;
+          const bool resultIsInt = std::holds_alternative<std::int64_t>(elseValue);
+          std::vector<CompiledWhereExpression> branches;
+          branches.reserve(caseExpression.branches.size());
+          for (const auto &branch : caseExpression.branches) {
+            if (std::holds_alternative<std::int64_t>(branch.result) !=
+                resultIsInt) {
+              throw std::invalid_argument(
+                  "CASE result values must have the same type");
+            }
+            const auto normalized = normalizeSingleTableWhereColumns(
+                branch.condition, tableQualifier);
+            branches.push_back(compileWhereExpression(normalized, schema, types));
+          }
+          selectedIndexes.push_back(schema.size());
+          selectedColumns.push_back(
+              {select->columnAliases[itemIndex].value_or("CASE"),
+               resultIsInt ? SqlType::Int : SqlType::Text});
+          compiledCases.push_back(std::move(branches));
+          continue;
+        }
+        const auto &columnName = select->columnNames[itemIndex];
         const auto normalizedColumnName =
             normalizeSingleTableColumnName(columnName, tableQualifier);
         const auto found =
@@ -943,6 +982,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             static_cast<std::size_t>(std::distance(schema.begin(), found));
         selectedIndexes.push_back(schemaIndex);
         selectedColumns.push_back(*found);
+        compiledCases.push_back(std::nullopt);
       }
 
       if (!select->columnAliases.empty() &&
@@ -955,6 +995,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         if (index < select->columnAliases.size() &&
             select->columnAliases[index].has_value()) {
           selectedColumns[index].name = *select->columnAliases[index];
+        } else if (index < select->caseExpressions.size() &&
+                   select->caseExpressions[index].has_value()) {
+          selectedColumns[index].name = "CASE";
         }
         if (!outputNames.insert(selectedColumns[index].name).second) {
           throw std::invalid_argument("Duplicate SELECT output column name: " +
@@ -1321,8 +1364,26 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     for (const auto &decoded : matchedRows) {
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
-      for (const auto index : selectedIndexes) {
-        projected.push_back(decoded[index]);
+      for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
+        if (index < compiledCases.size() && compiledCases[index].has_value()) {
+          const auto &caseExpression = *select->caseExpressions[index];
+          bool matched = false;
+          for (std::size_t branchIndex = 0;
+               branchIndex < compiledCases[index]->size(); ++branchIndex) {
+            if (matchesWhereExpression(
+                    decoded, (*compiledCases[index])[branchIndex])) {
+              projected.push_back(
+                  caseExpression.branches[branchIndex].result);
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) {
+            projected.push_back(caseExpression.elseResult);
+          }
+        } else {
+          projected.push_back(decoded[selectedIndexes[index]]);
+        }
       }
       result.rows.push_back(std::move(projected));
     }
