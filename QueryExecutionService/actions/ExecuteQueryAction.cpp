@@ -25,6 +25,7 @@ using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
 using unidb::sql::UnionAllStatement;
+using unidb::sql::UnionStatement;
 using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
 
@@ -833,6 +834,55 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
       combined.rows.insert(combined.rows.end(), branchResult.rows.begin(),
                            branchResult.rows.end());
+    }
+    return combined;
+  }
+
+
+  if (const auto *unionDistinct = std::get_if<UnionStatement>(&statement)) {
+    if (unionDistinct->selects.size() < 2) {
+      throw std::invalid_argument(
+          "UNION requires at least two SELECT branches");
+    }
+
+    QueryExecutionResult combined;
+    std::set<std::vector<SqlValue>> seenRows;
+    bool firstBranch = true;
+    for (const auto &select : unionDistinct->selects) {
+      const auto branchOutcome = executeStatement(SqlStatement{select});
+      if (const auto *error =
+              std::get_if<QueryExecutionError>(&branchOutcome)) {
+        return *error;
+      }
+      const auto &branchResult = std::get<QueryExecutionResult>(branchOutcome);
+      if (branchResult.kind != QueryExecutionResultKind::Rows) {
+        throw std::invalid_argument("UNION branches must return rows");
+      }
+
+      if (firstBranch) {
+        combined.kind = QueryExecutionResultKind::Rows;
+        combined.message = "Rows selected";
+        combined.columns = branchResult.columns;
+        firstBranch = false;
+      } else {
+        if (branchResult.columns.size() != combined.columns.size()) {
+          throw std::invalid_argument(
+              "UNION branches must return the same number of columns");
+        }
+        for (std::size_t index = 0; index < combined.columns.size(); ++index) {
+          if (branchResult.columns[index].type !=
+              combined.columns[index].type) {
+            throw std::invalid_argument(
+                "UNION columns must have matching types at each position");
+          }
+        }
+      }
+
+      for (const auto &row : branchResult.rows) {
+        if (seenRows.insert(row).second) {
+          combined.rows.push_back(row);
+        }
+      }
     }
     return combined;
   }
