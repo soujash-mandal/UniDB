@@ -20,6 +20,8 @@ using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
 using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
+using unidb::sql::IntegerBinaryOperator;
+using unidb::sql::IntegerExpression;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
@@ -489,6 +491,95 @@ std::string normalizeSingleTableColumnName(const std::string &name,
   return name.substr(separator + 1);
 }
 
+struct CompiledIntegerExpression {
+  IntegerExpression::Kind kind{IntegerExpression::Kind::Literal};
+  std::int64_t literal{0};
+  std::size_t columnIndex{0};
+  IntegerBinaryOperator operation{IntegerBinaryOperator::Add};
+  std::shared_ptr<CompiledIntegerExpression> left;
+  std::shared_ptr<CompiledIntegerExpression> right;
+};
+
+CompiledIntegerExpression compileIntegerExpression(
+    const IntegerExpression &expression,
+    const std::vector<ColumnDefinition> &schema,
+    const std::vector<SqlType> &types, const std::string &tableQualifier) {
+  CompiledIntegerExpression compiled;
+  compiled.kind = expression.kind;
+  if (expression.kind == IntegerExpression::Kind::Literal) {
+    compiled.literal = expression.literal;
+    return compiled;
+  }
+  if (expression.kind == IntegerExpression::Kind::Column) {
+    const auto name =
+        normalizeSingleTableColumnName(expression.columnName, tableQualifier);
+    const auto found = std::find_if(
+        schema.begin(), schema.end(),
+        [&](const auto &column) { return column.name == name; });
+    if (found == schema.end()) {
+      throw std::invalid_argument("Unknown SELECT column: " +
+                                  expression.columnName);
+    }
+    const auto index =
+        static_cast<std::size_t>(std::distance(schema.begin(), found));
+    if (types[index] != SqlType::Int) {
+      throw std::invalid_argument(
+          "Integer arithmetic requires INT columns: " + expression.columnName);
+    }
+    compiled.columnIndex = index;
+    return compiled;
+  }
+  if (!expression.left || !expression.right) {
+    throw std::invalid_argument("Malformed integer arithmetic expression");
+  }
+  compiled.operation = expression.operation;
+  compiled.left = std::make_shared<CompiledIntegerExpression>(
+      compileIntegerExpression(*expression.left, schema, types, tableQualifier));
+  compiled.right = std::make_shared<CompiledIntegerExpression>(
+      compileIntegerExpression(*expression.right, schema, types, tableQualifier));
+  return compiled;
+}
+
+std::int64_t evaluateIntegerExpression(
+    const std::vector<SqlValue> &row,
+    const CompiledIntegerExpression &expression) {
+  if (expression.kind == IntegerExpression::Kind::Literal) {
+    return expression.literal;
+  }
+  if (expression.kind == IntegerExpression::Kind::Column) {
+    return std::get<std::int64_t>(row.at(expression.columnIndex));
+  }
+  const auto left = evaluateIntegerExpression(row, *expression.left);
+  const auto right = evaluateIntegerExpression(row, *expression.right);
+  std::int64_t result{};
+  switch (expression.operation) {
+  case IntegerBinaryOperator::Add:
+    if (__builtin_add_overflow(left, right, &result)) {
+      throw std::invalid_argument("Integer addition exceeds INT64 range");
+    }
+    return result;
+  case IntegerBinaryOperator::Subtract:
+    if (__builtin_sub_overflow(left, right, &result)) {
+      throw std::invalid_argument("Integer subtraction exceeds INT64 range");
+    }
+    return result;
+  case IntegerBinaryOperator::Multiply:
+    if (__builtin_mul_overflow(left, right, &result)) {
+      throw std::invalid_argument("Integer multiplication exceeds INT64 range");
+    }
+    return result;
+  case IntegerBinaryOperator::Divide:
+    if (right == 0) {
+      throw std::invalid_argument("Division by zero in integer expression");
+    }
+    if (left == std::numeric_limits<std::int64_t>::min() && right == -1) {
+      throw std::invalid_argument("Integer division exceeds INT64 range");
+    }
+    return left / right;
+  }
+  throw std::invalid_argument("Unknown integer arithmetic operator");
+}
+
 WhereExpression
 normalizeSingleTableWhereColumns(const WhereExpression &expression,
                                  const std::string &tableName) {
@@ -915,6 +1006,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     std::vector<ColumnDefinition> selectedColumns;
     std::vector<std::optional<std::vector<CompiledWhereExpression>>>
         compiledCases;
+    std::vector<std::optional<CompiledIntegerExpression>> compiledIntegers;
     if (select->aggregate.has_value() && select->groupBy.empty()) {
       // Ungrouped aggregate queries produce a single computed output column.
     } else if (select->selectAll) {
@@ -936,9 +1028,35 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         throw std::invalid_argument(
             "SELECT CASE expression count does not match columns");
       }
+      if (!select->integerExpressions.empty() &&
+          select->integerExpressions.size() != select->columnNames.size()) {
+        throw std::invalid_argument(
+            "SELECT integer expression count does not match columns");
+      }
       compiledCases.reserve(select->columnNames.size());
+      compiledIntegers.reserve(select->columnNames.size());
       for (std::size_t itemIndex = 0; itemIndex < select->columnNames.size();
            ++itemIndex) {
+        if (itemIndex < select->integerExpressions.size() &&
+            select->integerExpressions[itemIndex].has_value()) {
+          if (select->innerJoin.has_value()) {
+            throw std::invalid_argument(
+                "Integer expressions are not yet supported with JOIN");
+          }
+          const auto compiled = compileIntegerExpression(
+              *select->integerExpressions[itemIndex], schema, types,
+              tableQualifier);
+          selectedIndexes.push_back(schema.size());
+          const auto alias =
+              itemIndex < select->columnAliases.size()
+                  ? select->columnAliases[itemIndex]
+                  : std::optional<std::string>{};
+          selectedColumns.push_back(
+              {alias.value_or("EXPR"), SqlType::Int});
+          compiledCases.push_back(std::nullopt);
+          compiledIntegers.push_back(compiled);
+          continue;
+        }
         if (itemIndex < select->caseExpressions.size() &&
             select->caseExpressions[itemIndex].has_value()) {
           if (select->innerJoin.has_value()) {
@@ -967,6 +1085,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               {select->columnAliases[itemIndex].value_or("CASE"),
                resultIsInt ? SqlType::Int : SqlType::Text});
           compiledCases.push_back(std::move(branches));
+          compiledIntegers.push_back(std::nullopt);
           continue;
         }
         const auto &columnName = select->columnNames[itemIndex];
@@ -984,6 +1103,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         selectedIndexes.push_back(schemaIndex);
         selectedColumns.push_back(*found);
         compiledCases.push_back(std::nullopt);
+        compiledIntegers.push_back(std::nullopt);
       }
 
       if (!select->columnAliases.empty() &&
@@ -1325,6 +1445,14 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       return result;
     }
 
+    const bool hasIntegerExpression = std::any_of(
+        select->integerExpressions.begin(), select->integerExpressions.end(),
+        [](const auto &expression) { return expression.has_value(); });
+    if (hasIntegerExpression && select->distinct) {
+      throw std::invalid_argument(
+          "SELECT DISTINCT cannot be combined with integer expressions yet");
+    }
+
     if (select->distinct) {
       std::set<std::vector<SqlValue>> seenProjections;
       matchedRows.erase(
@@ -1374,7 +1502,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       std::vector<SqlValue> projected;
       projected.reserve(selectedIndexes.size());
       for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
-        if (index < compiledCases.size() && compiledCases[index].has_value()) {
+        if (index < compiledIntegers.size() &&
+            compiledIntegers[index].has_value()) {
+          projected.push_back(evaluateIntegerExpression(
+              decoded, *compiledIntegers[index]));
+        } else if (index < compiledCases.size() && compiledCases[index].has_value()) {
           const auto &caseExpression = *select->caseExpressions[index];
           bool matched = false;
           for (std::size_t branchIndex = 0;

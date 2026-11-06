@@ -23,6 +23,8 @@ enum class TokenKind {
   GreaterThanOrEqual,
   LessThanOrEqual,
   Minus,
+  Plus,
+  Slash,
   Unsupported,
   End
 };

@@ -134,8 +134,10 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
       kind = TokenKind::Minus;
       break;
     case '+':
+      kind = TokenKind::Plus;
+      break;
     case '/':
-      kind = TokenKind::Unsupported;
+      kind = TokenKind::Slash;
       break;
     default:
       result.error =
