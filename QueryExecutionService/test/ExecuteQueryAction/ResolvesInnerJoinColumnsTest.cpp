@@ -72,7 +72,7 @@ TEST(ExecuteQueryActionJoinResolutionTest,
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(result);
   ASSERT_EQ(rows.columns.size(), 2U);
-  EXPECT_EQ(rows.columns[0].name, "users.id");
+  EXPECT_EQ(rows.columns[0].name, "u.id");
   EXPECT_EQ(rows.columns[1].name, "amount");
   EXPECT_TRUE(rows.rows.empty());
   EXPECT_EQ(fixture.port.schemaRequests,
@@ -264,13 +264,14 @@ TEST(ExecuteQueryActionJoinResolutionTest, SupportsSelfJoinWithDistinctAliases) 
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(result);
   ASSERT_EQ(rows.columns.size(), 1U);
-  EXPECT_EQ(rows.columns[0].name, "id");
+  EXPECT_EQ(rows.columns[0].name, "employee.id");
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "users"}));
   EXPECT_EQ(fixture.port.selectCalls, 2U);
 }
 
-TEST(ExecuteQueryActionJoinResolutionTest, SupportsAliasInSingleTableSelectAndWhere) {
+TEST(ExecuteQueryActionJoinResolutionTest,
+     SupportsAliasInSingleTableSelectAndWhere) {
   JoinResolutionFixture fixture;
 
   const auto result =
