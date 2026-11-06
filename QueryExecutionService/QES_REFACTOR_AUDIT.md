@@ -59,11 +59,11 @@ Move both modules under QES, but preserve two separate responsibilities and use 
 
 - `QueryExecutionService/contract/sqlParser.h`
 - `QueryExecutionService/contract/sqlStatement.h`
-- `QueryExecutionService/parser/SqlLexer.h`
-- `QueryExecutionService/parser/SqlLexer.cpp`
-- `QueryExecutionService/parser/SqlParserImpl.h`
-- `QueryExecutionService/parser/SqlParserImpl.cpp`
-- `QueryExecutionService/parser/test/...` (all current SQLParser tests)
+- `QueryExecutionService/domain/parser/SqlLexer.h`
+- `QueryExecutionService/domain/parser/SqlLexer.cpp`
+- `QueryExecutionService/domain/parser/SqlParserImpl.h`
+- `QueryExecutionService/domain/parser/SqlParserImpl.cpp`
+- `QueryExecutionService/domain/parser/test/...` (all current SQLParser tests)
 
 The contract remains declarations and typed statement/value representations only. The parser/lexer remains the implementation that turns SQL text into that contract. Neither layer executes queries or accesses database services.
 
@@ -87,7 +87,7 @@ The previous six-PR estimate should be treated as a minimum planning shape, not 
 
 1. **PR 1 — this audit document.** Documentation only; no behavior changes. User reviews and approves the ownership map.
 2. **PR 2 — move SQLParser Contract into QES.** Move the two contract headers to `QueryExecutionService/contract/`; update all includes and build/test references. No parser implementation move in this PR.
-3. **PR 3 — move SQLParser implementation into QES.** Move lexer, parser implementation, and parser tests to `QueryExecutionService/parser/`; update Container, tests, CMake, workflow path filters, and docs.
+3. **PR 3 — move SQLParser implementation into QES.** Move lexer, parser implementation, and parser tests to `QueryExecutionService/domain/parser/`; update Container, tests, CMake, workflow path filters, and docs.
 4. **PR 4 — extract SQL value and WHERE predicate semantics.** Move typed value comparison, LIKE matching, predicate evaluation, and recursive WHERE expression evaluation into focused QES domain files. Keep schema/alias binding in QES unless cleanly separable.
 5. **PR 5 — extract scalar expression evaluators.** Move integer arithmetic and TEXT function evaluation into focused domain files. Keep schema binding in QES.
 6. **PR 6 — extract aggregate reducers.** Extract only COUNT/MIN/MAX/SUM/AVG value calculation; leave grouping, row fetching, HAVING, ordering, and pagination in QES.
@@ -118,3 +118,13 @@ For implementation PRs:
 - [ ] Run the relevant parser, codec, and QES tests for each move/extraction.
 - [ ] Run `./scripts/test.sh` and the architecture/dependency checks before the final cleanup PR is marked ready.
 - [ ] Inspect the complete diff and current-head CI results; resolve CodeRabbit findings before calling the PR ready.
+
+
+## 7. Parser placement decision
+
+The final ownership decision places the SQL parser implementation inside QES domain:
+
+- `QueryExecutionService/domain/parser/` owns the lexer, parser implementation, and parser unit tests.
+- `QueryExecutionService/contract/` remains separate and owns the parser interface and typed SQL statement/value representations.
+- Parser code remains infrastructure-independent: it may depend on the parser contract and standard C++ only; it must not access database services, Actions, ports, adapters, the Container, or storage.
+- The parser belongs under `domain/` as an infrastructure-independent part of QES, while retaining a distinct `parser/` subfolder because syntax analysis is a separate responsibility from predicate, expression, and aggregate semantics.

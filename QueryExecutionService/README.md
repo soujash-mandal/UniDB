@@ -19,20 +19,19 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 
 ## Domain
 
-Pure, stateless SQL/query rules live under `domain/` and receive their inputs explicitly:
+Infrastructure-independent query logic lives under `domain/`:
 
+- `parser/` converts SQL text into the typed statement representation defined by the contract. Its lexer, parser implementation, and parser tests live under `domain/parser/`.
 - `predicate/WherePredicateEvaluator` — typed SQL value comparison, WHERE predicate compilation, and recursive predicate evaluation.
 - `expression/ScalarExpressionEvaluator` — evaluates compiled integer arithmetic and TEXT scalar functions.
 - `aggregate/SqlAggregateCalculator` — calculates COUNT, MIN, MAX, SUM, and AVG over explicit input values.
 
-Domain code must not depend on services, Actions, ports, adapters, the Container, or storage. Schema lookup, column/alias binding, join resolution, row fetching, grouping, HAVING, sorting, pagination, and result construction remain in `ExecuteQueryAction` because they depend on query context or coordinate execution.
+The parser is responsible for SQL syntax; the other domain components implement query/value semantics. Domain code must not depend on services, Actions, ports, adapters, the Container, or storage. Schema lookup, column/alias binding, join resolution, row fetching, grouping, HAVING, sorting, pagination, and result construction remain in `ExecuteQueryAction` because they depend on query context or coordinate execution.
 
-## Parser ownership
+## Parser contract
 
 - `contract/` contains the parser interface and typed SQL statement/value representations.
-- `parser/` contains the lexer, parser implementation, and parser unit tests.
-
-The parser implementation depends on the contract. Neither parser layer executes queries or accesses database services.
+- The implementation under `domain/parser/` depends on that contract. Neither the contract nor parser implementation executes queries or accesses database services.
 
 ## Service boundary
 
