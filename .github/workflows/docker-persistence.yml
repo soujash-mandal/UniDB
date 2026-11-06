@@ -24,7 +24,7 @@ on:
       - "RdbService/**"
       - "RdbMetadataService/**"
       - "QueryExecutionService/**"
-      - "SQLParser/**"
+      - "QueryExecutionService/parser/**"
       - "QueryExecutionService/contract/**"
       - ".github/workflows/docker-persistence.yml"
   push:
@@ -52,7 +52,7 @@ on:
       - "RdbService/**"
       - "RdbMetadataService/**"
       - "QueryExecutionService/**"
-      - "SQLParser/**"
+      - "QueryExecutionService/parser/**"
       - "QueryExecutionService/contract/**"
       - ".github/workflows/docker-persistence.yml"
 

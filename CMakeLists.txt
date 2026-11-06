@@ -106,8 +106,8 @@ set(UNIDB_SOURCES
     RdbService/adapter/AllocateNextTableIdAdapter.cpp
     RdbService/adapter/GetCatalogRootPageIdAdapter.cpp
 
-    SQLParser/SqlLexer.cpp
-    SQLParser/SqlParserImpl.cpp
+    QueryExecutionService/parser/SqlLexer.cpp
+    QueryExecutionService/parser/SqlParserImpl.cpp
     CatalogService/actions/GetTableByNameAction.cpp
     CatalogService/actions/UpdateTableAction.cpp
 )
@@ -231,16 +231,16 @@ add_executable(tests
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp
-    SQLParser/test/SqlParserStatementTest.cpp
-    SQLParser/test/SqlParserWhereTest.cpp
-    SQLParser/test/SqlParserSelectClauseTest.cpp
-    SQLParser/test/SqlParserAggregateTest.cpp
-    SQLParser/test/SqlParserGroupByTest.cpp
-    SQLParser/test/SqlParserJoinTest.cpp
-    SQLParser/test/SqlParserUnionTest.cpp
-    SQLParser/test/SqlParserCaseTest.cpp
-    SQLParser/test/SqlParserIntegerExpressionTest.cpp
-    SQLParser/test/SqlParserTextFunctionTest.cpp
+    QueryExecutionService/parser/test/SqlParserStatementTest.cpp
+    QueryExecutionService/parser/test/SqlParserWhereTest.cpp
+    QueryExecutionService/parser/test/SqlParserSelectClauseTest.cpp
+    QueryExecutionService/parser/test/SqlParserAggregateTest.cpp
+    QueryExecutionService/parser/test/SqlParserGroupByTest.cpp
+    QueryExecutionService/parser/test/SqlParserJoinTest.cpp
+    QueryExecutionService/parser/test/SqlParserUnionTest.cpp
+    QueryExecutionService/parser/test/SqlParserCaseTest.cpp
+    QueryExecutionService/parser/test/SqlParserIntegerExpressionTest.cpp
+    QueryExecutionService/parser/test/SqlParserTextFunctionTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
