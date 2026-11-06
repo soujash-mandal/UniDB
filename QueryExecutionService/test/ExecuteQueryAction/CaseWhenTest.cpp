@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <variant>
 
 TEST(ExecuteQueryActionCaseWhenTest, EvaluatesFirstMatchingWhenAndElse) {
