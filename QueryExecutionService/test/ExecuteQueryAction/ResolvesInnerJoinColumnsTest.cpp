@@ -67,17 +67,17 @@ TEST(ExecuteQueryActionJoinResolutionTest,
       "ON users.id = orders.user_id");
 
   ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           result));
-  const auto &error =
-      std::get<QueryExecutionService::QueryExecutionError>(result);
-  EXPECT_EQ(error.code,
-            QueryExecutionService::QueryExecutionErrorCode::ExecutionError);
-  EXPECT_EQ(error.message, "INNER JOIN currently supports SELECT * only; "
-                           "column projection will be added in the next stage");
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 2U);
+  EXPECT_EQ(rows.columns[0].name, "users.id");
+  EXPECT_EQ(rows.columns[1].name, "amount");
+  EXPECT_TRUE(rows.rows.empty());
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "orders"}));
-  EXPECT_EQ(fixture.port.selectCalls, 0U);
+  EXPECT_EQ(fixture.port.selectCalls, 2U);
 }
 
 TEST(ExecuteQueryActionJoinResolutionTest,
@@ -89,12 +89,17 @@ TEST(ExecuteQueryActionJoinResolutionTest,
                       "ON users.id = orders.user_id");
 
   ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           result));
-  EXPECT_EQ(
-      std::get<QueryExecutionService::QueryExecutionError>(result).message,
-      "INNER JOIN currently supports SELECT * only; "
-      "column projection will be added in the next stage");
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 2U);
+  EXPECT_EQ(rows.columns[0].name, "name");
+  EXPECT_EQ(rows.columns[1].name, "amount");
+  EXPECT_TRUE(rows.rows.empty());
+  EXPECT_EQ(fixture.port.schemaRequests,
+            (std::vector<std::string>{"users", "orders"}));
+  EXPECT_EQ(fixture.port.selectCalls, 2U);
 }
 
 TEST(ExecuteQueryActionJoinResolutionTest, RejectsAmbiguousSelectColumns) {

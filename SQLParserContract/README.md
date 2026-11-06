@@ -123,6 +123,11 @@ joined table. A duplicate column name is qualified with its source table name.
 The join performs O(N × M) key comparisons for N left rows and M right rows and
 holds both decoded inputs plus the output rows in memory.
 
-Explicit SELECT projections and WHERE filtering on joined rows are deferred to
-the next integration stage. LEFT JOIN, table aliases, and non-equality join
-conditions remain unsupported.
+Explicit projections are supported for qualified columns and unambiguous
+unqualified columns. `AS` aliases override generated output names. WHERE
+conditions are evaluated against joined rows; qualified references such as
+`orders.amount` are supported, and unqualified references are accepted only
+when the column exists in exactly one input table. Ambiguous or unknown
+references are rejected before row reads. Filtering and projection run in
+memory after the two input tables are fetched. LEFT JOIN, table aliases, and
+non-equality join conditions remain unsupported.
