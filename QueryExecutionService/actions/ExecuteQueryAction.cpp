@@ -1006,6 +1006,15 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
     }
 
+    const bool hasCaseExpression =
+        std::any_of(select->caseExpressions.begin(),
+                    select->caseExpressions.end(),
+                    [](const auto &expression) { return expression.has_value(); });
+    if (hasCaseExpression && select->distinct) {
+      throw std::invalid_argument(
+          "SELECT DISTINCT cannot be combined with CASE expressions yet");
+    }
+
     std::vector<std::pair<std::size_t, bool>> orderIndexes;
     orderIndexes.reserve(select->orderBy.size());
     const std::string tableQualifier =
