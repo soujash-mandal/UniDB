@@ -949,7 +949,8 @@ QueryExecutionResult executeMultipleInnerJoins(
       newRows.push_back(SqlTupleCodec::decode(newTypes,bytes));
     std::vector<std::vector<SqlValue>> expanded;
     for(const auto &oldRow:rows) for(const auto &newRow:newRows) {
-      const auto cmp=compareSqlValues(oldRow[priorIndex],newRow[newIndex]);
+      const auto cmp = lnew ? compareSqlValues(newRow[newIndex], oldRow[priorIndex])
+                             : compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
       bool ok=false;
       switch(join.comparison) {
       case ComparisonOperator::Equal: ok=cmp==0; break;
