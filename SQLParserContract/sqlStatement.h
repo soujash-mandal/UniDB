@@ -110,7 +110,12 @@ struct SelectStatement {
   std::uint64_t offset{0};
 };
 
-using SqlStatement =
-    std::variant<CreateTableStatement, InsertStatement, SelectStatement>;
+struct UnionAllStatement {
+  // Each branch is evaluated independently; rows are concatenated in order.
+  std::vector<SelectStatement> selects;
+};
+
+using SqlStatement = std::variant<CreateTableStatement, InsertStatement,
+                                  SelectStatement, UnionAllStatement>;
 
 } // namespace unidb::sql

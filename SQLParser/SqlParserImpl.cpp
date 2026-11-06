@@ -45,6 +45,35 @@ public:
       result = parseInsert();
     } else if (isKeyword("SELECT")) {
       result = parseSelect();
+      if (const auto *parseError = std::get_if<SqlParseError>(&result)) {
+        return *parseError;
+      }
+      auto &parsedStatement = std::get<SqlStatement>(result);
+      if (const auto *firstSelect =
+              std::get_if<SelectStatement>(&parsedStatement);
+          firstSelect != nullptr && isKeyword("UNION")) {
+        UnionAllStatement unionAll;
+        unionAll.selects.push_back(*firstSelect);
+        while (matchKeyword("UNION")) {
+          if (!matchKeyword("ALL")) {
+            return unsupported("Only UNION ALL is currently supported");
+          }
+          if (!isKeyword("SELECT")) {
+            return syntaxError("Expected SELECT after UNION ALL");
+          }
+          auto nextResult = parseSelect();
+          if (const auto *error = std::get_if<SqlParseError>(&nextResult)) {
+            return *error;
+          }
+          const auto *nextSelect = std::get_if<SelectStatement>(
+              &std::get<SqlStatement>(nextResult));
+          if (nextSelect == nullptr) {
+            return syntaxError("UNION ALL requires SELECT branches");
+          }
+          unionAll.selects.push_back(*nextSelect);
+        }
+        result = SqlStatement{std::move(unionAll)};
+      }
     } else {
       return unsupported("Statement type is outside the V1 SQL subset");
     }
