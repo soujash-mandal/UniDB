@@ -1282,6 +1282,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     orderIndexes.reserve(select->orderBy.size());
     const std::string tableQualifier =
         select->tableAlias.value_or(select->tableName);
+    if (select->groupBy.empty()) {
     for (const auto &order : select->orderBy) {
       const auto alias = std::find_if(
           selectedColumns.begin(), selectedColumns.end(),
@@ -1315,6 +1316,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       orderIndexes.push_back({orderIndex, order.ascending, false});
     }
 
+    }
+
     std::optional<std::size_t> aggregateIndex;
     std::vector<std::size_t> groupIndexes;
     if (select->having.has_value() && select->groupBy.empty()) {
@@ -1325,8 +1328,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         throw std::invalid_argument(
             "GROUP BY requires one aggregate expression in SELECT");
       }
-      if (select->distinct || !select->orderBy.empty() ||
-          select->limit.has_value() || select->offset != 0) {
+      if (select->distinct) {
         throw std::invalid_argument(
             "Grouped aggregate SELECT cannot be combined with DISTINCT, "
             "ORDER BY, LIMIT, or OFFSET");
@@ -1352,8 +1354,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     }
     if (select->aggregate.has_value()) {
       const auto &aggregate = *select->aggregate;
-      if (select->distinct || !select->orderBy.empty() ||
-          select->limit.has_value() || select->offset != 0) {
+      if (select->distinct ||
+          (select->groupBy.empty() &&
+           (!select->orderBy.empty() || select->limit.has_value() ||
+            select->offset != 0))) {
         throw std::invalid_argument(
             "Aggregate SELECT cannot be combined with DISTINCT, ORDER BY, "
             "LIMIT, or OFFSET");
@@ -1529,6 +1533,68 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         auto outputRow = key;
         outputRow.push_back(std::move(aggregateValue));
         result.rows.push_back(std::move(outputRow));
+      }
+
+      struct GroupOrderIndex {
+        std::size_t index;
+        bool ascending;
+      };
+      std::vector<GroupOrderIndex> groupedOrderIndexes;
+      groupedOrderIndexes.reserve(select->orderBy.size());
+      for (const auto &order : select->orderBy) {
+        auto found = std::find_if(
+            result.columns.begin(), result.columns.end(),
+            [&](const auto &column) { return column.name == order.columnName; });
+        if (found != result.columns.end()) {
+          groupedOrderIndexes.push_back(
+              {static_cast<std::size_t>(
+                   std::distance(result.columns.begin(), found)),
+               order.ascending});
+          continue;
+        }
+
+        const auto normalizedOrderColumn =
+            normalizeSingleTableColumnName(order.columnName, tableQualifier);
+        const auto groupIndex = std::find_if(
+            groupIndexes.begin(), groupIndexes.end(),
+            [&](const auto index) {
+              return schema[index].name == normalizedOrderColumn;
+            });
+        if (groupIndex == groupIndexes.end()) {
+          throw std::invalid_argument("Unknown GROUP BY ORDER BY column: " +
+                                      order.columnName);
+        }
+        groupedOrderIndexes.push_back(
+            {static_cast<std::size_t>(
+                 std::distance(groupIndexes.begin(), groupIndex)),
+             order.ascending});
+      }
+
+      if (!groupedOrderIndexes.empty()) {
+        std::stable_sort(
+            result.rows.begin(), result.rows.end(),
+            [&](const auto &left, const auto &right) {
+              for (const auto &order : groupedOrderIndexes) {
+                const int comparison =
+                    compareSqlValues(left[order.index], right[order.index]);
+                if (comparison != 0) {
+                  return order.ascending ? comparison < 0 : comparison > 0;
+                }
+              }
+              return false;
+            });
+      }
+
+      const std::size_t offset =
+          select->offset > result.rows.size()
+              ? result.rows.size()
+              : static_cast<std::size_t>(select->offset);
+      if (offset > 0) {
+        result.rows.erase(result.rows.begin(), result.rows.begin() + offset);
+      }
+      if (select->limit.has_value() &&
+          *select->limit < result.rows.size()) {
+        result.rows.resize(static_cast<std::size_t>(*select->limit));
       }
       return result;
     }
