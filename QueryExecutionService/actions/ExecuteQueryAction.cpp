@@ -883,6 +883,132 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   return result;
 }
 
+QueryExecutionResult
+executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
+                 const std::vector<ColumnDefinition> &leftSchema,
+                 const std::vector<ColumnDefinition> &rightSchema) {
+  const auto &join = *select.crossJoin;
+  const std::string leftQualifier =
+      select.tableAlias.value_or(select.tableName);
+  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
+  const auto leftTypes = schemaTypes(leftSchema);
+  const auto rightTypes = schemaTypes(rightSchema);
+  // Use fully-qualified internal names so WHERE can resolve either qualified
+  // references or unqualified names after ambiguity checks.
+  std::vector<ColumnDefinition> joinedSchema;
+  std::vector<SqlType> joinedTypes;
+  joinedSchema.reserve(leftSchema.size() + rightSchema.size());
+  joinedTypes.reserve(leftTypes.size() + rightTypes.size());
+  for (const auto &column : leftSchema) {
+    joinedSchema.push_back({leftQualifier + "." + column.name, column.type});
+    joinedTypes.push_back(column.type);
+  }
+  for (const auto &column : rightSchema) {
+    joinedSchema.push_back({rightQualifier + "." + column.name, column.type});
+    joinedTypes.push_back(column.type);
+  }
+
+  std::optional<CompiledWhereExpression> compiledWhere;
+  if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
+    const auto qualified = qualifyJoinWhereColumns(
+        *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
+    compiledWhere =
+        compileWhereExpression(qualified, joinedSchema, joinedTypes);
+  }
+
+  std::vector<std::size_t> selectedIndexes;
+  std::vector<ColumnDefinition> selectedColumns;
+  if (select.selectAll) {
+    selectedIndexes.reserve(joinedSchema.size());
+    selectedColumns.reserve(joinedSchema.size());
+    for (std::size_t index = 0; index < joinedSchema.size(); ++index) {
+      selectedIndexes.push_back(index);
+      const bool isLeft = index < leftSchema.size();
+      const auto &sourceColumn =
+          isLeft ? leftSchema[index] : rightSchema[index - leftSchema.size()];
+      const auto &otherSchema = isLeft ? rightSchema : leftSchema;
+      const bool duplicated = std::any_of(
+          otherSchema.begin(), otherSchema.end(),
+          [&](const auto &other) { return other.name == sourceColumn.name; });
+      const std::string &tableName = isLeft ? leftQualifier : rightQualifier;
+      selectedColumns.push_back(
+          {duplicated ? tableName + "." + sourceColumn.name : sourceColumn.name,
+           sourceColumn.type});
+    }
+  } else {
+    selectedIndexes.reserve(select.columnNames.size());
+    selectedColumns.reserve(select.columnNames.size());
+    for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
+      const auto resolved =
+          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
+                                    leftSchema, rightQualifier, rightSchema);
+      selectedIndexes.push_back(resolved.tableName == leftQualifier
+                                    ? resolved.index
+                                    : leftSchema.size() + resolved.index);
+      const bool duplicated =
+          std::any_of(leftSchema.begin(), leftSchema.end(),
+                      [&](const auto &column) {
+                        return column.name == resolved.column->name;
+                      }) &&
+          std::any_of(rightSchema.begin(), rightSchema.end(),
+                      [&](const auto &column) {
+                        return column.name == resolved.column->name;
+                      });
+      std::string outputName =
+          duplicated ? resolved.tableName + "." + resolved.column->name
+                     : resolved.column->name;
+      if (index < select.columnAliases.size() &&
+          select.columnAliases[index].has_value()) {
+        outputName = *select.columnAliases[index];
+      }
+      selectedColumns.push_back({std::move(outputName), resolved.column->type});
+    }
+  }
+
+  const auto leftEncodedRows = rdbServicePort.selectAllRows(select.tableName);
+  const auto rightEncodedRows = rdbServicePort.selectAllRows(join.tableName);
+  std::vector<std::vector<SqlValue>> leftRows;
+  leftRows.reserve(leftEncodedRows.size());
+  for (const auto &bytes : leftEncodedRows) {
+    leftRows.push_back(SqlTupleCodec::decode(leftTypes, bytes));
+  }
+  std::vector<std::vector<SqlValue>> rightRows;
+  rightRows.reserve(rightEncodedRows.size());
+  for (const auto &bytes : rightEncodedRows) {
+    rightRows.push_back(SqlTupleCodec::decode(rightTypes, bytes));
+  }
+  constexpr std::size_t kMaxCrossJoinRows = 1'000'000;
+  if (!leftRows.empty() &&
+      rightRows.size() > kMaxCrossJoinRows / leftRows.size()) {
+    throw std::length_error(
+        "CROSS JOIN result exceeds the 1000000-row safety limit");
+  }
+
+  QueryExecutionResult result;
+  result.kind = QueryExecutionResultKind::Rows;
+  result.message = "Rows selected";
+  result.columns = std::move(selectedColumns);
+  for (const auto &leftRow : leftRows) {
+    for (const auto &rightRow : rightRows) {
+      std::vector<SqlValue> joinedRow;
+      joinedRow.reserve(leftRow.size() + rightRow.size());
+      joinedRow.insert(joinedRow.end(), leftRow.begin(), leftRow.end());
+      joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
+      if (compiledWhere.has_value() &&
+          !matchesWhereExpression(joinedRow, *compiledWhere)) {
+        continue;
+      }
+      std::vector<SqlValue> projectedRow;
+      projectedRow.reserve(selectedIndexes.size());
+      for (const auto index : selectedIndexes) {
+        projectedRow.push_back(joinedRow[index]);
+      }
+      result.rows.push_back(std::move(projectedRow));
+    }
+  }
+  return result;
+}
+
 QueryExecutionResult executeMultipleInnerJoins(
     RdbServicePort &port, const SelectStatement &select,
     const std::vector<std::vector<ColumnDefinition>> &schemas) {
