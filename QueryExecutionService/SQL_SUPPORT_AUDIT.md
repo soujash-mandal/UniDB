@@ -113,3 +113,23 @@ Grouped aggregate queries can order by projected grouping columns or the aggrega
 ## INNER JOIN comparison predicates
 
 The two-table INNER JOIN executor supports `=`, `!=`, `>`, `<`, `>=`, and `<=` between qualified columns. Operand types must match. This remains an in-memory nested-loop join (O(N × M)); no storage or RDB API changes are involved.
+
+
+## CROSS JOIN (SIM-77 PR 12)
+
+One explicit `CROSS JOIN` between two tables is supported. QES fetches both
+tables through the existing RDB public SELECT Action-backed port, decodes them,
+and emits the Cartesian product in deterministic left-major/right-minor order.
+Qualified and unambiguous unqualified projections, projection aliases, and
+WHERE filtering are supported.
+
+The executor rejects a candidate product larger than 1,000,000 rows before
+building the output. This bound applies before WHERE filtering and avoids
+integer-overflow in the product-size check. Empty inputs naturally produce an
+empty result. Execution is O(N × M) and materializes decoded inputs and result
+rows in memory.
+
+CROSS JOIN is deliberately limited to one joined table per SELECT and cannot
+currently be mixed with INNER JOIN or combined with DISTINCT, aggregate/grouped
+queries, computed projections, ORDER BY, LIMIT, or OFFSET. No RDBService,
+storage, tuple-format, or persisted-database changes are required.
