@@ -24,6 +24,7 @@ using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
+using unidb::sql::UnionAllStatement;
 using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
 
@@ -790,6 +791,50 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                             " row(s) were inserted: " + error.what());
     }
     return commandResult("Rows inserted", insertedRows);
+  }
+
+  if (const auto *unionAll = std::get_if<UnionAllStatement>(&statement)) {
+    if (unionAll->selects.size() < 2) {
+      throw std::invalid_argument(
+          "UNION ALL requires at least two SELECT branches");
+    }
+
+    QueryExecutionResult combined;
+    bool firstBranch = true;
+    for (const auto &select : unionAll->selects) {
+      const auto branchOutcome = executeStatement(SqlStatement{select});
+      if (const auto *error =
+              std::get_if<QueryExecutionError>(&branchOutcome)) {
+        return *error;
+      }
+      const auto &branchResult = std::get<QueryExecutionResult>(branchOutcome);
+      if (branchResult.kind != QueryExecutionResultKind::Rows) {
+        throw std::invalid_argument("UNION ALL branches must return rows");
+      }
+
+      if (firstBranch) {
+        combined.kind = QueryExecutionResultKind::Rows;
+        combined.message = "Rows selected";
+        combined.columns = branchResult.columns;
+        firstBranch = false;
+      } else {
+        if (branchResult.columns.size() != combined.columns.size()) {
+          throw std::invalid_argument(
+              "UNION ALL branches must return the same number of columns");
+        }
+        for (std::size_t index = 0; index < combined.columns.size(); ++index) {
+          if (branchResult.columns[index].type !=
+              combined.columns[index].type) {
+            throw std::invalid_argument(
+                "UNION ALL columns must have matching types at each position");
+          }
+        }
+      }
+
+      combined.rows.insert(combined.rows.end(), branchResult.rows.begin(),
+                           branchResult.rows.end());
+    }
+    return combined;
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {

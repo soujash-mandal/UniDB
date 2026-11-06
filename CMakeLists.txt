@@ -210,6 +210,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/InsertsValuesInSchemaOrderTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectStarDecodesRowsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectProjectionTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/UnionAllTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectDistinctTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAliasesTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAggregatesTest.cpp
@@ -230,6 +231,7 @@ add_executable(tests
     SQLParser/test/SqlParserAggregateTest.cpp
     SQLParser/test/SqlParserGroupByTest.cpp
     SQLParser/test/SqlParserJoinTest.cpp
+    SQLParser/test/SqlParserUnionTest.cpp
     CatalogService/test/CatalogActionTestSupport.h
     RdbService/test/CreateCatalogTableAdapter/ConvertsRdbColumnsWhenCreatingCatalogTableTest.cpp
     RdbService/test/GetCatalogTableByNameAdapter/ConvertsCatalogTableToRdbDefinitionTest.cpp
