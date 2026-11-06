@@ -1657,9 +1657,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       return projected;
     };
 
-    const bool ordersByProjection = std::any_of(
-        orderIndexes.begin(), orderIndexes.end(),
-        [](const auto &order) { return order.projected; });
+    const bool ordersByProjection =
+        std::any_of(orderIndexes.begin(), orderIndexes.end(),
+                    [](const auto &order) { return order.projected; });
     std::vector<std::vector<SqlValue>> projectedRows;
     if (ordersByProjection) {
       projectedRows.reserve(matchedRows.size());
