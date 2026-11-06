@@ -44,8 +44,7 @@ TEST(SqlParserIntegerExpressionTest, ParsesIntegerLiteralExpressions) {
             IntegerBinaryOperator::Subtract);
 }
 
-TEST(SqlParserIntegerExpressionTest,
-     ParsesUnaryPositiveAndNegativeOperators) {
+TEST(SqlParserIntegerExpressionTest, ParsesUnaryPositiveAndNegativeOperators) {
   SqlParserImpl parser;
   const auto result = parser.parse(
       "SELECT +id, -(id + 1), --5, -9223372036854775808 FROM users");
