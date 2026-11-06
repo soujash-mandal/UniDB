@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../contract/sqlParser.h"
+#include "../domain/contract/sqlParser.h"
 #include "../port/RdbServicePort.h"
 
 #include <string>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../contract/sqlStatement.h"
+#include "../domain/contract/sqlStatement.h"
 
 #include <cstdint>
 #include <stdexcept>
