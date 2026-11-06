@@ -263,6 +263,16 @@ private:
     return SqlStatement{std::move(statement)};
   }
 
+  bool isTextFunctionStart() const {
+    if (current().kind != TokenKind::Identifier ||
+        position_ + 1 >= tokens_.size() ||
+        tokens_[position_ + 1].kind != TokenKind::LeftParen) {
+      return false;
+    }
+    const auto name = upper(current().text);
+    return name == "UPPER" || name == "LOWER" || name == "LENGTH";
+  }
+
   bool isAggregateStart() const {
     return current().kind == TokenKind::Identifier &&
            (upper(current().text) == "COUNT" ||
@@ -295,6 +305,37 @@ private:
     }
     reference.columnName = first;
     return reference;
+  }
+
+  std::variant<TextFunctionExpression, SqlParseError>
+  parseTextFunction() {
+    const auto name = upper(current().text);
+    ++position_;
+    if (!expect(TokenKind::LeftParen)) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected '(' after text function"};
+    }
+    if (current().kind != TokenKind::Identifier) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           name + " requires a TEXT column argument"};
+    }
+    auto reference = parseColumnReference(false);
+    if (std::holds_alternative<SqlParseError>(reference)) {
+      return std::get<SqlParseError>(std::move(reference));
+    }
+    if (!expect(TokenKind::RightParen)) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected ')' after text function argument"};
+    }
+    TextFunctionExpression expression;
+    expression.function = name == "UPPER" ? TextFunction::Upper
+                          : name == "LOWER" ? TextFunction::Lower
+                                             : TextFunction::Length;
+    const auto &column = std::get<ColumnReference>(reference);
+    expression.columnName = column.tableName.has_value()
+                                ? *column.tableName + "." + column.columnName
+                                : column.columnName;
+    return expression;
   }
 
   std::variant<AggregateExpression, SqlParseError> parseAggregateCall() {
@@ -591,6 +632,17 @@ private:
           statement.caseExpressions.push_back(
               std::get<CaseExpression>(std::move(caseExpression)));
           statement.integerExpressions.push_back(std::nullopt);
+          statement.textFunctions.push_back(std::nullopt);
+        } else if (isTextFunctionStart()) {
+          auto textFunction = parseTextFunction();
+          if (std::holds_alternative<SqlParseError>(textFunction)) {
+            return std::get<SqlParseError>(std::move(textFunction));
+          }
+          statement.columnNames.emplace_back();
+          statement.caseExpressions.push_back(std::nullopt);
+          statement.integerExpressions.push_back(std::nullopt);
+          statement.textFunctions.push_back(
+              std::get<TextFunctionExpression>(std::move(textFunction)));
         } else {
           auto expression = parseIntegerExpression();
           if (std::holds_alternative<SqlParseError>(expression)) {
@@ -606,6 +658,7 @@ private:
             statement.integerExpressions.push_back(std::move(parsedExpression));
           }
           statement.caseExpressions.push_back(std::nullopt);
+          statement.textFunctions.push_back(std::nullopt);
         }
         std::optional<std::string> alias;
         if (matchKeyword("AS")) {
