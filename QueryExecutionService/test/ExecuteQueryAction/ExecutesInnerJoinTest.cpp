@@ -51,7 +51,8 @@ struct InnerJoinFixture {
     port.schemas["orders"] = {{"id", SqlType::Int},
                               {"user_id", SqlType::Int},
                               {"amount", SqlType::Int}};
-    port.schemas["products"] = {{"order_id", SqlType::Int}, {"name", SqlType::Text}};
+    port.schemas["products"] = {{"order_id", SqlType::Int},
+                                {"name", SqlType::Text}};
     port.rows["users"] = {};
     port.rows["orders"] = {};
     port.rows["products"] = {};
@@ -69,11 +70,10 @@ struct InnerJoinFixture {
         {SqlValue{id}, SqlValue{userId}, SqlValue{amount}}));
   }
 
-
   void addProduct(std::int64_t orderId, std::string name) {
-    port.rows["products"].push_back(SqlTupleCodec::encode(
-        {SqlType::Int, SqlType::Text},
-        {SqlValue{orderId}, SqlValue{std::move(name)}}));
+    port.rows["products"].push_back(
+        SqlTupleCodec::encode({SqlType::Int, SqlType::Text},
+                              {SqlValue{orderId}, SqlValue{std::move(name)}}));
   }
 
   QueryExecutionService::QueryExecutionOutcome execute(std::string_view sql) {
@@ -284,7 +284,6 @@ TEST(ExecuteQueryActionInnerJoinTest,
   EXPECT_EQ(result.rows[0], (std::vector<SqlValue>{std::string{"Ada"}}));
 }
 
-
 TEST(ExecuteQueryActionInnerJoinTest, ExecutesMultipleInnerJoinsLeftToRight) {
   InnerJoinFixture fixture;
   fixture.addUser(1, "Ada");
@@ -294,18 +293,23 @@ TEST(ExecuteQueryActionInnerJoinTest, ExecutesMultipleInnerJoinsLeftToRight) {
   fixture.addProduct(10, "Book");
   fixture.addProduct(11, "Pen");
 
-  const auto outcome = fixture.execute(
-      "SELECT users.name, products.name FROM users "
-      "INNER JOIN orders ON users.id = orders.user_id "
-      "INNER JOIN products ON orders.id = products.order_id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(outcome));
-  const auto &result = std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  const auto outcome =
+      fixture.execute("SELECT users.name, products.name FROM users "
+                      "INNER JOIN orders ON users.id = orders.user_id "
+                      "INNER JOIN products ON orders.id = products.order_id");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.columns.size(), 2U);
   EXPECT_EQ(result.columns[0].name, "users.name");
   EXPECT_EQ(result.columns[1].name, "products.name");
   ASSERT_EQ(result.rows.size(), 2U);
-  EXPECT_EQ(result.rows[0], (std::vector<SqlValue>{std::string{"Ada"}, std::string{"Book"}}));
-  EXPECT_EQ(result.rows[1], (std::vector<SqlValue>{std::string{"Lin"}, std::string{"Pen"}}));
+  EXPECT_EQ(result.rows[0],
+            (std::vector<SqlValue>{std::string{"Ada"}, std::string{"Book"}}));
+  EXPECT_EQ(result.rows[1],
+            (std::vector<SqlValue>{std::string{"Lin"}, std::string{"Pen"}}));
   EXPECT_EQ(fixture.port.schemaRequests,
             (std::vector<std::string>{"users", "orders", "products"}));
   EXPECT_EQ(fixture.port.rowRequests,

@@ -695,34 +695,51 @@ private:
     }
 
     while (matchKeyword("INNER")) {
-      if (!expectKeyword("JOIN")) return syntaxError("Expected JOIN after INNER");
+      if (!expectKeyword("JOIN"))
+        return syntaxError("Expected JOIN after INNER");
       if (current().kind != TokenKind::Identifier)
         return syntaxError("Expected joined table name after INNER JOIN");
       InnerJoinClause join;
       join.tableName = current().text;
       ++position_;
       if (matchKeyword("AS")) {
-        if (current().kind != TokenKind::Identifier || isReservedTableAliasKeyword())
+        if (current().kind != TokenKind::Identifier ||
+            isReservedTableAliasKeyword())
           return syntaxError("Expected table alias after AS");
         join.tableAlias = current().text;
         ++position_;
-      } else if (current().kind == TokenKind::Identifier && !isReservedTableAliasKeyword()) {
+      } else if (current().kind == TokenKind::Identifier &&
+                 !isReservedTableAliasKeyword()) {
         join.tableAlias = current().text;
         ++position_;
       }
-      if (!expectKeyword("ON")) return syntaxError("Expected ON after joined table name");
+      if (!expectKeyword("ON"))
+        return syntaxError("Expected ON after joined table name");
       auto left = parseColumnReference(true);
       if (std::holds_alternative<SqlParseError>(left))
         return std::get<SqlParseError>(std::move(left));
       join.left = std::get<ColumnReference>(std::move(left));
       switch (current().kind) {
-      case TokenKind::Equals: join.comparison = ComparisonOperator::Equal; break;
-      case TokenKind::NotEquals: join.comparison = ComparisonOperator::NotEqual; break;
-      case TokenKind::GreaterThan: join.comparison = ComparisonOperator::GreaterThan; break;
-      case TokenKind::LessThan: join.comparison = ComparisonOperator::LessThan; break;
-      case TokenKind::GreaterThanOrEqual: join.comparison = ComparisonOperator::GreaterThanOrEqual; break;
-      case TokenKind::LessThanOrEqual: join.comparison = ComparisonOperator::LessThanOrEqual; break;
-      default: return syntaxError("Expected comparison operator in INNER JOIN ON");
+      case TokenKind::Equals:
+        join.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        join.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        join.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        join.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        join.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        join.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
+      default:
+        return syntaxError("Expected comparison operator in INNER JOIN ON");
       }
       ++position_;
       auto right = parseColumnReference(true);

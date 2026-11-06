@@ -883,21 +883,24 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   return result;
 }
 
-
 QueryExecutionResult executeMultipleInnerJoins(
     RdbServicePort &port, const SelectStatement &select,
     const std::vector<std::vector<ColumnDefinition>> &schemas) {
-  if (select.innerJoins.size() < 2 || schemas.size() != select.innerJoins.size() + 1)
+  if (select.innerJoins.size() < 2 ||
+      schemas.size() != select.innerJoins.size() + 1)
     throw std::invalid_argument("Invalid multiple INNER JOIN plan");
-  if (select.aggregate || !select.groupBy.empty() || select.having || select.distinct ||
-      !select.orderBy.empty() || select.limit || select.offset != 0 ||
-      !std::all_of(select.integerExpressions.begin(), select.integerExpressions.end(),
+  if (select.aggregate || !select.groupBy.empty() || select.having ||
+      select.distinct || !select.orderBy.empty() || select.limit ||
+      select.offset != 0 ||
+      !std::all_of(select.integerExpressions.begin(),
+                   select.integerExpressions.end(),
                    [](const auto &v) { return !v.has_value(); }) ||
       !std::all_of(select.textFunctions.begin(), select.textFunctions.end(),
                    [](const auto &v) { return !v.has_value(); }) ||
       !std::all_of(select.caseExpressions.begin(), select.caseExpressions.end(),
                    [](const auto &v) { return !v.has_value(); }))
-    throw std::invalid_argument("Multiple INNER JOIN currently supports simple SELECT projections");
+    throw std::invalid_argument(
+        "Multiple INNER JOIN currently supports simple SELECT projections");
   std::vector<std::string> qualifiers;
   qualifiers.push_back(select.tableAlias.value_or(select.tableName));
   std::vector<ColumnDefinition> combinedSchema;
@@ -905,133 +908,224 @@ QueryExecutionResult executeMultipleInnerJoins(
   std::vector<std::vector<SqlValue>> rows;
   auto firstTypes = schemaTypes(schemas.front());
   for (const auto &c : schemas.front()) {
-    combinedSchema.push_back({qualifiers.front()+"."+c.name,c.type});
+    combinedSchema.push_back({qualifiers.front() + "." + c.name, c.type});
     combinedTypes.push_back(c.type);
   }
   for (const auto &bytes : port.selectAllRows(select.tableName))
-    rows.push_back(SqlTupleCodec::decode(firstTypes,bytes));
-  for (std::size_t j=0;j<select.innerJoins.size();++j) {
-    const auto &join=select.innerJoins[j];
-    const auto qualifier=join.tableAlias.value_or(join.tableName);
-    if (std::find(qualifiers.begin(),qualifiers.end(),qualifier)!=qualifiers.end())
+    rows.push_back(SqlTupleCodec::decode(firstTypes, bytes));
+  for (std::size_t j = 0; j < select.innerJoins.size(); ++j) {
+    const auto &join = select.innerJoins[j];
+    const auto qualifier = join.tableAlias.value_or(join.tableName);
+    if (std::find(qualifiers.begin(), qualifiers.end(), qualifier) !=
+        qualifiers.end())
       throw std::invalid_argument("JOIN table aliases must be distinct");
-    if (std::find_if(qualifiers.begin(),qualifiers.end(),[&](const auto &q){return q==join.tableName;})!=qualifiers.end() &&
+    if (std::find_if(qualifiers.begin(), qualifiers.end(),
+                     [&](const auto &q) { return q == join.tableName; }) !=
+            qualifiers.end() &&
         !join.tableAlias)
-      throw std::invalid_argument("Joining a table to itself requires a distinct alias");
-    auto resolve=[&](const unidb::sql::ColumnReference &ref, bool allowNew) -> std::pair<std::size_t,const ColumnDefinition*> {
-      if (!ref.tableName) throw std::invalid_argument("JOIN ON requires table-qualified column references");
-      if (*ref.tableName==qualifier && allowNew) {
-        const auto &sc=schemas[j+1];
-        auto it=std::find_if(sc.begin(),sc.end(),[&](const auto &c){return c.name==ref.columnName;});
-        if(it==sc.end()) throw std::invalid_argument("Unknown JOIN column: "+*ref.tableName+"."+ref.columnName);
-        return {static_cast<std::size_t>(std::distance(sc.begin(),it)),&*it};
+      throw std::invalid_argument(
+          "Joining a table to itself requires a distinct alias");
+    auto resolve =
+        [&](const unidb::sql::ColumnReference &ref,
+            bool allowNew) -> std::pair<std::size_t, const ColumnDefinition *> {
+      if (!ref.tableName)
+        throw std::invalid_argument(
+            "JOIN ON requires table-qualified column references");
+      if (*ref.tableName == qualifier && allowNew) {
+        const auto &sc = schemas[j + 1];
+        auto it = std::find_if(sc.begin(), sc.end(), [&](const auto &c) {
+          return c.name == ref.columnName;
+        });
+        if (it == sc.end())
+          throw std::invalid_argument("Unknown JOIN column: " + *ref.tableName +
+                                      "." + ref.columnName);
+        return {static_cast<std::size_t>(std::distance(sc.begin(), it)), &*it};
       }
-      auto q=std::find(qualifiers.begin(),qualifiers.end(),*ref.tableName);
-      if(q==qualifiers.end()) throw std::invalid_argument("Unknown JOIN table reference: "+*ref.tableName);
-      const auto qi=static_cast<std::size_t>(std::distance(qualifiers.begin(),q));
-      std::size_t offset=0;
-      for(std::size_t k=0;k<qi;++k) offset+=schemas[k].size();
-      const auto &sc=schemas[qi];
-      auto it=std::find_if(sc.begin(),sc.end(),[&](const auto &c){return c.name==ref.columnName;});
-      if(it==sc.end()) throw std::invalid_argument("Unknown JOIN column: "+*ref.tableName+"."+ref.columnName);
-      return {offset+static_cast<std::size_t>(std::distance(sc.begin(),it)),&*it};
+      auto q = std::find(qualifiers.begin(), qualifiers.end(), *ref.tableName);
+      if (q == qualifiers.end())
+        throw std::invalid_argument("Unknown JOIN table reference: " +
+                                    *ref.tableName);
+      const auto qi =
+          static_cast<std::size_t>(std::distance(qualifiers.begin(), q));
+      std::size_t offset = 0;
+      for (std::size_t k = 0; k < qi; ++k)
+        offset += schemas[k].size();
+      const auto &sc = schemas[qi];
+      auto it = std::find_if(sc.begin(), sc.end(), [&](const auto &c) {
+        return c.name == ref.columnName;
+      });
+      if (it == sc.end())
+        throw std::invalid_argument("Unknown JOIN column: " + *ref.tableName +
+                                    "." + ref.columnName);
+      return {offset + static_cast<std::size_t>(std::distance(sc.begin(), it)),
+              &*it};
     };
-    auto l=resolve(join.left,true), rr=resolve(join.right,true);
-    const bool lnew=join.left.tableName && *join.left.tableName==qualifier;
-    const bool rnew=join.right.tableName && *join.right.tableName==qualifier;
-    if(lnew==rnew) throw std::invalid_argument("INNER JOIN ON must compare a previously joined table with the new table");
-    if(l.second->type!=rr.second->type) throw std::invalid_argument("INNER JOIN columns must have matching types");
-    const std::size_t priorIndex=lnew?rr.first:l.first;
-    const std::size_t newIndex=lnew?l.first:rr.first;
-    const auto newTypes=schemaTypes(schemas[j+1]);
+    auto l = resolve(join.left, true), rr = resolve(join.right, true);
+    const bool lnew = join.left.tableName && *join.left.tableName == qualifier;
+    const bool rnew =
+        join.right.tableName && *join.right.tableName == qualifier;
+    if (lnew == rnew)
+      throw std::invalid_argument("INNER JOIN ON must compare a previously "
+                                  "joined table with the new table");
+    if (l.second->type != rr.second->type)
+      throw std::invalid_argument(
+          "INNER JOIN columns must have matching types");
+    const std::size_t priorIndex = lnew ? rr.first : l.first;
+    const std::size_t newIndex = lnew ? l.first : rr.first;
+    const auto newTypes = schemaTypes(schemas[j + 1]);
     std::vector<std::vector<SqlValue>> newRows;
-    for(const auto &bytes:port.selectAllRows(join.tableName))
-      newRows.push_back(SqlTupleCodec::decode(newTypes,bytes));
+    for (const auto &bytes : port.selectAllRows(join.tableName))
+      newRows.push_back(SqlTupleCodec::decode(newTypes, bytes));
     std::vector<std::vector<SqlValue>> expanded;
-    for(const auto &oldRow:rows) for(const auto &newRow:newRows) {
-      const auto cmp = lnew ? compareSqlValues(newRow[newIndex], oldRow[priorIndex])
-                             : compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
-      bool ok=false;
-      switch(join.comparison) {
-      case ComparisonOperator::Equal: ok=cmp==0; break;
-      case ComparisonOperator::NotEqual: ok=cmp!=0; break;
-      case ComparisonOperator::GreaterThan: ok=cmp>0; break;
-      case ComparisonOperator::LessThan: ok=cmp<0; break;
-      case ComparisonOperator::GreaterThanOrEqual: ok=cmp>=0; break;
-      case ComparisonOperator::LessThanOrEqual: ok=cmp<=0; break;
-      default: throw std::invalid_argument("INNER JOIN supports basic comparisons only");
+    for (const auto &oldRow : rows)
+      for (const auto &newRow : newRows) {
+        const auto cmp =
+            lnew ? compareSqlValues(newRow[newIndex], oldRow[priorIndex])
+                 : compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
+        bool ok = false;
+        switch (join.comparison) {
+        case ComparisonOperator::Equal:
+          ok = cmp == 0;
+          break;
+        case ComparisonOperator::NotEqual:
+          ok = cmp != 0;
+          break;
+        case ComparisonOperator::GreaterThan:
+          ok = cmp > 0;
+          break;
+        case ComparisonOperator::LessThan:
+          ok = cmp < 0;
+          break;
+        case ComparisonOperator::GreaterThanOrEqual:
+          ok = cmp >= 0;
+          break;
+        case ComparisonOperator::LessThanOrEqual:
+          ok = cmp <= 0;
+          break;
+        default:
+          throw std::invalid_argument(
+              "INNER JOIN supports basic comparisons only");
+        }
+        if (ok) {
+          auto row = oldRow;
+          row.insert(row.end(), newRow.begin(), newRow.end());
+          expanded.push_back(std::move(row));
+        }
       }
-      if(ok) { auto row=oldRow; row.insert(row.end(),newRow.begin(),newRow.end()); expanded.push_back(std::move(row)); }
-    }
-    rows=std::move(expanded);
+    rows = std::move(expanded);
     qualifiers.push_back(qualifier);
-    for(const auto &c:schemas[j+1]) { combinedSchema.push_back({qualifier+"."+c.name,c.type}); combinedTypes.push_back(c.type); }
+    for (const auto &c : schemas[j + 1]) {
+      combinedSchema.push_back({qualifier + "." + c.name, c.type});
+      combinedTypes.push_back(c.type);
+    }
   }
   std::optional<CompiledWhereExpression> where;
-  if(const auto *w=std::get_if<WhereExpression>(&select.where)) {
-    auto q=*w;
-    std::function<void(WhereExpression&)> qualify=[&](WhereExpression &e) {
-      if(e.kind!=WhereExpression::Kind::Predicate) { for(auto &c:e.children) qualify(c); return; }
-      const auto name=e.predicate.columnName; const auto dot=name.find('.');
-      if(dot!=std::string::npos) {
-        const auto alias=name.substr(0,dot), col=name.substr(dot+1);
-        if(std::find(qualifiers.begin(),qualifiers.end(),alias)==qualifiers.end())
-          throw std::invalid_argument("Unknown WHERE table reference: "+alias);
-        e.predicate.columnName=alias+"."+col; return;
+  if (const auto *w = std::get_if<WhereExpression>(&select.where)) {
+    auto q = *w;
+    std::function<void(WhereExpression &)> qualify = [&](WhereExpression &e) {
+      if (e.kind != WhereExpression::Kind::Predicate) {
+        for (auto &c : e.children)
+          qualify(c);
+        return;
+      }
+      const auto name = e.predicate.columnName;
+      const auto dot = name.find('.');
+      if (dot != std::string::npos) {
+        const auto alias = name.substr(0, dot), col = name.substr(dot + 1);
+        if (std::find(qualifiers.begin(), qualifiers.end(), alias) ==
+            qualifiers.end())
+          throw std::invalid_argument("Unknown WHERE table reference: " +
+                                      alias);
+        e.predicate.columnName = alias + "." + col;
+        return;
       }
       std::optional<std::string> found;
-      for(std::size_t t=0;t<schemas.size();++t)
-        for(const auto &c:schemas[t]) if(c.name==name) {
-          if(found) throw std::invalid_argument("Ambiguous WHERE column: "+name);
-          found=qualifiers[t]+"."+name;
-        }
-      if(!found) throw std::invalid_argument("Unknown WHERE column: "+name);
-      e.predicate.columnName=*found;
+      for (std::size_t t = 0; t < schemas.size(); ++t)
+        for (const auto &c : schemas[t])
+          if (c.name == name) {
+            if (found)
+              throw std::invalid_argument("Ambiguous WHERE column: " + name);
+            found = qualifiers[t] + "." + name;
+          }
+      if (!found)
+        throw std::invalid_argument("Unknown WHERE column: " + name);
+      e.predicate.columnName = *found;
     };
-    qualify(q); where=compileWhereExpression(q,combinedSchema,combinedTypes);
+    qualify(q);
+    where = compileWhereExpression(q, combinedSchema, combinedTypes);
   }
   std::vector<std::size_t> projection;
   std::vector<ColumnDefinition> output;
-  if(select.selectAll) {
-    for(std::size_t i=0;i<combinedSchema.size();++i) {
+  if (select.selectAll) {
+    for (std::size_t i = 0; i < combinedSchema.size(); ++i) {
       projection.push_back(i);
-      const auto &name=combinedSchema[i].name;
-      const auto dot=name.find('.');
-      const auto col=name.substr(dot+1);
-      std::size_t count=0; for(const auto &sc:schemas) for(const auto &c:sc) if(c.name==col) ++count;
-      output.push_back({count>1?name:col,combinedSchema[i].type});
+      const auto &name = combinedSchema[i].name;
+      const auto dot = name.find('.');
+      const auto col = name.substr(dot + 1);
+      std::size_t count = 0;
+      for (const auto &sc : schemas)
+        for (const auto &c : sc)
+          if (c.name == col)
+            ++count;
+      output.push_back({count > 1 ? name : col, combinedSchema[i].type});
     }
   } else {
-    if(select.columnNames.empty()) throw std::invalid_argument("SELECT requires at least one column");
-    for(std::size_t i=0;i<select.columnNames.size();++i) {
-      const auto name=select.columnNames[i]; const auto dot=name.find('.');
+    if (select.columnNames.empty())
+      throw std::invalid_argument("SELECT requires at least one column");
+    for (std::size_t i = 0; i < select.columnNames.size(); ++i) {
+      const auto name = select.columnNames[i];
+      const auto dot = name.find('.');
       std::optional<std::size_t> idx;
-      if(dot!=std::string::npos) {
-        const auto q=name.substr(0,dot), col=name.substr(dot+1);
-        auto qi=std::find(qualifiers.begin(),qualifiers.end(),q);
-        if(qi==qualifiers.end()) throw std::invalid_argument("Unknown SELECT table: "+q);
-        auto ti=static_cast<std::size_t>(std::distance(qualifiers.begin(),qi)); std::size_t off=0;
-        for(std::size_t k=0;k<ti;++k) off+=schemas[k].size();
-        for(std::size_t k=0;k<schemas[ti].size();++k) if(schemas[ti][k].name==col) idx=off+k;
+      if (dot != std::string::npos) {
+        const auto q = name.substr(0, dot), col = name.substr(dot + 1);
+        auto qi = std::find(qualifiers.begin(), qualifiers.end(), q);
+        if (qi == qualifiers.end())
+          throw std::invalid_argument("Unknown SELECT table: " + q);
+        auto ti =
+            static_cast<std::size_t>(std::distance(qualifiers.begin(), qi));
+        std::size_t off = 0;
+        for (std::size_t k = 0; k < ti; ++k)
+          off += schemas[k].size();
+        for (std::size_t k = 0; k < schemas[ti].size(); ++k)
+          if (schemas[ti][k].name == col)
+            idx = off + k;
       } else {
-        for(std::size_t k=0;k<combinedSchema.size();++k) if(combinedSchema[k].name.substr(combinedSchema[k].name.find('.')+1)==name) {
-          if(idx) throw std::invalid_argument("Ambiguous SELECT column: "+name); idx=k;
-        }
+        for (std::size_t k = 0; k < combinedSchema.size(); ++k)
+          if (combinedSchema[k].name.substr(combinedSchema[k].name.find('.') +
+                                            1) == name) {
+            if (idx)
+              throw std::invalid_argument("Ambiguous SELECT column: " + name);
+            idx = k;
+          }
       }
-      if(!idx) throw std::invalid_argument("Unknown SELECT column: "+name);
+      if (!idx)
+        throw std::invalid_argument("Unknown SELECT column: " + name);
       projection.push_back(*idx);
-      auto outName=combinedSchema[*idx].name;
-      const auto d=outName.find('.'); const auto col=outName.substr(d+1);
-      std::size_t count=0; for(const auto &sc:schemas) for(const auto &c:sc) if(c.name==col) ++count;
-      if(i<select.columnAliases.size() && select.columnAliases[i]) outName=*select.columnAliases[i];
-      else if(count==1) outName=col;
-      output.push_back({outName,combinedSchema[*idx].type});
+      auto outName = combinedSchema[*idx].name;
+      const auto d = outName.find('.');
+      const auto col = outName.substr(d + 1);
+      std::size_t count = 0;
+      for (const auto &sc : schemas)
+        for (const auto &c : sc)
+          if (c.name == col)
+            ++count;
+      if (i < select.columnAliases.size() && select.columnAliases[i])
+        outName = *select.columnAliases[i];
+      else if (count == 1)
+        outName = col;
+      output.push_back({outName, combinedSchema[*idx].type});
     }
   }
-  QueryExecutionResult result; result.kind=QueryExecutionResultKind::Rows; result.message="Rows selected"; result.columns=std::move(output);
-  for(auto &row:rows) {
-    if(where && !matchesWhereExpression(row,*where)) continue;
-    std::vector<SqlValue> projected; for(auto index:projection) projected.push_back(row[index]);
+  QueryExecutionResult result;
+  result.kind = QueryExecutionResultKind::Rows;
+  result.message = "Rows selected";
+  result.columns = std::move(output);
+  for (auto &row : rows) {
+    if (where && !matchesWhereExpression(row, *where))
+      continue;
+    std::vector<SqlValue> projected;
+    for (auto index : projection)
+      projected.push_back(row[index]);
     result.rows.push_back(std::move(projected));
   }
   return result;
@@ -1259,10 +1353,12 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       schemas.push_back(rdbServicePort.getTableDefinition(select->tableName));
       for (const auto &join : select->innerJoins)
         schemas.push_back(rdbServicePort.getTableDefinition(join.tableName));
-      for (const auto &schema : schemas) schemaTypes(schema);
+      for (const auto &schema : schemas)
+        schemaTypes(schema);
       if (select->innerJoins.size() == 1) {
         validateInnerJoinColumns(*select, schemas[0], schemas[1]);
-        return executeInnerJoin(rdbServicePort, *select, schemas[0], schemas[1]);
+        return executeInnerJoin(rdbServicePort, *select, schemas[0],
+                                schemas[1]);
       }
       return executeMultipleInnerJoins(rdbServicePort, *select, schemas);
     }
