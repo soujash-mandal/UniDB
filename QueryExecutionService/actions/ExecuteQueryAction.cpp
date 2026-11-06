@@ -2,6 +2,7 @@
 
 #include "../adapter/SqlTupleCodec.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
+#include "../domain/expression/ScalarExpressionEvaluator.h"
 
 #include <algorithm>
 #include <functional>
@@ -289,12 +290,9 @@ std::string normalizeSingleTableColumnName(const std::string &name,
   return name.substr(separator + 1);
 }
 
-struct CompiledTextFunction {
-  TextFunction function{TextFunction::Upper};
-  std::size_t columnIndex{0};
-};
 
-CompiledTextFunction
+
+domain::CompiledTextFunction
 compileTextFunction(const TextFunctionExpression &expression,
                     const std::vector<ColumnDefinition> &schema,
                     const std::vector<SqlType> &types,
@@ -315,34 +313,7 @@ compileTextFunction(const TextFunctionExpression &expression,
                                 expression.columnName);
   }
   return {expression.function, index};
-}
-
-SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
-                              const CompiledTextFunction &expression) {
-  const auto &value = std::get<std::string>(row.at(expression.columnIndex));
-  if (expression.function == TextFunction::Length) {
-    if (value.size() >
-        static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max())) {
-      throw std::invalid_argument("LENGTH result exceeds INT64 range");
-    }
-    return static_cast<std::int64_t>(value.size());
-  }
-
-  std::string result = value;
-  for (char &character : result) {
-    const auto byte = static_cast<unsigned char>(character);
-    if (expression.function == TextFunction::Upper && byte >= 'a' &&
-        byte <= 'z') {
-      character = static_cast<char>(byte - ('a' - 'A'));
-    } else if (expression.function == TextFunction::Lower && byte >= 'A' &&
-               byte <= 'Z') {
-      character = static_cast<char>(byte + ('a' - 'A'));
-    }
-  }
-  return result;
-}
-
-std::string textFunctionName(TextFunction function) {
+}std::string textFunctionName(TextFunction function) {
   switch (function) {
   case TextFunction::Upper:
     return "UPPER";
@@ -354,23 +325,14 @@ std::string textFunctionName(TextFunction function) {
   throw std::invalid_argument("Unknown scalar text function");
 }
 
-struct CompiledIntegerExpression {
-  IntegerExpression::Kind kind{IntegerExpression::Kind::Literal};
-  std::int64_t literal{0};
-  std::size_t columnIndex{0};
-  IntegerBinaryOperator operation{IntegerBinaryOperator::Add};
-  IntegerUnaryOperator unaryOperation{IntegerUnaryOperator::Positive};
-  std::shared_ptr<CompiledIntegerExpression> operand;
-  std::shared_ptr<CompiledIntegerExpression> left;
-  std::shared_ptr<CompiledIntegerExpression> right;
-};
 
-CompiledIntegerExpression
+
+domain::CompiledIntegerExpression
 compileIntegerExpression(const IntegerExpression &expression,
                          const std::vector<ColumnDefinition> &schema,
                          const std::vector<SqlType> &types,
                          const std::string &tableQualifier) {
-  CompiledIntegerExpression compiled;
+  domain::CompiledIntegerExpression compiled;
   compiled.kind = expression.kind;
   if (expression.kind == IntegerExpression::Kind::Literal) {
     compiled.literal = expression.literal;
@@ -401,7 +363,7 @@ compileIntegerExpression(const IntegerExpression &expression,
     }
     compiled.unaryOperation = expression.unaryOperation;
     compiled.operand =
-        std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+        std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
             *expression.operand, schema, types, tableQualifier));
     return compiled;
   }
@@ -410,68 +372,13 @@ compileIntegerExpression(const IntegerExpression &expression,
   }
   compiled.operation = expression.operation;
   compiled.left =
-      std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+      std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
           *expression.left, schema, types, tableQualifier));
   compiled.right =
-      std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+      std::make_shared<domain::CompiledIntegerExpression>(compileIntegerExpression(
           *expression.right, schema, types, tableQualifier));
   return compiled;
-}
-
-std::int64_t
-evaluateIntegerExpression(const std::vector<SqlValue> &row,
-                          const CompiledIntegerExpression &expression) {
-  if (expression.kind == IntegerExpression::Kind::Literal) {
-    return expression.literal;
-  }
-  if (expression.kind == IntegerExpression::Kind::Column) {
-    return std::get<std::int64_t>(row.at(expression.columnIndex));
-  }
-  if (expression.kind == IntegerExpression::Kind::Unary) {
-    if (!expression.operand) {
-      throw std::invalid_argument("Malformed unary integer expression");
-    }
-    const auto operand = evaluateIntegerExpression(row, *expression.operand);
-    if (expression.unaryOperation == IntegerUnaryOperator::Positive) {
-      return operand;
-    }
-    if (operand == std::numeric_limits<std::int64_t>::min()) {
-      throw std::invalid_argument("Integer negation exceeds INT64 range");
-    }
-    return -operand;
-  }
-  const auto left = evaluateIntegerExpression(row, *expression.left);
-  const auto right = evaluateIntegerExpression(row, *expression.right);
-  std::int64_t result{};
-  switch (expression.operation) {
-  case IntegerBinaryOperator::Add:
-    if (__builtin_add_overflow(left, right, &result)) {
-      throw std::invalid_argument("Integer addition exceeds INT64 range");
-    }
-    return result;
-  case IntegerBinaryOperator::Subtract:
-    if (__builtin_sub_overflow(left, right, &result)) {
-      throw std::invalid_argument("Integer subtraction exceeds INT64 range");
-    }
-    return result;
-  case IntegerBinaryOperator::Multiply:
-    if (__builtin_mul_overflow(left, right, &result)) {
-      throw std::invalid_argument("Integer multiplication exceeds INT64 range");
-    }
-    return result;
-  case IntegerBinaryOperator::Divide:
-    if (right == 0) {
-      throw std::invalid_argument("Division by zero in integer expression");
-    }
-    if (left == std::numeric_limits<std::int64_t>::min() && right == -1) {
-      throw std::invalid_argument("Integer division exceeds INT64 range");
-    }
-    return left / right;
-  }
-  throw std::invalid_argument("Unknown integer arithmetic operator");
-}
-
-WhereExpression
+}WhereExpression
 normalizeSingleTableWhereColumns(const WhereExpression &expression,
                                  const std::string &tableName) {
   WhereExpression normalized = expression;
@@ -1333,8 +1240,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     std::vector<ColumnDefinition> selectedColumns;
     std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
         compiledCases;
-    std::vector<std::optional<CompiledIntegerExpression>> compiledIntegers;
-    std::vector<std::optional<CompiledTextFunction>> compiledTextFunctions;
+    std::vector<std::optional<domain::CompiledIntegerExpression>> compiledIntegers;
+    std::vector<std::optional<domain::CompiledTextFunction>> compiledTextFunctions;
     if (select->aggregate.has_value() && select->groupBy.empty()) {
       // Ungrouped aggregate queries produce a single computed output column.
     } else if (select->selectAll) {
