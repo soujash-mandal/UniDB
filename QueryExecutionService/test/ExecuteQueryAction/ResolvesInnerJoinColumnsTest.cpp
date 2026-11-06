@@ -288,3 +288,34 @@ TEST(ExecuteQueryActionJoinResolutionTest,
   EXPECT_EQ(fixture.port.schemaRequests, (std::vector<std::string>{"users"}));
   EXPECT_EQ(fixture.port.selectCalls, 1U);
 }
+
+TEST(ExecuteQueryActionJoinResolutionTest,
+     RejectsOriginalTableNameAfterAliasIsDeclared) {
+  JoinResolutionFixture fixture;
+
+  const auto result =
+      fixture.execute("SELECT users.id FROM users u WHERE users.id > 1");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          result));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(result).message,
+      "Unknown WHERE table reference: users");
+}
+
+TEST(ExecuteQueryActionJoinResolutionTest, ResolvesAliasInOrderBy) {
+  JoinResolutionFixture fixture;
+
+  const auto result =
+      fixture.execute("SELECT u.id FROM users u ORDER BY u.id DESC");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          result));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 1U);
+  EXPECT_EQ(rows.columns[0].name, "id");
+  EXPECT_EQ(fixture.port.selectCalls, 1U);
+}
