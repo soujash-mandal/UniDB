@@ -21,9 +21,9 @@ TEST(SqlParserCaseTest, ParsesSearchedCaseWithMultipleWhenBranches) {
   ASSERT_TRUE(select.caseExpressions[0].has_value());
   EXPECT_FALSE(select.caseExpressions[1].has_value());
   ASSERT_EQ(select.caseExpressions[0]->branches.size(), 2U);
-  EXPECT_EQ(std::get<std::string>(
-                select.caseExpressions[0]->branches[0].result),
-            "high");
+  EXPECT_EQ(
+      std::get<std::string>(select.caseExpressions[0]->branches[0].result),
+      "high");
   EXPECT_EQ(std::get<std::string>(select.caseExpressions[0]->elseResult),
             "low");
   ASSERT_TRUE(select.columnAliases[0].has_value());

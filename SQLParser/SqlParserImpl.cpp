@@ -369,8 +369,9 @@ private:
                            "CASE requires at least one WHEN branch"};
     }
     if (!expectKeyword("ELSE")) {
-      return SqlParseError{SqlParseErrorCode::SyntaxError,
-                           "CASE requires ELSE because SQL NULL is unsupported"};
+      return SqlParseError{
+          SqlParseErrorCode::SyntaxError,
+          "CASE requires ELSE because SQL NULL is unsupported"};
     }
     auto elseValue = parseLiteral();
     if (std::holds_alternative<SqlParseError>(elseValue)) {

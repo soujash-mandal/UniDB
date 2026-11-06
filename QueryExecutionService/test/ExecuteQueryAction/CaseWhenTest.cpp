@@ -85,7 +85,8 @@ TEST(ExecuteQueryActionCaseWhenTest, FiltersRowsBeforeEvaluatingCase) {
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "yes");
 }
 
-TEST(ExecuteQueryActionCaseWhenTest, RejectsUnknownCaseColumnBeforeReadingRows) {
+TEST(ExecuteQueryActionCaseWhenTest,
+     RejectsUnknownCaseColumnBeforeReadingRows) {
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);

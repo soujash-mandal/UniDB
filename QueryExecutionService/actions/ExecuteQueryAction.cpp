@@ -937,8 +937,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             "SELECT CASE expression count does not match columns");
       }
       compiledCases.reserve(select->columnNames.size());
-      for (std::size_t itemIndex = 0;
-           itemIndex < select->columnNames.size(); ++itemIndex) {
+      for (std::size_t itemIndex = 0; itemIndex < select->columnNames.size();
+           ++itemIndex) {
         if (itemIndex < select->caseExpressions.size() &&
             select->caseExpressions[itemIndex].has_value()) {
           if (select->innerJoin.has_value()) {
@@ -947,7 +947,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           }
           const auto &caseExpression = *select->caseExpressions[itemIndex];
           const SqlValue &elseValue = caseExpression.elseResult;
-          const bool resultIsInt = std::holds_alternative<std::int64_t>(elseValue);
+          const bool resultIsInt =
+              std::holds_alternative<std::int64_t>(elseValue);
           std::vector<CompiledWhereExpression> branches;
           branches.reserve(caseExpression.branches.size());
           for (const auto &branch : caseExpression.branches) {
@@ -958,7 +959,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             }
             const auto normalized = normalizeSingleTableWhereColumns(
                 branch.condition, tableQualifier);
-            branches.push_back(compileWhereExpression(normalized, schema, types));
+            branches.push_back(
+                compileWhereExpression(normalized, schema, types));
           }
           selectedIndexes.push_back(schema.size());
           selectedColumns.push_back(
@@ -1005,10 +1007,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
     }
 
-    const bool hasCaseExpression =
-        std::any_of(select->caseExpressions.begin(),
-                    select->caseExpressions.end(),
-                    [](const auto &expression) { return expression.has_value(); });
+    const bool hasCaseExpression = std::any_of(
+        select->caseExpressions.begin(), select->caseExpressions.end(),
+        [](const auto &expression) { return expression.has_value(); });
     if (hasCaseExpression && select->distinct) {
       throw std::invalid_argument(
           "SELECT DISTINCT cannot be combined with CASE expressions yet");
@@ -1378,10 +1379,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           bool matched = false;
           for (std::size_t branchIndex = 0;
                branchIndex < compiledCases[index]->size(); ++branchIndex) {
-            if (matchesWhereExpression(
-                    decoded, (*compiledCases[index])[branchIndex])) {
-              projected.push_back(
-                  caseExpression.branches[branchIndex].result);
+            if (matchesWhereExpression(decoded,
+                                       (*compiledCases[index])[branchIndex])) {
+              projected.push_back(caseExpression.branches[branchIndex].result);
               matched = true;
               break;
             }
