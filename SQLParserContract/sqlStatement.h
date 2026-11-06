@@ -85,6 +85,7 @@ struct ColumnReference {
 
 struct InnerJoinClause {
   std::string tableName;
+  std::optional<std::string> tableAlias;
   ColumnReference left;
   ColumnReference right;
 };
@@ -100,6 +101,7 @@ struct SelectStatement {
   std::vector<std::string> groupBy;
   std::optional<HavingExpression> having;
   std::string tableName;
+  std::optional<std::string> tableAlias;
   std::optional<InnerJoinClause> innerJoin;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;
