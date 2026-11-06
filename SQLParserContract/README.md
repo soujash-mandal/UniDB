@@ -123,13 +123,13 @@ exists in exactly one table. Output names remain unqualified when unique and
 become `table.column` when the name exists in both tables. An explicit `AS`
 alias overrides the generated name. Duplicate output names are rejected.
 
-The execution stage currently supports `SELECT *` without a WHERE clause.
-It fetches both tables through the existing public RDB SELECT Action-backed port,
-decodes the rows, and performs an in-memory nested-loop equality join. Matching
-rows are returned with columns from the FROM table followed by columns from the
-joined table. A duplicate column name is qualified with its source table name.
-The join performs O(N × M) key comparisons for N left rows and M right rows and
-holds both decoded inputs plus the output rows in memory.
+The execution stage fetches both tables through the existing public RDB SELECT
+Action-backed port, decodes the rows, and performs an in-memory nested-loop
+equality join. Matching rows are returned with columns from the FROM table
+followed by columns from the joined table. A duplicate column name is qualified
+with its source table name or declared alias. The join performs O(N × M) key
+comparisons for N left rows and M right rows and holds both decoded inputs plus
+the output rows in memory.
 
 Explicit projections are supported for qualified columns and unambiguous
 unqualified columns. `AS` projection aliases override generated output names.
