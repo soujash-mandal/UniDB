@@ -116,6 +116,13 @@ struct IntegerExpression {
   std::shared_ptr<IntegerExpression> right;
 };
 
+enum class TextFunction { Upper, Lower, Length };
+
+struct TextFunctionExpression {
+  TextFunction function{TextFunction::Upper};
+  std::string columnName;
+};
+
 struct SelectStatement {
   // When selectAll is true, columnNames is ignored.
   bool selectAll{false};
@@ -126,6 +133,8 @@ struct SelectStatement {
   std::vector<std::optional<CaseExpression>> caseExpressions;
   // Parallel to columnNames; populated for computed integer expressions.
   std::vector<std::optional<IntegerExpression>> integerExpressions;
+  // Parallel to columnNames; populated for scalar TEXT function projections.
+  std::vector<std::optional<TextFunctionExpression>> textFunctions;
   bool distinct{false};
   std::optional<AggregateExpression> aggregate;
   std::vector<std::string> groupBy;

@@ -89,3 +89,12 @@ current one-row Action. Keep that limitation explicit and out of scope for trans
 semantics.
 
 No RDBService code changes are required for PRs 1–6 in SIM-74 as currently scoped.
+
+## Scalar text functions (SIM-77 PR 7)
+
+QES can evaluate `UPPER`, `LOWER`, and `LENGTH` after reading rows through the
+existing public RDB SELECT action. The initial implementation accepts a single
+TEXT column reference per function. UPPER/LOWER use ASCII-only case conversion;
+LENGTH counts bytes. Results are computed in memory, with no RDBService or
+persisted-value changes. JOIN and DISTINCT combinations remain unsupported in
+this first increment.

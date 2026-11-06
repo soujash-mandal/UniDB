@@ -192,3 +192,22 @@ negates the operand and returns a query execution error if negating
 `INT64_MIN` would exceed the signed 64-bit range. The literal
 `-9223372036854775808` is accepted as the minimum signed 64-bit value;
 positive literals outside the signed 64-bit range are rejected.
+
+
+## Scalar text functions
+
+SELECT projections support `UPPER(text_column)`, `LOWER(text_column)`, and
+`LENGTH(text_column)`. Each function currently accepts one TEXT column
+reference (qualified references are allowed); integer arguments and literals
+are rejected. Function names are case-insensitive.
+
+`UPPER` and `LOWER` perform deterministic ASCII-only case conversion;
+bytes outside the ASCII letters A-Z/a-z are preserved unchanged. `LENGTH`
+returns the number of bytes in the TEXT value, not a Unicode character count.
+The result types are TEXT for UPPER/LOWER and INT for LENGTH. Output column
+names default to the function call (for example, `UPPER(name)`) and may be
+overridden with `AS`.
+
+Scalar text functions are evaluated in memory after rows are fetched through
+the existing public RDB SELECT action. They do not change persisted values or
+storage formats. They are not yet supported with JOIN or SELECT DISTINCT.
