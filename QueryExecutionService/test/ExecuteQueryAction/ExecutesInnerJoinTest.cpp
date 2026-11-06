@@ -66,7 +66,7 @@ struct InnerJoinFixture {
   void addOrder(std::int64_t id, std::int64_t userId, std::int64_t amount) {
     port.rows["orders"].push_back(SqlTupleCodec::encode(
         {SqlType::Int, SqlType::Int, SqlType::Int},
-        {SqlValue{id}, SqlValue{userId}, SqlValue{std::int64_t{0}}, SqlValue{amount}}));
+        {SqlValue{id}, SqlValue{userId}, SqlValue{amount}}));
   }
 
 
