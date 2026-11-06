@@ -87,7 +87,7 @@ The previous six-PR estimate should be treated as a minimum planning shape, not 
 
 1. **PR 1 — this audit document.** Documentation only; no behavior changes. User reviews and approves the ownership map.
 2. **PR 2 — move SQLParser Contract into QES.** Move the two contract headers to `QueryExecutionService/contract/`; update all includes and build/test references. No parser implementation move in this PR.
-3. **PR 3 — move SQLParser implementation into QES.** Move lexer, parser implementation, and parser tests to `QueryExecutionService/domain/parser/`; update Container, tests, CMake, workflow path filters, and docs.
+3. **PR 3 — move SQLParser implementation into QES.** Move lexer, parser implementation, and parser tests to `QueryExecutionService/domain/parser/`; update Container, tests, CMake, and docs; the existing Docker Persistence filter already covers all of `QueryExecutionService/**`.
 4. **PR 4 — extract SQL value and WHERE predicate semantics.** Move typed value comparison, LIKE matching, predicate evaluation, and recursive WHERE expression evaluation into focused QES domain files. Keep schema/alias binding in QES unless cleanly separable.
 5. **PR 5 — extract scalar expression evaluators.** Move integer arithmetic and TEXT function evaluation into focused domain files. Keep schema binding in QES.
 6. **PR 6 — extract aggregate reducers.** Extract only COUNT/MIN/MAX/SUM/AVG value calculation; leave grouping, row fetching, HAVING, ordering, and pagination in QES.
