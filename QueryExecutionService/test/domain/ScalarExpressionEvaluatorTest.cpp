@@ -91,4 +91,3 @@ TEST(ScalarExpressionEvaluatorTest, RejectsNegationOfInt64Minimum) {
   unary.operand = std::make_shared<CompiledIntegerExpression>(minimum);
   EXPECT_THROW(evaluateIntegerExpression(row, unary), std::invalid_argument);
 }
-} // namespace
