@@ -1,6 +1,7 @@
 #include "ExecuteQueryAction.h"
 
 #include "../adapter/SqlTupleCodec.h"
+#include "../domain/predicate/WherePredicateEvaluator.h"
 
 #include <algorithm>
 #include <functional>
@@ -49,213 +50,6 @@ std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
     types.push_back(column.type);
   }
   return types;
-}
-
-int compareSqlValues(const SqlValue &left, const SqlValue &right) {
-  if (left.index() != right.index()) {
-    throw std::invalid_argument(
-        "WHERE comparison value type does not match column type");
-  }
-  if (const auto *leftInt = std::get_if<std::int64_t>(&left)) {
-    const auto rightInt = std::get<std::int64_t>(right);
-    return (*leftInt > rightInt) - (*leftInt < rightInt);
-  }
-  const auto &leftText = std::get<std::string>(left);
-  const auto &rightText = std::get<std::string>(right);
-  return (leftText > rightText) - (leftText < rightText);
-}
-
-bool matchesLikePattern(const std::string &value, const std::string &pattern) {
-  std::size_t valueIndex = 0;
-  std::size_t patternIndex = 0;
-  std::size_t lastPercent = std::string::npos;
-  std::size_t retryValueIndex = 0;
-
-  while (valueIndex < value.size()) {
-    if (patternIndex < pattern.size() &&
-        (pattern[patternIndex] == '_' ||
-         pattern[patternIndex] == value[valueIndex])) {
-      ++valueIndex;
-      ++patternIndex;
-    } else if (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
-      lastPercent = patternIndex++;
-      retryValueIndex = valueIndex;
-    } else if (lastPercent != std::string::npos) {
-      patternIndex = lastPercent + 1;
-      valueIndex = ++retryValueIndex;
-    } else {
-      return false;
-    }
-  }
-
-  while (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
-    ++patternIndex;
-  }
-  return patternIndex == pattern.size();
-}
-
-bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
-  if (predicate.comparison == ComparisonOperator::Like ||
-      predicate.comparison == ComparisonOperator::NotLike) {
-    const auto *textValue = std::get_if<std::string>(&rowValue);
-    const auto *pattern = std::get_if<std::string>(&predicate.value);
-    if (textValue == nullptr || pattern == nullptr) {
-      throw std::invalid_argument("LIKE predicates require TEXT values");
-    }
-    const bool matched = matchesLikePattern(*textValue, *pattern);
-    return predicate.comparison == ComparisonOperator::Like ? matched
-                                                            : !matched;
-  }
-  if (predicate.comparison == ComparisonOperator::Between ||
-      predicate.comparison == ComparisonOperator::NotBetween) {
-    if (!predicate.upperBound.has_value()) {
-      throw std::invalid_argument(
-          "BETWEEN predicates require two range bounds");
-    }
-    const bool withinRange =
-        compareSqlValues(rowValue, predicate.value) >= 0 &&
-        compareSqlValues(rowValue, *predicate.upperBound) <= 0;
-    return predicate.comparison == ComparisonOperator::Between ? withinRange
-                                                               : !withinRange;
-  }
-  if (predicate.comparison == ComparisonOperator::In ||
-      predicate.comparison == ComparisonOperator::NotIn) {
-    const bool found =
-        std::any_of(predicate.values.begin(), predicate.values.end(),
-                    [&](const auto &value) {
-                      return compareSqlValues(rowValue, value) == 0;
-                    });
-    return predicate.comparison == ComparisonOperator::In ? found : !found;
-  }
-
-  const int comparison = compareSqlValues(rowValue, predicate.value);
-  switch (predicate.comparison) {
-  case ComparisonOperator::Equal:
-    return comparison == 0;
-  case ComparisonOperator::NotEqual:
-    return comparison != 0;
-  case ComparisonOperator::GreaterThan:
-    return comparison > 0;
-  case ComparisonOperator::LessThan:
-    return comparison < 0;
-  case ComparisonOperator::GreaterThanOrEqual:
-    return comparison >= 0;
-  case ComparisonOperator::LessThanOrEqual:
-    return comparison <= 0;
-  case ComparisonOperator::In:
-  case ComparisonOperator::NotIn:
-    throw std::invalid_argument("IN predicates require a value list");
-  case ComparisonOperator::Between:
-  case ComparisonOperator::NotBetween:
-    throw std::invalid_argument("BETWEEN predicates require two range bounds");
-  case ComparisonOperator::Like:
-  case ComparisonOperator::NotLike:
-    throw std::invalid_argument("LIKE predicates require a text pattern");
-  }
-  throw std::invalid_argument("Unknown WHERE comparison operator");
-}
-
-struct CompiledWhereExpression {
-  unidb::sql::WhereExpression::Kind kind{
-      unidb::sql::WhereExpression::Kind::Predicate};
-  std::size_t columnIndex{0};
-  WhereEquals predicate;
-  std::vector<CompiledWhereExpression> children;
-};
-
-CompiledWhereExpression
-compileWhereExpression(const WhereExpression &expression,
-                       const std::vector<ColumnDefinition> &schema,
-                       const std::vector<SqlType> &types) {
-  CompiledWhereExpression compiled;
-  compiled.kind = expression.kind;
-  if (expression.kind == WhereExpression::Kind::Predicate) {
-    const auto found =
-        std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-          return column.name == expression.predicate.columnName;
-        });
-    if (found == schema.end()) {
-      throw std::invalid_argument("Unknown WHERE column: " +
-                                  expression.predicate.columnName);
-    }
-    compiled.columnIndex =
-        static_cast<std::size_t>(std::distance(schema.begin(), found));
-    const bool isMembership =
-        expression.predicate.comparison == ComparisonOperator::In ||
-        expression.predicate.comparison == ComparisonOperator::NotIn;
-    const bool isRange =
-        expression.predicate.comparison == ComparisonOperator::Between ||
-        expression.predicate.comparison == ComparisonOperator::NotBetween;
-    const bool isLike =
-        expression.predicate.comparison == ComparisonOperator::Like ||
-        expression.predicate.comparison == ComparisonOperator::NotLike;
-    if (isLike && types[compiled.columnIndex] != SqlType::Text) {
-      throw std::invalid_argument("LIKE requires a TEXT column: " +
-                                  found->name);
-    }
-    if (!isMembership) {
-      const bool valueIsInt =
-          std::holds_alternative<std::int64_t>(expression.predicate.value);
-      if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
-        throw std::invalid_argument("WHERE value type does not match column: " +
-                                    found->name);
-      }
-    }
-    if (isRange) {
-      if (!expression.predicate.upperBound.has_value()) {
-        throw std::invalid_argument(
-            "BETWEEN predicates require two range bounds");
-      }
-      const bool upperIsInt = std::holds_alternative<std::int64_t>(
-          *expression.predicate.upperBound);
-      if ((types[compiled.columnIndex] == SqlType::Int) != upperIsInt) {
-        throw std::invalid_argument("WHERE value type does not match column: " +
-                                    found->name);
-      }
-    }
-    if (isLike &&
-        !std::holds_alternative<std::string>(expression.predicate.value)) {
-      throw std::invalid_argument("LIKE pattern must be TEXT");
-    }
-    if (isMembership) {
-      if (expression.predicate.values.empty()) {
-        throw std::invalid_argument("IN list must contain at least one value");
-      }
-      for (const auto &value : expression.predicate.values) {
-        const bool valueIsInt = std::holds_alternative<std::int64_t>(value);
-        if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
-          throw std::invalid_argument(
-              "WHERE value type does not match column: " + found->name);
-        }
-      }
-    }
-    compiled.predicate = expression.predicate;
-    return compiled;
-  }
-
-  if (expression.children.empty()) {
-    throw std::invalid_argument("WHERE logical expression cannot be empty");
-  }
-  compiled.children.reserve(expression.children.size());
-  for (const auto &child : expression.children) {
-    compiled.children.push_back(compileWhereExpression(child, schema, types));
-  }
-  return compiled;
-}
-
-bool matchesWhereExpression(const std::vector<SqlValue> &row,
-                            const CompiledWhereExpression &expression) {
-  if (expression.kind == WhereExpression::Kind::Predicate) {
-    return matchesWhere(row[expression.columnIndex], expression.predicate);
-  }
-  if (expression.kind == WhereExpression::Kind::And) {
-    return std::all_of(
-        expression.children.begin(), expression.children.end(),
-        [&](const auto &child) { return matchesWhereExpression(row, child); });
-  }
-  return std::any_of(
-      expression.children.begin(), expression.children.end(),
-      [&](const auto &child) { return matchesWhereExpression(row, child); });
 }
 
 struct ResolvedJoinColumn {
@@ -759,12 +553,12 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     joinedTypes.push_back(column.type);
   }
 
-  std::optional<CompiledWhereExpression> compiledWhere;
+  std::optional<domain::CompiledWhereExpression> compiledWhere;
   if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
     const auto qualified = qualifyJoinWhereColumns(
         *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
     compiledWhere =
-        compileWhereExpression(qualified, joinedSchema, joinedTypes);
+        domain::compileWhereExpression(qualified, joinedSchema, joinedTypes);
   }
 
   std::vector<std::size_t> selectedIndexes;
@@ -836,7 +630,7 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
       const int comparison =
-          compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
+          domain::compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
       bool matches = false;
       switch (join.comparison) {
       case ComparisonOperator::Equal:
@@ -869,7 +663,7 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
       joinedRow.insert(joinedRow.end(), leftRow.begin(), leftRow.end());
       joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
       if (compiledWhere.has_value() &&
-          !matchesWhereExpression(joinedRow, *compiledWhere)) {
+          !domain::matchesWhereExpression(joinedRow, *compiledWhere)) {
         continue;
       }
       std::vector<SqlValue> projectedRow;
@@ -928,12 +722,12 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     joinedTypes.push_back(column.type);
   }
 
-  std::optional<CompiledWhereExpression> compiledWhere;
+  std::optional<domain::CompiledWhereExpression> compiledWhere;
   if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
     const auto qualified = qualifyJoinWhereColumns(
         *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
     compiledWhere =
-        compileWhereExpression(qualified, joinedSchema, joinedTypes);
+        domain::compileWhereExpression(qualified, joinedSchema, joinedTypes);
   }
 
   std::vector<std::size_t> selectedIndexes;
@@ -1015,7 +809,7 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
       joinedRow.insert(joinedRow.end(), leftRow.begin(), leftRow.end());
       joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
       if (compiledWhere.has_value() &&
-          !matchesWhereExpression(joinedRow, *compiledWhere)) {
+          !domain::matchesWhereExpression(joinedRow, *compiledWhere)) {
         continue;
       }
       std::vector<SqlValue> projectedRow;
@@ -1126,8 +920,8 @@ QueryExecutionResult executeMultipleInnerJoins(
     for (const auto &oldRow : rows)
       for (const auto &newRow : newRows) {
         const auto cmp =
-            lnew ? compareSqlValues(newRow[newIndex], oldRow[priorIndex])
-                 : compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
+            lnew ? domain::compareSqlValues(newRow[newIndex], oldRow[priorIndex])
+                 : domain::compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
         bool ok = false;
         switch (join.comparison) {
         case ComparisonOperator::Equal:
@@ -1165,7 +959,7 @@ QueryExecutionResult executeMultipleInnerJoins(
       combinedTypes.push_back(c.type);
     }
   }
-  std::optional<CompiledWhereExpression> where;
+  std::optional<domain::CompiledWhereExpression> where;
   if (const auto *w = std::get_if<WhereExpression>(&select.where)) {
     auto q = *w;
     std::function<void(WhereExpression &)> qualify = [&](WhereExpression &e) {
@@ -1198,7 +992,7 @@ QueryExecutionResult executeMultipleInnerJoins(
       e.predicate.columnName = *found;
     };
     qualify(q);
-    where = compileWhereExpression(q, combinedSchema, combinedTypes);
+    where = domain::compileWhereExpression(q, combinedSchema, combinedTypes);
   }
   std::vector<std::size_t> projection;
   std::vector<ColumnDefinition> output;
@@ -1267,7 +1061,7 @@ QueryExecutionResult executeMultipleInnerJoins(
   result.message = "Rows selected";
   result.columns = std::move(output);
   for (auto &row : rows) {
-    if (where && !matchesWhereExpression(row, *where))
+    if (where && !domain::matchesWhereExpression(row, *where))
       continue;
     std::vector<SqlValue> projected;
     for (auto index : projection)
@@ -1525,18 +1319,18 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const auto types = schemaTypes(schema);
 
     const auto *where = std::get_if<WhereExpression>(&select->where);
-    std::optional<CompiledWhereExpression> compiledWhere;
+    std::optional<domain::CompiledWhereExpression> compiledWhere;
     if (where != nullptr) {
       const std::string tableQualifier =
           select->tableAlias.value_or(select->tableName);
       const auto normalized =
           normalizeSingleTableWhereColumns(*where, tableQualifier);
-      compiledWhere = compileWhereExpression(normalized, schema, types);
+      compiledWhere = domain::compileWhereExpression(normalized, schema, types);
     }
 
     std::vector<std::size_t> selectedIndexes;
     std::vector<ColumnDefinition> selectedColumns;
-    std::vector<std::optional<std::vector<CompiledWhereExpression>>>
+    std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
         compiledCases;
     std::vector<std::optional<CompiledIntegerExpression>> compiledIntegers;
     std::vector<std::optional<CompiledTextFunction>> compiledTextFunctions;
@@ -1632,7 +1426,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           const SqlValue &elseValue = caseExpression.elseResult;
           const bool resultIsInt =
               std::holds_alternative<std::int64_t>(elseValue);
-          std::vector<CompiledWhereExpression> branches;
+          std::vector<domain::CompiledWhereExpression> branches;
           branches.reserve(caseExpression.branches.size());
           for (const auto &branch : caseExpression.branches) {
             if (std::holds_alternative<std::int64_t>(branch.result) !=
@@ -1643,7 +1437,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             const auto normalized = normalizeSingleTableWhereColumns(
                 branch.condition, tableQualifier);
             branches.push_back(
-                compileWhereExpression(normalized, schema, types));
+                domain::compileWhereExpression(normalized, schema, types));
           }
           selectedIndexes.push_back(schema.size());
           selectedColumns.push_back(
@@ -1898,7 +1692,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     for (const auto &bytes : encodedRows) {
       auto decoded = SqlTupleCodec::decode(types, bytes);
       if (compiledWhere.has_value() &&
-          !matchesWhereExpression(decoded, *compiledWhere)) {
+          !domain::matchesWhereExpression(decoded, *compiledWhere)) {
         continue;
       }
       matchedRows.push_back(std::move(decoded));
@@ -1959,7 +1753,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             aggregateValue = (*rows.front())[*aggregateIndex];
             for (const auto *row : rows) {
               const int comparison =
-                  compareSqlValues((*row)[*aggregateIndex], aggregateValue);
+                  domain::compareSqlValues((*row)[*aggregateIndex], aggregateValue);
               if ((aggregate.function == AggregateFunction::Min &&
                    comparison < 0) ||
                   (aggregate.function == AggregateFunction::Max &&
@@ -1989,7 +1783,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
         if (select->having.has_value()) {
           const int comparison =
-              compareSqlValues(aggregateValue, select->having->value);
+              domain::compareSqlValues(aggregateValue, select->having->value);
           bool matches = false;
           switch (select->having->comparison) {
           case ComparisonOperator::Equal:
@@ -2030,7 +1824,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             [&](const auto &left, const auto &right) {
               for (const auto &order : groupedOrderIndexes) {
                 const int comparison =
-                    compareSqlValues(left[order.index], right[order.index]);
+                    domain::compareSqlValues(left[order.index], right[order.index]);
                 if (comparison != 0) {
                   return order.ascending ? comparison < 0 : comparison > 0;
                 }
@@ -2086,7 +1880,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           aggregate.function == AggregateFunction::Max) {
         SqlValue value = matchedRows.front()[*aggregateIndex];
         for (const auto &row : matchedRows) {
-          const int comparison = compareSqlValues(row[*aggregateIndex], value);
+          const int comparison = domain::compareSqlValues(row[*aggregateIndex], value);
           if ((aggregate.function == AggregateFunction::Min &&
                comparison < 0) ||
               (aggregate.function == AggregateFunction::Max &&
@@ -2158,7 +1952,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           bool matched = false;
           for (std::size_t branchIndex = 0;
                branchIndex < compiledCases[index]->size(); ++branchIndex) {
-            if (matchesWhereExpression(decoded,
+            if (domain::matchesWhereExpression(decoded,
                                        (*compiledCases[index])[branchIndex])) {
               projected.push_back(caseExpression.branches[branchIndex].result);
               matched = true;
@@ -2201,7 +1995,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               const auto &right = order.projected
                                       ? projectedRows[rightIndex][order.index]
                                       : matchedRows[rightIndex][order.index];
-              const int comparison = compareSqlValues(left, right);
+              const int comparison = domain::compareSqlValues(left, right);
               if (comparison != 0) {
                 return order.ascending ? comparison < 0 : comparison > 0;
               }

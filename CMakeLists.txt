@@ -81,6 +81,7 @@ set(UNIDB_SOURCES
     TupleService/actions/DeleteTupleAction.cpp
     QueryExecutionService/adapter/SqlTupleCodec.cpp
     QueryExecutionService/adapter/RdbServiceAdapter.cpp
+    QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
     QueryExecutionService/actions/ExecuteQueryAction.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
@@ -203,6 +204,7 @@ add_executable(tests
     ConnectionProtocol/test/SqlRequestFramer/RejectsOversizedRequestTest.cpp
     ConnectionProtocol/test/SqlServerSecurityMode/SecurityModeConfigurationTest.cpp
     ConnectionProtocol/test/SqlServerSocketIntegration/ExecutesCreateInsertAndSelectOverTcpConnectionTest.cpp
+    QueryExecutionService/test/domain/WherePredicateEvaluatorTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
