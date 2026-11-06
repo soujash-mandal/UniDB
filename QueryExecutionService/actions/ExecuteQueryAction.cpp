@@ -838,14 +838,27 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
           compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
       bool matches = false;
       switch (join.comparison) {
-      case ComparisonOperator::Equal: matches = comparison == 0; break;
-      case ComparisonOperator::NotEqual: matches = comparison != 0; break;
-      case ComparisonOperator::GreaterThan: matches = comparison > 0; break;
-      case ComparisonOperator::LessThan: matches = comparison < 0; break;
-      case ComparisonOperator::GreaterThanOrEqual: matches = comparison >= 0; break;
-      case ComparisonOperator::LessThanOrEqual: matches = comparison <= 0; break;
+      case ComparisonOperator::Equal:
+        matches = comparison == 0;
+        break;
+      case ComparisonOperator::NotEqual:
+        matches = comparison != 0;
+        break;
+      case ComparisonOperator::GreaterThan:
+        matches = comparison > 0;
+        break;
+      case ComparisonOperator::LessThan:
+        matches = comparison < 0;
+        break;
+      case ComparisonOperator::GreaterThanOrEqual:
+        matches = comparison >= 0;
+        break;
+      case ComparisonOperator::LessThanOrEqual:
+        matches = comparison <= 0;
+        break;
       default:
-        throw std::invalid_argument("INNER JOIN supports only basic comparisons");
+        throw std::invalid_argument(
+            "INNER JOIN supports only basic comparisons");
       }
       if (!matches) {
         continue;

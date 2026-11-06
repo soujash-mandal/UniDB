@@ -71,9 +71,11 @@ TEST(SqlParserJoinTest, ParsesNonEqualityJoinComparisons) {
       {"<=", ComparisonOperator::LessThanOrEqual},
       {"!=", ComparisonOperator::NotEqual}};
   for (const auto &[op, expected] : cases) {
-    const auto result = parser.parse("SELECT a.id FROM a INNER JOIN b ON a.id " + op + " b.id");
+    const auto result =
+        parser.parse("SELECT a.id FROM a INNER JOIN b ON a.id " + op + " b.id");
     ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << op;
-    const auto &select = std::get<SelectStatement>(std::get<SqlStatement>(result));
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
     ASSERT_TRUE(select.innerJoin.has_value());
     EXPECT_EQ(select.innerJoin->comparison, expected);
   }

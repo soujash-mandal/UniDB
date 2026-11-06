@@ -725,12 +725,24 @@ private:
       }
       join.left = std::get<ColumnReference>(std::move(left));
       switch (current().kind) {
-      case TokenKind::Equals: join.comparison = ComparisonOperator::Equal; break;
-      case TokenKind::NotEquals: join.comparison = ComparisonOperator::NotEqual; break;
-      case TokenKind::GreaterThan: join.comparison = ComparisonOperator::GreaterThan; break;
-      case TokenKind::LessThan: join.comparison = ComparisonOperator::LessThan; break;
-      case TokenKind::GreaterThanOrEqual: join.comparison = ComparisonOperator::GreaterThanOrEqual; break;
-      case TokenKind::LessThanOrEqual: join.comparison = ComparisonOperator::LessThanOrEqual; break;
+      case TokenKind::Equals:
+        join.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        join.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        join.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        join.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        join.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        join.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
       default:
         return syntaxError("Expected comparison operator in INNER JOIN ON");
       }
