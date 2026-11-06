@@ -213,6 +213,29 @@ TEST(ExecuteQueryActionInnerJoinTest,
             (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
 }
 
+TEST(ExecuteQueryActionInnerJoinTest, SupportsNonEqualityJoinPredicates) {
+  InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+  fixture.addUser(2, "Lin");
+  fixture.addUser(3, "Mina");
+  fixture.addOrder(10, 1, 250);
+  fixture.addOrder(11, 2, 80);
+  fixture.addOrder(12, 3, 400);
+
+  const auto notEqual = fixture.execute(
+      "SELECT users.id, orders.user_id FROM users INNER JOIN orders "
+      "ON users.id != orders.user_id");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(notEqual));
+  const auto &result = std::get<QueryExecutionService::QueryExecutionResult>(notEqual);
+  ASSERT_EQ(result.rows.size(), 6U);
+
+  const auto greater = fixture.execute(
+      "SELECT users.id, orders.user_id FROM users INNER JOIN orders "
+      "ON users.id > orders.user_id");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(greater));
+  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(greater).rows.size(), 3U);
+}
+
 TEST(ExecuteQueryActionInnerJoinTest, RejectsAmbiguousUnqualifiedWhereColumn) {
   InnerJoinFixture fixture;
   const auto outcome =
