@@ -119,13 +119,7 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
   throw std::invalid_argument("Unknown WHERE comparison operator");
 }
 
-struct CompiledWhereExpression {
-  unidb::sql::WhereExpression::Kind kind{
-      unidb::sql::WhereExpression::Kind::Predicate};
-  std::size_t columnIndex{0};
-  WhereEquals predicate;
-  std::vector<CompiledWhereExpression> children;
-};
+
 
 CompiledWhereExpression
 compileWhereExpression(const WhereExpression &expression,
