@@ -1,8 +1,8 @@
 #include "ExecuteQueryAction.h"
 
 #include "../adapter/SqlTupleCodec.h"
-#include "../domain/predicate/WherePredicateEvaluator.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
+#include "../domain/predicate/WherePredicateEvaluator.h"
 
 #include <algorithm>
 #include <functional>
@@ -360,24 +360,21 @@ compileIntegerExpression(const IntegerExpression &expression,
       throw std::invalid_argument("Malformed unary integer expression");
     }
     compiled.unaryOperation = expression.unaryOperation;
-    compiled.operand =
-        std::make_shared<domain::CompiledIntegerExpression>(
-            compileIntegerExpression(*expression.operand, schema, types,
-                                     tableQualifier));
+    compiled.operand = std::make_shared<domain::CompiledIntegerExpression>(
+        compileIntegerExpression(*expression.operand, schema, types,
+                                 tableQualifier));
     return compiled;
   }
   if (!expression.left || !expression.right) {
     throw std::invalid_argument("Malformed integer arithmetic expression");
   }
   compiled.operation = expression.operation;
-  compiled.left =
-      std::make_shared<domain::CompiledIntegerExpression>(
-          compileIntegerExpression(*expression.left, schema, types,
-                                   tableQualifier));
-  compiled.right =
-      std::make_shared<domain::CompiledIntegerExpression>(
-          compileIntegerExpression(*expression.right, schema, types,
-                                   tableQualifier));
+  compiled.left = std::make_shared<domain::CompiledIntegerExpression>(
+      compileIntegerExpression(*expression.left, schema, types,
+                               tableQualifier));
+  compiled.right = std::make_shared<domain::CompiledIntegerExpression>(
+      compileIntegerExpression(*expression.right, schema, types,
+                               tableQualifier));
   return compiled;
 }
 
@@ -1854,12 +1851,12 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
         if (index < compiledTextFunctions.size() &&
             compiledTextFunctions[index].has_value()) {
-          projected.push_back(
-              domain::evaluateTextFunction(decoded, *compiledTextFunctions[index]));
+          projected.push_back(domain::evaluateTextFunction(
+              decoded, *compiledTextFunctions[index]));
         } else if (index < compiledIntegers.size() &&
                    compiledIntegers[index].has_value()) {
-          projected.push_back(
-              domain::evaluateIntegerExpression(decoded, *compiledIntegers[index]));
+          projected.push_back(domain::evaluateIntegerExpression(
+              decoded, *compiledIntegers[index]));
         } else if (index < compiledCases.size() &&
                    compiledCases[index].has_value()) {
           const auto &caseExpression = *select->caseExpressions[index];

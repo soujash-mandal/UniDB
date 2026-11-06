@@ -28,12 +28,12 @@ struct CompiledIntegerExpression {
   std::shared_ptr<CompiledIntegerExpression> right;
 };
 
-unidb::sql::SqlValue evaluateTextFunction(
-    const std::vector<unidb::sql::SqlValue> &row,
-    const CompiledTextFunction &expression);
+unidb::sql::SqlValue
+evaluateTextFunction(const std::vector<unidb::sql::SqlValue> &row,
+                     const CompiledTextFunction &expression);
 
-std::int64_t evaluateIntegerExpression(
-    const std::vector<unidb::sql::SqlValue> &row,
-    const CompiledIntegerExpression &expression);
+std::int64_t
+evaluateIntegerExpression(const std::vector<unidb::sql::SqlValue> &row,
+                          const CompiledIntegerExpression &expression);
 
 } // namespace QueryExecutionService::domain

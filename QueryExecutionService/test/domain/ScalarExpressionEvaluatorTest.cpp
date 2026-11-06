@@ -22,14 +22,18 @@ using unidb::sql::TextFunction;
 TEST(ScalarExpressionEvaluatorTest, EvaluatesTextFunctions) {
   const std::vector<SqlValue> row{std::string("Abc"), std::string("hello")};
   EXPECT_EQ(std::get<std::string>(evaluateTextFunction(
-                row, CompiledTextFunction{TextFunction::Upper, 0})), "ABC");
+                row, CompiledTextFunction{TextFunction::Upper, 0})),
+            "ABC");
   EXPECT_EQ(std::get<std::string>(evaluateTextFunction(
-                row, CompiledTextFunction{TextFunction::Lower, 0})), "abc");
+                row, CompiledTextFunction{TextFunction::Lower, 0})),
+            "abc");
   EXPECT_EQ(std::get<std::int64_t>(evaluateTextFunction(
-                row, CompiledTextFunction{TextFunction::Length, 1})), 5);
+                row, CompiledTextFunction{TextFunction::Length, 1})),
+            5);
 }
 
-TEST(ScalarExpressionEvaluatorTest, EvaluatesIntegerLiteralsColumnsAndOperators) {
+TEST(ScalarExpressionEvaluatorTest,
+     EvaluatesIntegerLiteralsColumnsAndOperators) {
   const std::vector<SqlValue> row{std::int64_t{7}};
   CompiledIntegerExpression literal;
   literal.literal = 12;
