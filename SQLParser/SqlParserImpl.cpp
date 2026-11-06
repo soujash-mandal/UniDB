@@ -724,9 +724,29 @@ private:
         return std::get<SqlParseError>(std::move(left));
       }
       join.left = std::get<ColumnReference>(std::move(left));
-      if (!expect(TokenKind::Equals)) {
-        return syntaxError("INNER JOIN ON currently supports equality only");
+      switch (current().kind) {
+      case TokenKind::Equals:
+        join.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        join.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        join.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        join.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        join.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        join.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
+      default:
+        return syntaxError("Expected comparison operator in INNER JOIN ON");
       }
+      ++position_;
       auto right = parseColumnReference(true);
       if (std::holds_alternative<SqlParseError>(right)) {
         return std::get<SqlParseError>(std::move(right));

@@ -834,8 +834,33 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   result.columns = std::move(selectedColumns);
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
-      if (compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]) !=
-          0) {
+      const int comparison =
+          compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
+      bool matches = false;
+      switch (join.comparison) {
+      case ComparisonOperator::Equal:
+        matches = comparison == 0;
+        break;
+      case ComparisonOperator::NotEqual:
+        matches = comparison != 0;
+        break;
+      case ComparisonOperator::GreaterThan:
+        matches = comparison > 0;
+        break;
+      case ComparisonOperator::LessThan:
+        matches = comparison < 0;
+        break;
+      case ComparisonOperator::GreaterThanOrEqual:
+        matches = comparison >= 0;
+        break;
+      case ComparisonOperator::LessThanOrEqual:
+        matches = comparison <= 0;
+        break;
+      default:
+        throw std::invalid_argument(
+            "INNER JOIN supports only basic comparisons");
+      }
+      if (!matches) {
         continue;
       }
       std::vector<SqlValue> joinedRow;

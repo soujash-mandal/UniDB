@@ -108,3 +108,8 @@ ORDER BY can resolve a SELECT output name before resolving a source-column name.
 ## Grouped aggregate ORDER BY / LIMIT / OFFSET (SIM-77 follow-up)
 
 Grouped aggregate queries can order by projected grouping columns or the aggregate output alias. Multiple terms support ASC/DESC and stable tie ordering. LIMIT and OFFSET are applied after HAVING and sorting. DISTINCT remains unsupported. The implementation operates only on QES result rows produced from the existing RDB public SELECT Action; no storage or RDBService changes are required.
+
+
+## INNER JOIN comparison predicates
+
+The two-table INNER JOIN executor supports `=`, `!=`, `>`, `<`, `>=`, and `<=` between qualified columns. Operand types must match. This remains an in-memory nested-loop join (O(N × M)); no storage or RDB API changes are involved.
