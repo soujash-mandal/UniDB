@@ -18,13 +18,12 @@ struct CompiledWhereExpression {
 int compareSqlValues(const unidb::sql::SqlValue &left,
                      const unidb::sql::SqlValue &right);
 
-CompiledWhereExpression compileWhereExpression(
-    const unidb::sql::WhereExpression &expression,
-    const std::vector<unidb::sql::ColumnDefinition> &schema,
-    const std::vector<unidb::sql::SqlType> &types);
+CompiledWhereExpression
+compileWhereExpression(const unidb::sql::WhereExpression &expression,
+                       const std::vector<unidb::sql::ColumnDefinition> &schema,
+                       const std::vector<unidb::sql::SqlType> &types);
 
-bool matchesWhereExpression(
-    const std::vector<unidb::sql::SqlValue> &row,
-    const CompiledWhereExpression &expression);
+bool matchesWhereExpression(const std::vector<unidb::sql::SqlValue> &row,
+                            const CompiledWhereExpression &expression);
 
 } // namespace QueryExecutionService::domain

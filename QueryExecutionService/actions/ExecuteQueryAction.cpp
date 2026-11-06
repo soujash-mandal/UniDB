@@ -629,8 +629,8 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   result.columns = std::move(selectedColumns);
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
-      const int comparison =
-          domain::compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
+      const int comparison = domain::compareSqlValues(leftRow[leftKeyIndex],
+                                                      rightRow[rightKeyIndex]);
       bool matches = false;
       switch (join.comparison) {
       case ComparisonOperator::Equal:
@@ -919,9 +919,10 @@ QueryExecutionResult executeMultipleInnerJoins(
     std::vector<std::vector<SqlValue>> expanded;
     for (const auto &oldRow : rows)
       for (const auto &newRow : newRows) {
-        const auto cmp =
-            lnew ? domain::compareSqlValues(newRow[newIndex], oldRow[priorIndex])
-                 : domain::compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
+        const auto cmp = lnew ? domain::compareSqlValues(newRow[newIndex],
+                                                         oldRow[priorIndex])
+                              : domain::compareSqlValues(oldRow[priorIndex],
+                                                         newRow[newIndex]);
         bool ok = false;
         switch (join.comparison) {
         case ComparisonOperator::Equal:
@@ -1752,8 +1753,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               aggregate.function == AggregateFunction::Max) {
             aggregateValue = (*rows.front())[*aggregateIndex];
             for (const auto *row : rows) {
-              const int comparison =
-                  domain::compareSqlValues((*row)[*aggregateIndex], aggregateValue);
+              const int comparison = domain::compareSqlValues(
+                  (*row)[*aggregateIndex], aggregateValue);
               if ((aggregate.function == AggregateFunction::Min &&
                    comparison < 0) ||
                   (aggregate.function == AggregateFunction::Max &&
@@ -1819,18 +1820,18 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
 
       if (!groupedOrderIndexes.empty()) {
-        std::stable_sort(
-            result.rows.begin(), result.rows.end(),
-            [&](const auto &left, const auto &right) {
-              for (const auto &order : groupedOrderIndexes) {
-                const int comparison =
-                    domain::compareSqlValues(left[order.index], right[order.index]);
-                if (comparison != 0) {
-                  return order.ascending ? comparison < 0 : comparison > 0;
-                }
-              }
-              return false;
-            });
+        std::stable_sort(result.rows.begin(), result.rows.end(),
+                         [&](const auto &left, const auto &right) {
+                           for (const auto &order : groupedOrderIndexes) {
+                             const int comparison = domain::compareSqlValues(
+                                 left[order.index], right[order.index]);
+                             if (comparison != 0) {
+                               return order.ascending ? comparison < 0
+                                                      : comparison > 0;
+                             }
+                           }
+                           return false;
+                         });
       }
 
       const std::size_t offset = select->offset > result.rows.size()
@@ -1880,7 +1881,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           aggregate.function == AggregateFunction::Max) {
         SqlValue value = matchedRows.front()[*aggregateIndex];
         for (const auto &row : matchedRows) {
-          const int comparison = domain::compareSqlValues(row[*aggregateIndex], value);
+          const int comparison =
+              domain::compareSqlValues(row[*aggregateIndex], value);
           if ((aggregate.function == AggregateFunction::Min &&
                comparison < 0) ||
               (aggregate.function == AggregateFunction::Max &&
@@ -1952,8 +1954,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           bool matched = false;
           for (std::size_t branchIndex = 0;
                branchIndex < compiledCases[index]->size(); ++branchIndex) {
-            if (domain::matchesWhereExpression(decoded,
-                                       (*compiledCases[index])[branchIndex])) {
+            if (domain::matchesWhereExpression(
+                    decoded, (*compiledCases[index])[branchIndex])) {
               projected.push_back(caseExpression.branches[branchIndex].result);
               matched = true;
               break;

@@ -119,8 +119,6 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
   throw std::invalid_argument("Unknown WHERE comparison operator");
 }
 
-
-
 CompiledWhereExpression
 compileWhereExpression(const WhereExpression &expression,
                        const std::vector<ColumnDefinition> &schema,
