@@ -83,6 +83,7 @@ set(UNIDB_SOURCES
     QueryExecutionService/adapter/RdbServiceAdapter.cpp
     QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
     QueryExecutionService/domain/expression/ScalarExpressionEvaluator.cpp
+    QueryExecutionService/domain/aggregate/SqlAggregateCalculator.cpp
     QueryExecutionService/actions/ExecuteQueryAction.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
@@ -207,6 +208,7 @@ add_executable(tests
     ConnectionProtocol/test/SqlServerSocketIntegration/ExecutesCreateInsertAndSelectOverTcpConnectionTest.cpp
     QueryExecutionService/test/domain/WherePredicateEvaluatorTest.cpp
     QueryExecutionService/test/domain/ScalarExpressionEvaluatorTest.cpp
+    QueryExecutionService/test/domain/SqlAggregateCalculatorTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
