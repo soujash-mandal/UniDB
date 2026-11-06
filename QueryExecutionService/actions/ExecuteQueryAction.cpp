@@ -1301,7 +1301,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             return column.name == normalizedOrderColumn;
           });
       if (found == schema.end()) {
-        throw std::invalid_argument("Unknown ORDER BY column or alias: " +
+        throw std::invalid_argument("Unknown ORDER BY column: " +
                                     order.columnName);
       }
       const auto orderIndex =
