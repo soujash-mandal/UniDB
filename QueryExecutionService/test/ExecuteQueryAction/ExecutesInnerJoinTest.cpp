@@ -316,4 +316,100 @@ TEST(ExecuteQueryActionInnerJoinTest, ExecutesMultipleInnerJoinsLeftToRight) {
             (std::vector<std::string>{"users", "orders", "products"}));
 }
 
+
+TEST(ExecuteQueryActionCrossJoinTest, ReturnsCartesianProductInDeterministicOrder) {
+  InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+  fixture.addUser(2, "Lin");
+  fixture.addOrder(10, 1, 250);
+  fixture.addOrder(11, 2, 80);
+
+  const auto outcome = fixture.execute("SELECT * FROM users CROSS JOIN orders");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.columns.size(), 5U);
+  EXPECT_EQ(result.columns[0].name, "users.id");
+  EXPECT_EQ(result.columns[1].name, "name");
+  EXPECT_EQ(result.columns[2].name, "orders.id");
+  EXPECT_EQ(result.columns[3].name, "user_id");
+  EXPECT_EQ(result.columns[4].name, "amount");
+  ASSERT_EQ(result.rows.size(), 4U);
+  EXPECT_EQ(result.rows[0],
+            (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
+                                   std::int64_t{10}, std::int64_t{1},
+                                   std::int64_t{250}}));
+  EXPECT_EQ(result.rows[1],
+            (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
+                                   std::int64_t{11}, std::int64_t{2},
+                                   std::int64_t{80}}));
+  EXPECT_EQ(result.rows[2],
+            (std::vector<SqlValue>{std::int64_t{2}, std::string{"Lin"},
+                                   std::int64_t{10}, std::int64_t{1},
+                                   std::int64_t{250}}));
+  EXPECT_EQ(result.rows[3],
+            (std::vector<SqlValue>{std::int64_t{2}, std::string{"Lin"},
+                                   std::int64_t{11}, std::int64_t{2},
+                                   std::int64_t{80}}));
+  EXPECT_EQ(fixture.port.rowRequests,
+            (std::vector<std::string>{"users", "orders"}));
+}
+
+TEST(ExecuteQueryActionCrossJoinTest, SupportsProjectionAliasesAndWhere) {
+  InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+  fixture.addUser(2, "Lin");
+  fixture.addOrder(10, 1, 250);
+  fixture.addOrder(11, 2, 80);
+
+  const auto outcome = fixture.execute(
+      "SELECT u.name AS person, o.amount AS total FROM users u "
+      "CROSS JOIN orders o WHERE u.id = 2 AND o.amount > 50");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.columns.size(), 2U);
+  EXPECT_EQ(result.columns[0].name, "person");
+  EXPECT_EQ(result.columns[1].name, "total");
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(result.rows[0],
+            (std::vector<SqlValue>{std::string{"Lin"}, std::int64_t{250}}));
+  EXPECT_EQ(result.rows[1],
+            (std::vector<SqlValue>{std::string{"Lin"}, std::int64_t{80}}));
+}
+
+TEST(ExecuteQueryActionCrossJoinTest, EmptyInputProducesNoRows) {
+  InnerJoinFixture fixture;
+  fixture.addUser(1, "Ada");
+
+  const auto outcome = fixture.execute("SELECT * FROM users CROSS JOIN orders");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
+                  .rows.empty());
+}
+
+TEST(ExecuteQueryActionCrossJoinTest, RejectsProductsAboveSafetyLimit) {
+  InnerJoinFixture fixture;
+  for (std::int64_t id = 0; id < 1001; ++id) {
+    fixture.addUser(id, "user");
+  }
+  for (std::int64_t id = 0; id < 1000; ++id) {
+    fixture.addOrder(id, id, 1);
+  }
+
+  const auto outcome = fixture.execute("SELECT * FROM users CROSS JOIN orders");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
+      "CROSS JOIN result exceeds the 1000000-row safety limit");
+}
+
 } // namespace
