@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <variant>
+#include <vector>
 
 TEST(ExecuteQueryActionUnionAllTest, CombinesRowsAndPreservesDuplicates) {
   FakeQesRdbServicePort port;
