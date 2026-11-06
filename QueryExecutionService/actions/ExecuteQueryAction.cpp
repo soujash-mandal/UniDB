@@ -1289,8 +1289,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       if (alias != selectedColumns.end()) {
         const auto projectionIndex = static_cast<std::size_t>(
             std::distance(selectedColumns.begin(), alias));
-        orderIndexes.push_back(
-            {projectionIndex, order.ascending, true});
+        orderIndexes.push_back({projectionIndex, order.ascending, true});
         continue;
       }
 
@@ -1669,25 +1668,23 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       for (std::size_t index = 0; index < rowOrder.size(); ++index) {
         rowOrder[index] = index;
       }
-      std::stable_sort(rowOrder.begin(), rowOrder.end(),
-                       [&](std::size_t leftIndex, std::size_t rightIndex) {
-                         for (const auto &order : orderIndexes) {
-                           const auto &left =
-                               order.projected
-                                   ? projectedRows[leftIndex][order.index]
-                                   : matchedRows[leftIndex][order.index];
-                           const auto &right =
-                               order.projected
-                                   ? projectedRows[rightIndex][order.index]
-                                   : matchedRows[rightIndex][order.index];
-                           const int comparison = compareSqlValues(left, right);
-                           if (comparison != 0) {
-                             return order.ascending ? comparison < 0
-                                                    : comparison > 0;
-                           }
-                         }
-                         return false;
-                       });
+      std::stable_sort(
+          rowOrder.begin(), rowOrder.end(),
+          [&](std::size_t leftIndex, std::size_t rightIndex) {
+            for (const auto &order : orderIndexes) {
+              const auto &left = order.projected
+                                     ? projectedRows[leftIndex][order.index]
+                                     : matchedRows[leftIndex][order.index];
+              const auto &right = order.projected
+                                      ? projectedRows[rightIndex][order.index]
+                                      : matchedRows[rightIndex][order.index];
+              const int comparison = compareSqlValues(left, right);
+              if (comparison != 0) {
+                return order.ascending ? comparison < 0 : comparison > 0;
+              }
+            }
+            return false;
+          });
 
       std::vector<std::vector<SqlValue>> sortedRows;
       std::vector<std::vector<SqlValue>> sortedProjections;
