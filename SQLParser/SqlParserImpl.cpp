@@ -93,6 +93,14 @@ private:
 
   bool expect(TokenKind kind) { return match(kind); }
 
+  bool isReservedTableAliasKeyword() const {
+    return isKeyword("AS") || isKeyword("INNER") || isKeyword("JOIN") ||
+           isKeyword("ON") || isKeyword("WHERE") || isKeyword("GROUP") ||
+           isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
+           isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
+           isKeyword("UNION");
+  }
+
   SqlParseResult parseCreateTable() {
     ++position_; // CREATE
     if (!expectKeyword("TABLE")) {
@@ -347,6 +355,18 @@ private:
     }
     statement.tableName = current().text;
     ++position_;
+    if (matchKeyword("AS")) {
+      if (current().kind != TokenKind::Identifier ||
+          isReservedTableAliasKeyword()) {
+        return syntaxError("Expected table alias after AS");
+      }
+      statement.tableAlias = current().text;
+      ++position_;
+    } else if (current().kind == TokenKind::Identifier &&
+               !isReservedTableAliasKeyword()) {
+      statement.tableAlias = current().text;
+      ++position_;
+    }
 
     if (matchKeyword("INNER")) {
       if (!expectKeyword("JOIN")) {
@@ -358,6 +378,18 @@ private:
       InnerJoinClause join;
       join.tableName = current().text;
       ++position_;
+      if (matchKeyword("AS")) {
+        if (current().kind != TokenKind::Identifier ||
+            isReservedTableAliasKeyword()) {
+          return syntaxError("Expected table alias after AS");
+        }
+        join.tableAlias = current().text;
+        ++position_;
+      } else if (current().kind == TokenKind::Identifier &&
+                 !isReservedTableAliasKeyword()) {
+        join.tableAlias = current().text;
+        ++position_;
+      }
       if (!expectKeyword("ON")) {
         return syntaxError("Expected ON after joined table name");
       }
@@ -455,6 +487,13 @@ private:
         OrderByColumn order;
         order.columnName = current().text;
         ++position_;
+        if (match(TokenKind::Dot)) {
+          if (current().kind != TokenKind::Identifier) {
+            return syntaxError("Expected column name after ORDER BY qualifier");
+          }
+          order.columnName += "." + current().text;
+          ++position_;
+        }
         if (matchKeyword("ASC")) {
           order.ascending = true;
         } else if (matchKeyword("DESC")) {

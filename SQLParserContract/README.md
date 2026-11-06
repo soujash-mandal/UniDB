@@ -28,8 +28,9 @@ semicolon is optional.
 
 Supported column types are INT and TEXT. Supported literals are signed
 integer values and single-quoted text values. V1 does not define NULL, floating
-point values, boolean values, or subqueries. INNER JOIN syntax is being introduced
-in stages; parser support alone does not make JOIN executable.
+point values, boolean values, or subqueries. A single equality-based INNER JOIN
+is supported. Table aliases may be written with or without AS in FROM and INNER
+JOIN clauses; when an alias is present, qualified references use that alias.
 
 The parser describes statement syntax; table existence, column existence, type
 compatibility, and other execution-time validation belong to query execution and
@@ -101,11 +102,18 @@ this implementation uses an in-memory full scan and grouping map.
 
 ## INNER JOIN parser groundwork
 
-The parser recognizes a single equality-based
-`FROM left_table INNER JOIN right_table ON left_table.column = right_table.column`
-clause. SELECT-list columns may be table-qualified (for example,
-`SELECT users.id, orders.amount`). The AST preserves the joined table and both
-qualified ON-column references.
+The parser recognizes a single equality-based INNER JOIN. Table aliases are
+optional and may use either form:
+
+```sql
+SELECT u.id, o.amount
+FROM users AS u
+INNER JOIN orders o ON u.id = o.user_id
+```
+
+Aliases may also be used without a JOIN, for example `SELECT u.id FROM users u`.
+The AST preserves each underlying table name, optional alias, and qualified
+ON-column references.
 
 The next validation stage resolves both table schemas through the
 existing RDB public Action-backed port. The ON clause must reference one column
@@ -115,19 +123,21 @@ exists in exactly one table. Output names remain unqualified when unique and
 become `table.column` when the name exists in both tables. An explicit `AS`
 alias overrides the generated name. Duplicate output names are rejected.
 
-The execution stage currently supports `SELECT *` without a WHERE clause.
-It fetches both tables through the existing public RDB SELECT Action-backed port,
-decodes the rows, and performs an in-memory nested-loop equality join. Matching
-rows are returned with columns from the FROM table followed by columns from the
-joined table. A duplicate column name is qualified with its source table name.
-The join performs O(N × M) key comparisons for N left rows and M right rows and
-holds both decoded inputs plus the output rows in memory.
+The execution stage fetches both tables through the existing public RDB SELECT
+Action-backed port, decodes the rows, and performs an in-memory nested-loop
+equality join. Matching rows are returned with columns from the FROM table
+followed by columns from the joined table. A duplicate column name is qualified
+with its source table name or declared alias. The join performs O(N × M) key
+comparisons for N left rows and M right rows and holds both decoded inputs plus
+the output rows in memory.
 
 Explicit projections are supported for qualified columns and unambiguous
-unqualified columns. `AS` aliases override generated output names. WHERE
-conditions are evaluated against joined rows; qualified references such as
-`orders.amount` are supported, and unqualified references are accepted only
+unqualified columns. `AS` projection aliases override generated output names.
+When a table alias is declared, the alias is the qualifier used for SELECT,
+JOIN ON, and WHERE references; the original table name is not a valid qualifier
+for that table in the same query. Unqualified references are accepted only
 when the column exists in exactly one input table. Ambiguous or unknown
-references are rejected before row reads. Filtering and projection run in
-memory after the two input tables are fetched. LEFT JOIN, table aliases, and
-non-equality join conditions remain unsupported.
+references are rejected before row reads. Self-joins are supported when each
+instance has a distinct alias. Filtering and projection run in memory after the
+two input tables are fetched. LEFT JOIN and non-equality join conditions remain
+unsupported.
