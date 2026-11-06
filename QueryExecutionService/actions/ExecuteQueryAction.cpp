@@ -905,8 +905,7 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
                    [](const auto &value) { return !value.has_value(); }) ||
       !std::all_of(select.textFunctions.begin(), select.textFunctions.end(),
                    [](const auto &value) { return !value.has_value(); }) ||
-      !std::all_of(select.caseExpressions.begin(),
-                   select.caseExpressions.end(),
+      !std::all_of(select.caseExpressions.begin(), select.caseExpressions.end(),
                    [](const auto &value) { return !value.has_value(); })) {
     throw std::invalid_argument(
         "CROSS JOIN currently supports simple SELECT projections and WHERE");
@@ -1506,8 +1505,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           rdbServicePort.getTableDefinition(select->crossJoin->tableName);
       schemaTypes(leftSchema);
       schemaTypes(rightSchema);
-      return executeCrossJoin(rdbServicePort, *select, leftSchema,
-                              rightSchema);
+      return executeCrossJoin(rdbServicePort, *select, leftSchema, rightSchema);
     }
     if (!select->innerJoins.empty()) {
       std::vector<std::vector<ColumnDefinition>> schemas;

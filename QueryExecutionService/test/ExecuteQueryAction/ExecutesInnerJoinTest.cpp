@@ -323,8 +323,7 @@ TEST(ExecuteQueryActionCrossJoinTest, CartesianProductOrder) {
   fixture.addOrder(10, 1, 250);
   fixture.addOrder(11, 2, 80);
 
-  const auto outcome =
-      fixture.execute("SELECT * FROM users CROSS JOIN orders");
+  const auto outcome = fixture.execute("SELECT * FROM users CROSS JOIN orders");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
