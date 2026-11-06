@@ -133,7 +133,8 @@ struct SelectStatement {
   std::vector<std::optional<CaseExpression>> caseExpressions;
   // Parallel to columnNames; populated for computed integer expressions.
   std::vector<std::optional<IntegerExpression>> integerExpressions;
-  // Parallel to columnNames; populated for scalar TEXT function projections.\n  std::vector<std::optional<TextFunctionExpression>> textFunctions;\n  bool distinct{false};
+  // Parallel to columnNames; populated for scalar TEXT function projections.
+  std::vector<std::optional<TextFunctionExpression>> textFunctions;\n  bool distinct{false};
   std::optional<AggregateExpression> aggregate;
   std::vector<std::string> groupBy;
   std::optional<HavingExpression> having;
