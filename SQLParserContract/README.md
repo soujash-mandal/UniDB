@@ -21,6 +21,8 @@ semicolon is optional.
 - `SELECT DISTINCT column_name, ... FROM table_name`
 - `SELECT column_name AS alias, ... FROM table_name`
 - `SELECT DISTINCT * FROM table_name`
+- `SELECT ... UNION SELECT ...` (duplicate rows removed)
+- `SELECT ... UNION ALL SELECT ...` (duplicates preserved; branch order retained)
 - Either SELECT form may include a WHERE expression with comparison operators,
   IN / NOT IN, BETWEEN / NOT BETWEEN, and LIKE / NOT LIKE.
 - WHERE expressions support parentheses, AND, and OR (AND has higher
@@ -39,7 +41,8 @@ database services.
 ## Result and errors
 
 - Success returns a `SqlStatement` containing a `CreateTableStatement`,
-  `InsertStatement`, or `SelectStatement`.
+  `InsertStatement`, `SelectStatement`, `UnionStatement`, or
+  `UnionAllStatement`.
 - Invalid SQL syntax returns `SqlParseErrorCode::SyntaxError`.
 - A valid statement form outside the V1 supported subset returns
   `SqlParseErrorCode::UnsupportedStatement`.
@@ -141,3 +144,22 @@ references are rejected before row reads. Self-joins are supported when each
 instance has a distinct alias. Filtering and projection run in memory after the
 two input tables are fetched. LEFT JOIN and non-equality join conditions remain
 unsupported.
+
+
+## UNION and UNION ALL
+
+A set-operation query contains two or more SELECT branches. Every branch is
+executed independently through the existing QES SELECT path. All branches must
+return the same number of columns, and corresponding columns must have the
+same INT or TEXT type. Output column names come from the first SELECT branch.
+
+`UNION ALL` concatenates branch rows in query order and preserves duplicates.
+`UNION` removes duplicate complete rows across all branches, preserving the
+first occurrence and the order in which unique rows are encountered. Row
+equality compares every typed value in the row.
+
+For this initial implementation, a query must use the same set operator
+throughout: mixing `UNION` and `UNION ALL` in one statement is rejected.
+ORDER BY, LIMIT, and OFFSET apply within each SELECT branch; ordering or
+limiting the combined set-operation result is not supported. Execution is
+in-memory and does not use indexes.

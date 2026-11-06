@@ -211,6 +211,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/SelectStarDecodesRowsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectProjectionTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/UnionAllTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/UnionTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectDistinctTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAliasesTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/SelectAggregatesTest.cpp
