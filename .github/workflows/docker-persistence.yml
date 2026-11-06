@@ -24,8 +24,6 @@ on:
       - "RdbService/**"
       - "RdbMetadataService/**"
       - "QueryExecutionService/**"
-      - "QueryExecutionService/parser/**"
-      - "QueryExecutionService/contract/**"
       - ".github/workflows/docker-persistence.yml"
   push:
     branches:
@@ -52,8 +50,6 @@ on:
       - "RdbService/**"
       - "RdbMetadataService/**"
       - "QueryExecutionService/**"
-      - "QueryExecutionService/parser/**"
-      - "QueryExecutionService/contract/**"
       - ".github/workflows/docker-persistence.yml"
 
 concurrency:

@@ -17,7 +17,25 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 - `RdbServiceAdapter` — maps SQL schemas and rows to RDBService's public Actions.
 - `SqlTupleCodec` — encodes and decodes V1 INT/TEXT values in tuple storage format.
 
-QES must not depend directly on CatalogService, TupleService, BufferPoolManager, or DiskManager.
+## Domain
 
+Pure, stateless SQL/query rules live under `domain/` and receive their inputs explicitly:
 
-Grouped aggregate SELECT now supports in-memory `ORDER BY` on projected grouping columns and the aggregate output alias, including multiple ASC/DESC terms. `LIMIT` and `OFFSET` are applied after HAVING and ordering. `DISTINCT` remains unsupported for grouped aggregate queries.
+- `predicate/WherePredicateEvaluator` — typed SQL value comparison, WHERE predicate compilation, and recursive predicate evaluation.
+- `expression/ScalarExpressionEvaluator` — evaluates compiled integer arithmetic and TEXT scalar functions.
+- `aggregate/SqlAggregateCalculator` — calculates COUNT, MIN, MAX, SUM, and AVG over explicit input values.
+
+Domain code must not depend on services, Actions, ports, adapters, the Container, or storage. Schema lookup, column/alias binding, join resolution, row fetching, grouping, HAVING, sorting, pagination, and result construction remain in `ExecuteQueryAction` because they depend on query context or coordinate execution.
+
+## Parser ownership
+
+- `contract/` contains the parser interface and typed SQL statement/value representations.
+- `parser/` contains the lexer, parser implementation, and parser unit tests.
+
+The parser implementation depends on the contract. Neither parser layer executes queries or accesses database services.
+
+## Service boundary
+
+QES accesses RDB only through `RdbServicePort`, backed by the existing public RDBService Actions. QES must not depend directly on CatalogService, TupleService, BufferPoolManager, or DiskManager. Tuple byte encoding remains in the QES adapter and must not leak into domain APIs.
+
+Grouped aggregate SELECT supports in-memory `ORDER BY` on projected grouping columns and the aggregate output alias, including multiple ASC/DESC terms. `LIMIT` and `OFFSET` are applied after HAVING and ordering. `DISTINCT` remains unsupported for grouped aggregate queries.
