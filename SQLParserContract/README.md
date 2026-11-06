@@ -100,9 +100,12 @@ semantics as ungrouped aggregates.
 A single HAVING condition may compare the selected aggregate expression with an
 INT or TEXT literal using =, !=, >, <, >=, or <=. The HAVING aggregate must match
 the SELECT aggregate. WHERE is applied before grouping; HAVING is applied after
-each group is aggregated. DISTINCT, ORDER BY, LIMIT, and OFFSET are not
-supported with grouped queries. Results are returned in grouping-key order;
-this implementation uses an in-memory full scan and grouping map.
+each group is aggregated. DISTINCT remains unsupported with grouped queries.
+ORDER BY accepts projected grouping-column names or the aggregate output alias,
+supports multiple ASC/DESC terms, and runs after HAVING. LIMIT and OFFSET are
+applied after grouped ordering; OFFSET may be used without LIMIT. Without an
+ORDER BY clause, results retain the existing deterministic grouping-key order.
+This implementation uses an in-memory full scan and grouping map.
 
 
 ## INNER JOIN parser groundwork
