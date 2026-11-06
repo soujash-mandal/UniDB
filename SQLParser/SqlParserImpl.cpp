@@ -344,6 +344,54 @@ private:
     return aggregate;
   }
 
+  std::variant<CaseExpression, SqlParseError> parseCaseExpression() {
+    ++position_; // CASE
+    CaseExpression expression;
+    while (matchKeyword("WHEN")) {
+      auto condition = parseWhereOrExpression();
+      if (std::holds_alternative<SqlParseError>(condition)) {
+        return std::get<SqlParseError>(std::move(condition));
+      }
+      if (!expectKeyword("THEN")) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected THEN after CASE WHEN condition"};
+      }
+      auto value = parseLiteral();
+      if (std::holds_alternative<SqlParseError>(value)) {
+        return std::get<SqlParseError>(std::move(value));
+      }
+      expression.branches.push_back(
+          {std::get<WhereExpression>(std::move(condition)),
+           std::get<SqlValue>(std::move(value))});
+    }
+    if (expression.branches.empty()) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "CASE requires at least one WHEN branch"};
+    }
+    if (!expectKeyword("ELSE")) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "CASE requires ELSE because SQL NULL is unsupported"};
+    }
+    auto elseValue = parseLiteral();
+    if (std::holds_alternative<SqlParseError>(elseValue)) {
+      return std::get<SqlParseError>(std::move(elseValue));
+    }
+    expression.elseResult = std::get<SqlValue>(std::move(elseValue));
+    if (!expectKeyword("END")) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected END after CASE expression"};
+    }
+    const bool resultIsInt =
+        std::holds_alternative<std::int64_t>(expression.elseResult);
+    for (const auto &branch : expression.branches) {
+      if (std::holds_alternative<std::int64_t>(branch.result) != resultIsInt) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "CASE result values must have the same type"};
+      }
+    }
+    return expression;
+  }
+
   SqlParseResult parseSelect() {
     ++position_; // SELECT
     SelectStatement statement;
@@ -362,7 +410,7 @@ private:
     } else {
       if (current().kind != TokenKind::Identifier) {
         return syntaxError(
-            "Expected '*', aggregate, or column name after SELECT");
+            "Expected '*', aggregate, CASE, or column name after SELECT");
       }
       while (true) {
         if (isAggregateStart()) {
@@ -374,15 +422,27 @@ private:
               std::get<AggregateExpression>(std::move(aggregate));
           break;
         }
-        auto reference = parseColumnReference(false);
-        if (std::holds_alternative<SqlParseError>(reference)) {
-          return std::get<SqlParseError>(std::move(reference));
+
+        if (isKeyword("CASE")) {
+          auto caseExpression = parseCaseExpression();
+          if (std::holds_alternative<SqlParseError>(caseExpression)) {
+            return std::get<SqlParseError>(std::move(caseExpression));
+          }
+          statement.columnNames.emplace_back();
+          statement.caseExpressions.push_back(
+              std::get<CaseExpression>(std::move(caseExpression)));
+        } else {
+          auto reference = parseColumnReference(false);
+          if (std::holds_alternative<SqlParseError>(reference)) {
+            return std::get<SqlParseError>(std::move(reference));
+          }
+          const auto &column = std::get<ColumnReference>(reference);
+          statement.columnNames.push_back(column.tableName.has_value()
+                                              ? *column.tableName + "." +
+                                                    column.columnName
+                                              : column.columnName);
+          statement.caseExpressions.push_back(std::nullopt);
         }
-        const auto &column = std::get<ColumnReference>(reference);
-        statement.columnNames.push_back(column.tableName.has_value()
-                                            ? *column.tableName + "." +
-                                                  column.columnName
-                                            : column.columnName);
         std::optional<std::string> alias;
         if (matchKeyword("AS")) {
           if (current().kind != TokenKind::Identifier) {
