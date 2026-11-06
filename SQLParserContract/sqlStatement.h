@@ -89,6 +89,7 @@ struct InnerJoinClause {
   std::optional<std::string> tableAlias;
   ColumnReference left;
   ColumnReference right;
+  ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
 struct CaseWhenClause {
