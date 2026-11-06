@@ -8,7 +8,8 @@
 #include <string>
 #include <variant>
 
-TEST(ExecuteQueryActionIntegerArithmeticTest, EvaluatesPrecedenceAndParentheses) {
+TEST(ExecuteQueryActionIntegerArithmeticTest,
+     EvaluatesPrecedenceAndParentheses) {
   FakeQesRdbServicePort port;
   for (const std::int64_t id : {4, 5}) {
     port.rows.push_back(SqlTupleCodec::encode(
@@ -18,8 +19,8 @@ TEST(ExecuteQueryActionIntegerArithmeticTest, EvaluatesPrecedenceAndParentheses)
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT id + 2 * 3 AS score, (id - 1) / 2 AS half FROM people ORDER BY id");
+  const auto outcome = action.execute("SELECT id + 2 * 3 AS score, (id - 1) / "
+                                      "2 AS half FROM people ORDER BY id");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
@@ -62,8 +63,8 @@ TEST(ExecuteQueryActionIntegerArithmeticTest, DetectsIntegerOverflow) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT id + 9223372036854775807 FROM people");
+  const auto outcome =
+      action.execute("SELECT id + 9223372036854775807 FROM people");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
@@ -73,7 +74,8 @@ TEST(ExecuteQueryActionIntegerArithmeticTest, DetectsIntegerOverflow) {
             std::string::npos);
 }
 
-TEST(ExecuteQueryActionIntegerArithmeticTest, RejectsTextColumnArithmeticBeforeReadingRows) {
+TEST(ExecuteQueryActionIntegerArithmeticTest,
+     RejectsTextColumnArithmeticBeforeReadingRows) {
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);

@@ -414,7 +414,7 @@ private:
     if (match(TokenKind::Minus)) {
       if (current().kind != TokenKind::Integer) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected integer literal after '-'"}; 
+                             "Expected integer literal after '-'"};
       }
       const std::string text = "-" + current().text;
       ++position_;
@@ -538,8 +538,8 @@ private:
           current().kind != TokenKind::Integer &&
           current().kind != TokenKind::LeftParen &&
           current().kind != TokenKind::Minus) {
-        return syntaxError(
-            "Expected '*', aggregate, CASE, column, or integer expression after SELECT");
+        return syntaxError("Expected '*', aggregate, CASE, column, or integer "
+                           "expression after SELECT");
       }
       while (true) {
         if (isAggregateStart()) {
@@ -573,8 +573,7 @@ private:
             statement.integerExpressions.push_back(std::nullopt);
           } else {
             statement.columnNames.emplace_back();
-            statement.integerExpressions.push_back(
-                std::move(parsedExpression));
+            statement.integerExpressions.push_back(std::move(parsedExpression));
           }
           statement.caseExpressions.push_back(std::nullopt);
         }

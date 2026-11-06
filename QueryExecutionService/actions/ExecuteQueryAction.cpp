@@ -500,10 +500,11 @@ struct CompiledIntegerExpression {
   std::shared_ptr<CompiledIntegerExpression> right;
 };
 
-CompiledIntegerExpression compileIntegerExpression(
-    const IntegerExpression &expression,
-    const std::vector<ColumnDefinition> &schema,
-    const std::vector<SqlType> &types, const std::string &tableQualifier) {
+CompiledIntegerExpression
+compileIntegerExpression(const IntegerExpression &expression,
+                         const std::vector<ColumnDefinition> &schema,
+                         const std::vector<SqlType> &types,
+                         const std::string &tableQualifier) {
   CompiledIntegerExpression compiled;
   compiled.kind = expression.kind;
   if (expression.kind == IntegerExpression::Kind::Literal) {
@@ -513,9 +514,9 @@ CompiledIntegerExpression compileIntegerExpression(
   if (expression.kind == IntegerExpression::Kind::Column) {
     const auto name =
         normalizeSingleTableColumnName(expression.columnName, tableQualifier);
-    const auto found = std::find_if(
-        schema.begin(), schema.end(),
-        [&](const auto &column) { return column.name == name; });
+    const auto found =
+        std::find_if(schema.begin(), schema.end(),
+                     [&](const auto &column) { return column.name == name; });
     if (found == schema.end()) {
       throw std::invalid_argument("Unknown SELECT column: " +
                                   expression.columnName);
@@ -523,8 +524,8 @@ CompiledIntegerExpression compileIntegerExpression(
     const auto index =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
     if (types[index] != SqlType::Int) {
-      throw std::invalid_argument(
-          "Integer arithmetic requires INT columns: " + expression.columnName);
+      throw std::invalid_argument("Integer arithmetic requires INT columns: " +
+                                  expression.columnName);
     }
     compiled.columnIndex = index;
     return compiled;
@@ -533,16 +534,18 @@ CompiledIntegerExpression compileIntegerExpression(
     throw std::invalid_argument("Malformed integer arithmetic expression");
   }
   compiled.operation = expression.operation;
-  compiled.left = std::make_shared<CompiledIntegerExpression>(
-      compileIntegerExpression(*expression.left, schema, types, tableQualifier));
-  compiled.right = std::make_shared<CompiledIntegerExpression>(
-      compileIntegerExpression(*expression.right, schema, types, tableQualifier));
+  compiled.left =
+      std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+          *expression.left, schema, types, tableQualifier));
+  compiled.right =
+      std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+          *expression.right, schema, types, tableQualifier));
   return compiled;
 }
 
-std::int64_t evaluateIntegerExpression(
-    const std::vector<SqlValue> &row,
-    const CompiledIntegerExpression &expression) {
+std::int64_t
+evaluateIntegerExpression(const std::vector<SqlValue> &row,
+                          const CompiledIntegerExpression &expression) {
   if (expression.kind == IntegerExpression::Kind::Literal) {
     return expression.literal;
   }
@@ -1043,16 +1046,14 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             throw std::invalid_argument(
                 "Integer expressions are not yet supported with JOIN");
           }
-          const auto compiled = compileIntegerExpression(
-              *select->integerExpressions[itemIndex], schema, types,
-              tableQualifier);
+          const auto compiled =
+              compileIntegerExpression(*select->integerExpressions[itemIndex],
+                                       schema, types, tableQualifier);
           selectedIndexes.push_back(schema.size());
-          const auto alias =
-              itemIndex < select->columnAliases.size()
-                  ? select->columnAliases[itemIndex]
-                  : std::optional<std::string>{};
-          selectedColumns.push_back(
-              {alias.value_or("EXPR"), SqlType::Int});
+          const auto alias = itemIndex < select->columnAliases.size()
+                                 ? select->columnAliases[itemIndex]
+                                 : std::optional<std::string>{};
+          selectedColumns.push_back({alias.value_or("EXPR"), SqlType::Int});
           compiledCases.push_back(std::nullopt);
           compiledIntegers.push_back(compiled);
           continue;
@@ -1504,9 +1505,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
         if (index < compiledIntegers.size() &&
             compiledIntegers[index].has_value()) {
-          projected.push_back(evaluateIntegerExpression(
-              decoded, *compiledIntegers[index]));
-        } else if (index < compiledCases.size() && compiledCases[index].has_value()) {
+          projected.push_back(
+              evaluateIntegerExpression(decoded, *compiledIntegers[index]));
+        } else if (index < compiledCases.size() &&
+                   compiledCases[index].has_value()) {
           const auto &caseExpression = *select->caseExpressions[index];
           bool matched = false;
           for (std::size_t branchIndex = 0;
