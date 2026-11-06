@@ -230,3 +230,60 @@ TEST(ExecuteQueryActionJoinResolutionTest, RejectsUnknownJoinTableReference) {
 }
 
 } // namespace
+
+TEST(ExecuteQueryActionJoinResolutionTest, ResolvesTableAliasesInJoinAndWhere) {
+  JoinResolutionFixture fixture;
+
+  const auto result = fixture.execute(
+      "SELECT u.id, o.amount FROM users AS u INNER JOIN orders o "
+      "ON u.id = o.user_id WHERE o.amount > 10");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          result));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 2U);
+  EXPECT_EQ(rows.columns[0].name, "users.id");
+  EXPECT_EQ(rows.columns[1].name, "amount");
+  EXPECT_EQ(fixture.port.schemaRequests,
+            (std::vector<std::string>{"users", "orders"}));
+  EXPECT_EQ(fixture.port.selectCalls, 2U);
+}
+
+TEST(ExecuteQueryActionJoinResolutionTest, SupportsSelfJoinWithDistinctAliases) {
+  JoinResolutionFixture fixture;
+
+  const auto result = fixture.execute(
+      "SELECT employee.id FROM users employee INNER JOIN users manager "
+      "ON employee.id = manager.id");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          result));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 1U);
+  EXPECT_EQ(rows.columns[0].name, "id");
+  EXPECT_EQ(fixture.port.schemaRequests,
+            (std::vector<std::string>{"users", "users"}));
+  EXPECT_EQ(fixture.port.selectCalls, 2U);
+}
+
+TEST(ExecuteQueryActionJoinResolutionTest, SupportsAliasInSingleTableSelectAndWhere) {
+  JoinResolutionFixture fixture;
+
+  const auto result =
+      fixture.execute("SELECT u.id FROM users u WHERE u.id > 1");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          result));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 1U);
+  EXPECT_EQ(rows.columns[0].name, "id");
+  EXPECT_EQ(fixture.port.schemaRequests,
+            (std::vector<std::string>{"users"}));
+  EXPECT_EQ(fixture.port.selectCalls, 1U);
+}
