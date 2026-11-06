@@ -332,18 +332,19 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
   output << result.rows.size() << " row(s)\n";
 }
 
-
 bool readInteractiveLine(std::string &line,
                          const std::vector<std::string> &history,
                          std::size_t &historyIndex, std::string &historyDraft,
                          std::ostream &output) {
   termios original{};
-  if (tcgetattr(STDIN_FILENO, &original) != 0) return false;
+  if (tcgetattr(STDIN_FILENO, &original) != 0)
+    return false;
   termios raw = original;
   raw.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
   raw.c_cc[VMIN] = 1;
   raw.c_cc[VTIME] = 0;
-  if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) != 0) return false;
+  if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) != 0)
+    return false;
   struct RestoreTerminal {
     termios settings;
     ~RestoreTerminal() { tcsetattr(STDIN_FILENO, TCSANOW, &settings); }
@@ -354,19 +355,24 @@ bool readInteractiveLine(std::string &line,
   const auto redraw = [&]() {
     output << "\r\033[2Kunidb> " << line;
     const auto right = displayWidth(line.substr(cursor));
-    if (right != 0) output << "\033[" << right << 'D';
+    if (right != 0)
+      output << "\033[" << right << 'D';
     output.flush();
   };
   const auto readByte = [](char &value) {
     while (true) {
       const auto count = ::read(STDIN_FILENO, &value, 1);
-      if (count == 1) return true;
-      if (count == 0) return false;
-      if (errno != EINTR) return false;
+      if (count == 1)
+        return true;
+      if (count == 0)
+        return false;
+      if (errno != EINTR)
+        return false;
     }
   };
   const auto previousCharacter = [&line](std::size_t position) {
-    if (position == 0) return std::size_t{0};
+    if (position == 0)
+      return std::size_t{0};
     --position;
     while (position > 0 &&
            (static_cast<unsigned char>(line[position]) & 0xc0) == 0x80)
@@ -374,7 +380,8 @@ bool readInteractiveLine(std::string &line,
     return position;
   };
   const auto nextCharacter = [&line](std::size_t position) {
-    if (position >= line.size()) return line.size();
+    if (position >= line.size())
+      return line.size();
     ++position;
     while (position < line.size() &&
            (static_cast<unsigned char>(line[position]) & 0xc0) == 0x80)
@@ -399,7 +406,8 @@ bool readInteractiveLine(std::string &line,
       if (!readByte(bracket) || bracket != '[' || !readByte(direction))
         continue;
       if (direction == 'A' && !history.empty()) {
-        if (historyIndex == history.size()) historyDraft = line;
+        if (historyIndex == history.size())
+          historyDraft = line;
         if (historyIndex > 0) {
           line = history[--historyIndex];
           cursor = line.size();
@@ -408,7 +416,7 @@ bool readInteractiveLine(std::string &line,
       } else if (direction == 'B' && historyIndex < history.size()) {
         ++historyIndex;
         line = historyIndex == history.size() ? historyDraft
-                                               : history[historyIndex];
+                                              : history[historyIndex];
         cursor = line.size();
         redraw();
       } else if (direction == 'C' && cursor < line.size()) {
@@ -485,14 +493,16 @@ void SqlShell::run() {
     if (interactiveTerminal) {
       historyIndex = history.size();
       historyDraft.clear();
-      hasLine = readInteractiveLine(line, history, historyIndex,
-                                    historyDraft, output);
+      hasLine = readInteractiveLine(line, history, historyIndex, historyDraft,
+                                    output);
     } else {
       output << "unidb> " << std::flush;
       hasLine = static_cast<bool>(std::getline(input, line));
-      if (!hasLine) output << '\n';
+      if (!hasLine)
+        output << '\n';
     }
-    if (!hasLine) return;
+    if (!hasLine)
+      return;
 
     const std::string statement = trim(line);
     if (interactiveTerminal && !statement.empty() &&
