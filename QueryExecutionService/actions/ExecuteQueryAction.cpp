@@ -21,11 +21,8 @@ using unidb::sql::AggregateFunction;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
-using unidb::sql::HavingExpression;
 using unidb::sql::InsertStatement;
-using unidb::sql::IntegerBinaryOperator;
 using unidb::sql::IntegerExpression;
-using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
@@ -34,7 +31,6 @@ using unidb::sql::TextFunction;
 using unidb::sql::TextFunctionExpression;
 using unidb::sql::UnionAllStatement;
 using unidb::sql::UnionStatement;
-using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
 
 QueryExecutionError executionError(std::string message) {
