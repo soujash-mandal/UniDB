@@ -21,8 +21,8 @@ public:
   std::vector<unidb::sql::ColumnDefinition>
   getTableDefinition(const std::string &tableName) override;
   void insertRow(const std::string &tableName,
-                 const std::vector<char> &tupleBytes) override;
-  std::vector<std::vector<char>>
+                 const std::vector<unidb::sql::SqlValue> &values) override;
+  std::vector<std::vector<unidb::sql::SqlValue>>
   selectAllRows(const std::string &tableName) override;
 
 private:

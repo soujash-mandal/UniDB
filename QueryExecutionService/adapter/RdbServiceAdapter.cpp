@@ -1,6 +1,7 @@
 #include "RdbServiceAdapter.h"
 
 #include "../../RdbService/domain/RdbTable.h"
+#include "SqlTupleCodec.h"
 
 #include <limits>
 #include <stdexcept>
@@ -69,8 +70,17 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
   return columns;
 }
 
-void RdbServiceAdapter::insertRow(const std::string &tableName,
-                                  const std::vector<char> &tupleBytes) {
+void RdbServiceAdapter::insertRow(
+    const std::string &tableName,
+    const std::vector<unidb::sql::SqlValue> &values) {
+  const auto table =
+      getTableDefinitionAction.execute(metadataPageId, tableName);
+  std::vector<unidb::sql::SqlType> types;
+  types.reserve(table.columns.size());
+  for (const auto &column : table.columns) {
+    types.push_back(fromRdbType(column.type));
+  }
+  const auto tupleBytes = SqlTupleCodec::encode(types, values);
   try {
     (void)insertRowAction.execute(metadataPageId, tableName, tupleBytes);
   } catch (const RdbService::SpaceMapUpdateFailedAfterInsert &error) {
@@ -78,9 +88,23 @@ void RdbServiceAdapter::insertRow(const std::string &tableName,
   }
 }
 
-std::vector<std::vector<char>>
+std::vector<std::vector<unidb::sql::SqlValue>>
 RdbServiceAdapter::selectAllRows(const std::string &tableName) {
-  return selectAllRowsAction.execute(metadataPageId, tableName);
+  const auto table =
+      getTableDefinitionAction.execute(metadataPageId, tableName);
+  std::vector<unidb::sql::SqlType> types;
+  types.reserve(table.columns.size());
+  for (const auto &column : table.columns) {
+    types.push_back(fromRdbType(column.type));
+  }
+
+  const auto tupleRows = selectAllRowsAction.execute(metadataPageId, tableName);
+  std::vector<std::vector<unidb::sql::SqlValue>> rows;
+  rows.reserve(tupleRows.size());
+  for (const auto &tupleBytes : tupleRows) {
+    rows.push_back(SqlTupleCodec::decode(types, tupleBytes));
+  }
+  return rows;
 }
 
 } // namespace QueryExecutionService
