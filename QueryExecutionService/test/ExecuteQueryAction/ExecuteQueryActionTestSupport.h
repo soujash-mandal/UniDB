@@ -61,7 +61,7 @@ public:
     }
   }
 
-  std::vector<std::vector<char>>
+  std::vector<std::vector<unidb::sql::SqlValue>>
   selectAllRows(const std::string &name) override {
     ++selectCalls;
     tableName = name;
