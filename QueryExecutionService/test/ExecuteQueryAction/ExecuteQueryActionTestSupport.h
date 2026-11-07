@@ -19,12 +19,11 @@ public:
   uint32_t selectCalls = 0;
   std::string tableName;
   std::vector<unidb::sql::ColumnDefinition> createdColumns;
-  std::vector<char> insertedBytes;
-  std::vector<std::vector<char>> rows;
+  std::vector<std::vector<unidb::sql::SqlValue>> rows;
   bool fail = false;
   uint32_t failOnInsertCall = 0;
   uint32_t commitThenFailOnInsertCall = 0;
-  std::vector<std::vector<char>> insertedRows;
+  std::vector<std::vector<unidb::sql::SqlValue>> insertedRows;
 
   uint32_t
   createTable(const unidb::sql::CreateTableStatement &statement) override {
@@ -48,11 +47,10 @@ public:
   }
 
   void insertRow(const std::string &name,
-                 const std::vector<char> &bytes) override {
+                 const std::vector<unidb::sql::SqlValue> &values) override {
     ++insertCalls;
     tableName = name;
-    insertedBytes = bytes;
-    insertedRows.push_back(bytes);
+    insertedRows.push_back(values);
     if (commitThenFailOnInsertCall != 0 &&
         insertCalls == commitThenFailOnInsertCall) {
       throw QueryExecutionService::RowInsertedButPostInsertUpdateFailed(
