@@ -1,16 +1,11 @@
-#include "../../adapter/SqlTupleCodec.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
 
 TEST(ExecuteQueryActionTest, SelectsRequestedColumnsInRequestedOrder) {
   FakeQesRdbServicePort port;
-  port.rows.push_back(SqlTupleCodec::encode(
-      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      {std::int64_t{9}, std::string("Lin")}));
-  port.rows.push_back(SqlTupleCodec::encode(
-      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      {std::int64_t{10}, std::string("Mina")}));
+  port.rows.push_back({std::int64_t{9}, std::string("Lin")});
+  port.rows.push_back({std::int64_t{10}, std::string("Mina")});
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
