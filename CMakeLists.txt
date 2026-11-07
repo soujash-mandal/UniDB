@@ -6,6 +6,24 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(UNIDB_ENABLE_STRICT_WARNINGS
+    "Enable additional compiler warnings for UniDB targets"
+    ON
+)
+
+function(unidb_enable_strict_warnings target)
+    if(NOT UNIDB_ENABLE_STRICT_WARNINGS)
+        return()
+    endif()
+
+    target_compile_options(${target} PRIVATE
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wextra>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wpedantic>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    )
+endfunction()
+
 find_package(GTest REQUIRED)
 find_package(OpenSSL 3.0 REQUIRED)
 find_package(Threads REQUIRED)
@@ -336,3 +354,10 @@ include(GoogleTest)
 gtest_discover_tests(tests
     WORKING_DIRECTORY "$<TARGET_FILE_DIR:unidb>"
 )
+
+# Keep warning checks enabled for production code, the CLI, and test code.
+# Warnings are reported but are not errors yet; this allows the existing
+# codebase to adopt the warning baseline without blocking unrelated changes.
+unidb_enable_strict_warnings(unidb_core)
+unidb_enable_strict_warnings(unidb)
+unidb_enable_strict_warnings(tests)
