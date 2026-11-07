@@ -17,7 +17,9 @@ function(unidb_enable_strict_warnings target)
     endif()
 
     target_compile_options(${target} PRIVATE
-        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall;-Wextra;-Wpedantic>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wextra>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wpedantic>
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
     )
 endfunction()
