@@ -1,6 +1,5 @@
 #include "ExecuteQueryAction.h"
 
-#include "../adapter/SqlTupleCodec.h"
 #include "../domain/aggregate/SqlAggregateCalculator.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
@@ -513,18 +512,8 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     }
   }
 
-  const auto leftEncodedRows = rdbServicePort.selectAllRows(select.tableName);
-  const auto rightEncodedRows = rdbServicePort.selectAllRows(join.tableName);
-  std::vector<std::vector<SqlValue>> leftRows;
-  leftRows.reserve(leftEncodedRows.size());
-  for (const auto &bytes : leftEncodedRows) {
-    leftRows.push_back(SqlTupleCodec::decode(leftTypes, bytes));
-  }
-  std::vector<std::vector<SqlValue>> rightRows;
-  rightRows.reserve(rightEncodedRows.size());
-  for (const auto &bytes : rightEncodedRows) {
-    rightRows.push_back(SqlTupleCodec::decode(rightTypes, bytes));
-  }
+  auto leftRows = rdbServicePort.selectAllRows(select.tableName);
+  auto rightRows = rdbServicePort.selectAllRows(join.tableName);
 
   QueryExecutionResult result;
   result.kind = QueryExecutionResultKind::Rows;
@@ -682,18 +671,8 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     }
   }
 
-  const auto leftEncodedRows = rdbServicePort.selectAllRows(select.tableName);
-  const auto rightEncodedRows = rdbServicePort.selectAllRows(join.tableName);
-  std::vector<std::vector<SqlValue>> leftRows;
-  leftRows.reserve(leftEncodedRows.size());
-  for (const auto &bytes : leftEncodedRows) {
-    leftRows.push_back(SqlTupleCodec::decode(leftTypes, bytes));
-  }
-  std::vector<std::vector<SqlValue>> rightRows;
-  rightRows.reserve(rightEncodedRows.size());
-  for (const auto &bytes : rightEncodedRows) {
-    rightRows.push_back(SqlTupleCodec::decode(rightTypes, bytes));
-  }
+  auto leftRows = rdbServicePort.selectAllRows(select.tableName);
+  auto rightRows = rdbServicePort.selectAllRows(join.tableName);
   constexpr std::size_t kMaxCrossJoinRows = 1'000'000;
   if (!leftRows.empty() &&
       rightRows.size() > kMaxCrossJoinRows / leftRows.size()) {
@@ -754,8 +733,7 @@ QueryExecutionResult executeMultipleInnerJoins(
     combinedSchema.push_back({qualifiers.front() + "." + c.name, c.type});
     combinedTypes.push_back(c.type);
   }
-  for (const auto &bytes : port.selectAllRows(select.tableName))
-    rows.push_back(SqlTupleCodec::decode(firstTypes, bytes));
+  rows = port.selectAllRows(select.tableName);
   for (std::size_t j = 0; j < select.innerJoins.size(); ++j) {
     const auto &join = select.innerJoins[j];
     const auto qualifier = join.tableAlias.value_or(join.tableName);
@@ -815,10 +793,7 @@ QueryExecutionResult executeMultipleInnerJoins(
           "INNER JOIN columns must have matching types");
     const std::size_t priorIndex = lnew ? rr.first : l.first;
     const std::size_t newIndex = lnew ? l.first : rr.first;
-    const auto newTypes = schemaTypes(schemas[j + 1]);
-    std::vector<std::vector<SqlValue>> newRows;
-    for (const auto &bytes : port.selectAllRows(join.tableName))
-      newRows.push_back(SqlTupleCodec::decode(newTypes, bytes));
+    auto newRows = port.selectAllRows(join.tableName);
     std::vector<std::vector<SqlValue>> expanded;
     for (const auto &oldRow : rows)
       for (const auto &newRow : newRows) {
@@ -1036,8 +1011,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       throw std::invalid_argument("INSERT requires at least one VALUES row");
     }
 
-    std::vector<std::vector<char>> encodedRows;
-    encodedRows.reserve(insert->rows.size());
+    std::vector<std::vector<SqlValue>> rowsToInsert;
+    rowsToInsert.reserve(insert->rows.size());
     for (const auto &values : insert->rows) {
       if (insert->columnNames.size() != values.size()) {
         throw std::invalid_argument(
@@ -1077,14 +1052,14 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         throw std::invalid_argument(
             "V1 INSERT requires a value for every table column");
       }
-      encodedRows.push_back(SqlTupleCodec::encode(types, orderedValues));
+      rowsToInsert.push_back(std::move(orderedValues));
     }
 
     std::uint32_t insertedRows = 0;
     try {
-      for (const auto &bytes : encodedRows) {
+      for (const auto &values : rowsToInsert) {
         try {
-          rdbServicePort.insertRow(insert->tableName, bytes);
+          rdbServicePort.insertRow(insert->tableName, values);
           ++insertedRows;
         } catch (const RowInsertedButPostInsertUpdateFailed &) {
           ++insertedRows;
@@ -1592,11 +1567,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
     }
 
-    const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
+    const auto selectedRows = rdbServicePort.selectAllRows(select->tableName);
     std::vector<std::vector<SqlValue>> matchedRows;
-    matchedRows.reserve(encodedRows.size());
-    for (const auto &bytes : encodedRows) {
-      auto decoded = SqlTupleCodec::decode(types, bytes);
+    matchedRows.reserve(selectedRows.size());
+    for (const auto &decoded : selectedRows) {
       if (compiledWhere.has_value() &&
           !domain::matchesWhereExpression(decoded, *compiledWhere)) {
         continue;
