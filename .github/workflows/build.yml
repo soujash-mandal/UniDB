@@ -58,3 +58,26 @@ jobs:
 
       - name: Show compiler cache statistics
         run: ccache --show-stats
+
+  clang-unused-using:
+    name: Clang unused-using check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Clang and build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            clang \
+            cmake \
+            libgtest-dev \
+            libssl-dev
+
+      - name: Configure with Clang
+        run: CC=clang CXX=clang++ cmake -S . -B build-clang
+
+      - name: Build with unused using declarations treated as errors
+        run: cmake --build build-clang --parallel 3
