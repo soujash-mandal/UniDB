@@ -24,8 +24,8 @@ public:
   virtual std::vector<unidb::sql::ColumnDefinition>
   getTableDefinition(const std::string &tableName) = 0;
   virtual void insertRow(const std::string &tableName,
-                         const std::vector<char> &tupleBytes) = 0;
-  virtual std::vector<std::vector<char>>
+                         const std::vector<unidb::sql::SqlValue> &values) = 0;
+  virtual std::vector<std::vector<unidb::sql::SqlValue>>
   selectAllRows(const std::string &tableName) = 0;
 };
 
