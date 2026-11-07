@@ -1,4 +1,3 @@
-#include "../../adapter/SqlTupleCodec.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
@@ -11,12 +10,8 @@
 TEST(ExecuteQueryActionUnionTest,
      RemovesDuplicateRowsAndPreservesFirstOccurrence) {
   FakeQesRdbServicePort port;
-  const std::vector<unidb::sql::SqlType> types{unidb::sql::SqlType::Int,
-                                               unidb::sql::SqlType::Text};
-  port.rows.push_back(
-      SqlTupleCodec::encode(types, {std::int64_t{7}, std::string("Ada")}));
-  port.rows.push_back(
-      SqlTupleCodec::encode(types, {std::int64_t{8}, std::string("Grace")}));
+  port.rows.push_back({std::int64_t{7}, std::string("Ada")});
+  port.rows.push_back({std::int64_t{8}, std::string("Grace")});
 
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
