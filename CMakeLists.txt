@@ -20,7 +20,6 @@ function(unidb_enable_strict_warnings target)
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wextra>
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wpedantic>
-        $<$<CXX_COMPILER_ID:Clang,AppleClang>:-Werror=unused-using-declaration>
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
     )
 endfunction()
