@@ -631,13 +631,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
   if (const auto *insert = std::get_if<InsertStatement>(&statement)) {
     const auto schema = rdbServicePort.getTableDefinition(insert->tableName);
-    const auto orderedRows = domain::prepareInsertRows(*insert, schema);
-    const auto types = domain::schemaTypes(schema);
-    std::vector<std::vector<char>> encodedRows;
-    encodedRows.reserve(orderedRows.size());
-    for (const auto &values : orderedRows) {
-      encodedRows.push_back(SqlTupleCodec::encode(types, values));
-    }
+    const auto encodedRows = domain::encodeInsertRows(*insert, schema);
 
     std::uint32_t insertedRows = 0;
     try {
@@ -716,19 +710,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto plan = domain::buildSelectPlan(*select, schema);
-    const auto &types = plan.types;
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
-    std::vector<std::vector<SqlValue>> matchedRows;
-    matchedRows.reserve(encodedRows.size());
-    for (const auto &bytes : encodedRows) {
-      auto decoded = SqlTupleCodec::decode(types, bytes);
-      if (plan.compiledWhere.has_value() &&
-          !domain::matchesWhereExpression(decoded, *plan.compiledWhere)) {
-        continue;
-      }
-      matchedRows.push_back(std::move(decoded));
-    }
-
+    auto matchedRows =
+        domain::decodeAndFilterRows(encodedRows, plan.types, plan.compiledWhere);
     return domain::processSelectRows(*select, plan, std::move(matchedRows));
   }
 
