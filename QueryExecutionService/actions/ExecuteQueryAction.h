@@ -2,7 +2,7 @@
 
 #include "../domain/contract/sqlParser.h"
 #include "../port/RdbServicePort.h"
-#include "../type.h"
+#include "../type/type.h"
 
 #include <string>
 #include <string_view>
