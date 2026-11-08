@@ -237,6 +237,7 @@ add_executable(tests
     QueryExecutionService/test/domain/ScalarExpressionEvaluatorTest.cpp
     QueryExecutionService/test/domain/SqlAggregateCalculatorTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
+    QueryExecutionService/test/SqlTypeDescriptorTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/CreatesTableAndReturnsCommandResultTest.cpp
