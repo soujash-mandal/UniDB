@@ -57,8 +57,9 @@ SqlIntegerValue makeSqlIntegerValue(unidb::sql::SqlTypeId type,
 }
 
 std::int64_t integerValueAsInt64(const SqlIntegerValue &value) {
-  return std::visit([](const auto integer) { return static_cast<std::int64_t>(integer); },
-                    value);
+  return std::visit(
+      [](const auto integer) { return static_cast<std::int64_t>(integer); },
+      value);
 }
 
 } // namespace QueryExecutionService::domain
