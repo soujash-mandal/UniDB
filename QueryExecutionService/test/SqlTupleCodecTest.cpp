@@ -1,4 +1,4 @@
-#include "../adapter/SqlTupleCodec.h"
+#include "../domain/codec/SqlTupleCodec.h"
 #include <gtest/gtest.h>
 
 TEST(SqlTupleCodecTest, RoundTripsIntAndText) {
