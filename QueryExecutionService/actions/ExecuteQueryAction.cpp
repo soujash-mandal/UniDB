@@ -6,8 +6,8 @@
 #include "../domain/expression/SqlExpressionCompiler.h"
 #include "../domain/join/JoinValidator.h"
 #include "../domain/predicate/WhereExpressionNormalizer.h"
-#include "../domain/schema/SqlSchemaResolver.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
+#include "../domain/schema/SqlSchemaResolver.h"
 
 #include <algorithm>
 #include <functional>
@@ -32,7 +32,6 @@ using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
 using unidb::sql::TextFunction;
-using unidb::sql::TextFunctionExpression;
 using unidb::sql::UnionAllStatement;
 using unidb::sql::UnionStatement;
 using unidb::sql::WhereExpression;
