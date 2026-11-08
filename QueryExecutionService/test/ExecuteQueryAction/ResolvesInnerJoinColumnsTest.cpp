@@ -320,7 +320,6 @@ TEST(ExecuteQueryActionJoinResolutionTest, ResolvesAliasInOrderBy) {
   EXPECT_EQ(fixture.port.selectCalls, 1U);
 }
 
-
 TEST(ExecuteQueryActionJoinResolutionTest,
      UsesSharedProjectionPlannerForCrossJoin) {
   JoinResolutionFixture fixture;

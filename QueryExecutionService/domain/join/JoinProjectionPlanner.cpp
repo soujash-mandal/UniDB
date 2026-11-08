@@ -12,14 +12,14 @@ namespace {
 using unidb::sql::ColumnDefinition;
 using unidb::sql::SelectStatement;
 
-std::size_t countColumnName(
-    const std::string &name,
-    const std::vector<std::vector<ColumnDefinition>> &schemas) {
+std::size_t
+countColumnName(const std::string &name,
+                const std::vector<std::vector<ColumnDefinition>> &schemas) {
   std::size_t count = 0;
   for (const auto &schema : schemas) {
-    count += static_cast<std::size_t>(std::count_if(
-        schema.begin(), schema.end(),
-        [&](const auto &column) { return column.name == name; }));
+    count += static_cast<std::size_t>(
+        std::count_if(schema.begin(), schema.end(),
+                      [&](const auto &column) { return column.name == name; }));
   }
   return count;
 }
@@ -48,15 +48,15 @@ JoinProjectionPlan buildJoinProjectionPlan(
       for (const auto &column : schemas[tableIndex]) {
         const bool duplicated = countColumnName(column.name, schemas) > 1;
         plan.indexes.push_back(plan.indexes.size());
-        plan.columns.push_back(
-            {duplicated ? qualifiers[tableIndex] + "." + column.name
-                        : column.name,
-             column.type});
+        plan.columns.push_back({duplicated
+                                    ? qualifiers[tableIndex] + "." + column.name
+                                    : column.name,
+                                column.type});
       }
     }
   } else {
-    for (std::size_t columnIndex = 0;
-         columnIndex < select.columnNames.size(); ++columnIndex) {
+    for (std::size_t columnIndex = 0; columnIndex < select.columnNames.size();
+         ++columnIndex) {
       const auto &requestedName = select.columnNames[columnIndex];
       const auto separator = requestedName.find('.');
       std::size_t tableIndex = 0;
@@ -70,8 +70,8 @@ JoinProjectionPlan buildJoinProjectionPlan(
         }
         const auto qualifier = requestedName.substr(0, separator);
         const auto columnName = requestedName.substr(separator + 1);
-        const auto table = std::find(qualifiers.begin(), qualifiers.end(),
-                                     qualifier);
+        const auto table =
+            std::find(qualifiers.begin(), qualifiers.end(), qualifier);
         if (table == qualifiers.end()) {
           throw std::invalid_argument("Unknown SELECT table: " + qualifier);
         }
@@ -83,19 +83,19 @@ JoinProjectionPlan buildJoinProjectionPlan(
               return entry.name == columnName;
             });
         if (column == schema.end()) {
-          throw std::invalid_argument("Unknown SELECT column: " + requestedName);
+          throw std::invalid_argument("Unknown SELECT column: " +
+                                      requestedName);
         }
         columnIndexInTable =
             static_cast<std::size_t>(std::distance(schema.begin(), column));
         resolvedColumn = &*column;
       } else {
-        for (std::size_t candidateTable = 0;
-             candidateTable < schemas.size(); ++candidateTable) {
+        for (std::size_t candidateTable = 0; candidateTable < schemas.size();
+             ++candidateTable) {
           const auto &schema = schemas[candidateTable];
-          const auto column =
-              std::find_if(schema.begin(), schema.end(), [&](const auto &entry) {
-                return entry.name == requestedName;
-              });
+          const auto column = std::find_if(
+              schema.begin(), schema.end(),
+              [&](const auto &entry) { return entry.name == requestedName; });
           if (column == schema.end()) {
             continue;
           }

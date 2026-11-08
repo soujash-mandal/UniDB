@@ -47,8 +47,8 @@ void validateInnerJoinColumns(
         "JOIN currently supports only a simple SELECT projection");
   }
 
-  (void)buildJoinProjectionPlan(
-      select, {leftSchema, rightSchema}, {leftQualifier, rightQualifier});
+  (void)buildJoinProjectionPlan(select, {leftSchema, rightSchema},
+                                {leftQualifier, rightQualifier});
 }
 
 } // namespace QueryExecutionService::domain
