@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../type/type.h"
+
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -8,15 +10,6 @@
 #include <vector>
 
 namespace unidb::sql {
-
-enum class SqlType { Int, Text };
-
-using SqlValue = std::variant<std::int64_t, std::string>;
-
-struct ColumnDefinition {
-  std::string name;
-  SqlType type;
-};
 
 struct CreateTableStatement {
   std::string tableName;

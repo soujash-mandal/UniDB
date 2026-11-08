@@ -18,3 +18,12 @@ These instructions apply to all work in this repository.
 - Follow the existing service boundaries and architecture documented in the repository.
 - Do not change CI workflows, formatting configuration, or unrelated files unless the task explicitly requires it.
 - Do not merge a PR; leave final review and merge approval to the repository owner.
+
+## Type folder isolation
+
+- Every service may have a `type/` directory as a sibling of `domain/`.
+- Files inside a service's `type/` directory must not include project-owned files.
+- Standard and system headers are allowed using angle-bracket includes (for example, `#include <string>`).
+- Quoted includes are forbidden inside `type/`; angle-bracket includes that resolve to repository files are also forbidden.
+- Enforce this rule with `python3 architecture/typeFolderImportTest.py`. The check runs in the GitHub Actions test workflow.
+- Keep type declarations self-contained. Do not move another module's declarations into a service's `type/` directory merely to avoid an include; agree on ownership and redesign the shared contract instead.

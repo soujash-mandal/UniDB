@@ -1,12 +1,23 @@
 #pragma once
 
-#include "domain/contract/sqlParser.h"
-
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
+
+namespace unidb::sql {
+
+enum class SqlType { Int, Text };
+
+using SqlValue = std::variant<std::int64_t, std::string>;
+
+struct ColumnDefinition {
+  std::string name;
+  SqlType type;
+};
+
+} // namespace unidb::sql
 
 namespace QueryExecutionService {
 
