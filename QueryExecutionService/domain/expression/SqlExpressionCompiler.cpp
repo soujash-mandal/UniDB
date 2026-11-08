@@ -13,128 +13,40 @@ using unidb::sql::SqlType;
 using unidb::sql::TextFunction;
 using unidb::sql::TextFunctionExpression;
 
-    std::vector<std::size_t> selectedIndexes;
-    std::vector<ColumnDefinition> selectedColumns;
-    std::vector<std::optional<std::vector<CompiledWhereExpression>>>
-        compiledCases;
-    std::vector<std::optional<CompiledIntegerExpression>>
-        compiledIntegers;
-    std::vector<std::optional<CompiledTextFunction>>
-        compiledTextFunctions;
-    if (select->aggregate.has_value() && select->groupBy.empty()) {
-      // Ungrouped aggregate queries produce a single computed output column.
-    } else if (select->selectAll) {
-      selectedIndexes.reserve(schema.size());
-      selectedColumns = schema;
-      for (std::size_t index = 0; index < schema.size(); ++index) {
-        selectedIndexes.push_back(index);
-      }
-    } else {
-      if (select->columnNames.empty()) {
-        throw std::invalid_argument("SELECT requires at least one column");
-      }
-      selectedIndexes.reserve(select->columnNames.size());
-      selectedColumns.reserve(select->columnNames.size());
-      const std::string tableQualifier =
-          select->tableAlias.value_or(select->tableName);
-      if (!select->caseExpressions.empty() &&
-          select->caseExpressions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT CASE expression count does not match columns");
-      }
-      if (!select->integerExpressions.empty() &&
-          select->integerExpressions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT integer expression count does not match columns");
-      }
-      if (!select->textFunctions.empty() &&
-          select->textFunctions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT text function count does not match columns");
-      }
-      compiledCases.reserve(select->columnNames.size());
-      compiledIntegers.reserve(select->columnNames.size());
-      compiledTextFunctions.reserve(select->columnNames.size());
-      for (std::size_t itemIndex = 0; itemIndex < select->columnNames.size();
-           ++itemIndex) {
-        if (itemIndex < select->textFunctions.size() &&
-            select->textFunctions[itemIndex].has_value()) {
-          if (!select->innerJoins.empty()) {
-            throw std::invalid_argument(
-                "Scalar text functions are not yet supported with JOIN");
-          }
-          const auto &expression = *select->textFunctions[itemIndex];
-          const auto compiled =
-              compileTextFunction(expression, schema, types, tableQualifier);
-          selectedIndexes.push_back(schema.size());
-          const auto alias = itemIndex < select->columnAliases.size()
-                                 ? select->columnAliases[itemIndex]
-                                 : std::optional<std::string>{}
+CompiledTextFunction
+compileTextFunction(const TextFunctionExpression &expression,
+                    const std::vector<ColumnDefinition> &schema,
+                    const std::vector<SqlType> &types,
+                    const std::string &tableQualifier) {
+  const auto name =
+      normalizeSingleTableColumnName(expression.columnName, tableQualifier);
+  const auto found =
+      std::find_if(schema.begin(), schema.end(),
+                   [&](const auto &column) { return column.name == name; });
+  if (found == schema.end()) {
+    throw std::invalid_argument("Unknown SELECT column: " +
+                                expression.columnName);
+  }
+  const auto index =
+      static_cast<std::size_t>(std::distance(schema.begin(), found));
+  if (types[index] != SqlType::Text) {
+    throw std::invalid_argument("Scalar text functions require TEXT columns: " +
+                                expression.columnName);
+  }
+  return {expression.function, index};
+}
 
-    std::vector<std::size_t> selectedIndexes;
-    std::vector<ColumnDefinition> selectedColumns;
-    std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
-        compiledCases;
-    std::vector<std::optional<domain::CompiledIntegerExpression>>
-        compiledIntegers;
-    std::vector<std::optional<domain::CompiledTextFunction>>
-        compiledTextFunctions;
-    if (select->aggregate.has_value() && select->groupBy.empty()) {
-      // Ungrouped aggregate queries produce a single computed output column.
-    } else if (select->selectAll) {
-      selectedIndexes.reserve(schema.size());
-      selectedColumns = schema;
-      for (std::size_t index = 0; index < schema.size(); ++index) {
-        selectedIndexes.push_back(index);
-      }
-    } else {
-      if (select->columnNames.empty()) {
-        throw std::invalid_argument("SELECT requires at least one column");
-      }
-      selectedIndexes.reserve(select->columnNames.size());
-      selectedColumns.reserve(select->columnNames.size());
-      const std::string tableQualifier =
-          select->tableAlias.value_or(select->tableName);
-      if (!select->caseExpressions.empty() &&
-          select->caseExpressions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT CASE expression count does not match columns");
-      }
-      if (!select->integerExpressions.empty() &&
-          select->integerExpressions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT integer expression count does not match columns");
-      }
-      if (!select->textFunctions.empty() &&
-          select->textFunctions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT text function count does not match columns");
-      }
-      compiledCases.reserve(select->columnNames.size());
-      compiledIntegers.reserve(select->columnNames.size());
-      compiledTextFunctions.reserve(select->columnNames.size());
-      for (std::size_t itemIndex = 0; itemIndex < select->columnNames.size();
-           ++itemIndex) {
-        if (itemIndex < select->textFunctions.size() &&
-            select->textFunctions[itemIndex].has_value()) {
-          if (!select->innerJoins.empty()) {
-            throw std::invalid_argument(
-                "Scalar text functions are not yet supported with JOIN");
-          }
-          const auto &expression = *select->textFunctions[itemIndex];
-          const auto compiled =
-              domain::compileTextFunction(expression, schema, types, tableQualifier);
-          selectedIndexes.push_back(schema.size());
-          const auto alias = itemIndex < select->columnAliases.size()
-                                 ? select->columnAliases[itemIndex]
-                                 : std::optional<std::string>{};
-          const auto functionName = domain::textFunctionName(expression.function);
-          const auto outputType = expression.function == TextFunction::Length
-                                      ? SqlType::Int
-                                      : SqlType::Text;
-          selectedColumns.push_back(
-              {alias.value_or(functionName + "(" + expression.columnName + ")"),
-               outputType}
+std::string textFunctionName(TextFunction function) {
+  switch (function) {
+  case TextFunction::Upper:
+    return "UPPER";
+  case TextFunction::Lower:
+    return "LOWER";
+  case TextFunction::Length:
+    return "LENGTH";
+  }
+  throw std::invalid_argument("Unknown scalar text function");
+}
 
 CompiledIntegerExpression
 compileIntegerExpression(const IntegerExpression &expression,
