@@ -1,4 +1,4 @@
-#include "../../QueryExecutionService/adapter/SqlTupleCodec.h"
+#include "../../QueryExecutionService/domain/codec/SqlTupleCodec.h"
 #include "../../QueryExecutionService/test/ExecuteQueryAction/ExecuteQueryActionTestSupport.h"
 #include "../SqlShell.h"
 
