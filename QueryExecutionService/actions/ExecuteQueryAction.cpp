@@ -2,7 +2,9 @@
 
 #include "../domain/codec/SqlTupleCodec.h"
 #include "../domain/join/JoinValidator.h"
-#include "../domain/planning/SqlQueryPlanner.h"
+#include "../domain/planning/SqlStatementRules.h"
+#include "../domain/planning/SqlSelectPlanner.h"
+#include "../domain/planning/SqlSelectResultProcessor.h"
 #include "../domain/predicate/WhereExpressionNormalizer.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
 #include "../domain/schema/SqlSchemaResolver.h"
