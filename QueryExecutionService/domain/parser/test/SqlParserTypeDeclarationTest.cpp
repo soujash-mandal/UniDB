@@ -16,7 +16,7 @@ TEST(SqlParserTypeDeclarationTest, ParsesIntegerTypeNamesAndAliases) {
   const auto &columns = std::get<CreateTableStatement>(
                             std::get<SqlStatement>(result))
                             .columns;
-  ASSERT_EQ(columns.size(), 7U);
+  ASSERT_EQ(columns.size(), 6U);
   EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::SmallInt);
   EXPECT_EQ(columns[1].declaredType->id, SqlTypeId::SmallInt);
   EXPECT_EQ(columns[2].declaredType->id, SqlTypeId::Integer);
@@ -30,13 +30,13 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
   const auto result = parser.parse(
       "CREATE TABLE typed (amount NUMERIC(12, 3), label CHARACTER VARYING(40), "
       "fixed CHAR(4), score DOUBLE PRECISION, active BOOL, "
-      "created TIMESTAMP WITH TIME ZONE)");
+      "created TIMESTAMP WITH TIME ZONE, precise TIMESTAMP(3) WITH TIME ZONE)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &columns = std::get<CreateTableStatement>(
                             std::get<SqlStatement>(result))
                             .columns;
-  ASSERT_EQ(columns.size(), 6U);
+  ASSERT_EQ(columns.size(), 7U);
   EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Numeric);
   EXPECT_EQ(columns[0].declaredType->modifier.precision, 12U);
   EXPECT_EQ(columns[0].declaredType->modifier.scale, 3);
