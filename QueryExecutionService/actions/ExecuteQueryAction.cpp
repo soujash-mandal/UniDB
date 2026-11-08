@@ -50,9 +50,8 @@ QueryExecutionResult commandResult(std::string message,
 
 } // namespace
 
-ExecuteQueryAction::ExecuteQueryAction(
-    RdbServicePort &rdbServicePort,
-    const unidb::sql::SqlParser &sqlParser)
+ExecuteQueryAction::ExecuteQueryAction(RdbServicePort &rdbServicePort,
+                                       const unidb::sql::SqlParser &sqlParser)
     : rdbServicePort(rdbServicePort), sqlParser(sqlParser) {}
 
 QueryExecutionOutcome ExecuteQueryAction::execute(std::string_view sql) const {
