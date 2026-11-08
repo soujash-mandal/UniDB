@@ -1,4 +1,3 @@
-#include "../../adapter/SqlTupleCodec.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
@@ -15,12 +14,9 @@ TEST(ExecuteQueryActionTest, InsertsValuesInSchemaOrder) {
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
-  const auto decoded = SqlTupleCodec::decode(
-      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      port.insertedBytes);
-  ASSERT_EQ(decoded.size(), 2U);
-  EXPECT_EQ(std::get<std::int64_t>(decoded[0]), 7);
-  EXPECT_EQ(std::get<std::string>(decoded[1]), "Ada");
+  ASSERT_EQ(port.insertedRows.size(), 1U);
+  EXPECT_EQ(std::get<std::int64_t>(port.insertedRows[0][0]), 7);
+  EXPECT_EQ(std::get<std::string>(port.insertedRows[0][1]), "Ada");
   EXPECT_EQ(port.insertCalls, 1);
 }
 
@@ -40,16 +36,10 @@ TEST(ExecuteQueryActionTest, InsertsMultipleRowsInSchemaOrder) {
   EXPECT_EQ(result.affectedRows, 2U);
   EXPECT_EQ(result.message, "Rows inserted");
   ASSERT_EQ(port.insertedRows.size(), 2U);
-  const auto first = SqlTupleCodec::decode(
-      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      port.insertedRows[0]);
-  const auto second = SqlTupleCodec::decode(
-      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      port.insertedRows[1]);
-  EXPECT_EQ(std::get<std::int64_t>(first[0]), 7);
-  EXPECT_EQ(std::get<std::string>(first[1]), "Ada");
-  EXPECT_EQ(std::get<std::int64_t>(second[0]), 8);
-  EXPECT_EQ(std::get<std::string>(second[1]), "Grace");
+  EXPECT_EQ(std::get<std::int64_t>(port.insertedRows[0][0]), 7);
+  EXPECT_EQ(std::get<std::string>(port.insertedRows[0][1]), "Ada");
+  EXPECT_EQ(std::get<std::int64_t>(port.insertedRows[1][0]), 8);
+  EXPECT_EQ(std::get<std::string>(port.insertedRows[1][1]), "Grace");
   EXPECT_EQ(port.insertCalls, 2U);
 }
 

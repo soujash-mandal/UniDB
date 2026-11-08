@@ -1,4 +1,3 @@
-#include "../../adapter/SqlTupleCodec.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
@@ -6,9 +5,7 @@
 TEST(ExecuteQueryActionTest, SelectStarDecodesRows) {
   // Scenario 1: SELECT * returns schema names and decoded logical values.
   FakeQesRdbServicePort port;
-  port.rows.push_back(SqlTupleCodec::encode(
-      {unidb::sql::SqlType::Int, unidb::sql::SqlType::Text},
-      {std::int64_t{9}, std::string("Lin")}));
+  port.rows.push_back({std::int64_t{9}, std::string("Lin")});
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
