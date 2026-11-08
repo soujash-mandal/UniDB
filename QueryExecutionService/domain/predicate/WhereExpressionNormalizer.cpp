@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 namespace QueryExecutionService::domain {
+using unidb::sql::ColumnDefinition;
 using unidb::sql::WhereExpression;
 
 WhereExpression
