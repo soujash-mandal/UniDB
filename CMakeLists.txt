@@ -102,6 +102,7 @@ set(UNIDB_SOURCES
     QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
     QueryExecutionService/domain/expression/ScalarExpressionEvaluator.cpp
     QueryExecutionService/domain/aggregate/SqlAggregateCalculator.cpp
+    QueryExecutionService/domain/planning/SqlQueryRules.cpp
     QueryExecutionService/actions/ExecuteQueryAction.cpp
 
     RdbService/actions/InitializeRdbAction.cpp
