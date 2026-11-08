@@ -13,8 +13,7 @@ prepareInsertRows(const unidb::sql::InsertStatement &statement,
                   const std::vector<unidb::sql::ColumnDefinition> &schema);
 
 QueryExecutionService::QueryExecutionResult
-combineUnionResults(
-    const std::vector<QueryExecutionService::QueryExecutionResult> &branches,
-    bool removeDuplicates);
+combineUnionResults(const std::vector<QueryExecutionService::QueryExecutionResult> &branches,
+                    bool removeDuplicates);
 
 } // namespace QueryExecutionService::domain
