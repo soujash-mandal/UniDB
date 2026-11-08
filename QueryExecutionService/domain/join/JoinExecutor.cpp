@@ -20,25 +20,6 @@ using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
 using unidb::sql::WhereExpression;
 
-bool isBasicComparison(ComparisonOperator comparison, int value) {
-  switch (comparison) {
-  case ComparisonOperator::Equal:
-    return value == 0;
-  case ComparisonOperator::NotEqual:
-    return value != 0;
-  case ComparisonOperator::GreaterThan:
-    return value > 0;
-  case ComparisonOperator::LessThan:
-    return value < 0;
-  case ComparisonOperator::GreaterThanOrEqual:
-    return value >= 0;
-  case ComparisonOperator::LessThanOrEqual:
-    return value <= 0;
-  default:
-    throw std::invalid_argument("INNER JOIN supports basic comparisons only");
-  }
-}
-
 } // namespace
 
 QueryExecutionResult
@@ -48,6 +29,8 @@ executeInnerJoin(const SelectStatement &select,
                  const std::vector<std::vector<SqlValue>> &leftRows,
                  const std::vector<std::vector<SqlValue>> &rightRows) {
   const auto &join = select.innerJoins.front();
+  const auto leftTypes = schemaTypes(leftSchema);
+  const auto rightTypes = schemaTypes(rightSchema);
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
   const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
