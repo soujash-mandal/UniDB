@@ -3,6 +3,7 @@
 #include "../contract/sqlStatement.h"
 
 #include <cstddef>
+#include <string>
 #include <vector>
 
 namespace QueryExecutionService::domain {
