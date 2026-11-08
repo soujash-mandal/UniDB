@@ -17,7 +17,7 @@ struct QueryExecutionResult {
   std::string message;
   std::vector<unidb::sql::ColumnDefinition> columns;
   std::vector<std::vector<unidb::sql::SqlValue>> rows;
-  uint32_t affectedRows = 0;
+  std::uint32_t affectedRows = 0;
 };
 
 enum class QueryExecutionErrorCode {
