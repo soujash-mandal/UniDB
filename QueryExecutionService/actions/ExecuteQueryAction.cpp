@@ -661,6 +661,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     return commandResult("Rows inserted", insertedRows);
   }
 
+  if (const auto *unionAll = std::get_if<UnionAllStatement>(&statement)) {
     std::vector<QueryExecutionResult> branchResults;
     branchResults.reserve(unionAll->selects.size());
     for (const auto &select : unionAll->selects) {
@@ -672,6 +673,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       branchResults.push_back(std::get<QueryExecutionResult>(branchOutcome));
     }
     return domain::combineUnionResults(branchResults, false);
+  }
+
+  if (const auto *unionDistinct = std::get_if<UnionStatement>(&statement)) {
     std::vector<QueryExecutionResult> branchResults;
     branchResults.reserve(unionDistinct->selects.size());
     for (const auto &select : unionDistinct->selects) {
@@ -683,6 +687,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       branchResults.push_back(std::get<QueryExecutionResult>(branchOutcome));
     }
     return domain::combineUnionResults(branchResults, true);
+  }
+
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
     if (select->crossJoin.has_value()) {
       if (!select->innerJoins.empty()) {
@@ -719,8 +725,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     matchedRows.reserve(encodedRows.size());
     for (const auto &bytes : encodedRows) {
       auto decoded = SqlTupleCodec::decode(types, bytes);
-      if (compiledWhere.has_value() &&
-          !domain::matchesWhereExpression(decoded, *compiledWhere)) {
+      if (plan.compiledWhere.has_value() &&
+          !domain::matchesWhereExpression(decoded, *plan.compiledWhere)) {
         continue;
       }
       matchedRows.push_back(std::move(decoded));
