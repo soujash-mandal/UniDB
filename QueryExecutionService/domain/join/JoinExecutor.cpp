@@ -1,5 +1,6 @@
 #include "JoinExecutor.h"
 
+#include "../predicate/WhereExpressionNormalizer.h"
 #include "../predicate/WherePredicateEvaluator.h"
 #include "../schema/SqlSchemaResolver.h"
 
