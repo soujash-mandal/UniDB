@@ -17,9 +17,7 @@ namespace {
 using unidb::sql::ColumnDefinition;
 using unidb::sql::CreateTableStatement;
 using unidb::sql::InsertStatement;
-using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
-using unidb::sql::SqlValue;
 using unidb::sql::UnionAllStatement;
 using unidb::sql::UnionStatement;
 
@@ -38,10 +36,6 @@ readRows(RdbServicePort &port, const std::string &tableName,
     rows.push_back(SqlTupleCodec::decode(types, bytes));
   }
   return rows;
-}
-
-QueryExecutionError executionError(std::string message) {
-  return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
 
 QueryExecutionResult commandResult(std::string message,
