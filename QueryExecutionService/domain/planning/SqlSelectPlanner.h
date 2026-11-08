@@ -25,7 +25,8 @@ struct SelectPlan {
   std::optional<CompiledWhereExpression> compiledWhere;
   std::vector<std::size_t> selectedIndexes;
   std::vector<unidb::sql::ColumnDefinition> selectedColumns;
-  std::vector<std::optional<std::vector<CompiledWhereExpression>>> compiledCases;
+  std::vector<std::optional<std::vector<CompiledWhereExpression>>>
+      compiledCases;
   std::vector<std::optional<CompiledIntegerExpression>> compiledIntegers;
   std::vector<std::optional<CompiledTextFunction>> compiledTextFunctions;
   std::vector<OrderIndex> orderIndexes;
@@ -34,8 +35,7 @@ struct SelectPlan {
   std::vector<GroupOrderIndex> groupedOrderIndexes;
 };
 
-SelectPlan buildSelectPlan(
-    const unidb::sql::SelectStatement &select,
-    const std::vector<unidb::sql::ColumnDefinition> &schema);
+SelectPlan buildSelectPlan(const unidb::sql::SelectStatement &select,
+                           const std::vector<unidb::sql::ColumnDefinition> &schema);
 
 } // namespace QueryExecutionService::domain
