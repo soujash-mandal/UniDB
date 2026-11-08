@@ -40,7 +40,6 @@ QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
 
-
 QueryExecutionResult
 executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
                  const std::vector<ColumnDefinition> &leftSchema,
