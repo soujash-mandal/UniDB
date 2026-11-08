@@ -1,9 +1,6 @@
 #include "ExecuteQueryAction.h"
 
-#include "../domain/aggregate/SqlAggregateCalculator.h"
 #include "../domain/codec/SqlTupleCodec.h"
-#include "../domain/expression/ScalarExpressionEvaluator.h"
-#include "../domain/expression/SqlExpressionCompiler.h"
 #include "../domain/join/JoinValidator.h"
 #include "../domain/planning/SqlQueryPlanner.h"
 #include "../domain/predicate/WhereExpressionNormalizer.h"
@@ -19,7 +16,6 @@
 namespace QueryExecutionService {
 namespace {
 
-using unidb::sql::AggregateFunction;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
@@ -28,7 +24,6 @@ using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
-using unidb::sql::TextFunction;
 using unidb::sql::UnionAllStatement;
 using unidb::sql::UnionStatement;
 using unidb::sql::WhereExpression;
