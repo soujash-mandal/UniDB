@@ -26,7 +26,6 @@ using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
 using unidb::sql::InsertStatement;
-using unidb::sql::IntegerExpression;
 using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
