@@ -382,77 +382,16 @@ QueryExecutionResult executeMultipleInnerJoins(
     qualify(q);
     where = compileWhereExpression(q, combinedSchema, combinedTypes);
   }
-  std::vector<std::size_t> projection;
-  std::vector<ColumnDefinition> output;
-  if (select.selectAll) {
-    for (std::size_t i = 0; i < combinedSchema.size(); ++i) {
-      projection.push_back(i);
-      const auto &name = combinedSchema[i].name;
-      const auto dot = name.find('.');
-      const auto col = name.substr(dot + 1);
-      std::size_t count = 0;
-      for (const auto &sc : schemas)
-        for (const auto &c : sc)
-          if (c.name == col)
-            ++count;
-      output.push_back({count > 1 ? name : col, combinedSchema[i].type});
-    }
-  } else {
-    if (select.columnNames.empty())
-      throw std::invalid_argument("SELECT requires at least one column");
-    for (std::size_t i = 0; i < select.columnNames.size(); ++i) {
-      const auto name = select.columnNames[i];
-      const auto dot = name.find('.');
-      std::optional<std::size_t> idx;
-      if (dot != std::string::npos) {
-        const auto q = name.substr(0, dot), col = name.substr(dot + 1);
-        auto qi = std::find(qualifiers.begin(), qualifiers.end(), q);
-        if (qi == qualifiers.end())
-          throw std::invalid_argument("Unknown SELECT table: " + q);
-        auto ti =
-            static_cast<std::size_t>(std::distance(qualifiers.begin(), qi));
-        std::size_t off = 0;
-        for (std::size_t k = 0; k < ti; ++k)
-          off += schemas[k].size();
-        for (std::size_t k = 0; k < schemas[ti].size(); ++k)
-          if (schemas[ti][k].name == col)
-            idx = off + k;
-      } else {
-        for (std::size_t k = 0; k < combinedSchema.size(); ++k)
-          if (combinedSchema[k].name.substr(combinedSchema[k].name.find('.') +
-                                            1) == name) {
-            if (idx)
-              throw std::invalid_argument("Ambiguous SELECT column: " + name);
-            idx = k;
-          }
-      }
-      if (!idx)
-        throw std::invalid_argument("Unknown SELECT column: " + name);
-      projection.push_back(*idx);
-      auto outName = combinedSchema[*idx].name;
-      const auto d = outName.find('.');
-      const auto col = outName.substr(d + 1);
-      std::size_t count = 0;
-      for (const auto &sc : schemas)
-        for (const auto &c : sc)
-          if (c.name == col)
-            ++count;
-      if (i < select.columnAliases.size() && select.columnAliases[i])
-        outName = *select.columnAliases[i];
-      else if (count == 1)
-        outName = col;
-      output.push_back({outName, combinedSchema[*idx].type});
-    }
-  }
+  const auto projection = buildJoinProjectionPlan(select, schemas, qualifiers);
   QueryExecutionResult result;
   result.kind = QueryExecutionResultKind::Rows;
   result.message = "Rows selected";
-  result.columns = std::move(output);
+  result.columns = projection.columns;
   for (auto &row : rows) {
     if (where && !matchesWhereExpression(row, *where))
       continue;
     std::vector<SqlValue> projected;
-    for (auto index : projection)
+    for (auto index : projection.indexes)
       projected.push_back(row[index]);
     result.rows.push_back(std::move(projected));
   }
