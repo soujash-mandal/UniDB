@@ -9,9 +9,9 @@ namespace {
 
 TEST(SqlParserTypeDeclarationTest, ParsesIntegerTypeNamesAndAliases) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "CREATE TABLE numbers (a SMALLINT, b INT2, c INTEGER, "
-      "d INT4, e BIGINT, f INT8)");
+  const auto result =
+      parser.parse("CREATE TABLE numbers (a SMALLINT, b INT2, c INTEGER, "
+                   "d INT4, e BIGINT, f INT8)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &columns =
@@ -33,9 +33,8 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
       "created TIMESTAMP WITH TIME ZONE, precise TIMESTAMP(3) WITH TIME ZONE)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &columns = std::get<CreateTableStatement>(
-                            std::get<SqlStatement>(result))
-                            .columns;
+  const auto &columns =
+      std::get<CreateTableStatement>(std::get<SqlStatement>(result)).columns;
   ASSERT_EQ(columns.size(), 7U);
   EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Numeric);
   EXPECT_EQ(columns[0].declaredType->modifier.precision, 12U);
@@ -55,9 +54,8 @@ TEST(SqlParserTypeDeclarationTest, PreservesTransitionalIntAndTextTags) {
   const auto result = parser.parse("CREATE TABLE legacy (id INT, name TEXT)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &columns = std::get<CreateTableStatement>(
-                            std::get<SqlStatement>(result))
-                            .columns;
+  const auto &columns =
+      std::get<CreateTableStatement>(std::get<SqlStatement>(result)).columns;
   ASSERT_EQ(columns.size(), 2U);
   EXPECT_EQ(columns[0].type, SqlType::Int);
   EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Integer);

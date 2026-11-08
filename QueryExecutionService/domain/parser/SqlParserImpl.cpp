@@ -194,9 +194,8 @@ private:
         }
         std::uint32_t value{};
         const auto &literal = current().text;
-        const auto result =
-            std::from_chars(literal.data(), literal.data() + literal.size(),
-                            value);
+        const auto result = std::from_chars(
+            literal.data(), literal.data() + literal.size(), value);
         if (result.ec != std::errc{}) {
           return std::nullopt;
         }
@@ -213,9 +212,8 @@ private:
         }
         std::int32_t value{};
         const auto &literal = current().text;
-        const auto result =
-            std::from_chars(literal.data(), literal.data() + literal.size(),
-                            value);
+        const auto result = std::from_chars(
+            literal.data(), literal.data() + literal.size(), value);
         if (result.ec != std::errc{}) {
           return std::nullopt;
         }
@@ -291,9 +289,8 @@ private:
       // Keep the transitional execution tag populated. The RDB adapter checks
       // declaredType before using it, so unsupported types cannot be stored as
       // an INT/TEXT column by accident.
-      column.type = column.declaredType->id == SqlTypeId::Text
-                        ? SqlType::Text
-                        : SqlType::Int;
+      column.type = column.declaredType->id == SqlTypeId::Text ? SqlType::Text
+                                                               : SqlType::Int;
       statement.columns.push_back(std::move(column));
 
       if (!match(TokenKind::Comma)) {
