@@ -1,4 +1,4 @@
-#include "../../adapter/SqlTupleCodec.h"
+#include "../../domain/codec/SqlTupleCodec.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
