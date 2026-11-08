@@ -479,7 +479,7 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
   return plan;
 }
 
-unidb::sql::QueryExecutionResult
+QueryExecutionService::QueryExecutionResult
 processSelectRows(const unidb::sql::SelectStatement &select,
                   const SelectPlan &plan,
                   std::vector<std::vector<unidb::sql::SqlValue>> matchedRows) {
