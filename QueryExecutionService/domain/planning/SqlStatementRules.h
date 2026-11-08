@@ -10,6 +10,10 @@ using QueryExecutionResult = QueryExecutionService::QueryExecutionResult;
 
 void validateCreateTable(const unidb::sql::CreateTableStatement &statement);
 
+std::vector<std::vector<char>> encodeInsertRows(
+    const unidb::sql::InsertStatement &statement,
+    const std::vector<unidb::sql::ColumnDefinition> &schema);
+
 std::vector<std::vector<unidb::sql::SqlValue>>
 prepareInsertRows(const unidb::sql::InsertStatement &statement,
                   const std::vector<unidb::sql::ColumnDefinition> &schema);
