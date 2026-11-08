@@ -15,9 +15,10 @@ QueryExecutionService parses SQL, dispatches the V1 statement subset through RDB
 ## Adapters
 
 - `RdbServiceAdapter` — maps SQL schemas and rows to RDBService's public Actions.
-- `SqlTupleCodec` — encodes and decodes V1 INT/TEXT values in tuple storage format.
 
 ## Domain
+
+- `codec/SqlTupleCodec` — pure, stateless encoding and decoding of V1 INT/TEXT tuple values.
 
 Infrastructure-independent query logic lives under `domain/`:
 
