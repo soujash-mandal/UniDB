@@ -9,9 +9,9 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   Table table{};
   table.tableId = 11;
   table.name = "users";
-  table.columns = {{ "id", DataType::INT, 0, false },
-                   { "name", DataType::VARCHAR, 64, false },
-                   { "small_count", DataType::SMALLINT, 0, false }};
+  table.columns = {{"id", DataType::INT, 0, false},
+                   {"name", DataType::VARCHAR, 64, false},
+                   {"small_count", DataType::SMALLINT, 0, false}};
   page.insert(table);
 
   Table loaded = page.getByName("users");

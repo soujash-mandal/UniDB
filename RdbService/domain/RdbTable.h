@@ -8,7 +8,15 @@
 // CatalogService types so RDBService's public ports do not depend on another
 // service's domain objects.
 // Append new values only: the numeric value is persisted in catalog pages.
-enum class RdbDataType { INT, BIGINT, FLOAT, DOUBLE, BOOLEAN, VARCHAR, SMALLINT };
+enum class RdbDataType {
+  INT,
+  BIGINT,
+  FLOAT,
+  DOUBLE,
+  BOOLEAN,
+  VARCHAR,
+  SMALLINT
+};
 
 struct RdbColumn {
   std::string name;
