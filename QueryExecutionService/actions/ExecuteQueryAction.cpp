@@ -26,6 +26,8 @@ QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
 
+// Keep RDB access and tuple decoding in the Action; JOIN domain code only
+// receives schemas and in-memory SQL values.
 std::vector<std::vector<unidb::sql::SqlValue>>
 readRows(RdbServicePort &port, const std::string &tableName,
          const std::vector<unidb::sql::ColumnDefinition> &schema) {
