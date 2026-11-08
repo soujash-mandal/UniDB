@@ -34,10 +34,10 @@ executeInnerJoin(const SelectStatement &select,
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
   const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
-  const auto leftKey = resolveJoinColumn(
-      join.left, leftQualifier, leftSchema, rightQualifier, rightSchema);
-  const auto rightKey = resolveJoinColumn(
-      join.right, leftQualifier, leftSchema, rightQualifier, rightSchema);
+  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
+                                         rightQualifier, rightSchema);
+  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
+                                          rightQualifier, rightSchema);
   const std::size_t leftKeyIndex =
       leftKey.tableName == leftQualifier ? leftKey.index : rightKey.index;
   const std::size_t rightKeyIndex =
@@ -89,9 +89,9 @@ executeInnerJoin(const SelectStatement &select,
     selectedIndexes.reserve(select.columnNames.size());
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved = resolveSelectedJoinColumn(
-          select.columnNames[index], leftQualifier, leftSchema, rightQualifier,
-          rightSchema);
+      const auto resolved =
+          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
+                                    leftSchema, rightQualifier, rightSchema);
       selectedIndexes.push_back(resolved.tableName == leftQualifier
                                     ? resolved.index
                                     : leftSchema.size() + resolved.index);
@@ -121,8 +121,8 @@ executeInnerJoin(const SelectStatement &select,
   result.columns = std::move(selectedColumns);
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
-      const int comparison = compareSqlValues(leftRow[leftKeyIndex],
-                                                      rightRow[rightKeyIndex]);
+      const int comparison =
+          compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
       bool matches = false;
       switch (join.comparison) {
       case ComparisonOperator::Equal:
@@ -247,9 +247,9 @@ executeCrossJoin(const SelectStatement &select,
     selectedIndexes.reserve(select.columnNames.size());
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved = resolveSelectedJoinColumn(
-          select.columnNames[index], leftQualifier, leftSchema, rightQualifier,
-          rightSchema);
+      const auto resolved =
+          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
+                                    leftSchema, rightQualifier, rightSchema);
       selectedIndexes.push_back(resolved.tableName == leftQualifier
                                     ? resolved.index
                                     : leftSchema.size() + resolved.index);
@@ -397,10 +397,9 @@ QueryExecutionResult executeMultipleInnerJoins(
     std::vector<std::vector<SqlValue>> expanded;
     for (const auto &oldRow : rows)
       for (const auto &newRow : newRows) {
-        const auto cmp = lnew ? compareSqlValues(newRow[newIndex],
-                                                         oldRow[priorIndex])
-                              : compareSqlValues(oldRow[priorIndex],
-                                                         newRow[newIndex]);
+        const auto cmp =
+            lnew ? compareSqlValues(newRow[newIndex], oldRow[priorIndex])
+                 : compareSqlValues(oldRow[priorIndex], newRow[newIndex]);
         bool ok = false;
         switch (join.comparison) {
         case ComparisonOperator::Equal:

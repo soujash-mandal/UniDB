@@ -24,6 +24,7 @@ QueryExecutionResult executeCrossJoin(
 QueryExecutionResult executeMultipleInnerJoins(
     const unidb::sql::SelectStatement &select,
     const std::vector<std::vector<unidb::sql::ColumnDefinition>> &schemas,
-    const std::vector<std::vector<std::vector<unidb::sql::SqlValue>>> &rowsByTable);
+    const std::vector<std::vector<std::vector<unidb::sql::SqlValue>>>
+        &rowsByTable);
 
 } // namespace QueryExecutionService::domain

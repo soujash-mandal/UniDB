@@ -155,7 +155,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         const std::string &tableName =
             index == 0 ? select->tableName
                        : select->innerJoins[index - 1].tableName;
-        rowsByTable.push_back(readRows(rdbServicePort, tableName, schemas[index]));
+        rowsByTable.push_back(
+            readRows(rdbServicePort, tableName, schemas[index]));
       }
       if (select->innerJoins.size() == 1) {
         domain::validateInnerJoinColumns(*select, schemas[0], schemas[1]);
