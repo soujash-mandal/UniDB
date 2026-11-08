@@ -1,27 +1,25 @@
 #include "ExecuteQueryAction.h"
 
-#include "../domain/aggregate/SqlAggregateCalculator.h"
 #include "../domain/codec/SqlTupleCodec.h"
-#include "../domain/expression/ScalarExpressionEvaluator.h"
-#include "../domain/expression/SqlExpressionCompiler.h"
 #include "../domain/join/JoinValidator.h"
+#include "../domain/planning/SqlSelectPlanner.h"
+#include "../domain/planning/SqlSelectResultProcessor.h"
+#include "../domain/planning/SqlStatementRules.h"
 #include "../domain/predicate/WhereExpressionNormalizer.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
 #include "../domain/schema/SqlSchemaResolver.h"
 
 #include <algorithm>
 #include <functional>
-#include <map>
 #include <optional>
-#include <set>
 #include <stdexcept>
-#include <unordered_set>
 #include <utility>
 
 namespace QueryExecutionService {
 namespace {
 
-using unidb::sql::AggregateFunction;
+// JOIN execution remains here because these paths read rows through
+// RdbServicePort; their independent planning and result rules belong in domain.
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
@@ -30,7 +28,6 @@ using unidb::sql::SelectStatement;
 using unidb::sql::SqlStatement;
 using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
-using unidb::sql::TextFunction;
 using unidb::sql::UnionAllStatement;
 using unidb::sql::UnionStatement;
 using unidb::sql::WhereExpression;
@@ -629,73 +626,14 @@ QueryExecutionOutcome ExecuteQueryAction::execute(std::string_view sql) const {
 QueryExecutionOutcome
 ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   if (const auto *create = std::get_if<CreateTableStatement>(&statement)) {
-    if (create->columns.empty()) {
-      throw std::invalid_argument("CREATE TABLE requires at least one column");
-    }
-    std::unordered_set<std::string> names;
-    for (const auto &column : create->columns) {
-      if (column.name.empty() || !names.insert(column.name).second) {
-        throw std::invalid_argument(
-            "Column names must be non-empty and unique");
-      }
-      if (column.type != SqlType::Int && column.type != SqlType::Text) {
-        throw std::invalid_argument("Column type is outside the V1 SQL subset");
-      }
-    }
+    domain::validateCreateTable(*create);
     rdbServicePort.createTable(*create);
     return commandResult("Table created");
   }
 
   if (const auto *insert = std::get_if<InsertStatement>(&statement)) {
     const auto schema = rdbServicePort.getTableDefinition(insert->tableName);
-    const auto types = domain::schemaTypes(schema);
-    if (insert->rows.empty()) {
-      throw std::invalid_argument("INSERT requires at least one VALUES row");
-    }
-
-    std::vector<std::vector<char>> encodedRows;
-    encodedRows.reserve(insert->rows.size());
-    for (const auto &values : insert->rows) {
-      if (insert->columnNames.size() != values.size()) {
-        throw std::invalid_argument(
-            "INSERT column and value counts must match");
-      }
-
-      std::vector<SqlValue> orderedValues(schema.size());
-      std::vector<bool> assigned(schema.size(), false);
-      for (std::size_t inputIndex = 0; inputIndex < insert->columnNames.size();
-           ++inputIndex) {
-        const auto found =
-            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-              return column.name == insert->columnNames[inputIndex];
-            });
-        if (found == schema.end()) {
-          throw std::invalid_argument("Unknown INSERT column: " +
-                                      insert->columnNames[inputIndex]);
-        }
-        const auto schemaIndex =
-            static_cast<std::size_t>(std::distance(schema.begin(), found));
-        if (assigned[schemaIndex]) {
-          throw std::invalid_argument("Duplicate INSERT column: " +
-                                      insert->columnNames[inputIndex]);
-        }
-        const bool valueIsInt =
-            std::holds_alternative<std::int64_t>(values[inputIndex]);
-        if ((types[schemaIndex] == SqlType::Int) != valueIsInt) {
-          throw std::invalid_argument(
-              "INSERT value type does not match column: " + found->name);
-        }
-        orderedValues[schemaIndex] = values[inputIndex];
-        assigned[schemaIndex] = true;
-      }
-
-      if (std::find(assigned.begin(), assigned.end(), false) !=
-          assigned.end()) {
-        throw std::invalid_argument(
-            "V1 INSERT requires a value for every table column");
-      }
-      encodedRows.push_back(SqlTupleCodec::encode(types, orderedValues));
-    }
+    const auto encodedRows = domain::encodeInsertRows(*insert, schema);
 
     std::uint32_t insertedRows = 0;
     try {
@@ -717,95 +655,31 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *unionAll = std::get_if<UnionAllStatement>(&statement)) {
-    if (unionAll->selects.size() < 2) {
-      throw std::invalid_argument(
-          "UNION ALL requires at least two SELECT branches");
-    }
-
-    QueryExecutionResult combined;
-    bool firstBranch = true;
+    std::vector<QueryExecutionResult> branchResults;
+    branchResults.reserve(unionAll->selects.size());
     for (const auto &select : unionAll->selects) {
       const auto branchOutcome = executeStatement(SqlStatement{select});
       if (const auto *error =
               std::get_if<QueryExecutionError>(&branchOutcome)) {
         return *error;
       }
-      const auto &branchResult = std::get<QueryExecutionResult>(branchOutcome);
-      if (branchResult.kind != QueryExecutionResultKind::Rows) {
-        throw std::invalid_argument("UNION ALL branches must return rows");
-      }
-
-      if (firstBranch) {
-        combined.kind = QueryExecutionResultKind::Rows;
-        combined.message = "Rows selected";
-        combined.columns = branchResult.columns;
-        firstBranch = false;
-      } else {
-        if (branchResult.columns.size() != combined.columns.size()) {
-          throw std::invalid_argument(
-              "UNION ALL branches must return the same number of columns");
-        }
-        for (std::size_t index = 0; index < combined.columns.size(); ++index) {
-          if (branchResult.columns[index].type !=
-              combined.columns[index].type) {
-            throw std::invalid_argument(
-                "UNION ALL columns must have matching types at each position");
-          }
-        }
-      }
-
-      combined.rows.insert(combined.rows.end(), branchResult.rows.begin(),
-                           branchResult.rows.end());
+      branchResults.push_back(std::get<QueryExecutionResult>(branchOutcome));
     }
-    return combined;
+    return domain::combineUnionResults(branchResults, false);
   }
 
   if (const auto *unionDistinct = std::get_if<UnionStatement>(&statement)) {
-    if (unionDistinct->selects.size() < 2) {
-      throw std::invalid_argument(
-          "UNION requires at least two SELECT branches");
-    }
-
-    QueryExecutionResult combined;
-    std::set<std::vector<SqlValue>> seenRows;
-    bool firstBranch = true;
+    std::vector<QueryExecutionResult> branchResults;
+    branchResults.reserve(unionDistinct->selects.size());
     for (const auto &select : unionDistinct->selects) {
       const auto branchOutcome = executeStatement(SqlStatement{select});
       if (const auto *error =
               std::get_if<QueryExecutionError>(&branchOutcome)) {
         return *error;
       }
-      const auto &branchResult = std::get<QueryExecutionResult>(branchOutcome);
-      if (branchResult.kind != QueryExecutionResultKind::Rows) {
-        throw std::invalid_argument("UNION branches must return rows");
-      }
-
-      if (firstBranch) {
-        combined.kind = QueryExecutionResultKind::Rows;
-        combined.message = "Rows selected";
-        combined.columns = branchResult.columns;
-        firstBranch = false;
-      } else {
-        if (branchResult.columns.size() != combined.columns.size()) {
-          throw std::invalid_argument(
-              "UNION branches must return the same number of columns");
-        }
-        for (std::size_t index = 0; index < combined.columns.size(); ++index) {
-          if (branchResult.columns[index].type !=
-              combined.columns[index].type) {
-            throw std::invalid_argument(
-                "UNION columns must have matching types at each position");
-          }
-        }
-      }
-
-      for (const auto &row : branchResult.rows) {
-        if (seenRows.insert(row).second) {
-          combined.rows.push_back(row);
-        }
-      }
+      branchResults.push_back(std::get<QueryExecutionResult>(branchOutcome));
     }
-    return combined;
+    return domain::combineUnionResults(branchResults, true);
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
@@ -837,685 +711,11 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       return executeMultipleInnerJoins(rdbServicePort, *select, schemas);
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
-    const auto types = domain::schemaTypes(schema);
-
-    const auto *where = std::get_if<WhereExpression>(&select->where);
-    std::optional<domain::CompiledWhereExpression> compiledWhere;
-    if (where != nullptr) {
-      const std::string tableQualifier =
-          select->tableAlias.value_or(select->tableName);
-      const auto normalized =
-          domain::normalizeSingleTableWhereColumns(*where, tableQualifier);
-      compiledWhere = domain::compileWhereExpression(normalized, schema, types);
-    }
-
-    std::vector<std::size_t> selectedIndexes;
-    std::vector<ColumnDefinition> selectedColumns;
-    std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
-        compiledCases;
-    std::vector<std::optional<domain::CompiledIntegerExpression>>
-        compiledIntegers;
-    std::vector<std::optional<domain::CompiledTextFunction>>
-        compiledTextFunctions;
-    if (select->aggregate.has_value() && select->groupBy.empty()) {
-      // Ungrouped aggregate queries produce a single computed output column.
-    } else if (select->selectAll) {
-      selectedIndexes.reserve(schema.size());
-      selectedColumns = schema;
-      for (std::size_t index = 0; index < schema.size(); ++index) {
-        selectedIndexes.push_back(index);
-      }
-    } else {
-      if (select->columnNames.empty()) {
-        throw std::invalid_argument("SELECT requires at least one column");
-      }
-      selectedIndexes.reserve(select->columnNames.size());
-      selectedColumns.reserve(select->columnNames.size());
-      const std::string tableQualifier =
-          select->tableAlias.value_or(select->tableName);
-      if (!select->caseExpressions.empty() &&
-          select->caseExpressions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT CASE expression count does not match columns");
-      }
-      if (!select->integerExpressions.empty() &&
-          select->integerExpressions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT integer expression count does not match columns");
-      }
-      if (!select->textFunctions.empty() &&
-          select->textFunctions.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT text function count does not match columns");
-      }
-      compiledCases.reserve(select->columnNames.size());
-      compiledIntegers.reserve(select->columnNames.size());
-      compiledTextFunctions.reserve(select->columnNames.size());
-      for (std::size_t itemIndex = 0; itemIndex < select->columnNames.size();
-           ++itemIndex) {
-        if (itemIndex < select->textFunctions.size() &&
-            select->textFunctions[itemIndex].has_value()) {
-          if (!select->innerJoins.empty()) {
-            throw std::invalid_argument(
-                "Scalar text functions are not yet supported with JOIN");
-          }
-          const auto &expression = *select->textFunctions[itemIndex];
-          const auto compiled = domain::compileTextFunction(
-              expression, schema, types, tableQualifier);
-          selectedIndexes.push_back(schema.size());
-          const auto alias = itemIndex < select->columnAliases.size()
-                                 ? select->columnAliases[itemIndex]
-                                 : std::optional<std::string>{};
-          const auto functionName =
-              domain::textFunctionName(expression.function);
-          const auto outputType = expression.function == TextFunction::Length
-                                      ? SqlType::Int
-                                      : SqlType::Text;
-          selectedColumns.push_back(
-              {alias.value_or(functionName + "(" + expression.columnName + ")"),
-               outputType});
-          compiledCases.push_back(std::nullopt);
-          compiledIntegers.push_back(std::nullopt);
-          compiledTextFunctions.push_back(compiled);
-          continue;
-        }
-        if (itemIndex < select->integerExpressions.size() &&
-            select->integerExpressions[itemIndex].has_value()) {
-          if (!select->innerJoins.empty()) {
-            throw std::invalid_argument(
-                "Integer expressions are not yet supported with JOIN");
-          }
-          const auto compiled = domain::compileIntegerExpression(
-              *select->integerExpressions[itemIndex], schema, types,
-              tableQualifier);
-          selectedIndexes.push_back(schema.size());
-          const auto alias = itemIndex < select->columnAliases.size()
-                                 ? select->columnAliases[itemIndex]
-                                 : std::optional<std::string>{};
-          selectedColumns.push_back(
-              {alias.value_or("EXPR" + std::to_string(itemIndex + 1)),
-               SqlType::Int});
-          compiledCases.push_back(std::nullopt);
-          compiledIntegers.push_back(compiled);
-          compiledTextFunctions.push_back(std::nullopt);
-          continue;
-        }
-        if (itemIndex < select->caseExpressions.size() &&
-            select->caseExpressions[itemIndex].has_value()) {
-          if (!select->innerJoins.empty()) {
-            throw std::invalid_argument(
-                "CASE expressions are not yet supported with JOIN");
-          }
-          const auto &caseExpression = *select->caseExpressions[itemIndex];
-          const SqlValue &elseValue = caseExpression.elseResult;
-          const bool resultIsInt =
-              std::holds_alternative<std::int64_t>(elseValue);
-          std::vector<domain::CompiledWhereExpression> branches;
-          branches.reserve(caseExpression.branches.size());
-          for (const auto &branch : caseExpression.branches) {
-            if (std::holds_alternative<std::int64_t>(branch.result) !=
-                resultIsInt) {
-              throw std::invalid_argument(
-                  "CASE result values must have the same type");
-            }
-            const auto normalized = domain::normalizeSingleTableWhereColumns(
-                branch.condition, tableQualifier);
-            branches.push_back(
-                domain::compileWhereExpression(normalized, schema, types));
-          }
-          selectedIndexes.push_back(schema.size());
-          selectedColumns.push_back(
-              {select->columnAliases[itemIndex].value_or("CASE"),
-               resultIsInt ? SqlType::Int : SqlType::Text});
-          compiledCases.push_back(std::move(branches));
-          compiledIntegers.push_back(std::nullopt);
-          compiledTextFunctions.push_back(std::nullopt);
-          continue;
-        }
-        const auto &columnName = select->columnNames[itemIndex];
-        const auto normalizedColumnName =
-            domain::normalizeSingleTableColumnName(columnName, tableQualifier);
-        const auto found =
-            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-              return column.name == normalizedColumnName;
-            });
-        if (found == schema.end()) {
-          throw std::invalid_argument("Unknown SELECT column: " + columnName);
-        }
-        const auto schemaIndex =
-            static_cast<std::size_t>(std::distance(schema.begin(), found));
-        selectedIndexes.push_back(schemaIndex);
-        selectedColumns.push_back(*found);
-        compiledCases.push_back(std::nullopt);
-        compiledIntegers.push_back(std::nullopt);
-        compiledTextFunctions.push_back(std::nullopt);
-      }
-
-      if (!select->columnAliases.empty() &&
-          select->columnAliases.size() != select->columnNames.size()) {
-        throw std::invalid_argument(
-            "SELECT alias count does not match columns");
-      }
-      std::unordered_set<std::string> outputNames;
-      for (std::size_t index = 0; index < selectedColumns.size(); ++index) {
-        if (index < select->columnAliases.size() &&
-            select->columnAliases[index].has_value()) {
-          selectedColumns[index].name = *select->columnAliases[index];
-        } else if (index < select->caseExpressions.size() &&
-                   select->caseExpressions[index].has_value()) {
-          selectedColumns[index].name = "CASE";
-        }
-        if (!outputNames.insert(selectedColumns[index].name).second) {
-          throw std::invalid_argument("Duplicate SELECT output column name: " +
-                                      selectedColumns[index].name);
-        }
-      }
-    }
-
-    const bool hasCaseExpression = std::any_of(
-        select->caseExpressions.begin(), select->caseExpressions.end(),
-        [](const auto &expression) { return expression.has_value(); });
-    const bool hasTextFunction = std::any_of(
-        select->textFunctions.begin(), select->textFunctions.end(),
-        [](const auto &expression) { return expression.has_value(); });
-    if (hasTextFunction && select->distinct) {
-      throw std::invalid_argument(
-          "SELECT DISTINCT cannot be combined with scalar text functions yet");
-    }
-    if (hasCaseExpression && select->distinct) {
-      throw std::invalid_argument(
-          "SELECT DISTINCT cannot be combined with CASE expressions yet");
-    }
-
-    struct OrderIndex {
-      std::size_t index;
-      bool ascending;
-      bool projected;
-    };
-    std::vector<OrderIndex> orderIndexes;
-    orderIndexes.reserve(select->orderBy.size());
-    const std::string tableQualifier =
-        select->tableAlias.value_or(select->tableName);
-    if (select->groupBy.empty()) {
-      for (const auto &order : select->orderBy) {
-        const auto alias =
-            std::find_if(selectedColumns.begin(), selectedColumns.end(),
-                         [&](const auto &column) {
-                           return column.name == order.columnName;
-                         });
-        if (alias != selectedColumns.end()) {
-          const auto projectionIndex = static_cast<std::size_t>(
-              std::distance(selectedColumns.begin(), alias));
-          orderIndexes.push_back({projectionIndex, order.ascending, true});
-          continue;
-        }
-
-        const auto normalizedOrderColumn =
-            domain::normalizeSingleTableColumnName(order.columnName,
-                                                   tableQualifier);
-        const auto found =
-            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-              return column.name == normalizedOrderColumn;
-            });
-        if (found == schema.end()) {
-          throw std::invalid_argument("Unknown ORDER BY column: " +
-                                      order.columnName);
-        }
-        const auto orderIndex =
-            static_cast<std::size_t>(std::distance(schema.begin(), found));
-        if (select->distinct &&
-            std::find(selectedIndexes.begin(), selectedIndexes.end(),
-                      orderIndex) == selectedIndexes.end()) {
-          throw std::invalid_argument("ORDER BY column must appear in SELECT "
-                                      "list when DISTINCT is used: " +
-                                      order.columnName);
-        }
-        orderIndexes.push_back({orderIndex, order.ascending, false});
-      }
-    }
-
-    std::optional<std::size_t> aggregateIndex;
-    std::vector<std::size_t> groupIndexes;
-    if (select->having.has_value() && select->groupBy.empty()) {
-      throw std::invalid_argument("HAVING requires GROUP BY");
-    }
-    if (!select->groupBy.empty()) {
-      if (!select->aggregate.has_value()) {
-        throw std::invalid_argument(
-            "GROUP BY requires one aggregate expression in SELECT");
-      }
-      if (select->distinct) {
-        throw std::invalid_argument(
-            "Grouped aggregate SELECT cannot be combined with DISTINCT");
-      }
-      if (select->columnNames != select->groupBy) {
-        throw std::invalid_argument(
-            "SELECT columns must exactly match GROUP BY columns");
-      }
-      for (const auto &groupColumn : select->groupBy) {
-        const auto normalizedGroupColumn =
-            domain::normalizeSingleTableColumnName(groupColumn, tableQualifier);
-        const auto found =
-            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-              return column.name == normalizedGroupColumn;
-            });
-        if (found == schema.end()) {
-          throw std::invalid_argument("Unknown GROUP BY column: " +
-                                      groupColumn);
-        }
-        groupIndexes.push_back(
-            static_cast<std::size_t>(std::distance(schema.begin(), found)));
-      }
-    }
-    if (select->aggregate.has_value()) {
-      const auto &aggregate = *select->aggregate;
-      if (select->distinct ||
-          (select->groupBy.empty() &&
-           (!select->orderBy.empty() || select->limit.has_value() ||
-            select->offset != 0))) {
-        throw std::invalid_argument(
-            "Aggregate SELECT cannot be combined with DISTINCT, ORDER BY, "
-            "LIMIT, or OFFSET");
-      }
-      if (aggregate.columnName.has_value()) {
-        const auto found =
-            std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-              return column.name == *aggregate.columnName;
-            });
-        if (found == schema.end()) {
-          throw std::invalid_argument("Unknown aggregate column: " +
-                                      *aggregate.columnName);
-        }
-        aggregateIndex =
-            static_cast<std::size_t>(std::distance(schema.begin(), found));
-      } else if (aggregate.function != AggregateFunction::Count) {
-        throw std::invalid_argument("Only COUNT supports '*'");
-      }
-      if ((aggregate.function == AggregateFunction::Sum ||
-           aggregate.function == AggregateFunction::Avg) &&
-          (!aggregateIndex.has_value() ||
-           types[*aggregateIndex] != SqlType::Int)) {
-        throw std::invalid_argument("SUM and AVG require an INT column");
-      }
-      if (!select->groupBy.empty() && select->having.has_value()) {
-        const auto &having = *select->having;
-        if (having.aggregate.function != aggregate.function ||
-            having.aggregate.columnName != aggregate.columnName) {
-          throw std::invalid_argument(
-              "HAVING aggregate must match the SELECT aggregate");
-        }
-        const SqlType resultType =
-            aggregate.function == AggregateFunction::Min ||
-                    aggregate.function == AggregateFunction::Max
-                ? types[*aggregateIndex]
-                : SqlType::Int;
-        const bool valueIsInt =
-            std::holds_alternative<std::int64_t>(having.value);
-        if ((resultType == SqlType::Int) != valueIsInt) {
-          throw std::invalid_argument(
-              "HAVING value type does not match aggregate result type");
-        }
-      }
-    }
-
-    struct GroupOrderIndex {
-      std::size_t index;
-      bool ascending;
-    };
-    std::vector<GroupOrderIndex> groupedOrderIndexes;
-    if (!select->groupBy.empty()) {
-      const auto &aggregate = *select->aggregate;
-      const std::string functionName =
-          aggregate.function == AggregateFunction::Count ? "COUNT"
-          : aggregate.function == AggregateFunction::Min ? "MIN"
-          : aggregate.function == AggregateFunction::Max ? "MAX"
-          : aggregate.function == AggregateFunction::Sum ? "SUM"
-                                                         : "AVG";
-      const std::string aggregateName = aggregate.alias.value_or(
-          functionName + "(" +
-          (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
-          ")");
-      groupedOrderIndexes.reserve(select->orderBy.size());
-      for (const auto &order : select->orderBy) {
-        const auto projected =
-            std::find_if(selectedColumns.begin(), selectedColumns.end(),
-                         [&](const auto &column) {
-                           return column.name == order.columnName;
-                         });
-        if (projected != selectedColumns.end()) {
-          groupedOrderIndexes.push_back(
-              {static_cast<std::size_t>(
-                   std::distance(selectedColumns.begin(), projected)),
-               order.ascending});
-          continue;
-        }
-        if (order.columnName == aggregateName) {
-          groupedOrderIndexes.push_back(
-              {selectedColumns.size(), order.ascending});
-          continue;
-        }
-
-        const auto normalizedOrderColumn =
-            domain::normalizeSingleTableColumnName(order.columnName,
-                                                   tableQualifier);
-        const auto groupIndex = std::find_if(
-            groupIndexes.begin(), groupIndexes.end(), [&](const auto index) {
-              return schema[index].name == normalizedOrderColumn;
-            });
-        if (groupIndex == groupIndexes.end()) {
-          throw std::invalid_argument("Unknown GROUP BY ORDER BY column: " +
-                                      order.columnName);
-        }
-        groupedOrderIndexes.push_back({static_cast<std::size_t>(std::distance(
-                                           groupIndexes.begin(), groupIndex)),
-                                       order.ascending});
-      }
-    }
-
+    const auto plan = domain::buildSelectPlan(*select, schema);
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
-    std::vector<std::vector<SqlValue>> matchedRows;
-    matchedRows.reserve(encodedRows.size());
-    for (const auto &bytes : encodedRows) {
-      auto decoded = SqlTupleCodec::decode(types, bytes);
-      if (compiledWhere.has_value() &&
-          !domain::matchesWhereExpression(decoded, *compiledWhere)) {
-        continue;
-      }
-      matchedRows.push_back(std::move(decoded));
-    }
-
-    if (!select->groupBy.empty()) {
-      const auto &aggregate = *select->aggregate;
-      const std::string functionName =
-          aggregate.function == AggregateFunction::Count ? "COUNT"
-          : aggregate.function == AggregateFunction::Min ? "MIN"
-          : aggregate.function == AggregateFunction::Max ? "MAX"
-          : aggregate.function == AggregateFunction::Sum ? "SUM"
-                                                         : "AVG";
-      const SqlType aggregateType =
-          aggregate.function == AggregateFunction::Min ||
-                  aggregate.function == AggregateFunction::Max
-              ? types[*aggregateIndex]
-              : SqlType::Int;
-      using GroupRows = std::map<std::vector<SqlValue>,
-                                 std::vector<const std::vector<SqlValue> *>>;
-      GroupRows groups;
-      for (const auto &row : matchedRows) {
-        std::vector<SqlValue> key;
-        key.reserve(groupIndexes.size());
-        for (const auto index : groupIndexes) {
-          key.push_back(row[index]);
-        }
-        groups[std::move(key)].push_back(&row);
-      }
-
-      QueryExecutionResult result;
-      result.kind = QueryExecutionResultKind::Rows;
-      result.message = "Rows selected";
-      result.columns = selectedColumns;
-      const std::string aggregateName = aggregate.alias.value_or(
-          functionName + "(" +
-          (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
-          ")");
-      if (std::any_of(result.columns.begin(), result.columns.end(),
-                      [&](const auto &column) {
-                        return column.name == aggregateName;
-                      })) {
-        throw std::invalid_argument("Duplicate SELECT output column name: " +
-                                    aggregateName);
-      }
-      result.columns.push_back({aggregateName, aggregateType});
-
-      for (const auto &[key, rows] : groups) {
-        std::vector<SqlValue> aggregateValues;
-        if (aggregate.function != AggregateFunction::Count) {
-          aggregateValues.reserve(rows.size());
-          for (const auto *row : rows) {
-            aggregateValues.push_back((*row)[*aggregateIndex]);
-          }
-        }
-        SqlValue aggregateValue = domain::calculateAggregate(
-            aggregate.function, aggregateValues, rows.size());
-
-        if (select->having.has_value()) {
-          const int comparison =
-              domain::compareSqlValues(aggregateValue, select->having->value);
-          bool matches = false;
-          switch (select->having->comparison) {
-          case ComparisonOperator::Equal:
-            matches = comparison == 0;
-            break;
-          case ComparisonOperator::NotEqual:
-            matches = comparison != 0;
-            break;
-          case ComparisonOperator::GreaterThan:
-            matches = comparison > 0;
-            break;
-          case ComparisonOperator::LessThan:
-            matches = comparison < 0;
-            break;
-          case ComparisonOperator::GreaterThanOrEqual:
-            matches = comparison >= 0;
-            break;
-          case ComparisonOperator::LessThanOrEqual:
-            matches = comparison <= 0;
-            break;
-          default:
-            throw std::invalid_argument(
-                "HAVING supports only basic comparison operators");
-          }
-          if (!matches) {
-            continue;
-          }
-        }
-
-        auto outputRow = key;
-        outputRow.push_back(std::move(aggregateValue));
-        result.rows.push_back(std::move(outputRow));
-      }
-
-      if (!groupedOrderIndexes.empty()) {
-        std::stable_sort(result.rows.begin(), result.rows.end(),
-                         [&](const auto &left, const auto &right) {
-                           for (const auto &order : groupedOrderIndexes) {
-                             const int comparison = domain::compareSqlValues(
-                                 left[order.index], right[order.index]);
-                             if (comparison != 0) {
-                               return order.ascending ? comparison < 0
-                                                      : comparison > 0;
-                             }
-                           }
-                           return false;
-                         });
-      }
-
-      const std::size_t offset = select->offset > result.rows.size()
-                                     ? result.rows.size()
-                                     : static_cast<std::size_t>(select->offset);
-      if (offset > 0) {
-        result.rows.erase(result.rows.begin(), result.rows.begin() + offset);
-      }
-      if (select->limit.has_value() && *select->limit < result.rows.size()) {
-        result.rows.resize(static_cast<std::size_t>(*select->limit));
-      }
-      return result;
-    }
-
-    if (select->aggregate.has_value()) {
-      const auto &aggregate = *select->aggregate;
-      const std::string functionName =
-          aggregate.function == AggregateFunction::Count ? "COUNT"
-          : aggregate.function == AggregateFunction::Min ? "MIN"
-          : aggregate.function == AggregateFunction::Max ? "MAX"
-          : aggregate.function == AggregateFunction::Sum ? "SUM"
-                                                         : "AVG";
-      const std::string outputName = aggregate.alias.value_or(
-          functionName + "(" +
-          (aggregate.columnName.has_value() ? *aggregate.columnName : "*") +
-          ")");
-      QueryExecutionResult result;
-      result.kind = QueryExecutionResultKind::Rows;
-      result.message = "Rows selected";
-      const SqlType outputType =
-          aggregate.function == AggregateFunction::Min ||
-                  aggregate.function == AggregateFunction::Max
-              ? types[*aggregateIndex]
-              : SqlType::Int;
-      result.columns.push_back({outputName, outputType});
-
-      std::vector<SqlValue> aggregateValues;
-      if (aggregate.function != AggregateFunction::Count) {
-        aggregateValues.reserve(matchedRows.size());
-        for (const auto &row : matchedRows) {
-          aggregateValues.push_back(row[*aggregateIndex]);
-        }
-      }
-      result.rows.push_back({domain::calculateAggregate(
-          aggregate.function, aggregateValues, matchedRows.size())});
-      return result;
-    }
-
-    const bool hasIntegerExpression = std::any_of(
-        select->integerExpressions.begin(), select->integerExpressions.end(),
-        [](const auto &expression) { return expression.has_value(); });
-    if (hasIntegerExpression && select->distinct) {
-      throw std::invalid_argument(
-          "SELECT DISTINCT cannot be combined with integer expressions yet");
-    }
-
-    if (select->distinct) {
-      std::set<std::vector<SqlValue>> seenProjections;
-      matchedRows.erase(
-          std::remove_if(
-              matchedRows.begin(), matchedRows.end(),
-              [&](const auto &row) {
-                std::vector<SqlValue> projection;
-                projection.reserve(selectedIndexes.size());
-                for (const auto index : selectedIndexes) {
-                  projection.push_back(row[index]);
-                }
-                return !seenProjections.insert(std::move(projection)).second;
-              }),
-          matchedRows.end());
-    }
-
-    const auto projectRow = [&](const std::vector<SqlValue> &decoded) {
-      std::vector<SqlValue> projected;
-      projected.reserve(selectedIndexes.size());
-      for (std::size_t index = 0; index < selectedIndexes.size(); ++index) {
-        if (index < compiledTextFunctions.size() &&
-            compiledTextFunctions[index].has_value()) {
-          projected.push_back(domain::evaluateTextFunction(
-              decoded, *compiledTextFunctions[index]));
-        } else if (index < compiledIntegers.size() &&
-                   compiledIntegers[index].has_value()) {
-          projected.push_back(domain::evaluateIntegerExpression(
-              decoded, *compiledIntegers[index]));
-        } else if (index < compiledCases.size() &&
-                   compiledCases[index].has_value()) {
-          const auto &caseExpression = *select->caseExpressions[index];
-          bool matched = false;
-          for (std::size_t branchIndex = 0;
-               branchIndex < compiledCases[index]->size(); ++branchIndex) {
-            if (domain::matchesWhereExpression(
-                    decoded, (*compiledCases[index])[branchIndex])) {
-              projected.push_back(caseExpression.branches[branchIndex].result);
-              matched = true;
-              break;
-            }
-          }
-          if (!matched) {
-            projected.push_back(caseExpression.elseResult);
-          }
-        } else {
-          projected.push_back(decoded[selectedIndexes[index]]);
-        }
-      }
-      return projected;
-    };
-
-    const bool ordersByProjection =
-        std::any_of(orderIndexes.begin(), orderIndexes.end(),
-                    [](const auto &order) { return order.projected; });
-    std::vector<std::vector<SqlValue>> projectedRows;
-    if (ordersByProjection) {
-      projectedRows.reserve(matchedRows.size());
-      for (const auto &row : matchedRows) {
-        projectedRows.push_back(projectRow(row));
-      }
-    }
-
-    if (!orderIndexes.empty()) {
-      std::vector<std::size_t> rowOrder(matchedRows.size());
-      for (std::size_t index = 0; index < rowOrder.size(); ++index) {
-        rowOrder[index] = index;
-      }
-      std::stable_sort(
-          rowOrder.begin(), rowOrder.end(),
-          [&](std::size_t leftIndex, std::size_t rightIndex) {
-            for (const auto &order : orderIndexes) {
-              const auto &left = order.projected
-                                     ? projectedRows[leftIndex][order.index]
-                                     : matchedRows[leftIndex][order.index];
-              const auto &right = order.projected
-                                      ? projectedRows[rightIndex][order.index]
-                                      : matchedRows[rightIndex][order.index];
-              const int comparison = domain::compareSqlValues(left, right);
-              if (comparison != 0) {
-                return order.ascending ? comparison < 0 : comparison > 0;
-              }
-            }
-            return false;
-          });
-
-      std::vector<std::vector<SqlValue>> sortedRows;
-      std::vector<std::vector<SqlValue>> sortedProjections;
-      sortedRows.reserve(matchedRows.size());
-      if (ordersByProjection) {
-        sortedProjections.reserve(projectedRows.size());
-      }
-      for (const auto index : rowOrder) {
-        sortedRows.push_back(std::move(matchedRows[index]));
-        if (ordersByProjection) {
-          sortedProjections.push_back(std::move(projectedRows[index]));
-        }
-      }
-      matchedRows = std::move(sortedRows);
-      if (ordersByProjection) {
-        projectedRows = std::move(sortedProjections);
-      }
-    }
-
-    const std::size_t offset = select->offset > matchedRows.size()
-                                   ? matchedRows.size()
-                                   : static_cast<std::size_t>(select->offset);
-    if (offset > 0) {
-      matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
-      if (ordersByProjection) {
-        projectedRows.erase(projectedRows.begin(),
-                            projectedRows.begin() + offset);
-      }
-    }
-    if (select->limit.has_value() && *select->limit < matchedRows.size()) {
-      const auto limit = static_cast<std::size_t>(*select->limit);
-      matchedRows.resize(limit);
-      if (ordersByProjection) {
-        projectedRows.resize(limit);
-      }
-    }
-    if (!ordersByProjection) {
-      projectedRows.reserve(matchedRows.size());
-      for (const auto &row : matchedRows) {
-        projectedRows.push_back(projectRow(row));
-      }
-    }
-
-    QueryExecutionResult result;
-    result.kind = QueryExecutionResultKind::Rows;
-    result.message = "Rows selected";
-    result.columns = std::move(selectedColumns);
-    result.rows = std::move(projectedRows);
-    return result;
+    auto matchedRows = domain::decodeAndFilterRows(encodedRows, plan.types,
+                                                   plan.compiledWhere);
+    return domain::processSelectRows(*select, plan, std::move(matchedRows));
   }
 
   return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
