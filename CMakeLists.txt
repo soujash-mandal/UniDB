@@ -98,6 +98,7 @@ set(UNIDB_SOURCES
     TupleService/actions/GetAllTuplesAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
     QueryExecutionService/domain/codec/SqlTupleCodec.cpp
+    QueryExecutionService/domain/types/SqlTypeRegistry.cpp
     QueryExecutionService/adapter/RdbServiceAdapter.cpp
     QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
     QueryExecutionService/domain/expression/ScalarExpressionEvaluator.cpp
@@ -238,6 +239,7 @@ add_executable(tests
     QueryExecutionService/test/domain/SqlAggregateCalculatorTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
     QueryExecutionService/test/SqlTypeDescriptorTest.cpp
+    QueryExecutionService/test/domain/SqlTypeRegistryTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/CreatesTableAndReturnsCommandResultTest.cpp
