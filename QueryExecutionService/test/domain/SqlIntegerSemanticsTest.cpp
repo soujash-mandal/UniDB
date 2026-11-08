@@ -50,10 +50,12 @@ TEST(SqlIntegerSemanticsTest, CreatesValuesUsingTheDeclaredStorageWidth) {
 }
 
 TEST(SqlIntegerSemanticsTest, AcceptsInclusiveMinimumAndMaximumValues) {
-  EXPECT_EQ(integerValueAsInt64(makeSqlIntegerValue(SqlTypeId::SmallInt, -32768)),
-            -32768);
-  EXPECT_EQ(integerValueAsInt64(makeSqlIntegerValue(SqlTypeId::SmallInt, 32767)),
-            32767);
+  EXPECT_EQ(
+      integerValueAsInt64(makeSqlIntegerValue(SqlTypeId::SmallInt, -32768)),
+      -32768);
+  EXPECT_EQ(
+      integerValueAsInt64(makeSqlIntegerValue(SqlTypeId::SmallInt, 32767)),
+      32767);
   EXPECT_EQ(integerValueAsInt64(
                 makeSqlIntegerValue(SqlTypeId::Integer, -2147483648LL)),
             -2147483648LL);
