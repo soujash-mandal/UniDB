@@ -40,60 +40,6 @@ QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
 
-domain::
-
-    domain::CompiledIntegerExpression
-    domain::compileIntegerExpression(
-        const IntegerExpression &expression,
-        const std::vector<ColumnDefinition> &schema,
-        const std::vector<SqlType> &types, const std::string &tableQualifier) {
-  domain::CompiledIntegerExpression compiled;
-  compiled.kind = expression.kind;
-  if (expression.kind == IntegerExpression::Kind::Literal) {
-    compiled.literal = expression.literal;
-    return compiled;
-  }
-  if (expression.kind == IntegerExpression::Kind::Column) {
-    const auto name = domain::normalizeSingleTableColumnName(
-        expression.columnName, tableQualifier);
-    const auto found =
-        std::find_if(schema.begin(), schema.end(),
-                     [&](const auto &column) { return column.name == name; });
-    if (found == schema.end()) {
-      throw std::invalid_argument("Unknown SELECT column: " +
-                                  expression.columnName);
-    }
-    const auto index =
-        static_cast<std::size_t>(std::distance(schema.begin(), found));
-    if (types[index] != SqlType::Int) {
-      throw std::invalid_argument("Integer arithmetic requires INT columns: " +
-                                  expression.columnName);
-    }
-    compiled.columnIndex = index;
-    return compiled;
-  }
-  if (expression.kind == IntegerExpression::Kind::Unary) {
-    if (!expression.operand) {
-      throw std::invalid_argument("Malformed unary integer expression");
-    }
-    compiled.unaryOperation = expression.unaryOperation;
-    compiled.operand = std::make_shared<domain::CompiledIntegerExpression>(
-        domain::compileIntegerExpression(*expression.operand, schema, types,
-                                         tableQualifier));
-    return compiled;
-  }
-  if (!expression.left || !expression.right) {
-    throw std::invalid_argument("Malformed integer arithmetic expression");
-  }
-  compiled.operation = expression.operation;
-  compiled.left = std::make_shared<domain::CompiledIntegerExpression>(
-      domain::compileIntegerExpression(*expression.left, schema, types,
-                                       tableQualifier));
-  compiled.right = std::make_shared<domain::CompiledIntegerExpression>(
-      domain::compileIntegerExpression(*expression.right, schema, types,
-                                       tableQualifier));
-  return compiled;
-}
 
 QueryExecutionResult
 executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
