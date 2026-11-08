@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../contract/sqlStatement.h"
 #include "../../type/type.h"
+#include "../contract/sqlStatement.h"
 
 #include <string>
 #include <vector>
@@ -18,15 +18,13 @@ resolveJoinColumn(const unidb::sql::ColumnReference &reference,
                   const std::string &rightTableName,
                   const std::vector<unidb::sql::ColumnDefinition> &rightSchema);
 
-ResolvedJoinColumn
-resolveSelectedJoinColumn(
+ResolvedJoinColumn resolveSelectedJoinColumn(
     const std::string &name, const std::string &leftTableName,
     const std::vector<unidb::sql::ColumnDefinition> &leftSchema,
     const std::string &rightTableName,
     const std::vector<unidb::sql::ColumnDefinition> &rightSchema);
 
-ResolvedJoinColumn
-resolveWhereJoinColumn(
+ResolvedJoinColumn resolveWhereJoinColumn(
     const std::string &name, const std::string &leftTableName,
     const std::vector<unidb::sql::ColumnDefinition> &leftSchema,
     const std::string &rightTableName,
