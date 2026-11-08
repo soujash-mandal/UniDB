@@ -35,7 +35,8 @@ struct SelectPlan {
   std::vector<GroupOrderIndex> groupedOrderIndexes;
 };
 
-SelectPlan buildSelectPlan(const unidb::sql::SelectStatement &select,
-                           const std::vector<unidb::sql::ColumnDefinition> &schema);
+SelectPlan
+buildSelectPlan(const unidb::sql::SelectStatement &select,
+                const std::vector<unidb::sql::ColumnDefinition> &schema);
 
 } // namespace QueryExecutionService::domain
