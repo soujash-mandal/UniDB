@@ -18,6 +18,8 @@
 namespace QueryExecutionService {
 namespace {
 
+// JOIN execution remains here because these paths read rows through
+// RdbServicePort; their independent planning and result rules belong in domain.
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::CreateTableStatement;
