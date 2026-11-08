@@ -14,6 +14,7 @@
 namespace QueryExecutionService::domain {
 
 using namespace unidb::sql;
+
 std::vector<std::vector<SqlValue>> decodeAndFilterRows(
     const std::vector<std::vector<char>> &encodedRows,
     const std::vector<SqlType> &types,
@@ -30,8 +31,6 @@ std::vector<std::vector<SqlValue>> decodeAndFilterRows(
   }
   return matchedRows;
 }
-
-
 
 QueryExecutionService::QueryExecutionResult
 processSelectRows(const unidb::sql::SelectStatement &select,
