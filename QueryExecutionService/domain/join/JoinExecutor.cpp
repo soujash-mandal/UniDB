@@ -3,6 +3,7 @@
 #include "../predicate/WhereExpressionNormalizer.h"
 #include "../predicate/WherePredicateEvaluator.h"
 #include "../schema/SqlSchemaResolver.h"
+#include "JoinProjectionPlanner.h"
 
 #include <algorithm>
 #include <functional>
@@ -67,59 +68,13 @@ executeInnerJoin(const SelectStatement &select,
         compileWhereExpression(qualified, joinedSchema, joinedTypes);
   }
 
-  std::vector<std::size_t> selectedIndexes;
-  std::vector<ColumnDefinition> selectedColumns;
-  if (select.selectAll) {
-    selectedIndexes.reserve(joinedSchema.size());
-    selectedColumns.reserve(joinedSchema.size());
-    for (std::size_t index = 0; index < joinedSchema.size(); ++index) {
-      selectedIndexes.push_back(index);
-      const bool isLeft = index < leftSchema.size();
-      const auto &sourceColumn =
-          isLeft ? leftSchema[index] : rightSchema[index - leftSchema.size()];
-      const auto &otherSchema = isLeft ? rightSchema : leftSchema;
-      const bool duplicated = std::any_of(
-          otherSchema.begin(), otherSchema.end(),
-          [&](const auto &other) { return other.name == sourceColumn.name; });
-      const std::string &tableName = isLeft ? leftQualifier : rightQualifier;
-      selectedColumns.push_back(
-          {duplicated ? tableName + "." + sourceColumn.name : sourceColumn.name,
-           sourceColumn.type});
-    }
-  } else {
-    selectedIndexes.reserve(select.columnNames.size());
-    selectedColumns.reserve(select.columnNames.size());
-    for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved =
-          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
-                                    leftSchema, rightQualifier, rightSchema);
-      selectedIndexes.push_back(resolved.tableName == leftQualifier
-                                    ? resolved.index
-                                    : leftSchema.size() + resolved.index);
-      const bool duplicated =
-          std::any_of(leftSchema.begin(), leftSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      }) &&
-          std::any_of(rightSchema.begin(), rightSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      });
-      std::string outputName =
-          duplicated ? resolved.tableName + "." + resolved.column->name
-                     : resolved.column->name;
-      if (index < select.columnAliases.size() &&
-          select.columnAliases[index].has_value()) {
-        outputName = *select.columnAliases[index];
-      }
-      selectedColumns.push_back({std::move(outputName), resolved.column->type});
-    }
-  }
+  const auto projection = buildJoinProjectionPlan(
+      select, {leftSchema, rightSchema}, {leftQualifier, rightQualifier});
 
   QueryExecutionResult result;
   result.kind = QueryExecutionResultKind::Rows;
   result.message = "Rows selected";
-  result.columns = std::move(selectedColumns);
+  result.columns = projection.columns;
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
       const int comparison =
@@ -160,8 +115,8 @@ executeInnerJoin(const SelectStatement &select,
         continue;
       }
       std::vector<SqlValue> projectedRow;
-      projectedRow.reserve(selectedIndexes.size());
-      for (const auto index : selectedIndexes) {
+      projectedRow.reserve(projection.indexes.size());
+      for (const auto index : projection.indexes) {
         projectedRow.push_back(joinedRow[index]);
       }
       result.rows.push_back(std::move(projectedRow));
@@ -225,54 +180,8 @@ executeCrossJoin(const SelectStatement &select,
         compileWhereExpression(qualified, joinedSchema, joinedTypes);
   }
 
-  std::vector<std::size_t> selectedIndexes;
-  std::vector<ColumnDefinition> selectedColumns;
-  if (select.selectAll) {
-    selectedIndexes.reserve(joinedSchema.size());
-    selectedColumns.reserve(joinedSchema.size());
-    for (std::size_t index = 0; index < joinedSchema.size(); ++index) {
-      selectedIndexes.push_back(index);
-      const bool isLeft = index < leftSchema.size();
-      const auto &sourceColumn =
-          isLeft ? leftSchema[index] : rightSchema[index - leftSchema.size()];
-      const auto &otherSchema = isLeft ? rightSchema : leftSchema;
-      const bool duplicated = std::any_of(
-          otherSchema.begin(), otherSchema.end(),
-          [&](const auto &other) { return other.name == sourceColumn.name; });
-      const std::string &tableName = isLeft ? leftQualifier : rightQualifier;
-      selectedColumns.push_back(
-          {duplicated ? tableName + "." + sourceColumn.name : sourceColumn.name,
-           sourceColumn.type});
-    }
-  } else {
-    selectedIndexes.reserve(select.columnNames.size());
-    selectedColumns.reserve(select.columnNames.size());
-    for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved =
-          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
-                                    leftSchema, rightQualifier, rightSchema);
-      selectedIndexes.push_back(resolved.tableName == leftQualifier
-                                    ? resolved.index
-                                    : leftSchema.size() + resolved.index);
-      const bool duplicated =
-          std::any_of(leftSchema.begin(), leftSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      }) &&
-          std::any_of(rightSchema.begin(), rightSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      });
-      std::string outputName =
-          duplicated ? resolved.tableName + "." + resolved.column->name
-                     : resolved.column->name;
-      if (index < select.columnAliases.size() &&
-          select.columnAliases[index].has_value()) {
-        outputName = *select.columnAliases[index];
-      }
-      selectedColumns.push_back({std::move(outputName), resolved.column->type});
-    }
-  }
+  const auto projection = buildJoinProjectionPlan(
+      select, {leftSchema, rightSchema}, {leftQualifier, rightQualifier});
 
   constexpr std::size_t kMaxCrossJoinRows = 1'000'000;
   if (!leftRows.empty() &&
@@ -284,7 +193,7 @@ executeCrossJoin(const SelectStatement &select,
   QueryExecutionResult result;
   result.kind = QueryExecutionResultKind::Rows;
   result.message = "Rows selected";
-  result.columns = std::move(selectedColumns);
+  result.columns = projection.columns;
   for (const auto &leftRow : leftRows) {
     for (const auto &rightRow : rightRows) {
       std::vector<SqlValue> joinedRow;
@@ -296,8 +205,8 @@ executeCrossJoin(const SelectStatement &select,
         continue;
       }
       std::vector<SqlValue> projectedRow;
-      projectedRow.reserve(selectedIndexes.size());
-      for (const auto index : selectedIndexes) {
+      projectedRow.reserve(projection.indexes.size());
+      for (const auto index : projection.indexes) {
         projectedRow.push_back(joinedRow[index]);
       }
       result.rows.push_back(std::move(projectedRow));
@@ -473,77 +382,16 @@ QueryExecutionResult executeMultipleInnerJoins(
     qualify(q);
     where = compileWhereExpression(q, combinedSchema, combinedTypes);
   }
-  std::vector<std::size_t> projection;
-  std::vector<ColumnDefinition> output;
-  if (select.selectAll) {
-    for (std::size_t i = 0; i < combinedSchema.size(); ++i) {
-      projection.push_back(i);
-      const auto &name = combinedSchema[i].name;
-      const auto dot = name.find('.');
-      const auto col = name.substr(dot + 1);
-      std::size_t count = 0;
-      for (const auto &sc : schemas)
-        for (const auto &c : sc)
-          if (c.name == col)
-            ++count;
-      output.push_back({count > 1 ? name : col, combinedSchema[i].type});
-    }
-  } else {
-    if (select.columnNames.empty())
-      throw std::invalid_argument("SELECT requires at least one column");
-    for (std::size_t i = 0; i < select.columnNames.size(); ++i) {
-      const auto name = select.columnNames[i];
-      const auto dot = name.find('.');
-      std::optional<std::size_t> idx;
-      if (dot != std::string::npos) {
-        const auto q = name.substr(0, dot), col = name.substr(dot + 1);
-        auto qi = std::find(qualifiers.begin(), qualifiers.end(), q);
-        if (qi == qualifiers.end())
-          throw std::invalid_argument("Unknown SELECT table: " + q);
-        auto ti =
-            static_cast<std::size_t>(std::distance(qualifiers.begin(), qi));
-        std::size_t off = 0;
-        for (std::size_t k = 0; k < ti; ++k)
-          off += schemas[k].size();
-        for (std::size_t k = 0; k < schemas[ti].size(); ++k)
-          if (schemas[ti][k].name == col)
-            idx = off + k;
-      } else {
-        for (std::size_t k = 0; k < combinedSchema.size(); ++k)
-          if (combinedSchema[k].name.substr(combinedSchema[k].name.find('.') +
-                                            1) == name) {
-            if (idx)
-              throw std::invalid_argument("Ambiguous SELECT column: " + name);
-            idx = k;
-          }
-      }
-      if (!idx)
-        throw std::invalid_argument("Unknown SELECT column: " + name);
-      projection.push_back(*idx);
-      auto outName = combinedSchema[*idx].name;
-      const auto d = outName.find('.');
-      const auto col = outName.substr(d + 1);
-      std::size_t count = 0;
-      for (const auto &sc : schemas)
-        for (const auto &c : sc)
-          if (c.name == col)
-            ++count;
-      if (i < select.columnAliases.size() && select.columnAliases[i])
-        outName = *select.columnAliases[i];
-      else if (count == 1)
-        outName = col;
-      output.push_back({outName, combinedSchema[*idx].type});
-    }
-  }
+  const auto projection = buildJoinProjectionPlan(select, schemas, qualifiers);
   QueryExecutionResult result;
   result.kind = QueryExecutionResultKind::Rows;
   result.message = "Rows selected";
-  result.columns = std::move(output);
+  result.columns = projection.columns;
   for (auto &row : rows) {
     if (where && !matchesWhereExpression(row, *where))
       continue;
     std::vector<SqlValue> projected;
-    for (auto index : projection)
+    for (auto index : projection.indexes)
       projected.push_back(row[index]);
     result.rows.push_back(std::move(projected));
   }

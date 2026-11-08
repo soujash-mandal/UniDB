@@ -1,13 +1,11 @@
 #include "JoinValidator.h"
 
+#include "JoinProjectionPlanner.h"
+
 #include "../schema/SqlSchemaResolver.h"
 
-#include <algorithm>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 
 namespace QueryExecutionService::domain {
 using unidb::sql::ColumnDefinition;
@@ -49,63 +47,8 @@ void validateInnerJoinColumns(
         "JOIN currently supports only a simple SELECT projection");
   }
 
-  std::vector<std::string> outputNames;
-  if (select.selectAll) {
-    outputNames.reserve(leftSchema.size() + rightSchema.size());
-    for (const auto &column : leftSchema) {
-      const bool duplicated = std::any_of(
-          rightSchema.begin(), rightSchema.end(),
-          [&](const auto &right) { return right.name == column.name; });
-      outputNames.push_back(duplicated ? leftQualifier + "." + column.name
-                                       : column.name);
-    }
-    for (const auto &column : rightSchema) {
-      const bool duplicated = std::any_of(
-          leftSchema.begin(), leftSchema.end(),
-          [&](const auto &left) { return left.name == column.name; });
-      outputNames.push_back(duplicated ? rightQualifier + "." + column.name
-                                       : column.name);
-    }
-  } else {
-    if (select.columnNames.empty()) {
-      throw std::invalid_argument("SELECT requires at least one column");
-    }
-    if (!select.columnAliases.empty() &&
-        select.columnAliases.size() != select.columnNames.size()) {
-      throw std::invalid_argument("SELECT alias count does not match columns");
-    }
-    outputNames.reserve(select.columnNames.size());
-    for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved =
-          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
-                                    leftSchema, rightQualifier, rightSchema);
-      const bool duplicated =
-          std::any_of(leftSchema.begin(), leftSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      }) &&
-          std::any_of(rightSchema.begin(), rightSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      });
-      std::string outputName =
-          duplicated ? resolved.tableName + "." + resolved.column->name
-                     : resolved.column->name;
-      if (index < select.columnAliases.size() &&
-          select.columnAliases[index].has_value()) {
-        outputName = *select.columnAliases[index];
-      }
-      outputNames.push_back(std::move(outputName));
-    }
-  }
-
-  std::unordered_set<std::string> uniqueOutputNames;
-  for (const auto &name : outputNames) {
-    if (!uniqueOutputNames.insert(name).second) {
-      throw std::invalid_argument("Duplicate SELECT output column name: " +
-                                  name);
-    }
-  }
+  (void)buildJoinProjectionPlan(select, {leftSchema, rightSchema},
+                                {leftQualifier, rightQualifier});
 }
 
 } // namespace QueryExecutionService::domain

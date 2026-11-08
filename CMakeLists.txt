@@ -107,6 +107,7 @@ set(UNIDB_SOURCES
     QueryExecutionService/domain/planning/SqlSelectResultProcessor.cpp
     QueryExecutionService/domain/schema/SqlSchemaResolver.cpp
     QueryExecutionService/domain/join/JoinValidator.cpp
+    QueryExecutionService/domain/join/JoinProjectionPlanner.cpp
     QueryExecutionService/domain/join/JoinExecutor.cpp
     QueryExecutionService/domain/expression/SqlExpressionCompiler.cpp
     QueryExecutionService/domain/predicate/WhereExpressionNormalizer.cpp

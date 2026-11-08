@@ -319,3 +319,39 @@ TEST(ExecuteQueryActionJoinResolutionTest, ResolvesAliasInOrderBy) {
   EXPECT_EQ(rows.columns[0].name, "id");
   EXPECT_EQ(fixture.port.selectCalls, 1U);
 }
+
+TEST(ExecuteQueryActionJoinResolutionTest,
+     UsesSharedProjectionPlannerForCrossJoin) {
+  JoinResolutionFixture fixture;
+
+  const auto result = fixture.execute(
+      "SELECT users.name, orders.amount FROM users CROSS JOIN orders");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          result));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(result);
+  ASSERT_EQ(rows.columns.size(), 2U);
+  EXPECT_EQ(rows.columns[0].name, "name");
+  EXPECT_EQ(rows.columns[1].name, "amount");
+  EXPECT_EQ(fixture.port.schemaRequests,
+            (std::vector<std::string>{"users", "orders"}));
+  EXPECT_EQ(fixture.port.selectCalls, 2U);
+}
+
+TEST(ExecuteQueryActionJoinResolutionTest,
+     RejectsDuplicateCrossJoinOutputAliases) {
+  JoinResolutionFixture fixture;
+
+  const auto result = fixture.execute(
+      "SELECT users.name AS value, orders.amount AS value FROM users "
+      "CROSS JOIN orders");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          result));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(result).message,
+      "Duplicate SELECT output column name: value");
+}
