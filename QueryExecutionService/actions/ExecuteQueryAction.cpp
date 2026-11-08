@@ -4,6 +4,7 @@
 #include "../domain/codec/SqlTupleCodec.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
+#include "../domain/planning/SqlQueryRules.h"
 
 #include <algorithm>
 #include <functional>
@@ -37,385 +38,6 @@ QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
 
-std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
-  std::vector<SqlType> types;
-  types.reserve(schema.size());
-  for (const auto &column : schema) {
-    if (column.type != SqlType::Int && column.type != SqlType::Text) {
-      throw std::invalid_argument("Column type is outside the V1 SQL subset");
-    }
-    types.push_back(column.type);
-  }
-  return types;
-}
-
-ResolvedJoinColumn
-resolveJoinColumn(const unidb::sql::ColumnReference &reference,
-                  const std::string &leftTableName,
-                  const std::vector<ColumnDefinition> &leftSchema,
-                  const std::string &rightTableName,
-                  const std::vector<ColumnDefinition> &rightSchema) {
-  if (!reference.tableName.has_value()) {
-    throw std::invalid_argument(
-        "JOIN ON requires table-qualified column references");
-  }
-
-  const std::vector<ColumnDefinition> *schema = nullptr;
-  if (*reference.tableName == leftTableName) {
-    schema = &leftSchema;
-  } else if (*reference.tableName == rightTableName) {
-    schema = &rightSchema;
-  } else {
-    throw std::invalid_argument("Unknown JOIN table reference: " +
-                                *reference.tableName);
-  }
-
-  const auto found =
-      std::find_if(schema->begin(), schema->end(), [&](const auto &column) {
-        return column.name == reference.columnName;
-      });
-  if (found == schema->end()) {
-    throw std::invalid_argument("Unknown JOIN column: " + *reference.tableName +
-                                "." + reference.columnName);
-  }
-
-  return {&*found, *reference.tableName,
-          static_cast<std::size_t>(std::distance(schema->begin(), found))};
-}
-
-ResolvedJoinColumn
-resolveSelectedJoinColumn(const std::string &name,
-                          const std::string &leftTableName,
-                          const std::vector<ColumnDefinition> &leftSchema,
-                          const std::string &rightTableName,
-                          const std::vector<ColumnDefinition> &rightSchema) {
-  const auto separator = name.find('.');
-  if (separator != std::string::npos) {
-    if (name.find('.', separator + 1) != std::string::npos) {
-      throw std::invalid_argument("Invalid qualified SELECT column: " + name);
-    }
-    const std::string tableName = name.substr(0, separator);
-    const std::string columnName = name.substr(separator + 1);
-    if (tableName != leftTableName && tableName != rightTableName) {
-      throw std::invalid_argument("Unknown SELECT table: " + tableName);
-    }
-    const auto &schema = tableName == leftTableName ? leftSchema : rightSchema;
-    const auto found =
-        std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-          return column.name == columnName;
-        });
-    if (found == schema.end()) {
-      throw std::invalid_argument("Unknown SELECT column: " + name);
-    }
-    return {&*found, tableName,
-            static_cast<std::size_t>(std::distance(schema.begin(), found))};
-  }
-
-  const auto leftFound =
-      std::find_if(leftSchema.begin(), leftSchema.end(),
-                   [&](const auto &column) { return column.name == name; });
-  const auto rightFound =
-      std::find_if(rightSchema.begin(), rightSchema.end(),
-                   [&](const auto &column) { return column.name == name; });
-  const bool inLeft = leftFound != leftSchema.end();
-  const bool inRight = rightFound != rightSchema.end();
-
-  if (!inLeft && !inRight) {
-    throw std::invalid_argument("Unknown SELECT column: " + name);
-  }
-  if (inLeft && inRight) {
-    throw std::invalid_argument("Ambiguous SELECT column: " + name);
-  }
-  if (inLeft) {
-    return {
-        &*leftFound, leftTableName,
-        static_cast<std::size_t>(std::distance(leftSchema.begin(), leftFound))};
-  }
-  return {
-      &*rightFound, rightTableName,
-      static_cast<std::size_t>(std::distance(rightSchema.begin(), rightFound))};
-}
-
-void validateInnerJoinColumns(
-    const SelectStatement &select,
-    const std::vector<ColumnDefinition> &leftSchema,
-    const std::vector<ColumnDefinition> &rightSchema) {
-  const auto &join = select.innerJoins.front();
-  const std::string leftQualifier =
-      select.tableAlias.value_or(select.tableName);
-  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
-  if (leftQualifier == rightQualifier) {
-    throw std::invalid_argument("JOIN table aliases must be distinct");
-  }
-  if (select.tableName == join.tableName &&
-      (!select.tableAlias.has_value() || !join.tableAlias.has_value())) {
-    throw std::invalid_argument(
-        "Joining a table to itself requires distinct table aliases");
-  }
-
-  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
-                                         rightQualifier, rightSchema);
-  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
-                                          rightQualifier, rightSchema);
-  if (leftKey.tableName == rightKey.tableName) {
-    throw std::invalid_argument(
-        "INNER JOIN ON must compare columns from both tables");
-  }
-  if (leftKey.column->type != rightKey.column->type) {
-    throw std::invalid_argument("INNER JOIN columns must have matching types");
-  }
-
-  if (select.aggregate.has_value() || !select.groupBy.empty() ||
-      select.having.has_value() || select.distinct || !select.orderBy.empty() ||
-      select.limit.has_value() || select.offset != 0) {
-    throw std::invalid_argument(
-        "JOIN currently supports only a simple SELECT projection");
-  }
-
-  std::vector<std::string> outputNames;
-  if (select.selectAll) {
-    outputNames.reserve(leftSchema.size() + rightSchema.size());
-    for (const auto &column : leftSchema) {
-      const bool duplicated = std::any_of(
-          rightSchema.begin(), rightSchema.end(),
-          [&](const auto &right) { return right.name == column.name; });
-      outputNames.push_back(duplicated ? leftQualifier + "." + column.name
-                                       : column.name);
-    }
-    for (const auto &column : rightSchema) {
-      const bool duplicated = std::any_of(
-          leftSchema.begin(), leftSchema.end(),
-          [&](const auto &left) { return left.name == column.name; });
-      outputNames.push_back(duplicated ? rightQualifier + "." + column.name
-                                       : column.name);
-    }
-  } else {
-    if (select.columnNames.empty()) {
-      throw std::invalid_argument("SELECT requires at least one column");
-    }
-    if (!select.columnAliases.empty() &&
-        select.columnAliases.size() != select.columnNames.size()) {
-      throw std::invalid_argument("SELECT alias count does not match columns");
-    }
-    outputNames.reserve(select.columnNames.size());
-    for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved =
-          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
-                                    leftSchema, rightQualifier, rightSchema);
-      const bool duplicated =
-          std::any_of(leftSchema.begin(), leftSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      }) &&
-          std::any_of(rightSchema.begin(), rightSchema.end(),
-                      [&](const auto &column) {
-                        return column.name == resolved.column->name;
-                      });
-      std::string outputName =
-          duplicated ? resolved.tableName + "." + resolved.column->name
-                     : resolved.column->name;
-      if (index < select.columnAliases.size() &&
-          select.columnAliases[index].has_value()) {
-        outputName = *select.columnAliases[index];
-      }
-      outputNames.push_back(std::move(outputName));
-    }
-  }
-
-  std::unordered_set<std::string> uniqueOutputNames;
-  for (const auto &name : outputNames) {
-    if (!uniqueOutputNames.insert(name).second) {
-      throw std::invalid_argument("Duplicate SELECT output column name: " +
-                                  name);
-    }
-  }
-}
-
-// Execute INNER JOIN entirely in QES using the existing public row-read port.
-// Both inputs and the joined result are in memory; matching is O(N x M).
-ResolvedJoinColumn
-resolveWhereJoinColumn(const std::string &name,
-                       const std::string &leftTableName,
-                       const std::vector<ColumnDefinition> &leftSchema,
-                       const std::string &rightTableName,
-                       const std::vector<ColumnDefinition> &rightSchema) {
-  const auto separator = name.find('.');
-  if (separator != std::string::npos) {
-    return resolveSelectedJoinColumn(name, leftTableName, leftSchema,
-                                     rightTableName, rightSchema);
-  }
-  const auto left =
-      std::find_if(leftSchema.begin(), leftSchema.end(),
-                   [&](const auto &column) { return column.name == name; });
-  const auto right =
-      std::find_if(rightSchema.begin(), rightSchema.end(),
-                   [&](const auto &column) { return column.name == name; });
-  const bool inLeft = left != leftSchema.end();
-  const bool inRight = right != rightSchema.end();
-  if (inLeft && inRight) {
-    throw std::invalid_argument("Ambiguous WHERE column: " + name);
-  }
-  if (!inLeft && !inRight) {
-    throw std::invalid_argument("Unknown WHERE column: " + name);
-  }
-  if (inLeft) {
-    return {&*left, leftTableName,
-            static_cast<std::size_t>(std::distance(leftSchema.begin(), left))};
-  }
-  return {&*right, rightTableName,
-          static_cast<std::size_t>(std::distance(rightSchema.begin(), right))};
-}
-
-std::string normalizeSingleTableColumnName(const std::string &name,
-                                           const std::string &tableQualifier) {
-  const auto separator = name.find('.');
-  if (separator == std::string::npos) {
-    return name;
-  }
-  if (name.find('.', separator + 1) != std::string::npos ||
-      name.substr(0, separator) != tableQualifier) {
-    throw std::invalid_argument("Unknown SELECT table reference: " +
-                                name.substr(0, separator));
-  }
-  return name.substr(separator + 1);
-}
-
-domain::CompiledTextFunction
-compileTextFunction(const TextFunctionExpression &expression,
-                    const std::vector<ColumnDefinition> &schema,
-                    const std::vector<SqlType> &types,
-                    const std::string &tableQualifier) {
-  const auto name =
-      normalizeSingleTableColumnName(expression.columnName, tableQualifier);
-  const auto found =
-      std::find_if(schema.begin(), schema.end(),
-                   [&](const auto &column) { return column.name == name; });
-  if (found == schema.end()) {
-    throw std::invalid_argument("Unknown SELECT column: " +
-                                expression.columnName);
-  }
-  const auto index =
-      static_cast<std::size_t>(std::distance(schema.begin(), found));
-  if (types[index] != SqlType::Text) {
-    throw std::invalid_argument("Scalar text functions require TEXT columns: " +
-                                expression.columnName);
-  }
-  return {expression.function, index};
-}
-
-std::string textFunctionName(TextFunction function) {
-  switch (function) {
-  case TextFunction::Upper:
-    return "UPPER";
-  case TextFunction::Lower:
-    return "LOWER";
-  case TextFunction::Length:
-    return "LENGTH";
-  }
-  throw std::invalid_argument("Unknown scalar text function");
-}
-
-domain::CompiledIntegerExpression
-compileIntegerExpression(const IntegerExpression &expression,
-                         const std::vector<ColumnDefinition> &schema,
-                         const std::vector<SqlType> &types,
-                         const std::string &tableQualifier) {
-  domain::CompiledIntegerExpression compiled;
-  compiled.kind = expression.kind;
-  if (expression.kind == IntegerExpression::Kind::Literal) {
-    compiled.literal = expression.literal;
-    return compiled;
-  }
-  if (expression.kind == IntegerExpression::Kind::Column) {
-    const auto name =
-        normalizeSingleTableColumnName(expression.columnName, tableQualifier);
-    const auto found =
-        std::find_if(schema.begin(), schema.end(),
-                     [&](const auto &column) { return column.name == name; });
-    if (found == schema.end()) {
-      throw std::invalid_argument("Unknown SELECT column: " +
-                                  expression.columnName);
-    }
-    const auto index =
-        static_cast<std::size_t>(std::distance(schema.begin(), found));
-    if (types[index] != SqlType::Int) {
-      throw std::invalid_argument("Integer arithmetic requires INT columns: " +
-                                  expression.columnName);
-    }
-    compiled.columnIndex = index;
-    return compiled;
-  }
-  if (expression.kind == IntegerExpression::Kind::Unary) {
-    if (!expression.operand) {
-      throw std::invalid_argument("Malformed unary integer expression");
-    }
-    compiled.unaryOperation = expression.unaryOperation;
-    compiled.operand = std::make_shared<domain::CompiledIntegerExpression>(
-        compileIntegerExpression(*expression.operand, schema, types,
-                                 tableQualifier));
-    return compiled;
-  }
-  if (!expression.left || !expression.right) {
-    throw std::invalid_argument("Malformed integer arithmetic expression");
-  }
-  compiled.operation = expression.operation;
-  compiled.left = std::make_shared<domain::CompiledIntegerExpression>(
-      compileIntegerExpression(*expression.left, schema, types,
-                               tableQualifier));
-  compiled.right = std::make_shared<domain::CompiledIntegerExpression>(
-      compileIntegerExpression(*expression.right, schema, types,
-                               tableQualifier));
-  return compiled;
-}
-
-WhereExpression
-normalizeSingleTableWhereColumns(const WhereExpression &expression,
-                                 const std::string &tableName) {
-  WhereExpression normalized = expression;
-  if (normalized.kind == WhereExpression::Kind::Predicate) {
-    const auto separator = normalized.predicate.columnName.find('.');
-    if (separator != std::string::npos) {
-      const std::string qualifier =
-          normalized.predicate.columnName.substr(0, separator);
-      if (qualifier != tableName ||
-          normalized.predicate.columnName.find('.', separator + 1) !=
-              std::string::npos) {
-        throw std::invalid_argument("Unknown WHERE table reference: " +
-                                    qualifier);
-      }
-      normalized.predicate.columnName =
-          normalized.predicate.columnName.substr(separator + 1);
-    }
-    return normalized;
-  }
-  for (auto &child : normalized.children) {
-    child = normalizeSingleTableWhereColumns(child, tableName);
-  }
-  return normalized;
-}
-
-WhereExpression
-qualifyJoinWhereColumns(const WhereExpression &expression,
-                        const std::string &leftTableName,
-                        const std::vector<ColumnDefinition> &leftSchema,
-                        const std::string &rightTableName,
-                        const std::vector<ColumnDefinition> &rightSchema) {
-  WhereExpression qualified = expression;
-  if (qualified.kind == WhereExpression::Kind::Predicate) {
-    const auto resolved =
-        resolveWhereJoinColumn(qualified.predicate.columnName, leftTableName,
-                               leftSchema, rightTableName, rightSchema);
-    qualified.predicate.columnName =
-        resolved.tableName + "." + resolved.column->name;
-    return qualified;
-  }
-  for (auto &child : qualified.children) {
-    child = qualifyJoinWhereColumns(child, leftTableName, leftSchema,
-                                    rightTableName, rightSchema);
-  }
-  return qualified;
-}
-
 QueryExecutionResult
 executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
                  const std::vector<ColumnDefinition> &leftSchema,
@@ -424,11 +46,11 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
   const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
-  const auto leftTypes = schemaTypes(leftSchema);
-  const auto rightTypes = schemaTypes(rightSchema);
-  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
+  const auto leftTypes = domain::schemaTypes(leftSchema);
+  const auto rightTypes = domain::schemaTypes(rightSchema);
+  const auto leftKey = domain::resolveJoinColumn(join.left, leftQualifier, leftSchema,
                                          rightQualifier, rightSchema);
-  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
+  const auto rightKey = domain::resolveJoinColumn(join.right, leftQualifier, leftSchema,
                                           rightQualifier, rightSchema);
   const std::size_t leftKeyIndex =
       leftKey.tableName == leftQualifier ? leftKey.index : rightKey.index;
@@ -452,7 +74,7 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
 
   std::optional<domain::CompiledWhereExpression> compiledWhere;
   if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
-    const auto qualified = qualifyJoinWhereColumns(
+    const auto qualified = domain::qualifyJoinWhereColumns(
         *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
     compiledWhere =
         domain::compileWhereExpression(qualified, joinedSchema, joinedTypes);
@@ -482,7 +104,7 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
       const auto resolved =
-          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
+          domain::resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
                                     leftSchema, rightQualifier, rightSchema);
       selectedIndexes.push_back(resolved.tableName == leftQualifier
                                     ? resolved.index
@@ -602,8 +224,8 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
         "CROSS JOIN currently supports simple SELECT projections and WHERE");
   }
 
-  const auto leftTypes = schemaTypes(leftSchema);
-  const auto rightTypes = schemaTypes(rightSchema);
+  const auto leftTypes = domain::schemaTypes(leftSchema);
+  const auto rightTypes = domain::schemaTypes(rightSchema);
   // Use fully-qualified internal names so WHERE can resolve either qualified
   // references or unqualified names after ambiguity checks.
   std::vector<ColumnDefinition> joinedSchema;
@@ -621,7 +243,7 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
 
   std::optional<domain::CompiledWhereExpression> compiledWhere;
   if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
-    const auto qualified = qualifyJoinWhereColumns(
+    const auto qualified = domain::qualifyJoinWhereColumns(
         *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
     compiledWhere =
         domain::compileWhereExpression(qualified, joinedSchema, joinedTypes);
@@ -651,7 +273,7 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
       const auto resolved =
-          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
+          domain::resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
                                     leftSchema, rightQualifier, rightSchema);
       selectedIndexes.push_back(resolved.tableName == leftQualifier
                                     ? resolved.index
@@ -743,7 +365,7 @@ QueryExecutionResult executeMultipleInnerJoins(
   std::vector<ColumnDefinition> combinedSchema;
   std::vector<SqlType> combinedTypes;
   std::vector<std::vector<SqlValue>> rows;
-  auto firstTypes = schemaTypes(schemas.front());
+  auto firstTypes = domain::schemaTypes(schemas.front());
   for (const auto &c : schemas.front()) {
     combinedSchema.push_back({qualifiers.front() + "." + c.name, c.type});
     combinedTypes.push_back(c.type);
@@ -809,7 +431,7 @@ QueryExecutionResult executeMultipleInnerJoins(
           "INNER JOIN columns must have matching types");
     const std::size_t priorIndex = lnew ? rr.first : l.first;
     const std::size_t newIndex = lnew ? l.first : rr.first;
-    const auto newTypes = schemaTypes(schemas[j + 1]);
+    const auto newTypes = domain::schemaTypes(schemas[j + 1]);
     std::vector<std::vector<SqlValue>> newRows;
     for (const auto &bytes : port.selectAllRows(join.tableName))
       newRows.push_back(SqlTupleCodec::decode(newTypes, bytes));
@@ -1025,7 +647,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
   if (const auto *insert = std::get_if<InsertStatement>(&statement)) {
     const auto schema = rdbServicePort.getTableDefinition(insert->tableName);
-    const auto types = schemaTypes(schema);
+    const auto types = domain::schemaTypes(schema);
     if (insert->rows.empty()) {
       throw std::invalid_argument("INSERT requires at least one VALUES row");
     }
@@ -1195,8 +817,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           rdbServicePort.getTableDefinition(select->tableName);
       const auto rightSchema =
           rdbServicePort.getTableDefinition(select->crossJoin->tableName);
-      schemaTypes(leftSchema);
-      schemaTypes(rightSchema);
+      domain::schemaTypes(leftSchema);
+      domain::schemaTypes(rightSchema);
       return executeCrossJoin(rdbServicePort, *select, leftSchema, rightSchema);
     }
     if (!select->innerJoins.empty()) {
@@ -1205,16 +827,16 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       for (const auto &join : select->innerJoins)
         schemas.push_back(rdbServicePort.getTableDefinition(join.tableName));
       for (const auto &schema : schemas)
-        schemaTypes(schema);
+        domain::schemaTypes(schema);
       if (select->innerJoins.size() == 1) {
-        validateInnerJoinColumns(*select, schemas[0], schemas[1]);
+        domain::validateInnerJoinColumns(*select, schemas[0], schemas[1]);
         return executeInnerJoin(rdbServicePort, *select, schemas[0],
                                 schemas[1]);
       }
       return executeMultipleInnerJoins(rdbServicePort, *select, schemas);
     }
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
-    const auto types = schemaTypes(schema);
+    const auto types = domain::schemaTypes(schema);
 
     const auto *where = std::get_if<WhereExpression>(&select->where);
     std::optional<domain::CompiledWhereExpression> compiledWhere;
@@ -1222,7 +844,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       const std::string tableQualifier =
           select->tableAlias.value_or(select->tableName);
       const auto normalized =
-          normalizeSingleTableWhereColumns(*where, tableQualifier);
+          domain::normalizeSingleTableWhereColumns(*where, tableQualifier);
       compiledWhere = domain::compileWhereExpression(normalized, schema, types);
     }
 
@@ -1278,12 +900,12 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           }
           const auto &expression = *select->textFunctions[itemIndex];
           const auto compiled =
-              compileTextFunction(expression, schema, types, tableQualifier);
+              domain::compileTextFunction(expression, schema, types, tableQualifier);
           selectedIndexes.push_back(schema.size());
           const auto alias = itemIndex < select->columnAliases.size()
                                  ? select->columnAliases[itemIndex]
                                  : std::optional<std::string>{};
-          const auto functionName = textFunctionName(expression.function);
+          const auto functionName = domain::textFunctionName(expression.function);
           const auto outputType = expression.function == TextFunction::Length
                                       ? SqlType::Int
                                       : SqlType::Text;
@@ -1302,7 +924,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                 "Integer expressions are not yet supported with JOIN");
           }
           const auto compiled =
-              compileIntegerExpression(*select->integerExpressions[itemIndex],
+              domain::compileIntegerExpression(*select->integerExpressions[itemIndex],
                                        schema, types, tableQualifier);
           selectedIndexes.push_back(schema.size());
           const auto alias = itemIndex < select->columnAliases.size()
@@ -1334,7 +956,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               throw std::invalid_argument(
                   "CASE result values must have the same type");
             }
-            const auto normalized = normalizeSingleTableWhereColumns(
+            const auto normalized = domain::normalizeSingleTableWhereColumns(
                 branch.condition, tableQualifier);
             branches.push_back(
                 domain::compileWhereExpression(normalized, schema, types));
@@ -1350,7 +972,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
         const auto &columnName = select->columnNames[itemIndex];
         const auto normalizedColumnName =
-            normalizeSingleTableColumnName(columnName, tableQualifier);
+            domain::normalizeSingleTableColumnName(columnName, tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == normalizedColumnName;
@@ -1427,7 +1049,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
 
         const auto normalizedOrderColumn =
-            normalizeSingleTableColumnName(order.columnName, tableQualifier);
+            domain::normalizeSingleTableColumnName(order.columnName, tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == normalizedOrderColumn;
@@ -1469,7 +1091,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
       for (const auto &groupColumn : select->groupBy) {
         const auto normalizedGroupColumn =
-            normalizeSingleTableColumnName(groupColumn, tableQualifier);
+            domain::normalizeSingleTableColumnName(groupColumn, tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == normalizedGroupColumn;
@@ -1571,7 +1193,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
 
         const auto normalizedOrderColumn =
-            normalizeSingleTableColumnName(order.columnName, tableQualifier);
+            domain::normalizeSingleTableColumnName(order.columnName, tableQualifier);
         const auto groupIndex = std::find_if(
             groupIndexes.begin(), groupIndexes.end(), [&](const auto index) {
               return schema[index].name == normalizedOrderColumn;
