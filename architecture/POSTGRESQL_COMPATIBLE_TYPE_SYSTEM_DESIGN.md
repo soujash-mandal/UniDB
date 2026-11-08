@@ -1,6 +1,6 @@
 # PostgreSQL-Compatible SQL Type System — Design Proposal
 
-> **Status: DRAFT — NOT APPROVED**
+> **Status: PROPOSED — READY FOR ARCHITECTURAL REVIEW; NOT YET APPROVED**
 >
 > This document is the first design deliverable for SIM-81. It proposes boundaries and a staged model for review. It does not authorize source-code changes, row-format changes, catalog migrations, or PostgreSQL-compatibility claims.
 
