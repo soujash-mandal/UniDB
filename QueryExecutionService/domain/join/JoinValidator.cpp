@@ -13,45 +13,99 @@ namespace QueryExecutionService::domain {
 using unidb::sql::ColumnDefinition;
 using unidb::sql::SelectStatement;
 
-  if (const auto *select = std::get_if<SelectStatement>(&statement)) {
-    if (select->crossJoin.has_value()) {
-      if (!select->innerJoins.empty()) {
-        throw std::invalid_argument(
-            "Mixing CROSS JOIN and INNER JOIN is not supported");
-      }
-      const auto leftSchema =
-          rdbServicePort.getTableDefinition(select->tableName);
-      const auto rightSchema =
-          rdbServicePort.getTableDefinition(select->crossJoin->tableName);
-      domain::schemaTypes(leftSchema);
-      domain::schemaTypes(rightSchema);
-      return executeCrossJoin(rdbServicePort, *select, leftSchema, rightSchema);
-    }
-    if (!select->innerJoins.empty()) {
-      std::vector<std::vector<ColumnDefinition>> schemas;
-      schemas.push_back(rdbServicePort.getTableDefinition(select->tableName));
-      for (const auto &join : select->innerJoins)
-        schemas.push_back(rdbServicePort.getTableDefinition(join.tableName));
-      for (const auto &schema : schemas)
-        domain::schemaTypes(schema);
-      if (select->innerJoins.size() == 1) {
-        domain::validateInnerJoinColumns(*select, schemas[0], schemas[1]);
-        return executeInnerJoin(rdbServicePort, *select, schemas[0],
-                                schemas[1]);
-      }
-      return executeMultipleInnerJoins(rdbServicePort, *select, schemas);
-    }
-    const auto schema = rdbServicePort.getTableDefinition(select->tableName);
-    const auto types = domain::schemaTypes(schema);
+void validateInnerJoinColumns(
+    const SelectStatement &select,
+    const std::vector<ColumnDefinition> &leftSchema,
+    const std::vector<ColumnDefinition> &rightSchema) {
+  const auto &join = select.innerJoins.front();
+  const std::string leftQualifier =
+      select.tableAlias.value_or(select.tableName);
+  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
+  if (leftQualifier == rightQualifier) {
+    throw std::invalid_argument("JOIN table aliases must be distinct");
+  }
+  if (select.tableName == join.tableName &&
+      (!select.tableAlias.has_value() || !join.tableAlias.has_value())) {
+    throw std::invalid_argument(
+        "Joining a table to itself requires distinct table aliases");
+  }
 
-    const auto *where = std::get_if<WhereExpression>(&select->where);
-    std::optional<domain::CompiledWhereExpression> compiledWhere;
-    if (where != nullptr) {
-      const std::string tableQualifier =
-          select->tableAlias.value_or(select->tableName);
-      const auto normalized =
-          domain::normalizeSingleTableWhereColumns(*where, tableQualifier);
-      compiledWhere = domain::compileWhereExpression(normalized, schema, types);
+  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
+                                         rightQualifier, rightSchema);
+  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
+                                          rightQualifier, rightSchema);
+  if (leftKey.tableName == rightKey.tableName) {
+    throw std::invalid_argument(
+        "INNER JOIN ON must compare columns from both tables");
+  }
+  if (leftKey.column->type != rightKey.column->type) {
+    throw std::invalid_argument("INNER JOIN columns must have matching types");
+  }
+
+  if (select.aggregate.has_value() || !select.groupBy.empty() ||
+      select.having.has_value() || select.distinct || !select.orderBy.empty() ||
+      select.limit.has_value() || select.offset != 0) {
+    throw std::invalid_argument(
+        "JOIN currently supports only a simple SELECT projection");
+  }
+
+  std::vector<std::string> outputNames;
+  if (select.selectAll) {
+    outputNames.reserve(leftSchema.size() + rightSchema.size());
+    for (const auto &column : leftSchema) {
+      const bool duplicated = std::any_of(
+          rightSchema.begin(), rightSchema.end(),
+          [&](const auto &right) { return right.name == column.name; });
+      outputNames.push_back(duplicated ? leftQualifier + "." + column.name
+                                       : column.name);
     }
+    for (const auto &column : rightSchema) {
+      const bool duplicated = std::any_of(
+          leftSchema.begin(), leftSchema.end(),
+          [&](const auto &left) { return left.name == column.name; });
+      outputNames.push_back(duplicated ? rightQualifier + "." + column.name
+                                       : column.name);
+    }
+  } else {
+    if (select.columnNames.empty()) {
+      throw std::invalid_argument("SELECT requires at least one column");
+    }
+    if (!select.columnAliases.empty() &&
+        select.columnAliases.size() != select.columnNames.size()) {
+      throw std::invalid_argument("SELECT alias count does not match columns");
+    }
+    outputNames.reserve(select.columnNames.size());
+    for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
+      const auto resolved =
+          resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
+                                    leftSchema, rightQualifier, rightSchema);
+      const bool duplicated =
+          std::any_of(leftSchema.begin(), leftSchema.end(),
+                      [&](const auto &column) {
+                        return column.name == resolved.column->name;
+                      }) &&
+          std::any_of(rightSchema.begin(), rightSchema.end(),
+                      [&](const auto &column) {
+                        return column.name == resolved.column->name;
+                      });
+      std::string outputName =
+          duplicated ? resolved.tableName + "." + resolved.column->name
+                     : resolved.column->name;
+      if (index < select.columnAliases.size() &&
+          select.columnAliases[index].has_value()) {
+        outputName = *select.columnAliases[index];
+      }
+      outputNames.push_back(std::move(outputName));
+    }
+  }
+
+  std::unordered_set<std::string> uniqueOutputNames;
+  for (const auto &name : outputNames) {
+    if (!uniqueOutputNames.insert(name).second) {
+      throw std::invalid_argument("Duplicate SELECT output column name: " +
+                                  name);
+    }
+  }
+}
 
 } // namespace QueryExecutionService::domain
