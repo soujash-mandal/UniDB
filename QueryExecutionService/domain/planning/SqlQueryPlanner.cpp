@@ -1,6 +1,6 @@
 #include "SqlQueryPlanner.h"
 
-#include "SqlExpressionCompiler.h"
+#include "../expression/SqlExpressionCompiler.h"
 #include "../aggregate/SqlAggregateCalculator.h"
 #include "../predicate/WhereExpressionNormalizer.h"
 #include "../predicate/WherePredicateEvaluator.h"
@@ -778,7 +778,7 @@ unidb::sql::QueryExecutionResult processSelectRows(
     QueryExecutionResult result;
     result.kind = QueryExecutionResultKind::Rows;
     result.message = "Rows selected";
-    result.columns = std::move(plan.selectedColumns);
+    result.columns = plan.selectedColumns;
     result.rows = std::move(projectedRows);
     return result;
 }
