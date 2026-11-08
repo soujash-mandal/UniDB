@@ -3,6 +3,10 @@
 #include "../domain/aggregate/SqlAggregateCalculator.h"
 #include "../domain/codec/SqlTupleCodec.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
+#include "../domain/expression/SqlExpressionCompiler.h"
+#include "../domain/join/JoinValidator.h"
+#include "../domain/predicate/WhereExpressionNormalizer.h"
+#include "../domain/schema/SqlSchemaResolver.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
 
 #include <algorithm>
@@ -36,9 +40,6 @@ using unidb::sql::WhereExpression;
 QueryExecutionError executionError(std::string message) {
   return {QueryExecutionErrorCode::ExecutionError, std::move(message)};
 }
-
-// Execute INNER JOIN entirely in QES using the existing public row-read port.
-// Both inputs and the joined result are in memory; matching is O(N x M).
 
 domain::
 
