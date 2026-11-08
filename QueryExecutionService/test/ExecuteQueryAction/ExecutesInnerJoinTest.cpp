@@ -1,5 +1,5 @@
 #include "../../actions/ExecuteQueryAction.h"
-#include "../../adapter/SqlTupleCodec.h"
+#include "../../domain/codec/SqlTupleCodec.h"
 #include "../../domain/parser/SqlParserImpl.h"
 #include "../../port/RdbServicePort.h"
 

@@ -97,7 +97,7 @@ set(UNIDB_SOURCES
     TupleService/actions/GetTupleAction.cpp
     TupleService/actions/GetAllTuplesAction.cpp
     TupleService/actions/DeleteTupleAction.cpp
-    QueryExecutionService/adapter/SqlTupleCodec.cpp
+    QueryExecutionService/domain/codec/SqlTupleCodec.cpp
     QueryExecutionService/adapter/RdbServiceAdapter.cpp
     QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
     QueryExecutionService/domain/expression/ScalarExpressionEvaluator.cpp

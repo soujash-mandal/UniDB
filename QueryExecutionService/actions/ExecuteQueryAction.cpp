@@ -1,7 +1,7 @@
 #include "ExecuteQueryAction.h"
 
-#include "../adapter/SqlTupleCodec.h"
 #include "../domain/aggregate/SqlAggregateCalculator.h"
+#include "../domain/codec/SqlTupleCodec.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
 
