@@ -2,6 +2,8 @@
 
 #include "../schema/SqlSchemaResolver.h"
 
+#include <stdexcept>
+
 namespace QueryExecutionService::domain {
 using unidb::sql::WhereExpression;
 
