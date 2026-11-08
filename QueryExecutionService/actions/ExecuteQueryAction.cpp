@@ -49,12 +49,6 @@ std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
   return types;
 }
 
-struct ResolvedJoinColumn {
-  const ColumnDefinition *column;
-  std::string tableName;
-  std::size_t index;
-};
-
 ResolvedJoinColumn
 resolveJoinColumn(const unidb::sql::ColumnReference &reference,
                   const std::string &leftTableName,
