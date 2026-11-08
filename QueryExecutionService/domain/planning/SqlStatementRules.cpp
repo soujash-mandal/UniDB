@@ -1,7 +1,7 @@
 #include "SqlStatementRules.h"
 
-#include "../schema/SqlSchemaResolver.h"
 #include "../codec/SqlTupleCodec.h"
+#include "../schema/SqlSchemaResolver.h"
 
 #include <algorithm>
 #include <set>
@@ -77,6 +77,7 @@ prepareInsertRows(const InsertStatement &statement,
   }
   return orderedRows;
 }
+
 std::vector<std::vector<char>>
 encodeInsertRows(const InsertStatement &statement,
                  const std::vector<ColumnDefinition> &schema) {
@@ -89,8 +90,6 @@ encodeInsertRows(const InsertStatement &statement,
   }
   return encodedRows;
 }
-
-
 
 QueryExecutionResult
 combineUnionResults(const std::vector<QueryExecutionResult> &branches,
