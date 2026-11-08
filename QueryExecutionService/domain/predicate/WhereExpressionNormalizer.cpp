@@ -5,55 +5,52 @@
 namespace QueryExecutionService::domain {
 using unidb::sql::WhereExpression;
 
-    const auto *where = std::get_if<WhereExpression>(&select->where);
-    std::optional<domain::CompiledWhereExpression> compiledWhere;
-    if (where != nullptr) {
-      const std::string tableQualifier =
-          select->tableAlias.value_or(select->tableName);
-      const auto normalized =
-          domain::normalizeSingleTableWhereColumns(*where, tableQualifier);
-      compiledWhere = domain::compileWhereExpression(normalized, schema, types);
+WhereExpression
+normalizeSingleTableWhereColumns(const WhereExpression &expression,
+                                 const std::string &tableName) {
+  WhereExpression normalized = expression;
+  if (normalized.kind == WhereExpression::Kind::Predicate) {
+    const auto separator = normalized.predicate.columnName.find('.');
+    if (separator != std::string::npos) {
+      const std::string qualifier =
+          normalized.predicate.columnName.substr(0, separator);
+      if (qualifier != tableName ||
+          normalized.predicate.columnName.find('.', separator + 1) !=
+              std::string::npos) {
+        throw std::invalid_argument("Unknown WHERE table reference: " +
+                                    qualifier);
+      }
+      normalized.predicate.columnName =
+          normalized.predicate.columnName.substr(separator + 1);
     }
-
-    std::vector<std::size_t> selectedIndexes;
-    std::vector<ColumnDefinition> selectedColumns;
-    std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
-        compiledCases;
-    std::vector<std::optional<domain::CompiledIntegerExpression>>
-        compiledIntegers;
-    std::vector<std::optional<domain::CompiledTextFunction>>
-        compiledTextFunctions;
-    if (select->aggregate.has_value() && select->groupBy.empty()) {
-      // Ungrouped aggregate queries produce a single computed output column.
-    }
-
-  std::optional<domain::CompiledWhereExpression> compiledWhere;
-  if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
-    const auto qualified = domain::qualifyJoinWhereColumns(
-        *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
-    compiledWhere =
-        domain::compileWhereExpression(qualified, joinedSchema, joinedTypes);
+    return normalized;
   }
-
-  std::vector<std::size_t> selectedIndexes;
-  std::vector<ColumnDefinition> selectedColumns;
-  if (select.selectAll) {
-    selectedIndexes.reserve(joinedSchema.size());
-    selectedColumns.reserve(joinedSchema.size());
-    for (std::size_t index = 0; index < joinedSchema.size(); ++index) {
-      selectedIndexes.push_back(index);
-      const bool isLeft = index < leftSchema.size();
-      const auto &sourceColumn =
-          isLeft ? leftSchema[index] : rightSchema[index - leftSchema.size()];
-      const auto &otherSchema = isLeft ? rightSchema : leftSchema;
-      const bool duplicated = std::any_of(
-          otherSchema.begin(), otherSchema.end(),
-          [&](const auto &other) { return other.name == sourceColumn.name; });
-      const std::string &tableName = isLeft ? leftQualifier : rightQualifier;
-      selectedColumns.push_back(
-          {duplicated ? tableName + "." + sourceColumn.name : sourceColumn.name,
-           sourceColumn.type});
-    }
+  for (auto &child : normalized.children) {
+    child = normalizeSingleTableWhereColumns(child, tableName);
   }
+  return normalized;
+}
+
+WhereExpression
+qualifyJoinWhereColumns(const WhereExpression &expression,
+                        const std::string &leftTableName,
+                        const std::vector<ColumnDefinition> &leftSchema,
+                        const std::string &rightTableName,
+                        const std::vector<ColumnDefinition> &rightSchema) {
+  WhereExpression qualified = expression;
+  if (qualified.kind == WhereExpression::Kind::Predicate) {
+    const auto resolved =
+        resolveWhereJoinColumn(qualified.predicate.columnName, leftTableName,
+                               leftSchema, rightTableName, rightSchema);
+    qualified.predicate.columnName =
+        resolved.tableName + "." + resolved.column->name;
+    return qualified;
+  }
+  for (auto &child : qualified.children) {
+    child = qualifyJoinWhereColumns(child, leftTableName, leftSchema,
+                                    rightTableName, rightSchema);
+  }
+  return qualified;
+}
 
 } // namespace QueryExecutionService::domain
