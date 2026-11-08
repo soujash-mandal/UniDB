@@ -133,23 +133,14 @@ SelectPlan buildSelectPlan(
   plan.types = schemaTypes(schema);
   const auto &types = plan.types;
     const auto *where = std::get_if<WhereExpression>(&select.where);
-    std::optional<domain::CompiledWhereExpression> plan.compiledWhere;
     if (where != nullptr) {
       const std::string tableQualifier =
           select.tableAlias.value_or(select.tableName);
       const auto normalized =
-          domain::normalizeSingleTableWhereColumns(*where, tableQualifier);
-      plan.compiledWhere = domain::compileWhereExpression(normalized, schema, types);
+          normalizeSingleTableWhereColumns(*where, tableQualifier);
+      plan.compiledWhere = compileWhereExpression(normalized, schema, types);
     }
 
-    std::vector<std::size_t> plan.selectedIndexes;
-    std::vector<ColumnDefinition> plan.selectedColumns;
-    std::vector<std::optional<std::vector<domain::CompiledWhereExpression>>>
-        plan.compiledCases;
-    std::vector<std::optional<domain::CompiledIntegerExpression>>
-        plan.compiledIntegers;
-    std::vector<std::optional<domain::CompiledTextFunction>>
-        plan.compiledTextFunctions;
     if (select.aggregate.has_value() && select.groupBy.empty()) {
       // Ungrouped aggregate queries produce a single computed output column.
     } else if (select.selectAll) {
@@ -193,14 +184,14 @@ SelectPlan buildSelectPlan(
                 "Scalar text functions are not yet supported with JOIN");
           }
           const auto &expression = *select.textFunctions[itemIndex];
-          const auto compiled = domain::compileTextFunction(
+          const auto compiled = compileTextFunction(
               expression, schema, types, tableQualifier);
           plan.selectedIndexes.push_back(schema.size());
           const auto alias = itemIndex < select.columnAliases.size()
                                  ? select.columnAliases[itemIndex]
                                  : std::optional<std::string>{};
           const auto functionName =
-              domain::textFunctionName(expression.function);
+              textFunctionName(expression.function);
           const auto outputType = expression.function == TextFunction::Length
                                       ? SqlType::Int
                                       : SqlType::Text;
@@ -218,7 +209,7 @@ SelectPlan buildSelectPlan(
             throw std::invalid_argument(
                 "Integer expressions are not yet supported with JOIN");
           }
-          const auto compiled = domain::compileIntegerExpression(
+          const auto compiled = compileIntegerExpression(
               *select.integerExpressions[itemIndex], schema, types,
               tableQualifier);
           plan.selectedIndexes.push_back(schema.size());
@@ -243,7 +234,7 @@ SelectPlan buildSelectPlan(
           const SqlValue &elseValue = caseExpression.elseResult;
           const bool resultIsInt =
               std::holds_alternative<std::int64_t>(elseValue);
-          std::vector<domain::CompiledWhereExpression> branches;
+          std::vector<CompiledWhereExpression> branches;
           branches.reserve(caseExpression.branches.size());
           for (const auto &branch : caseExpression.branches) {
             if (std::holds_alternative<std::int64_t>(branch.result) !=
@@ -251,10 +242,10 @@ SelectPlan buildSelectPlan(
               throw std::invalid_argument(
                   "CASE result values must have the same type");
             }
-            const auto normalized = domain::normalizeSingleTableWhereColumns(
+            const auto normalized = normalizeSingleTableWhereColumns(
                 branch.condition, tableQualifier);
             branches.push_back(
-                domain::compileWhereExpression(normalized, schema, types));
+                compileWhereExpression(normalized, schema, types));
           }
           plan.selectedIndexes.push_back(schema.size());
           plan.selectedColumns.push_back(
@@ -267,7 +258,7 @@ SelectPlan buildSelectPlan(
         }
         const auto &columnName = select.columnNames[itemIndex];
         const auto normalizedColumnName =
-            domain::normalizeSingleTableColumnName(columnName, tableQualifier);
+            normalizeSingleTableColumnName(columnName, tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == normalizedColumnName;
@@ -338,7 +329,7 @@ SelectPlan buildSelectPlan(
         }
 
         const auto normalizedOrderColumn =
-            domain::normalizeSingleTableColumnName(order.columnName,
+            normalizeSingleTableColumnName(order.columnName,
                                                    tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
@@ -379,7 +370,7 @@ SelectPlan buildSelectPlan(
       }
       for (const auto &groupColumn : select.groupBy) {
         const auto normalizedGroupColumn =
-            domain::normalizeSingleTableColumnName(groupColumn, tableQualifier);
+            normalizeSingleTableColumnName(groupColumn, tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == normalizedGroupColumn;
@@ -476,7 +467,7 @@ SelectPlan buildSelectPlan(
         }
 
         const auto normalizedOrderColumn =
-            domain::normalizeSingleTableColumnName(order.columnName,
+            normalizeSingleTableColumnName(order.columnName,
                                                    tableQualifier);
         const auto groupIndex = std::find_if(
             plan.groupIndexes.begin(), plan.groupIndexes.end(), [&](const auto index) {
@@ -548,12 +539,12 @@ unidb::sql::QueryExecutionResult processSelectRows(
             aggregateValues.push_back((*row)[*plan.aggregateIndex]);
           }
         }
-        SqlValue aggregateValue = domain::calculateAggregate(
+        SqlValue aggregateValue = calculateAggregate(
             aggregate.function, aggregateValues, rows.size());
 
         if (select.having.has_value()) {
           const int comparison =
-              domain::compareSqlValues(aggregateValue, select.having->value);
+              compareSqlValues(aggregateValue, select.having->value);
           bool matches = false;
           switch (select.having->comparison) {
           case ComparisonOperator::Equal:
@@ -592,7 +583,7 @@ unidb::sql::QueryExecutionResult processSelectRows(
         std::stable_sort(result.rows.begin(), result.rows.end(),
                          [&](const auto &left, const auto &right) {
                            for (const auto &order : plan.groupedOrderIndexes) {
-                             const int comparison = domain::compareSqlValues(
+                             const int comparison = compareSqlValues(
                                  left[order.index], right[order.index]);
                              if (comparison != 0) {
                                return order.ascending ? comparison < 0
@@ -644,7 +635,7 @@ unidb::sql::QueryExecutionResult processSelectRows(
           aggregateValues.push_back(row[*plan.aggregateIndex]);
         }
       }
-      result.rows.push_back({domain::calculateAggregate(
+      result.rows.push_back({calculateAggregate(
           aggregate.function, aggregateValues, matchedRows.size())});
       return result;
     }
@@ -679,11 +670,11 @@ unidb::sql::QueryExecutionResult processSelectRows(
       for (std::size_t index = 0; index < plan.selectedIndexes.size(); ++index) {
         if (index < plan.compiledTextFunctions.size() &&
             plan.compiledTextFunctions[index].has_value()) {
-          projected.push_back(domain::evaluateTextFunction(
+          projected.push_back(evaluateTextFunction(
               decoded, *plan.compiledTextFunctions[index]));
         } else if (index < plan.compiledIntegers.size() &&
                    plan.compiledIntegers[index].has_value()) {
-          projected.push_back(domain::evaluateIntegerExpression(
+          projected.push_back(evaluateIntegerExpression(
               decoded, *plan.compiledIntegers[index]));
         } else if (index < plan.compiledCases.size() &&
                    plan.compiledCases[index].has_value()) {
@@ -691,7 +682,7 @@ unidb::sql::QueryExecutionResult processSelectRows(
           bool matched = false;
           for (std::size_t branchIndex = 0;
                branchIndex < plan.compiledCases[index]->size(); ++branchIndex) {
-            if (domain::matchesWhereExpression(
+            if (matchesWhereExpression(
                     decoded, (*plan.compiledCases[index])[branchIndex])) {
               projected.push_back(caseExpression.branches[branchIndex].result);
               matched = true;
@@ -734,7 +725,7 @@ unidb::sql::QueryExecutionResult processSelectRows(
               const auto &right = order.projected
                                       ? projectedRows[rightIndex][order.index]
                                       : matchedRows[rightIndex][order.index];
-              const int comparison = domain::compareSqlValues(left, right);
+              const int comparison = compareSqlValues(left, right);
               if (comparison != 0) {
                 return order.ascending ? comparison < 0 : comparison > 0;
               }
