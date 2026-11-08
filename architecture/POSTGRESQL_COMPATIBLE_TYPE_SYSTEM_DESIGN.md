@@ -163,7 +163,7 @@ The following sequence is provisional and should be split into small owning-serv
 7. **Temporal family:** DATE, TIME, TIMESTAMP, timezone-aware values and INTERVAL.
 8. **BYTEA and UUID.**
 9. **JSON and JSONB.**
-10. **Compatibility audit:** PostgreSQL 18 comparison tests, documented deviations, legacy database tests and end-to-end SQL coverage.
+10. **Compatibility audit:** PostgreSQL 18 comparison tests, documented deviations, format-safety tests and end-to-end SQL coverage.
 
 Do not treat the family list as a fixed PR count. The approved design and dependency graph should determine the actual ticket/PR boundaries.
 
@@ -173,7 +173,7 @@ Every type family needs tests at multiple boundaries:
 
 - Parser: canonical names, aliases, modifiers, typed literals, invalid syntax.
 - Type domain: ranges, precision, scale, casts, coercion matrix, comparisons, arithmetic, sorting and error cases.
-- Catalog: metadata round trips, old catalog payload fixtures, unknown type identifiers and invalid modifiers.
+- Catalog: metadata round trips, unknown type identifiers, invalid modifiers, and explicit format-version handling.
 - Codec: encode/decode round trips, exact byte fixtures, malformed/truncated data, wrong schema, unknown format version.
 - QES integration: CREATE TABLE, INSERT, SELECT, predicates, JOIN where supported, ORDER BY, GROUP BY and aggregates where applicable.
 - Format safety: new-format fixtures verify version checks, deterministic decoding, and clear rejection of unknown versions or malformed data. Existing database fixtures do not need to remain readable.
@@ -189,7 +189,7 @@ The following decisions are intentionally left open for review:
 2. Which exact runtime value wrappers are needed, and which decimal/date-time/JSON libraries are acceptable?
 3. What is the SQL contract boundary for parsed types and values while preserving the isolated type-folder rule?
 4. How should canonical type identifiers and modifiers be persisted without relying on unstable enum ordinals?
-5. What is the exact mapping between the legacy SQL INT (64-bit physical encoding) and PostgreSQL INTEGER/BIGINT semantics?
+5. Confirm the clean-break type mapping: existing SQL INT becomes PostgreSQL INTEGER (32-bit); BIGINT is a separate 64-bit type.
 6. Which new table/row format versioning decision is approved by SIM-78?
 7. What is the supported character encoding and collation baseline?
 8. What timezone and session-timezone behaviour is in scope for the first temporal release?
