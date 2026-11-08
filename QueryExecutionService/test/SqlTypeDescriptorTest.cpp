@@ -21,10 +21,10 @@ TEST(SqlTypeDescriptorTest, StoresTypeSpecificModifiersWithoutEncodingPolicy) {
   using unidb::sql::SqlTypeId;
 
   const SqlTypeDescriptor varchar{SqlTypeId::Varchar, {.length = 64}};
-  const SqlTypeDescriptor numeric{
-      SqlTypeId::Numeric, {.precision = 12, .scale = 3}};
-  const SqlTypeDescriptor timestamp{
-      SqlTypeId::Timestamp, {.temporalPrecision = 6}};
+  const SqlTypeDescriptor numeric{SqlTypeId::Numeric,
+                                  {.precision = 12, .scale = 3}};
+  const SqlTypeDescriptor timestamp{SqlTypeId::Timestamp,
+                                    {.temporalPrecision = 6}};
 
   EXPECT_EQ(varchar.modifier.length, 64U);
   EXPECT_EQ(numeric.modifier.precision, 12U);
