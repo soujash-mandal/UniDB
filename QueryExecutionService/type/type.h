@@ -2,12 +2,60 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
 
 namespace unidb::sql {
 
+// Canonical SQL type identities. Parser aliases resolve to these identities;
+// aliases are not represented as separate runtime types.
+enum class SqlTypeId : std::uint8_t {
+  SmallInt,
+  Integer,
+  BigInt,
+  Real,
+  DoublePrecision,
+  Numeric,
+  Boolean,
+  Char,
+  Varchar,
+  Text,
+  Date,
+  Time,
+  TimeWithTimeZone,
+  Timestamp,
+  TimestampWithTimeZone,
+  Interval,
+  Bytea,
+  Uuid,
+  Json,
+  Jsonb
+};
+
+// Type-specific declaration modifiers. The type-domain validator determines
+// which fields are valid for each SqlTypeId and checks their PostgreSQL ranges.
+struct SqlTypeModifier {
+  std::optional<std::uint32_t> length;
+  std::optional<std::uint32_t> precision;
+  std::optional<std::int32_t> scale;
+  std::optional<std::uint32_t> temporalPrecision;
+
+  bool operator==(const SqlTypeModifier &) const = default;
+};
+
+// A declared SQL type is its canonical identity plus any validated modifiers.
+// It is independent of runtime values and physical row encoding.
+struct SqlTypeDescriptor {
+  SqlTypeId id;
+  SqlTypeModifier modifier;
+
+  bool operator==(const SqlTypeDescriptor &) const = default;
+};
+
+// Transitional execution type used by the existing INT/TEXT codec and query
+// implementation. It remains unchanged until each type family is integrated.
 enum class SqlType { Int, Text };
 
 using SqlValue = std::variant<std::int64_t, std::string>;
