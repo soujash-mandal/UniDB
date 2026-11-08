@@ -49,6 +49,16 @@ uint32_t RdbServiceAdapter::createTable(
   table.name = statement.tableName;
   table.columns.reserve(statement.columns.size());
   for (const auto &column : statement.columns) {
+    if (column.declaredType.has_value()) {
+      switch (column.declaredType->id) {
+      case unidb::sql::SqlTypeId::Integer:
+      case unidb::sql::SqlTypeId::Text:
+        break;
+      default:
+        throw std::invalid_argument(
+            "CREATE TABLE type is recognized but not yet supported by storage");
+      }
+    }
     const auto type = toRdbType(column.type);
     const uint16_t size =
         type == RdbDataType::VARCHAR ? std::numeric_limits<uint16_t>::max() : 0;

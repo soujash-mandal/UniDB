@@ -65,6 +65,7 @@ using SqlValue = std::variant<std::int64_t, std::string>;
 struct ColumnDefinition {
   std::string name;
   SqlType type;
+  std::optional<SqlTypeDescriptor> declaredType;
 };
 
 } // namespace unidb::sql
