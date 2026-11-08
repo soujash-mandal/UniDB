@@ -5,10 +5,10 @@
 #include "../domain/expression/ScalarExpressionEvaluator.h"
 #include "../domain/expression/SqlExpressionCompiler.h"
 #include "../domain/join/JoinValidator.h"
+#include "../domain/planning/SqlQueryPlanner.h"
 #include "../domain/predicate/WhereExpressionNormalizer.h"
 #include "../domain/predicate/WherePredicateEvaluator.h"
 #include "../domain/schema/SqlSchemaResolver.h"
-#include "../domain/planning/SqlQueryPlanner.h"
 
 #include <algorithm>
 #include <functional>

@@ -25,7 +25,8 @@ struct SelectPlan {
   std::optional<CompiledWhereExpression> compiledWhere;
   std::vector<std::size_t> selectedIndexes;
   std::vector<unidb::sql::ColumnDefinition> selectedColumns;
-  std::vector<std::optional<std::vector<CompiledWhereExpression>>> compiledCases;
+  std::vector<std::optional<std::vector<CompiledWhereExpression>>>
+      compiledCases;
   std::vector<std::optional<CompiledIntegerExpression>> compiledIntegers;
   std::vector<std::optional<CompiledTextFunction>> compiledTextFunctions;
   std::vector<OrderIndex> orderIndexes;
@@ -40,16 +41,17 @@ std::vector<std::vector<unidb::sql::SqlValue>>
 prepareInsertRows(const unidb::sql::InsertStatement &statement,
                   const std::vector<unidb::sql::ColumnDefinition> &schema);
 
+QueryExecutionService::QueryExecutionResult combineUnionResults(
+    const std::vector<QueryExecutionService::QueryExecutionResult> &branches,
+    bool removeDuplicates);
+
+SelectPlan
+buildSelectPlan(const unidb::sql::SelectStatement &select,
+                const std::vector<unidb::sql::ColumnDefinition> &schema);
+
 QueryExecutionService::QueryExecutionResult
-combineUnionResults(const std::vector<QueryExecutionService::QueryExecutionResult> &branches,
-                    bool removeDuplicates);
-
-SelectPlan buildSelectPlan(
-    const unidb::sql::SelectStatement &select,
-    const std::vector<unidb::sql::ColumnDefinition> &schema);
-
-QueryExecutionService::QueryExecutionResult processSelectRows(
-    const unidb::sql::SelectStatement &select, const SelectPlan &plan,
-    std::vector<std::vector<unidb::sql::SqlValue>> matchedRows);
+processSelectRows(const unidb::sql::SelectStatement &select,
+                  const SelectPlan &plan,
+                  std::vector<std::vector<unidb::sql::SqlValue>> matchedRows);
 
 } // namespace QueryExecutionService::domain
