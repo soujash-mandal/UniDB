@@ -3,8 +3,8 @@
 #include "../domain/aggregate/SqlAggregateCalculator.h"
 #include "../domain/codec/SqlTupleCodec.h"
 #include "../domain/expression/ScalarExpressionEvaluator.h"
-#include "../domain/predicate/WherePredicateEvaluator.h"
 #include "../domain/planning/SqlQueryRules.h"
+#include "../domain/predicate/WherePredicateEvaluator.h"
 
 #include <algorithm>
 #include <functional>
@@ -48,10 +48,10 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
   const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
   const auto leftTypes = domain::schemaTypes(leftSchema);
   const auto rightTypes = domain::schemaTypes(rightSchema);
-  const auto leftKey = domain::resolveJoinColumn(join.left, leftQualifier, leftSchema,
-                                         rightQualifier, rightSchema);
-  const auto rightKey = domain::resolveJoinColumn(join.right, leftQualifier, leftSchema,
-                                          rightQualifier, rightSchema);
+  const auto leftKey = domain::resolveJoinColumn(
+      join.left, leftQualifier, leftSchema, rightQualifier, rightSchema);
+  const auto rightKey = domain::resolveJoinColumn(
+      join.right, leftQualifier, leftSchema, rightQualifier, rightSchema);
   const std::size_t leftKeyIndex =
       leftKey.tableName == leftQualifier ? leftKey.index : rightKey.index;
   const std::size_t rightKeyIndex =
@@ -103,9 +103,9 @@ executeInnerJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     selectedIndexes.reserve(select.columnNames.size());
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved =
-          domain::resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
-                                    leftSchema, rightQualifier, rightSchema);
+      const auto resolved = domain::resolveSelectedJoinColumn(
+          select.columnNames[index], leftQualifier, leftSchema, rightQualifier,
+          rightSchema);
       selectedIndexes.push_back(resolved.tableName == leftQualifier
                                     ? resolved.index
                                     : leftSchema.size() + resolved.index);
@@ -272,9 +272,9 @@ executeCrossJoin(RdbServicePort &rdbServicePort, const SelectStatement &select,
     selectedIndexes.reserve(select.columnNames.size());
     selectedColumns.reserve(select.columnNames.size());
     for (std::size_t index = 0; index < select.columnNames.size(); ++index) {
-      const auto resolved =
-          domain::resolveSelectedJoinColumn(select.columnNames[index], leftQualifier,
-                                    leftSchema, rightQualifier, rightSchema);
+      const auto resolved = domain::resolveSelectedJoinColumn(
+          select.columnNames[index], leftQualifier, leftSchema, rightQualifier,
+          rightSchema);
       selectedIndexes.push_back(resolved.tableName == leftQualifier
                                     ? resolved.index
                                     : leftSchema.size() + resolved.index);
@@ -899,13 +899,14 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
                 "Scalar text functions are not yet supported with JOIN");
           }
           const auto &expression = *select->textFunctions[itemIndex];
-          const auto compiled =
-              domain::compileTextFunction(expression, schema, types, tableQualifier);
+          const auto compiled = domain::compileTextFunction(
+              expression, schema, types, tableQualifier);
           selectedIndexes.push_back(schema.size());
           const auto alias = itemIndex < select->columnAliases.size()
                                  ? select->columnAliases[itemIndex]
                                  : std::optional<std::string>{};
-          const auto functionName = domain::textFunctionName(expression.function);
+          const auto functionName =
+              domain::textFunctionName(expression.function);
           const auto outputType = expression.function == TextFunction::Length
                                       ? SqlType::Int
                                       : SqlType::Text;
@@ -923,9 +924,9 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
             throw std::invalid_argument(
                 "Integer expressions are not yet supported with JOIN");
           }
-          const auto compiled =
-              domain::compileIntegerExpression(*select->integerExpressions[itemIndex],
-                                       schema, types, tableQualifier);
+          const auto compiled = domain::compileIntegerExpression(
+              *select->integerExpressions[itemIndex], schema, types,
+              tableQualifier);
           selectedIndexes.push_back(schema.size());
           const auto alias = itemIndex < select->columnAliases.size()
                                  ? select->columnAliases[itemIndex]
@@ -1049,7 +1050,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
 
         const auto normalizedOrderColumn =
-            domain::normalizeSingleTableColumnName(order.columnName, tableQualifier);
+            domain::normalizeSingleTableColumnName(order.columnName,
+                                                   tableQualifier);
         const auto found =
             std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
               return column.name == normalizedOrderColumn;
@@ -1193,7 +1195,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         }
 
         const auto normalizedOrderColumn =
-            domain::normalizeSingleTableColumnName(order.columnName, tableQualifier);
+            domain::normalizeSingleTableColumnName(order.columnName,
+                                                   tableQualifier);
         const auto groupIndex = std::find_if(
             groupIndexes.begin(), groupIndexes.end(), [&](const auto index) {
               return schema[index].name == normalizedOrderColumn;

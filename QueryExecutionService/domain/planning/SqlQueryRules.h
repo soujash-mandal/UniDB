@@ -1,8 +1,8 @@
 #pragma once
 
+#include "../../type/type.h"
 #include "../contract/sqlStatement.h"
 #include "../expression/ScalarExpressionEvaluator.h"
-#include "../../type/type.h"
 
 #include <string>
 #include <vector>
@@ -33,10 +33,9 @@ resolveSelectedJoinColumn(const std::string &name,
                           const std::string &rightTableName,
                           const std::vector<ColumnDefinition> &rightSchema);
 
-void validateInnerJoinColumns(
-    const SelectStatement &select,
-    const std::vector<ColumnDefinition> &leftSchema,
-    const std::vector<ColumnDefinition> &rightSchema);
+void validateInnerJoinColumns(const SelectStatement &select,
+                              const std::vector<ColumnDefinition> &leftSchema,
+                              const std::vector<ColumnDefinition> &rightSchema);
 
 ResolvedJoinColumn
 resolveWhereJoinColumn(const std::string &name,

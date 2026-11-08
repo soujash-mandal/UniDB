@@ -321,21 +321,21 @@ compileIntegerExpression(const IntegerExpression &expression,
       throw std::invalid_argument("Malformed unary integer expression");
     }
     compiled.unaryOperation = expression.unaryOperation;
-    compiled.operand = std::make_shared<CompiledIntegerExpression>(
-        compileIntegerExpression(*expression.operand, schema, types,
-                                 tableQualifier));
+    compiled.operand =
+        std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+            *expression.operand, schema, types, tableQualifier));
     return compiled;
   }
   if (!expression.left || !expression.right) {
     throw std::invalid_argument("Malformed integer arithmetic expression");
   }
   compiled.operation = expression.operation;
-  compiled.left = std::make_shared<CompiledIntegerExpression>(
-      compileIntegerExpression(*expression.left, schema, types,
-                               tableQualifier));
-  compiled.right = std::make_shared<CompiledIntegerExpression>(
-      compileIntegerExpression(*expression.right, schema, types,
-                               tableQualifier));
+  compiled.left =
+      std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+          *expression.left, schema, types, tableQualifier));
+  compiled.right =
+      std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
+          *expression.right, schema, types, tableQualifier));
   return compiled;
 }
 
