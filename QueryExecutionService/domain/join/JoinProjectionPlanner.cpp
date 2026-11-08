@@ -41,6 +41,7 @@ JoinProjectionPlan buildJoinProjectionPlan(
     throw std::invalid_argument("SELECT alias count does not match columns");
   }
 
+  // JOIN row indexes follow the concatenated order of the input schemas.
   JoinProjectionPlan plan;
   if (select.selectAll) {
     for (std::size_t tableIndex = 0; tableIndex < schemas.size();
