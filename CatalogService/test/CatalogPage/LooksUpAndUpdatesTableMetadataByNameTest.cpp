@@ -10,13 +10,15 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   table.tableId = 11;
   table.name = "users";
   table.columns = {{"id", DataType::INT, 0, false},
-                   {"name", DataType::VARCHAR, 64, false}};
+                   {"name", DataType::VARCHAR, 64, false},
+                   {"small_count", DataType::SMALLINT, 0, false}};
   page.insert(table);
 
   Table loaded = page.getByName("users");
   EXPECT_EQ(loaded.tableId, 11U);
-  ASSERT_EQ(loaded.columns.size(), 2U);
+  ASSERT_EQ(loaded.columns.size(), 3U);
   EXPECT_EQ(loaded.columns[1].name, "name");
+  EXPECT_EQ(loaded.columns[2].type, DataType::SMALLINT);
   page.update(loaded);
 
   EXPECT_EQ(page.getByName("users").name, "users");

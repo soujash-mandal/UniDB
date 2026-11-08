@@ -20,6 +20,8 @@ DataType toCatalogType(RdbDataType type) {
     return DataType::BOOLEAN;
   case RdbDataType::VARCHAR:
     return DataType::VARCHAR;
+  case RdbDataType::SMALLINT:
+    return DataType::SMALLINT;
   }
   throw std::invalid_argument("Unsupported RDB column type");
 }
