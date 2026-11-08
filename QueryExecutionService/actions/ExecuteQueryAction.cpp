@@ -711,8 +711,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto plan = domain::buildSelectPlan(*select, schema);
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
-    auto matchedRows =
-        domain::decodeAndFilterRows(encodedRows, plan.types, plan.compiledWhere);
+    auto matchedRows = domain::decodeAndFilterRows(encodedRows, plan.types,
+                                                   plan.compiledWhere);
     return domain::processSelectRows(*select, plan, std::move(matchedRows));
   }
 
