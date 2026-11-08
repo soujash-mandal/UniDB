@@ -40,15 +40,15 @@ std::vector<std::vector<unidb::sql::SqlValue>>
 prepareInsertRows(const unidb::sql::InsertStatement &statement,
                   const std::vector<unidb::sql::ColumnDefinition> &schema);
 
-unidb::sql::QueryExecutionResult
-combineUnionResults(const std::vector<unidb::sql::QueryExecutionResult> &branches,
+QueryExecutionService::QueryExecutionResult
+combineUnionResults(const std::vector<QueryExecutionService::QueryExecutionResult> &branches,
                     bool removeDuplicates);
 
 SelectPlan buildSelectPlan(
     const unidb::sql::SelectStatement &select,
     const std::vector<unidb::sql::ColumnDefinition> &schema);
 
-unidb::sql::QueryExecutionResult processSelectRows(
+QueryExecutionService::QueryExecutionResult processSelectRows(
     const unidb::sql::SelectStatement &select, const SelectPlan &plan,
     std::vector<std::vector<unidb::sql::SqlValue>> matchedRows);
 
