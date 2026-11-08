@@ -34,7 +34,7 @@ The current main-branch implementation has several distinct representations that
 6. `RdbService/domain/RdbTable.h` has a separate RDB-owned `RdbDataType` enum with similar values. The QES adapter currently maps only SQL INT and TEXT into the RDB model.
 7. Catalog and RDB type enums therefore do not yet represent the full SQL type system, and SQL type identity is not currently persisted as a complete canonical type plus modifiers.
 
-Existing database compatibility is a hard requirement. The existing INT encoding is physically 64-bit even though the SQL spelling is INT. Changing the meaning or width of that existing type in place would make legacy rows unsafe to decode.
+Legacy database compatibility is explicitly out of scope. UniDB may change the meaning and physical width of existing SQL types, replace the row format, and require existing database files to be recreated. This is acceptable because there are no existing users or user databases that need to be preserved.
 
 ## 3. Proposed conceptual model
 
@@ -74,9 +74,7 @@ Do not choose a final C++ variant layout until the numeric, temporal, JSON, and 
 
 The row codec is a persistence boundary. It must encode a declared schema and runtime values without deciding SQL coercion rules.
 
-The codec must be able to select a versioned encoding from trusted table metadata. It must reject malformed, truncated, incompatible, or unsupported data rather than guessing.
-
-The current V1 codec remains available for existing V1 tables. A new encoding must never be inferred from an arbitrary prefix in legacy tuple bytes.
+The codec must use an explicit database/format version so UniDB can identify which layout it is reading. It must reject malformed, truncated, incompatible, or unsupported data rather than guessing. Since backward compatibility is not required, the implementation may replace the current V1 row format instead of retaining a legacy decoder. Format versioning is still required for safe future evolution.
 
 ## 4. Type registry and ownership proposal
 
@@ -91,7 +89,7 @@ Proposed ownership:
 | QES domain | Pure type resolution, validation, coercion, comparison, arithmetic and expression semantics; query execution orchestration remains in Actions. |
 | QES adapter | Translate SQL-owned schema/value representations to and from the RDB public Action-backed interface. No direct CatalogService or TupleService imports in QES. |
 | RDBService | Own its public table metadata model and Actions. Translate its model through its own adapters; do not expose CatalogService internal types. |
-| CatalogService | Persist catalog-owned canonical type identifiers and modifiers, with backward-compatible deserialization. |
+| CatalogService | Persist catalog-owned canonical type identifiers and modifiers using a deliberate, versioned catalog format. Existing catalog payload compatibility is not required. |
 | TupleService | Continue storing opaque row bytes; it must not interpret SQL types or SQL values. |
 | Container | Wire the existing Actions and adapters; no type semantics should live in the composition root. |
 
@@ -137,29 +135,27 @@ For each supported pair, the matrix must say whether conversion is implicit, exp
 
 Character semantics must specify encoding assumptions, character-count versus byte-count limits, CHAR padding and trailing-space comparisons. Temporal semantics must specify precision, timezone handling, session timezone assumptions, and daylight-saving behaviour. JSON and JSONB must define parsing, equality, ordering support, and canonicalization independently.
 
-## 7. Persistence and legacy compatibility
+## 7. Persistence and format versioning
 
-No storage format is selected by this proposal.
+Backward compatibility with existing UniDB database files is explicitly not a requirement for this project stage. We can make a clean break and require databases created by older builds to be deleted and recreated.
 
-Required invariants:
+Required invariants for the new format:
 
-1. Existing V1 tables continue to decode using the existing schema-guided V1 codec.
-2. The historical SQL INT spelling must not be reinterpreted as a 32-bit on-disk value. Existing rows physically contain eight-byte integers.
-3. New type metadata must be persisted as a canonical type identity plus validated modifiers, not as an enum ordinal whose meaning can change.
-4. Any new row encoding must have an explicit, trusted version discriminator in table metadata or an equally unambiguous approved mechanism.
-5. Catalog deserialization must continue to read existing catalog payloads.
-6. New binaries must fail clearly on unknown type identifiers, unknown format versions, and malformed rows.
-7. Old binaries must not be expected to read newly written formats unless that compatibility is explicitly engineered and tested.
-8. No automatic in-place rewrite of existing tables is included in the first type-system rollout.
+1. New rows use PostgreSQL-compatible physical widths for fixed-width types: SMALLINT is 2 bytes, INTEGER is 4 bytes, and BIGINT is 8 bytes.
+2. New type metadata is persisted as a canonical type identity plus validated modifiers, not as an enum ordinal whose meaning can change.
+3. The database or catalog has an explicit format version. The reader checks it before interpreting persisted metadata or rows.
+4. Unknown type identifiers, unknown format versions, malformed rows, and truncated data fail clearly; the reader must never guess a layout.
+5. No legacy V1 decoder, catalog migration, or automatic rewrite of old database files is required. Document the clean-recreation requirement for developers and users.
+6. Future format changes must increment or otherwise explicitly evolve the format version and provide a deliberate compatibility policy.
 
-SIM-78 owns the NULL and nullable-row design. The chosen row-format strategy, table version metadata, NULL bitmap, and V1/V2 migration policy must be approved there before any implementation that depends on NULL or new row bytes. SIM-81 must consume that decision rather than inventing a competing format.
+SIM-78 still owns the NULL and nullable-row design. Its row header/versioning and NULL representation decisions must be coordinated with SIM-81 before implementation. SIM-81 should consume that design rather than create a competing row format.
 
 ## 8. Phased implementation proposal
 
 The following sequence is provisional and should be split into small owning-service tickets after this design is approved:
 
 1. **Foundation:** finalize canonical type identifiers, modifiers, aliases, SQL value representation, type registry API, and catalog/RDB translation contracts. No row-format change in this phase.
-2. **Integer family:** introduce SMALLINT and INTEGER semantics while preserving the legacy V1 INT storage mapping; define BIGINT explicitly and add a migration/version plan before changing persisted representation.
+2. **Integer family:** implement PostgreSQL-compatible SMALLINT, INTEGER, and BIGINT ranges and physical widths directly. Existing SQL INT storage is allowed to change; no legacy mapping or migration is needed.
 3. **BOOLEAN:** typed literals, predicates, storage, result formatting and tests; coordinate NULL/three-valued logic with SIM-78.
 4. **REAL and DOUBLE PRECISION:** parsing, range/formatting, arithmetic and comparison semantics.
 5. **NUMERIC:** exact decimal representation, precision/scale, arithmetic, casts, rounding and overflow.
@@ -180,7 +176,7 @@ Every type family needs tests at multiple boundaries:
 - Catalog: metadata round trips, old catalog payload fixtures, unknown type identifiers and invalid modifiers.
 - Codec: encode/decode round trips, exact byte fixtures, malformed/truncated data, wrong schema, unknown format version.
 - QES integration: CREATE TABLE, INSERT, SELECT, predicates, JOIN where supported, ORDER BY, GROUP BY and aggregates where applicable.
-- Compatibility: existing database fixtures must be opened and queried without changing their bytes or interpreting them under new semantics.
+- Format safety: new-format fixtures verify version checks, deterministic decoding, and clear rejection of unknown versions or malformed data. Existing database fixtures do not need to remain readable.
 - Differential tests: execute equivalent supported cases against PostgreSQL 18 and UniDB, compare results and expected errors. Record intentional differences.
 
 A PostgreSQL comparison test must be reproducible and should record server version, SQL input, expected output/error, and UniDB output/error.
@@ -198,6 +194,7 @@ The following decisions are intentionally left open for review:
 7. What is the supported character encoding and collation baseline?
 8. What timezone and session-timezone behaviour is in scope for the first temporal release?
 9. Which PostgreSQL 18 behaviours are required for each type before it can be called compatible?
+10. What exact database/row format version marker and clean-start policy should the first new format use?
 
 ## 11. Approval gate
 
@@ -205,7 +202,7 @@ This proposal is ready for architectural review, not implementation.
 
 Implementation may begin only after:
 - Soujash approves the type/value/registry and service-ownership design.
-- The legacy integer/storage compatibility strategy is agreed.
+- The clean-break policy is accepted: old database files may be discarded and recreated.
 - SIM-78's row-format and NULL design is approved wherever the implementation depends on it.
 - The first implementation ticket defines one bounded capability and its tests.
 
