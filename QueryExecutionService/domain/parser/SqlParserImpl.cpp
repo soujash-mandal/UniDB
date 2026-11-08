@@ -237,8 +237,6 @@ private:
       }
     }
 
-    }
-
     if (name == "TIME" || name == "TIMESTAMP") {
       if (matchKeyword("WITH")) {
         if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {

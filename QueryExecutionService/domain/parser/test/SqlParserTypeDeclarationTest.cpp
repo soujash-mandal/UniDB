@@ -7,11 +7,6 @@
 namespace unidb::sql {
 namespace {
 
-const CreateTableStatement &createTable(const SqlParseResult &result) {
-  EXPECT_TRUE(std::holds_alternative<SqlStatement>(result));
-  return std::get<CreateTableStatement>(std::get<SqlStatement>(result));
-}
-
 TEST(SqlParserTypeDeclarationTest, ParsesIntegerTypeNamesAndAliases) {
   SqlParserImpl parser;
   const auto result = parser.parse(
