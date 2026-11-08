@@ -21,7 +21,7 @@ TEST(SqlParserTypeDeclarationTest, ParsesIntegerTypeNamesAndAliases) {
   const auto &columns = std::get<CreateTableStatement>(
                             std::get<SqlStatement>(result))
                             .columns;
-  ASSERT_EQ(columns.size(), 6U);
+  ASSERT_EQ(columns.size(), 7U);
   EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::SmallInt);
   EXPECT_EQ(columns[1].declaredType->id, SqlTypeId::SmallInt);
   EXPECT_EQ(columns[2].declaredType->id, SqlTypeId::Integer);
@@ -51,6 +51,8 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
   EXPECT_EQ(columns[3].declaredType->id, SqlTypeId::DoublePrecision);
   EXPECT_EQ(columns[4].declaredType->id, SqlTypeId::Boolean);
   EXPECT_EQ(columns[5].declaredType->id, SqlTypeId::TimestampWithTimeZone);
+  EXPECT_EQ(columns[6].declaredType->id, SqlTypeId::TimestampWithTimeZone);
+  EXPECT_EQ(columns[6].declaredType->modifier.temporalPrecision, 3U);
 }
 
 TEST(SqlParserTypeDeclarationTest, PreservesTransitionalIntAndTextTags) {

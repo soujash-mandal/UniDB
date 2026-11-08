@@ -6,6 +6,7 @@
 #include <charconv>
 #include <cstdint>
 #include <string>
+#include <stdexcept>
 #include <system_error>
 #include <utility>
 
@@ -170,20 +171,6 @@ private:
       name = "DOUBLE PRECISION";
     } else if (name == "CHARACTER" && matchKeyword("VARYING")) {
       name = "CHARACTER VARYING";
-    } else if (name == "TIME" || name == "TIMESTAMP") {
-      if (matchKeyword("WITH")) {
-        if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {
-          return SqlParseError{SqlParseErrorCode::SyntaxError,
-                               "Expected TIME ZONE after WITH"};
-        }
-        name += " WITH TIME ZONE";
-      } else if (matchKeyword("WITHOUT")) {
-        if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {
-          return SqlParseError{SqlParseErrorCode::SyntaxError,
-                               "Expected TIME ZONE after WITHOUT"};
-        }
-        name += " WITHOUT TIME ZONE";
-      }
     }
 
     SqlTypeModifier modifier;
@@ -247,6 +234,24 @@ private:
       if (!expect(TokenKind::RightParen)) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected ')' after SQL type modifier"};
+      }
+    }
+
+    }
+
+    if (name == "TIME" || name == "TIMESTAMP") {
+      if (matchKeyword("WITH")) {
+        if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected TIME ZONE after WITH"};
+        }
+        name += " WITH TIME ZONE";
+      } else if (matchKeyword("WITHOUT")) {
+        if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected TIME ZONE after WITHOUT"};
+        }
+        name += " WITHOUT TIME ZONE";
       }
     }
 
