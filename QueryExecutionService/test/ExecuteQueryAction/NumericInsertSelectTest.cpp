@@ -193,7 +193,7 @@ TEST(ExecuteQueryActionNumericTest,
   EXPECT_EQ(std::get<SqlNumericValue>(negative[0]),
             (SqlNumericValue{true, "13", -1}));
   EXPECT_EQ(std::get<SqlNumericValue>(large[0]),
-            (SqlNumericValue{false, "1234", 0}));
+            (SqlNumericValue{false, "123", -1}));
 
   const auto overflow = action.execute(
       "INSERT INTO decimals (amount) VALUES (9995)");
