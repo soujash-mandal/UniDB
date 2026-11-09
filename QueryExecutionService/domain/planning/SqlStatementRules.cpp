@@ -26,7 +26,7 @@ void validateCreateTable(const CreateTableStatement &statement) {
       const auto id = column.declaredType->id;
       if (id != SqlTypeId::SmallInt && id != SqlTypeId::Integer &&
           id != SqlTypeId::BigInt && id != SqlTypeId::Boolean &&
-        id != SqlTypeId::Text) {
+          id != SqlTypeId::Text) {
         throw std::invalid_argument(
             "CREATE TABLE type is recognized but not yet supported");
       }
