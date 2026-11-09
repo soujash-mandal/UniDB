@@ -9,8 +9,8 @@ namespace {
 
 TEST(SqlParserBooleanTest, ParsesTrueAndFalseAsDistinctBooleanValues) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO flags (enabled) VALUES (TRUE), (false)");
+  const auto result =
+      parser.parse("INSERT INTO flags (enabled) VALUES (TRUE), (false)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &insert =

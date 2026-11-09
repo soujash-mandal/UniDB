@@ -1,5 +1,5 @@
-#include "ExecuteQueryActionTestSupport.h"
 #include "../../domain/codec/SqlTupleCodec.h"
+#include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
 
@@ -23,9 +23,9 @@ TEST(ExecuteQueryActionBooleanTest, CreatesBooleanColumnsUsingCanonicalType) {
 
 TEST(ExecuteQueryActionBooleanTest, InsertsAndEncodesTrueAndFalseValues) {
   FakeQesRdbServicePort port;
-  port.schema = {{"enabled", unidb::sql::SqlType::Int,
-                  unidb::sql::SqlTypeDescriptor{
-                      unidb::sql::SqlTypeId::Boolean, {}}}};
+  port.schema = {
+      {"enabled", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Boolean, {}}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -39,10 +39,8 @@ TEST(ExecuteQueryActionBooleanTest, InsertsAndEncodesTrueAndFalseValues) {
                 .affectedRows,
             2U);
   ASSERT_EQ(port.insertedRows.size(), 2U);
-  const auto first =
-      SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
-  const auto second =
-      SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
+  const auto first = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  const auto second = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
   ASSERT_EQ(first.size(), 1U);
   ASSERT_EQ(second.size(), 1U);
   EXPECT_TRUE(std::get<bool>(first[0]));
@@ -52,9 +50,9 @@ TEST(ExecuteQueryActionBooleanTest, InsertsAndEncodesTrueAndFalseValues) {
 TEST(ExecuteQueryActionBooleanTest, RejectsIntegerAndTextForBooleanColumns) {
   for (const auto *literal : {"1", "'true'"}) {
     FakeQesRdbServicePort port;
-    port.schema = {{"enabled", unidb::sql::SqlType::Int,
-                    unidb::sql::SqlTypeDescriptor{
-                        unidb::sql::SqlTypeId::Boolean, {}}}};
+    port.schema = {
+        {"enabled", unidb::sql::SqlType::Int,
+         unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Boolean, {}}}};
     unidb::sql::SqlParserImpl parser;
     auto action = makeQesAction(port, parser);
 

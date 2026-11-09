@@ -124,7 +124,6 @@ TEST(ExecuteQueryActionIntegrationTest,
   std::filesystem::remove(databaseFile);
 }
 
-
 TEST(ExecuteQueryActionIntegrationTest,
      CreatesAndInsertsBooleanColumnsAcrossContainerRestart) {
   const auto databaseFile = std::filesystem::temp_directory_path() /

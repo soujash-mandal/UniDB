@@ -77,8 +77,7 @@ prepareInsertRows(const InsertStatement &statement,
               std::holds_alternative<std::int64_t>(values[inputIndex]);
           break;
         case SqlTypeId::Boolean:
-          valueMatchesColumn =
-              std::holds_alternative<bool>(values[inputIndex]);
+          valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
           break;
         case SqlTypeId::Text:
           valueMatchesColumn =
