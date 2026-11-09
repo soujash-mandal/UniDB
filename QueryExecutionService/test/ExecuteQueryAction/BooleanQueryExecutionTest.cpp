@@ -138,7 +138,6 @@ TEST(ExecuteQueryActionBooleanTest, SupportsDistinctAndGroupingByBoolean) {
   EXPECT_EQ(std::get<std::int64_t>(groupedRows[1][1]), 1);
 }
 
-
 TEST(ExecuteQueryActionBooleanTest,
      RejectsUnionBetweenBooleanAndIntegerColumns) {
   FakeQesRdbServicePort port;
@@ -147,14 +146,13 @@ TEST(ExecuteQueryActionBooleanTest,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
       {"enabled", unidb::sql::SqlType::Int,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Boolean, {}}}};
-  port.rows = {
-      SqlTupleCodec::encode(port.schema, {std::int64_t{1}, false}),
-      SqlTupleCodec::encode(port.schema, {std::int64_t{2}, true})};
+  port.rows = {SqlTupleCodec::encode(port.schema, {std::int64_t{1}, false}),
+               SqlTupleCodec::encode(port.schema, {std::int64_t{2}, true})};
 
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
-  const auto outcome = action.execute(
-      "SELECT enabled FROM flags UNION SELECT id FROM flags;");
+  const auto outcome =
+      action.execute("SELECT enabled FROM flags UNION SELECT id FROM flags;");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
@@ -176,11 +174,12 @@ TEST(ExecuteQueryActionBooleanTest,
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto unionOutcome = action.execute(
-      "SELECT enabled FROM flags WHERE enabled = FALSE UNION "
-      "SELECT enabled FROM flags WHERE enabled = TRUE;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(unionOutcome));
+  const auto unionOutcome =
+      action.execute("SELECT enabled FROM flags WHERE enabled = FALSE UNION "
+                     "SELECT enabled FROM flags WHERE enabled = TRUE;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          unionOutcome));
   const auto &unionRows =
       std::get<QueryExecutionService::QueryExecutionResult>(unionOutcome).rows;
   ASSERT_EQ(unionRows.size(), 2U);
@@ -190,8 +189,9 @@ TEST(ExecuteQueryActionBooleanTest,
   const auto unionAllOutcome = action.execute(
       "SELECT enabled FROM flags WHERE enabled = FALSE UNION ALL "
       "SELECT enabled FROM flags WHERE enabled = FALSE;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(unionAllOutcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          unionAllOutcome));
   const auto &unionAllRows =
       std::get<QueryExecutionService::QueryExecutionResult>(unionAllOutcome)
           .rows;
