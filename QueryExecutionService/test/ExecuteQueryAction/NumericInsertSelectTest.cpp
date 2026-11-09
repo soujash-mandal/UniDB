@@ -196,3 +196,22 @@ TEST(ExecuteQueryActionNumericTest, AppliesNegativeScaleAndRejectsOverflow) {
           overflow));
   EXPECT_EQ(port.insertedRows.size(), 1U);
 }
+
+
+TEST(ExecuteQueryActionNumericTest, DefaultsNumericPrecisionScaleToZero) {
+  FakeQesRdbServicePort port;
+  port.schema = {{"amount", SqlType::Int,
+                  SqlTypeDescriptor{SqlTypeId::Numeric,
+                                    {.precision = 3}}}};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (amount) VALUES (12.6)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  const auto decoded = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  EXPECT_EQ(std::get<SqlNumericValue>(decoded[0]),
+            (SqlNumericValue{false, "13", 0}));
+}
