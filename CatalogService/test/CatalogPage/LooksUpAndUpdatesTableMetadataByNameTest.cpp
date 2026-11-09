@@ -33,7 +33,6 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   EXPECT_THROW(page.getByName("missing"), std::runtime_error);
 }
 
-
 TEST(CatalogPageTest, RejectsNumericScaleWithoutPrecision) {
   CatalogPage page;
   Table table{};
