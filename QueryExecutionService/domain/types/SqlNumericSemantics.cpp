@@ -1,8 +1,8 @@
 #include "SqlNumericSemantics.h"
 
 #include <algorithm>
-#include <charconv>
 #include <cctype>
+#include <charconv>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -53,7 +53,6 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
 }
 
 } // namespace
-
 
 unidb::sql::SqlNumericValue parseSqlNumericLiteral(std::string_view literal) {
   if (literal.empty()) {
@@ -116,8 +115,8 @@ unidb::sql::SqlNumericValue parseSqlNumericLiteral(std::string_view literal) {
       throw std::invalid_argument("NUMERIC exponent requires digits");
     }
     std::uint64_t magnitude = 0;
-    const auto parsed = std::from_chars(
-        literal.data() + exponentStart, literal.data() + position, magnitude);
+    const auto parsed = std::from_chars(literal.data() + exponentStart,
+                                        literal.data() + position, magnitude);
     if (parsed.ec != std::errc{} || parsed.ptr != literal.data() + position) {
       throw std::out_of_range("NUMERIC exponent is out of range");
     }

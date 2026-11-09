@@ -107,8 +107,8 @@ TEST(SqlNumericSemanticsTest, ParsesExponentNotationExactly) {
 }
 
 TEST(SqlNumericSemanticsTest, RejectsMalformedNumericLiteralLexemes) {
-  for (const auto *literal : {"", "+", "-", ".", "1e", "1e+", "1.2.3",
-                              "1a", "1e2.3"}) {
+  for (const auto *literal :
+       {"", "+", "-", ".", "1e", "1e+", "1.2.3", "1a", "1e2.3"}) {
     EXPECT_THROW(parseSqlNumericLiteral(literal), std::invalid_argument)
         << literal;
   }
