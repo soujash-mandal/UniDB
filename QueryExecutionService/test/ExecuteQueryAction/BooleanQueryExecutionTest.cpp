@@ -137,3 +137,65 @@ TEST(ExecuteQueryActionBooleanTest, SupportsDistinctAndGroupingByBoolean) {
   EXPECT_TRUE(std::get<bool>(groupedRows[1][0]));
   EXPECT_EQ(std::get<std::int64_t>(groupedRows[1][1]), 1);
 }
+
+TEST(ExecuteQueryActionBooleanTest,
+     RejectsUnionBetweenBooleanAndIntegerColumns) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
+      {"enabled", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Boolean, {}}}};
+  port.rows = {SqlTupleCodec::encode(port.schema, {std::int64_t{1}, false}),
+               SqlTupleCodec::encode(port.schema, {std::int64_t{2}, true})};
+
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT enabled FROM flags UNION SELECT id FROM flags;");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("matching types"),
+            std::string::npos);
+}
+
+TEST(ExecuteQueryActionBooleanTest,
+     SupportsUnionAndUnionAllBetweenBooleanColumns) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"enabled", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Boolean, {}}}};
+  port.rows = {SqlTupleCodec::encode(port.schema, {false}),
+               SqlTupleCodec::encode(port.schema, {true})};
+
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto unionOutcome =
+      action.execute("SELECT enabled FROM flags WHERE enabled = FALSE UNION "
+                     "SELECT enabled FROM flags WHERE enabled = TRUE;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          unionOutcome));
+  const auto &unionRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(unionOutcome).rows;
+  ASSERT_EQ(unionRows.size(), 2U);
+  EXPECT_FALSE(std::get<bool>(unionRows[0][0]));
+  EXPECT_TRUE(std::get<bool>(unionRows[1][0]));
+
+  const auto unionAllOutcome = action.execute(
+      "SELECT enabled FROM flags WHERE enabled = FALSE UNION ALL "
+      "SELECT enabled FROM flags WHERE enabled = FALSE;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          unionAllOutcome));
+  const auto &unionAllRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(unionAllOutcome)
+          .rows;
+  ASSERT_EQ(unionAllRows.size(), 2U);
+  EXPECT_FALSE(std::get<bool>(unionAllRows[0][0]));
+  EXPECT_FALSE(std::get<bool>(unionAllRows[1][0]));
+}
