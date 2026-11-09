@@ -65,3 +65,20 @@ TEST(CatalogPageTest, RejectsUnknownNumericMetadataExtensionVersion) {
 
   EXPECT_THROW(page.get(13), std::runtime_error);
 }
+
+
+TEST(CatalogPageTest, PreservesUnmodifiedNumericWithoutMetadataExtension) {
+  CatalogPage page;
+  Table table{};
+  table.tableId = 14;
+  table.name = "unmodified_numeric";
+  table.columns = {Column{"amount", DataType::NUMERIC, 0, false}};
+
+  page.insert(table);
+
+  const Table loaded = page.get(14);
+  ASSERT_EQ(loaded.columns.size(), 1U);
+  EXPECT_EQ(loaded.columns[0].type, DataType::NUMERIC);
+  EXPECT_FALSE(loaded.columns[0].numericPrecision.has_value());
+  EXPECT_FALSE(loaded.columns[0].numericScale.has_value());
+}
