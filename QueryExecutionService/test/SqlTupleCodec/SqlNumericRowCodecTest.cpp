@@ -13,8 +13,8 @@ TEST(SqlNumericRowCodecTest, RoundTripsExactValuesWithoutPrecisionLoss) {
   const unidb::sql::SqlNumericValue value{
       true, "123456789012345678901234567890123456789", 17};
 
-  EXPECT_EQ(SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(value)),
-            value);
+  EXPECT_EQ(
+      SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(value)), value);
 }
 
 TEST(SqlNumericRowCodecTest, RoundTripsNegativeScaleAndZero) {
