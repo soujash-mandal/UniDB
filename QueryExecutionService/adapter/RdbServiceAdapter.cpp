@@ -39,6 +39,8 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
     return RdbDataType::BOOLEAN;
   case unidb::sql::SqlTypeId::Text:
     return RdbDataType::VARCHAR;
+  case unidb::sql::SqlTypeId::Numeric:
+    return RdbDataType::NUMERIC;
   default:
     throw std::invalid_argument(
         "CREATE TABLE type is recognized but not yet supported by storage");
@@ -55,6 +57,9 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
     // The declared descriptor remains authoritative until floating-point
     // query execution adopts dedicated transitional execution tags.
     return unidb::sql::SqlType::Int;
+  case RdbDataType::NUMERIC:
+    // The declared descriptor remains authoritative for exact decimals.
+    return unidb::sql::SqlType::Int;
   case RdbDataType::BOOLEAN:
     // The declared descriptor is authoritative until BOOLEAN query planning
     // adopts a dedicated transitional execution tag.
@@ -67,7 +72,8 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
   }
 }
 
-unidb::sql::SqlTypeDescriptor descriptorFromRdbType(RdbDataType type) {
+unidb::sql::SqlTypeDescriptor descriptorFromRdbType(const RdbColumn &column) {
+  const RdbDataType type = column.type;
   using unidb::sql::SqlTypeDescriptor;
   using unidb::sql::SqlTypeId;
   switch (type) {
@@ -85,6 +91,12 @@ unidb::sql::SqlTypeDescriptor descriptorFromRdbType(RdbDataType type) {
     return SqlTypeDescriptor{SqlTypeId::Boolean, {}};
   case RdbDataType::VARCHAR:
     return SqlTypeDescriptor{SqlTypeId::Text, {}};
+  case RdbDataType::NUMERIC: {
+    unidb::sql::SqlTypeModifier modifier;
+    modifier.precision = column.numericPrecision;
+    modifier.scale = column.numericScale;
+    return SqlTypeDescriptor{SqlTypeId::Numeric, modifier};
+  }
   default:
     throw std::invalid_argument(
         "Table schema contains a type outside the V1 SQL subset");
@@ -112,7 +124,15 @@ uint32_t RdbServiceAdapter::createTable(
     const auto type = toRdbType(column);
     const uint16_t size =
         type == RdbDataType::VARCHAR ? std::numeric_limits<uint16_t>::max() : 0;
-    table.columns.push_back(RdbColumn{column.name, type, size, false});
+    std::optional<std::uint32_t> numericPrecision;
+    std::optional<std::int32_t> numericScale;
+    if (column.declaredType.has_value() &&
+        column.declaredType->id == unidb::sql::SqlTypeId::Numeric) {
+      numericPrecision = column.declaredType->modifier.precision;
+      numericScale = column.declaredType->modifier.scale;
+    }
+    table.columns.push_back(RdbColumn{column.name, type, size, false,
+                                      numericPrecision, numericScale});
   }
   return createTableAction.execute(metadataPageId, std::move(table));
 }
@@ -126,7 +146,7 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
   for (const auto &column : table.columns) {
     unidb::sql::ColumnDefinition definition{column.name,
                                             fromRdbType(column.type)};
-    definition.declaredType = descriptorFromRdbType(column.type);
+    definition.declaredType = descriptorFromRdbType(column);
     columns.push_back(std::move(definition));
   }
   return columns;
