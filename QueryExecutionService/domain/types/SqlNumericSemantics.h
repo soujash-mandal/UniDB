@@ -25,16 +25,15 @@ std::string formatSqlNumericValue(const unidb::sql::SqlNumericValue &value);
 int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
                             const unidb::sql::SqlNumericValue &right);
 
- 
 // Exact finite-decimal arithmetic. Inputs must be canonical values.
-unidb::sql::SqlNumericValue addSqlNumericValues(
-    const unidb::sql::SqlNumericValue &left,
-    const unidb::sql::SqlNumericValue &right);
-unidb::sql::SqlNumericValue subtractSqlNumericValues(
-    const unidb::sql::SqlNumericValue &left,
-    const unidb::sql::SqlNumericValue &right);
-unidb::sql::SqlNumericValue multiplySqlNumericValues(
-    const unidb::sql::SqlNumericValue &left,
-    const unidb::sql::SqlNumericValue &right);
+unidb::sql::SqlNumericValue
+addSqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                    const unidb::sql::SqlNumericValue &right);
+unidb::sql::SqlNumericValue
+subtractSqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                         const unidb::sql::SqlNumericValue &right);
+unidb::sql::SqlNumericValue
+multiplySqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                         const unidb::sql::SqlNumericValue &right);
 
 } // namespace QueryExecutionService::domain

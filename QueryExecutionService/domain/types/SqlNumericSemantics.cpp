@@ -53,7 +53,6 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
   return 0;
 }
 
-
 std::string addMagnitudes(const std::string &left, const std::string &right) {
   std::string result;
   result.reserve(std::max(left.size(), right.size()) + 1);
@@ -95,8 +94,7 @@ std::string subtractMagnitudes(const std::string &larger,
   }
   std::reverse(result.begin(), result.end());
   const auto firstNonZero = result.find_first_not_of('0');
-  return firstNonZero == std::string::npos ? "0"
-                                           : result.substr(firstNonZero);
+  return firstNonZero == std::string::npos ? "0" : result.substr(firstNonZero);
 }
 
 std::string multiplyMagnitudes(const std::string &left,
@@ -113,8 +111,7 @@ std::string multiplyMagnitudes(const std::string &left,
     for (std::size_t j = right.size(); j > 0; --j) {
       const auto position = i + j - 1;
       const int product =
-          (left[i - 1] - '0') * (right[j - 1] - '0') +
-          digits[position] + carry;
+          (left[i - 1] - '0') * (right[j - 1] - '0') + digits[position] + carry;
       digits[position] = product % 10;
       carry = product / 10;
     }
@@ -318,7 +315,6 @@ int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
   return left.negative ? -magnitude : magnitude;
 }
 
-
 unidb::sql::SqlNumericValue
 addSqlNumericValues(const unidb::sql::SqlNumericValue &left,
                     const unidb::sql::SqlNumericValue &right) {
@@ -337,12 +333,12 @@ addSqlNumericValues(const unidb::sql::SqlNumericValue &left,
   }
   if (comparison > 0) {
     return normalizeSqlNumericValue(
-        left.negative,
-        subtractMagnitudes(leftCoefficient, rightCoefficient), scale);
+        left.negative, subtractMagnitudes(leftCoefficient, rightCoefficient),
+        scale);
   }
   return normalizeSqlNumericValue(
-      right.negative,
-      subtractMagnitudes(rightCoefficient, leftCoefficient), scale);
+      right.negative, subtractMagnitudes(rightCoefficient, leftCoefficient),
+      scale);
 }
 
 unidb::sql::SqlNumericValue
