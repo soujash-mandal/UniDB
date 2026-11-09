@@ -382,4 +382,77 @@ multiplySqlNumericValues(const unidb::sql::SqlNumericValue &left,
       static_cast<std::int32_t>(scale));
 }
 
+
+unidb::sql::SqlNumericValue
+divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                       const unidb::sql::SqlNumericValue &right,
+                       std::int32_t resultScale) {
+  (void)compareSqlNumericValues(left, left);
+  (void)compareSqlNumericValues(right, right);
+  if (right.coefficient == "0") {
+    throw std::invalid_argument("Division by zero in NUMERIC expression");
+  }
+  if (left.coefficient == "0") {
+    return normalizeSqlNumericValue(false, "0", 0);
+  }
+
+  std::string numerator = left.coefficient;
+  std::string denominator = right.coefficient;
+  const auto exponent = static_cast<std::int64_t>(resultScale) +
+                        right.scale - left.scale;
+  auto appendZeros = [](std::string &value, std::uint64_t count) {
+    if (count > value.max_size() - value.size()) {
+      throw std::length_error("NUMERIC division result is too large");
+    }
+    value.append(static_cast<std::size_t>(count), '0');
+  };
+  if (exponent >= 0) {
+    appendZeros(numerator, static_cast<std::uint64_t>(exponent));
+  } else {
+    appendZeros(denominator, static_cast<std::uint64_t>(-exponent));
+  }
+
+  std::string quotient;
+  quotient.reserve(numerator.size());
+  std::string remainder = "0";
+  for (const char digit : numerator) {
+    if (remainder == "0") {
+      remainder.assign(1, digit);
+    } else {
+      remainder.push_back(digit);
+    }
+    const auto firstNonZero = remainder.find_first_not_of('0');
+    if (firstNonZero == std::string::npos) {
+      remainder = "0";
+    } else if (firstNonZero > 0) {
+      remainder.erase(0, firstNonZero);
+    }
+
+    int quotientDigit = 0;
+    while (compareUnsignedMagnitudes(remainder, denominator) >= 0) {
+      remainder = subtractMagnitudes(remainder, denominator);
+      ++quotientDigit;
+    }
+    quotient.push_back(static_cast<char>('0' + quotientDigit));
+  }
+
+  const auto firstNonZero = quotient.find_first_not_of('0');
+  if (firstNonZero == std::string::npos) {
+    quotient = "0";
+  } else if (firstNonZero > 0) {
+    quotient.erase(0, firstNonZero);
+  }
+
+  // Round to nearest, with exact halfway cases away from zero.
+  if (remainder != "0" &&
+      compareUnsignedMagnitudes(addMagnitudes(remainder, remainder),
+                                denominator) >= 0) {
+    quotient = addMagnitudes(quotient, "1");
+  }
+
+  return normalizeSqlNumericValue(left.negative != right.negative,
+                                  std::move(quotient), resultScale);
+}
+
+
 } // namespace QueryExecutionService::domain
