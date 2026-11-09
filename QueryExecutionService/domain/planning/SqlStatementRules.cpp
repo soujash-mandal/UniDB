@@ -1,8 +1,6 @@
 #include "SqlStatementRules.h"
 
 #include "../codec/SqlTupleCodec.h"
-#include "../schema/SqlSchemaResolver.h"
-
 #include <algorithm>
 #include <set>
 #include <stdexcept>
