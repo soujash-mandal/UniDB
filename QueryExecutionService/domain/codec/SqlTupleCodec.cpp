@@ -1,4 +1,5 @@
 #include "SqlTupleCodec.h"
+#include "SqlNumericRowCodec.h"
 
 #include "../types/SqlIntegerSemantics.h"
 
@@ -36,6 +37,30 @@ T readLittleEndian(const std::vector<char> &bytes, std::size_t &offset) {
   } else {
     return raw;
   }
+}
+
+void appendNumeric(std::vector<char> &out,
+                   const unidb::sql::SqlNumericValue &value) {
+  const auto encoded =
+      QueryExecutionService::domain::SqlNumericRowCodec::encode(value);
+  if (encoded.size() > std::numeric_limits<std::uint32_t>::max()) {
+    throw std::invalid_argument("NUMERIC value exceeds V1 tuple length limit");
+  }
+  appendLittleEndian(out, static_cast<std::uint32_t>(encoded.size()));
+  out.insert(out.end(), encoded.begin(), encoded.end());
+}
+
+unidb::sql::SqlNumericValue readNumeric(const std::vector<char> &bytes,
+                                        std::size_t &offset) {
+  const auto length = readLittleEndian<std::uint32_t>(bytes, offset);
+  if (offset > bytes.size() || length > bytes.size() - offset) {
+    throw std::runtime_error("Tuple NUMERIC value is truncated");
+  }
+  std::vector<char> encoded(bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                            bytes.begin() + static_cast<std::ptrdiff_t>(
+                                                offset + length));
+  offset += length;
+  return QueryExecutionService::domain::SqlNumericRowCodec::decode(encoded);
 }
 
 void appendText(std::vector<char> &out, const std::string &value) {
@@ -224,6 +249,12 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       appendFloatingPoint<double, std::uint64_t>(
           out, std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
       break;
+    case SqlTypeId::Numeric:
+      if (!std::holds_alternative<unidb::sql::SqlNumericValue>(values[index])) {
+        throw std::invalid_argument("Expected NUMERIC value");
+      }
+      appendNumeric(out, std::get<unidb::sql::SqlNumericValue>(values[index]));
+      break;
     case SqlTypeId::Text:
       if (!std::holds_alternative<std::string>(values[index])) {
         throw std::invalid_argument("Expected TEXT value");
@@ -287,12 +318,15 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       values.emplace_back(
           readFloatingPoint<double, std::uint64_t>(bytes, offset));
       break;
+    case SqlTypeId::Numeric:
+      values.emplace_back(readNumeric(bytes, offset));
+      break;
     case SqlTypeId::Text:
       values.emplace_back(readText(bytes, offset));
       break;
     default:
       throw std::invalid_argument(
-          "Tuple codec supports only integer, BOOLEAN, and TEXT columns");
+          "Tuple codec supports only integer, BOOLEAN, floating-point, NUMERIC, and TEXT columns");
     }
   }
   if (offset != bytes.size()) {

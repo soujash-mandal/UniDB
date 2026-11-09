@@ -1,4 +1,5 @@
 #include "../domain/codec/SqlTupleCodec.h"
+#include "../domain/types/SqlNumericSemantics.h"
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -212,4 +213,79 @@ TEST(SqlTupleCodecTest, RejectsTruncatedAndTrailingFloatingPointBytes) {
   auto bytes = SqlTupleCodec::encode(schema, {1.5F});
   bytes.push_back(0x00);
   EXPECT_THROW(SqlTupleCodec::decode(schema, bytes), std::runtime_error);
+}
+
+TEST(SqlTupleCodecTest, RoundTripsNumericAlongsideOtherDeclaredTypes) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlNumericValue;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Integer, {}}},
+      {"active", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}},
+      {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}},
+      {"label", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}},
+      {"ratio", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{
+      std::int64_t{42}, true, SqlNumericValue{true, "1234567890123456789", 4},
+      std::string{"invoice"}, 1.25F};
+
+  const auto encoded = SqlTupleCodec::encode(schema, values);
+  const auto decoded = SqlTupleCodec::decode(schema, encoded);
+
+  EXPECT_EQ(decoded, values);
+  EXPECT_EQ(
+      QueryExecutionService::domain::formatSqlNumericValue(
+          std::get<SqlNumericValue>(decoded[2])),
+      "-123456789012345.6789");
+}
+
+TEST(SqlTupleCodecTest, RejectsNumericRuntimeTypeMismatch) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
+  EXPECT_THROW(SqlTupleCodec::encode(schema, {std::int64_t{123}}),
+               std::invalid_argument);
+}
+
+TEST(SqlTupleCodecTest, RejectsMalformedNumericPayloadInsideDeclaredRow) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlNumericValue;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
+  auto encoded = SqlTupleCodec::encode(
+      schema, {SqlNumericValue{false, "12345", 2}});
+  ASSERT_GT(encoded.size(), 5U);
+  encoded[5] = static_cast<char>(0x7f);
+  EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
+
+  encoded = SqlTupleCodec::encode(schema,
+                                  {SqlNumericValue{false, "12345", 2}});
+  encoded.pop_back();
+  EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
+}
+
+TEST(SqlTupleCodecTest, RejectsTrailingBytesAfterNumericDeclaredRow) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlNumericValue;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
+  auto encoded =
+      SqlTupleCodec::encode(schema, {SqlNumericValue{false, "123", 1}});
+  encoded.push_back('\0');
+  EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
 }

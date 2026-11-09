@@ -78,7 +78,8 @@ struct SqlNumericValue {
 };
 
 using SqlValue = std::variant<std::int64_t, std::string, SqlBooleanValue,
-                              SqlRealValue, SqlDoublePrecisionValue>;
+                              SqlRealValue, SqlDoublePrecisionValue,
+                              SqlNumericValue>;
 
 struct ColumnDefinition {
   std::string name;

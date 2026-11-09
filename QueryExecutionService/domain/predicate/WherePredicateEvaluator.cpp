@@ -1,5 +1,7 @@
 #include "WherePredicateEvaluator.h"
 
+#include "../types/SqlNumericSemantics.h"
+
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -59,6 +61,11 @@ int compareSqlValues(const SqlValue &left, const SqlValue &right) {
     const bool rightBoolean = std::get<bool>(right);
     return (*leftBoolean > rightBoolean) - (*leftBoolean < rightBoolean);
   }
+  if (const auto *leftNumeric =
+          std::get_if<unidb::sql::SqlNumericValue>(&left)) {
+    return compareSqlNumericValues(
+        *leftNumeric, std::get<unidb::sql::SqlNumericValue>(right));
+  }
   const auto &leftText = std::get<std::string>(left);
   const auto &rightText = std::get<std::string>(right);
   return (leftText > rightText) - (leftText < rightText);
@@ -78,6 +85,8 @@ bool valueMatchesColumn(const ColumnDefinition &column, const SqlValue &value) {
       return std::holds_alternative<float>(value);
     case SqlTypeId::DoublePrecision:
       return std::holds_alternative<double>(value);
+    case SqlTypeId::Numeric:
+      return std::holds_alternative<unidb::sql::SqlNumericValue>(value);
     case SqlTypeId::Text:
       return std::holds_alternative<std::string>(value);
     default:
