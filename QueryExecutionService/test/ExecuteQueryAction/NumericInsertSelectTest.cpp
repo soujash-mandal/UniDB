@@ -103,25 +103,26 @@ TEST(ExecuteQueryActionNumericTest,
       {"approximate", unidb::sql::SqlType::Int,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Real, {}}},
       {"precise", unidb::sql::SqlType::Int,
-       unidb::sql::SqlTypeDescriptor{
-           unidb::sql::SqlTypeId::DoublePrecision, {}}}};
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::DoublePrecision,
+                                     {}}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
   const auto inserted = action.execute(
       "INSERT INTO measurements (approximate, precise) VALUES (1.25, 2.125)");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(inserted));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
   const auto decoded = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
   EXPECT_FLOAT_EQ(std::get<float>(decoded[0]), 1.25F);
   EXPECT_DOUBLE_EQ(std::get<double>(decoded[1]), 2.125);
 
   port.rows = port.insertedRows;
-  const auto filtered =
-      action.execute("SELECT approximate FROM measurements "
-                     "WHERE approximate > 1.2");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(filtered));
+  const auto filtered = action.execute("SELECT approximate FROM measurements "
+                                       "WHERE approximate > 1.2");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          filtered));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(filtered).rows;
   ASSERT_EQ(rows.size(), 1U);
