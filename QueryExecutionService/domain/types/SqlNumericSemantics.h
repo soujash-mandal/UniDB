@@ -36,4 +36,11 @@ unidb::sql::SqlNumericValue
 multiplySqlNumericValues(const unidb::sql::SqlNumericValue &left,
                          const unidb::sql::SqlNumericValue &right);
 
+// Divide exactly at the requested result scale, rounding half away from zero.
+// This is a low-level decimal primitive; SQL type coercion chooses the scale.
+unidb::sql::SqlNumericValue
+divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                       const unidb::sql::SqlNumericValue &right,
+                       std::int32_t resultScale);
+
 } // namespace QueryExecutionService::domain
