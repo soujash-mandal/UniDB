@@ -193,8 +193,9 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
         throw std::invalid_argument("Expected BOOLEAN value");
       }
       appendLittleEndian(
-          out, static_cast<std::uint8_t>(
-                   std::get<unidb::sql::SqlBooleanValue>(values[index]) ? 1 : 0));
+          out,
+          static_cast<std::uint8_t>(
+              std::get<unidb::sql::SqlBooleanValue>(values[index]) ? 1 : 0));
       break;
     case SqlTypeId::Text:
       if (!std::holds_alternative<std::string>(values[index])) {
@@ -244,8 +245,7 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
           readDeclaredInteger(column.declaredType->id, bytes, offset));
       break;
     case SqlTypeId::Boolean: {
-      const auto encoded =
-          readLittleEndian<std::uint8_t>(bytes, offset);
+      const auto encoded = readLittleEndian<std::uint8_t>(bytes, offset);
       if (encoded > 1) {
         throw std::runtime_error("Tuple BOOLEAN value has an invalid encoding");
       }
