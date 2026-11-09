@@ -46,7 +46,6 @@ TEST(CatalogPageTest, RejectsNumericScaleWithoutPrecision) {
   EXPECT_FALSE(page.containsTableId(12));
 }
 
-
 TEST(CatalogPageTest, RejectsUnknownNumericMetadataExtensionVersion) {
   CatalogPage page;
   Table table{};
