@@ -159,8 +159,15 @@ prepareInsertRows(const InsertStatement &statement,
           }
           break;
         case SqlTypeId::Numeric:
-          valueMatchesColumn =
-              std::holds_alternative<SqlNumericValue>(values[inputIndex]);
+          if (std::holds_alternative<SqlNumericValue>(values[inputIndex])) {
+            valueMatchesColumn = true;
+          } else if (const auto *integer =
+                         std::get_if<std::int64_t>(&values[inputIndex])) {
+            orderedValues[schemaIndex] =
+                parseSqlNumericLiteral(std::to_string(*integer));
+            valueWasNormalized = true;
+            valueMatchesColumn = true;
+          }
           break;
         case SqlTypeId::Boolean:
           valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
