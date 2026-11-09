@@ -1,6 +1,8 @@
 #include "SqlNumericSemantics.h"
 
 #include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -51,6 +53,97 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
 }
 
 } // namespace
+
+unidb::sql::SqlNumericValue parseSqlNumericLiteral(std::string_view literal) {
+  if (literal.empty()) {
+    throw std::invalid_argument("NUMERIC literal cannot be empty");
+  }
+
+  std::size_t position = 0;
+  bool negative = false;
+  if (literal[position] == '+' || literal[position] == '-') {
+    negative = literal[position] == '-';
+    ++position;
+  }
+  if (position == literal.size()) {
+    throw std::invalid_argument("NUMERIC literal requires digits");
+  }
+
+  std::string coefficient;
+  coefficient.reserve(literal.size());
+  std::int64_t fractionalDigits = 0;
+  bool decimalPointSeen = false;
+  bool digitSeen = false;
+  while (position < literal.size()) {
+    const char character = literal[position];
+    if (character >= '0' && character <= '9') {
+      coefficient.push_back(character);
+      digitSeen = true;
+      if (decimalPointSeen) {
+        ++fractionalDigits;
+      }
+      ++position;
+      continue;
+    }
+    if (character == '.' && !decimalPointSeen) {
+      decimalPointSeen = true;
+      ++position;
+      continue;
+    }
+    break;
+  }
+  if (!digitSeen) {
+    throw std::invalid_argument("NUMERIC literal requires digits");
+  }
+
+  std::int64_t exponent = 0;
+  if (position < literal.size() &&
+      (literal[position] == 'e' || literal[position] == 'E')) {
+    ++position;
+    bool exponentNegative = false;
+    if (position < literal.size() &&
+        (literal[position] == '+' || literal[position] == '-')) {
+      exponentNegative = literal[position] == '-';
+      ++position;
+    }
+    const auto exponentStart = position;
+    while (position < literal.size() && literal[position] >= '0' &&
+           literal[position] <= '9') {
+      ++position;
+    }
+    if (position == exponentStart) {
+      throw std::invalid_argument("NUMERIC exponent requires digits");
+    }
+    std::uint64_t magnitude = 0;
+    const auto parsed = std::from_chars(literal.data() + exponentStart,
+                                        literal.data() + position, magnitude);
+    if (parsed.ec != std::errc{} || parsed.ptr != literal.data() + position) {
+      throw std::out_of_range("NUMERIC exponent is out of range");
+    }
+    const auto maximumMagnitude =
+        static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) +
+        static_cast<std::uint64_t>(literal.size()) + 1U;
+    if (magnitude > maximumMagnitude) {
+      throw std::out_of_range("NUMERIC exponent is out of range");
+    }
+    exponent = static_cast<std::int64_t>(magnitude);
+    if (exponentNegative) {
+      exponent = -exponent;
+    }
+  }
+  if (position != literal.size()) {
+    throw std::invalid_argument("Invalid character in NUMERIC literal");
+  }
+
+  const auto scale = fractionalDigits - exponent;
+  if (scale < std::numeric_limits<std::int32_t>::min() ||
+      scale > std::numeric_limits<std::int32_t>::max()) {
+    throw std::out_of_range("NUMERIC scale is out of range");
+  }
+
+  return normalizeSqlNumericValue(negative, std::move(coefficient),
+                                  static_cast<std::int32_t>(scale));
+}
 
 unidb::sql::SqlNumericValue normalizeSqlNumericValue(bool negative,
                                                      std::string coefficient,
