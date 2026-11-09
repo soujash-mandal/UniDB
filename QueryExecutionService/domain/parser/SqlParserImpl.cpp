@@ -562,7 +562,8 @@ private:
       IntegerExpression expression;
       try {
         expression.numericLiteral =
-            QueryExecutionService::domain::parseSqlNumericLiteral(current().text);
+            QueryExecutionService::domain::parseSqlNumericLiteral(
+                current().text);
       } catch (const std::exception &error) {
         return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
       }
