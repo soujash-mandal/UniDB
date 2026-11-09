@@ -120,7 +120,7 @@ TEST(SqlParserTest, RejectsMalformedMultiRowInsertValues) {
   }
 }
 
-TEST(SqlParserTest, ParsesFloatingPointLiteralsAsDoubleValues) {
+TEST(SqlParserTest, ParsesDecimalLiteralsAsExactNumericValues) {
   SqlParserImpl parser;
   const auto result =
       parser.parse("INSERT INTO measurements (a, b, c, d) VALUES "
@@ -131,10 +131,14 @@ TEST(SqlParserTest, ParsesFloatingPointLiteralsAsDoubleValues) {
       std::get<InsertStatement>(std::get<SqlStatement>(result));
   ASSERT_EQ(insert.rows.size(), 1U);
   ASSERT_EQ(insert.rows[0].size(), 4U);
-  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][0]), 1.25);
-  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][1]), -2.5);
-  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][2]), 1000.0);
-  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][3]), 0.0125);
+  EXPECT_EQ(std::get<SqlNumericValue>(insert.rows[0][0]),
+            (SqlNumericValue{false, "125", 2}));
+  EXPECT_EQ(std::get<SqlNumericValue>(insert.rows[0][1]),
+            (SqlNumericValue{true, "25", 1}));
+  EXPECT_EQ(std::get<SqlNumericValue>(insert.rows[0][2]),
+            (SqlNumericValue{false, "1", -3}));
+  EXPECT_EQ(std::get<SqlNumericValue>(insert.rows[0][3]),
+            (SqlNumericValue{false, "125", 4}));
 }
 
 TEST(SqlParserTest, KeepsIntegerLiteralsAsIntegersBesideFloatingPointValues) {
@@ -147,7 +151,7 @@ TEST(SqlParserTest, KeepsIntegerLiteralsAsIntegersBesideFloatingPointValues) {
       std::get<InsertStatement>(std::get<SqlStatement>(result));
   ASSERT_EQ(insert.rows.size(), 1U);
   EXPECT_TRUE(std::holds_alternative<std::int64_t>(insert.rows[0][0]));
-  EXPECT_TRUE(std::holds_alternative<double>(insert.rows[0][1]));
+  EXPECT_TRUE(std::holds_alternative<SqlNumericValue>(insert.rows[0][1]));
 }
 
 TEST(SqlParserTest, RejectsMalformedFloatingPointExponents) {
@@ -171,8 +175,10 @@ TEST(SqlParserTest, ParsesLeadingAndTrailingDecimalPointForms) {
   const auto &insert =
       std::get<InsertStatement>(std::get<SqlStatement>(result));
   ASSERT_EQ(insert.rows.size(), 1U);
-  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][0]), 0.5);
-  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][1]), 1.0);
+  EXPECT_EQ(std::get<SqlNumericValue>(insert.rows[0][0]),
+            (SqlNumericValue{false, "5", 1}));
+  EXPECT_EQ(std::get<SqlNumericValue>(insert.rows[0][1]),
+            (SqlNumericValue{false, "1", 0}));
 }
 
 } // namespace
