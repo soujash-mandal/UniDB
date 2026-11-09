@@ -51,12 +51,14 @@ TEST(CatalogPageTest, RejectsUnknownNumericMetadataExtensionVersion) {
   Table table{};
   table.tableId = 13;
   table.name = "unknown";
+  table.columns = {Column{"amount", DataType::NUMERIC, 0, false, 12, 2}};
   page.insert(table);
 
   uint32_t payloadOffset = 0;
   std::memcpy(&payloadOffset, page.data() + sizeof(uint32_t) * 4,
               sizeof(payloadOffset));
-  constexpr std::size_t versionOffset = 4 + 4 + 7 + 4 + sizeof(uint32_t);
+  constexpr std::size_t versionOffset =
+      4 + 4 + 7 + 4 + 4 + 6 + 1 + sizeof(uint32_t) + 1 + 4;
   const uint8_t unsupportedVersion = 99;
   std::memcpy(page.data() + payloadOffset + versionOffset, &unsupportedVersion,
               sizeof(unsupportedVersion));
