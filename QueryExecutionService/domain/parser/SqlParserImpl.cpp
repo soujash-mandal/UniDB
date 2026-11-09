@@ -1239,13 +1239,13 @@ private:
 
   std::variant<SqlValue, SqlParseError> parseLiteral() {
     const bool negative = match(TokenKind::Minus);
-    const bool positive = !negative && match(TokenKind::Plus);
+    if (!negative) {
+      (void)match(TokenKind::Plus);
+    }
     if (current().kind == TokenKind::Floating) {
       std::string text = current().text;
       if (negative) {
         text.insert(text.begin(), '-');
-      } else if (positive) {
-        text.insert(text.begin(), '+');
       }
       double value{};
       const auto conversion =
