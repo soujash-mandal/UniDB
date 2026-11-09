@@ -139,8 +139,7 @@ TEST(SqlAggregateCalculatorTest,
       unidb::sql::SqlNumericValue{false, "1", 4}};
   const auto sum = calculateAggregate(AggregateFunction::Sum, values, 2);
   EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(sum),
-            (unidb::sql::SqlNumericValue{
-                false, "1000000000000000000000000000000", 4}));
+            (unidb::sql::SqlNumericValue{false, "1", -26}));
 }
 
 TEST(SqlAggregateCalculatorTest, RejectsMixedNumericAndNonNumericSumValues) {
