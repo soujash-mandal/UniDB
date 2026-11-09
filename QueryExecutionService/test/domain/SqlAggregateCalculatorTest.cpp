@@ -1,4 +1,5 @@
 #include "../../domain/aggregate/SqlAggregateCalculator.h"
+#include "../../domain/types/SqlNumericSemantics.h"
 
 #include <gtest/gtest.h>
 
