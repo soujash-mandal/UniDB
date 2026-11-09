@@ -66,8 +66,9 @@ processSelectRows(const unidb::sql::SelectStatement &select,
                 aggregate.function == AggregateFunction::Max
             ? plan.types[*plan.aggregateIndex]
             : SqlType::Int;
-    using GroupRows = std::map<std::vector<SqlValue>,
-                               std::vector<const std::vector<SqlValue> *>>;
+    using GroupRows = std::map<
+        std::vector<SqlValue>,
+        std::vector<const std::vector<SqlValue> *>, SqlValueVectorLess>;
     GroupRows groups;
     for (const auto &row : matchedRows) {
       std::vector<SqlValue> key;
