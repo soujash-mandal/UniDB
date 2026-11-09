@@ -3,6 +3,7 @@
 #include "../types/SqlNumericSemantics.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <stdexcept>
 #include <string>
@@ -19,16 +20,59 @@ using unidb::sql::WhereExpression;
 
 void normalizeComparisonValue(const ColumnDefinition &column, SqlValue &value) {
   using unidb::sql::SqlTypeId;
-  if (!column.declaredType.has_value() ||
-      column.declaredType->id != SqlTypeId::Real) {
+  if (!column.declaredType.has_value()) {
     return;
   }
-  if (const auto *doubleValue = std::get_if<double>(&value)) {
-    const float realValue = static_cast<float>(*doubleValue);
-    if (std::isfinite(*doubleValue) && !std::isfinite(realValue)) {
-      throw std::invalid_argument("REAL comparison value is out of range");
+
+  const auto type = column.declaredType->id;
+  if (type == SqlTypeId::Numeric) {
+    if (const auto *integer = std::get_if<std::int64_t>(&value)) {
+      value = parseSqlNumericLiteral(std::to_string(*integer));
     }
-    value = realValue;
+    return;
+  }
+
+  if (type != SqlTypeId::Real && type != SqlTypeId::DoublePrecision) {
+    return;
+  }
+
+  if (const auto *numeric =
+          std::get_if<unidb::sql::SqlNumericValue>(&value)) {
+    const auto text = formatSqlNumericValue(*numeric);
+    if (type == SqlTypeId::Real) {
+      float converted{};
+      const auto result = std::from_chars(
+          text.data(), text.data() + text.size(), converted,
+          std::chars_format::general);
+      if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
+          !std::isfinite(converted)) {
+        throw std::invalid_argument("REAL comparison value is out of range");
+      }
+      value = converted;
+    } else {
+      double converted{};
+      const auto result = std::from_chars(
+          text.data(), text.data() + text.size(), converted,
+          std::chars_format::general);
+      if (result.ec != std::errc{} || result.ptr != text.data() + text.size()) {
+        throw std::invalid_argument(
+            "DOUBLE PRECISION comparison value is out of range");
+      }
+      value = converted;
+    }
+    return;
+  }
+
+  if (type == SqlTypeId::Real) {
+    if (const auto *doubleValue = std::get_if<double>(&value)) {
+      const float realValue = static_cast<float>(*doubleValue);
+      if (std::isfinite(*doubleValue) && !std::isfinite(realValue)) {
+        throw std::invalid_argument("REAL comparison value is out of range");
+      }
+      value = realValue;
+    }
+  } else if (const auto *integer = std::get_if<std::int64_t>(&value)) {
+    value = static_cast<double>(*integer);
   }
 }
 
