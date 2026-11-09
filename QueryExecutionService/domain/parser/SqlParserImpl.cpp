@@ -1239,9 +1239,7 @@ private:
 
   std::variant<SqlValue, SqlParseError> parseLiteral() {
     const bool negative = match(TokenKind::Minus);
-    if (!negative) {
-      (void)match(TokenKind::Plus);
-    }
+    const bool explicitPlus = !negative && match(TokenKind::Plus);
     if (current().kind == TokenKind::Floating) {
       std::string text = current().text;
       if (negative) {
@@ -1287,6 +1285,10 @@ private:
                              "Integer literal is out of range"};
       }
       return SqlValue{value};
+    }
+    if (explicitPlus && current().kind != TokenKind::Integer) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Unary '+' requires a numeric literal"};
     }
     if (current().kind == TokenKind::String) {
       std::string value = current().text;
