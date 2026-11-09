@@ -77,8 +77,9 @@ struct SqlNumericValue {
   bool operator==(const SqlNumericValue &) const = default;
 };
 
-using SqlValue = std::variant<std::int64_t, std::string, SqlBooleanValue,
-                              SqlRealValue, SqlDoublePrecisionValue>;
+using SqlValue =
+    std::variant<std::int64_t, std::string, SqlBooleanValue, SqlRealValue,
+                 SqlDoublePrecisionValue, SqlNumericValue>;
 
 struct ColumnDefinition {
   std::string name;

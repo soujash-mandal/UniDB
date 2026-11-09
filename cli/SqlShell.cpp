@@ -1,11 +1,14 @@
 #include "SqlShell.h"
 
+#include "../QueryExecutionService/domain/types/SqlNumericSemantics.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -148,7 +151,17 @@ std::string escapeTerminalText(const std::string &value) {
 
 std::string formatValue(const unidb::sql::SqlValue &value) {
   std::ostringstream formatted;
-  std::visit([&formatted](const auto &item) { formatted << item; }, value);
+  std::visit(
+      [&formatted](const auto &item) {
+        using ValueType = std::decay_t<decltype(item)>;
+        if constexpr (std::is_same_v<ValueType, unidb::sql::SqlNumericValue>) {
+          formatted << QueryExecutionService::domain::formatSqlNumericValue(
+              item);
+        } else {
+          formatted << item;
+        }
+      },
+      value);
   return escapeTerminalText(formatted.str());
 }
 

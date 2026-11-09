@@ -1,6 +1,7 @@
 #include "SqlStatementRules.h"
 
 #include "../codec/SqlTupleCodec.h"
+#include "../predicate/WherePredicateEvaluator.h"
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -12,6 +13,22 @@
 namespace QueryExecutionService::domain {
 
 using namespace unidb::sql;
+
+namespace {
+struct SqlValueRowLess {
+  bool operator()(const std::vector<SqlValue> &left,
+                  const std::vector<SqlValue> &right) const {
+    return std::lexicographical_compare(
+        left.begin(), left.end(), right.begin(), right.end(),
+        [](const SqlValue &leftValue, const SqlValue &rightValue) {
+          if (leftValue.index() != rightValue.index()) {
+            return leftValue.index() < rightValue.index();
+          }
+          return compareSqlValues(leftValue, rightValue) < 0;
+        });
+  }
+};
+} // namespace
 
 void validateCreateTable(const CreateTableStatement &statement) {
   if (statement.columns.empty()) {
@@ -172,7 +189,7 @@ combineUnionResults(const std::vector<QueryExecutionResult> &branches,
   combined.kind = QueryExecutionResultKind::Rows;
   combined.message = "Rows selected";
   combined.columns = branches.front().columns;
-  std::set<std::vector<SqlValue>> seenRows;
+  std::set<std::vector<SqlValue>, SqlValueRowLess> seenRows;
   for (const auto &branch : branches) {
     if (branch.kind != QueryExecutionResultKind::Rows) {
       throw std::invalid_argument(removeDuplicates
