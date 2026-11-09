@@ -382,7 +382,6 @@ multiplySqlNumericValues(const unidb::sql::SqlNumericValue &left,
       static_cast<std::int32_t>(scale));
 }
 
-
 unidb::sql::SqlNumericValue
 divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
                        const unidb::sql::SqlNumericValue &right,
@@ -398,8 +397,8 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
 
   std::string numerator = left.coefficient;
   std::string denominator = right.coefficient;
-  const auto exponent = static_cast<std::int64_t>(resultScale) +
-                        right.scale - left.scale;
+  const auto exponent =
+      static_cast<std::int64_t>(resultScale) + right.scale - left.scale;
   auto appendZeros = [](std::string &value, std::uint64_t count) {
     if (count > value.max_size() - value.size()) {
       throw std::length_error("NUMERIC division result is too large");
@@ -453,6 +452,5 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
   return normalizeSqlNumericValue(left.negative != right.negative,
                                   std::move(quotient), resultScale);
 }
-
 
 } // namespace QueryExecutionService::domain
