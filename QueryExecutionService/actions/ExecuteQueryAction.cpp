@@ -31,12 +31,11 @@ QueryExecutionError executionError(std::string message) {
 std::vector<std::vector<unidb::sql::SqlValue>>
 readRows(RdbServicePort &port, const std::string &tableName,
          const std::vector<unidb::sql::ColumnDefinition> &schema) {
-  const auto types = domain::schemaTypes(schema);
   const auto encodedRows = port.selectAllRows(tableName);
   std::vector<std::vector<unidb::sql::SqlValue>> rows;
   rows.reserve(encodedRows.size());
   for (const auto &bytes : encodedRows) {
-    rows.push_back(SqlTupleCodec::decode(types, bytes));
+    rows.push_back(SqlTupleCodec::decode(schema, bytes));
   }
   return rows;
 }
@@ -175,7 +174,7 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
     const auto schema = rdbServicePort.getTableDefinition(select->tableName);
     const auto plan = domain::buildSelectPlan(*select, schema);
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
-    auto matchedRows = domain::decodeAndFilterRows(encodedRows, plan.types,
+    auto matchedRows = domain::decodeAndFilterRows(encodedRows, plan.schema,
                                                    plan.compiledWhere);
     return domain::processSelectRows(*select, plan, std::move(matchedRows));
   }

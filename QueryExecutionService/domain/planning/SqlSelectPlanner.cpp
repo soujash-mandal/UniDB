@@ -17,6 +17,7 @@ SelectPlan
 buildSelectPlan(const unidb::sql::SelectStatement &select,
                 const std::vector<unidb::sql::ColumnDefinition> &schema) {
   SelectPlan plan;
+  plan.schema = schema;
   plan.types = schemaTypes(schema);
   const auto &types = plan.types;
   const auto *where = std::get_if<WhereExpression>(&select.where);

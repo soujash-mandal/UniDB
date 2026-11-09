@@ -1,6 +1,8 @@
 #include "../domain/codec/SqlTupleCodec.h"
 #include <gtest/gtest.h>
 
+#include <limits>
+
 TEST(SqlTupleCodecTest, RoundTripsIntAndText) {
   std::vector<unidb::sql::SqlType> schema;
   schema.push_back(unidb::sql::SqlType::Int);

@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <limits>
 #include <string>
 #include <variant>
 
@@ -59,6 +60,65 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_EQ(result.rows.size(), 1U);
     EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 7);
     EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "Ada");
+  }
+
+  std::filesystem::remove(databaseFile);
+}
+
+
+TEST(ExecuteQueryActionIntegrationTest,
+     StoresAndReadsPostgreSqlIntegerWidthsEndToEnd) {
+  const auto databaseFile =
+      std::filesystem::temp_directory_path() / "unidb_integer_widths_test.db";
+  std::filesystem::remove(databaseFile);
+
+  {
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+
+    const auto created = container.executeQueryAction().execute(
+        "CREATE TABLE integer_widths (small_value SMALLINT, "
+        "integer_value INTEGER, big_value BIGINT);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created));
+
+    const auto inserted = container.executeQueryAction().execute(
+        "INSERT INTO integer_widths (small_value, integer_value, big_value) "
+        "VALUES (-32768, 2147483647, -9223372036854775808);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            inserted));
+
+    const auto selected = container.executeQueryAction().execute(
+        "SELECT * FROM integer_widths;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    ASSERT_EQ(result.rows.size(), 1U);
+    ASSERT_EQ(result.rows[0].size(), 3U);
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), -32768);
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 2147483647);
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[0][2]),
+              std::numeric_limits<std::int64_t>::min());
+
+    const auto overflow = container.executeQueryAction().execute(
+        "INSERT INTO integer_widths (small_value, integer_value, big_value) "
+        "VALUES (32768, 1, 1);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+            overflow));
+    const auto afterOverflow = container.executeQueryAction().execute(
+        "SELECT * FROM integer_widths;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            afterOverflow));
+    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(
+                  afterOverflow).rows.size(),
+              1U);
+    container.flushDirtyPages();
   }
 
   std::filesystem::remove(databaseFile);

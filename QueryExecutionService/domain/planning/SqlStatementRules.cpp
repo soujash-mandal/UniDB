@@ -23,7 +23,15 @@ void validateCreateTable(const CreateTableStatement &statement) {
     if (column.name.empty() || !names.insert(column.name).second) {
       throw std::invalid_argument("Column names must be non-empty and unique");
     }
-    if (column.type != SqlType::Int && column.type != SqlType::Text) {
+    if (column.declaredType.has_value()) {
+      using unidb::sql::SqlTypeId;
+      const auto id = column.declaredType->id;
+      if (id != SqlTypeId::SmallInt && id != SqlTypeId::Integer &&
+          id != SqlTypeId::BigInt && id != SqlTypeId::Text) {
+        throw std::invalid_argument(
+            "CREATE TABLE type is recognized but not yet supported");
+      }
+    } else if (column.type != SqlType::Int && column.type != SqlType::Text) {
       throw std::invalid_argument("Column type is outside the V1 SQL subset");
     }
   }
@@ -81,12 +89,11 @@ prepareInsertRows(const InsertStatement &statement,
 std::vector<std::vector<char>>
 encodeInsertRows(const InsertStatement &statement,
                  const std::vector<ColumnDefinition> &schema) {
-  const auto types = schemaTypes(schema);
   const auto rows = prepareInsertRows(statement, schema);
   std::vector<std::vector<char>> encodedRows;
   encodedRows.reserve(rows.size());
   for (const auto &row : rows) {
-    encodedRows.push_back(SqlTupleCodec::encode(types, row));
+    encodedRows.push_back(SqlTupleCodec::encode(schema, row));
   }
   return encodedRows;
 }
