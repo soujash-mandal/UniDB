@@ -17,7 +17,7 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
 
   Table loaded = page.getByName("users");
   EXPECT_EQ(loaded.tableId, 11U);
-  ASSERT_EQ(loaded.columns.size(), 3U);
+  ASSERT_EQ(loaded.columns.size(), 4U);
   EXPECT_EQ(loaded.columns[1].name, "name");
   EXPECT_EQ(loaded.columns[2].type, DataType::SMALLINT);
   ASSERT_EQ(loaded.columns.size(), 4U);
