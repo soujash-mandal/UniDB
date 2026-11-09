@@ -81,6 +81,33 @@ LexResult SqlLexer::tokenize(std::string_view sql) const {
       continue;
     }
 
+    if (ch == '.' && index + 1 < sql.size() &&
+        std::isdigit(static_cast<unsigned char>(sql[index + 1])) != 0) {
+      ++index;
+      while (index < sql.size() &&
+             std::isdigit(static_cast<unsigned char>(sql[index])) != 0) {
+        ++index;
+      }
+      if (index < sql.size() && (sql[index] == 'e' || sql[index] == 'E')) {
+        ++index;
+        if (index < sql.size() && (sql[index] == '+' || sql[index] == '-')) {
+          ++index;
+        }
+        const auto exponentStart = index;
+        while (index < sql.size() &&
+               std::isdigit(static_cast<unsigned char>(sql[index])) != 0) {
+          ++index;
+        }
+        if (index == exponentStart) {
+          result.error = "Malformed floating-point exponent";
+          return result;
+        }
+      }
+      add(TokenKind::Floating, std::string(sql.substr(start, index - start)),
+          start);
+      continue;
+    }
+
     if (ch == '\'') {
       ++index;
       std::string value;
