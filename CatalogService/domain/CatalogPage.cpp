@@ -49,9 +49,10 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument(
           "NUMERIC scale must be between -1000 and 1000");
     }
-    hasNumericModifiers =
-        hasNumericModifiers || column.numericPrecision.has_value() ||
-        column.numericScale.has_value();
+    if (column.numericPrecision.has_value() ||
+        column.numericScale.has_value()) {
+      hasNumericModifiers = true;
+    }
   }
 
   // Keep the legacy payload size unchanged unless a column has modifiers.
