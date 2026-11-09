@@ -276,7 +276,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
       } else if (index < plan.compiledIntegers.size() &&
                  plan.compiledIntegers[index].has_value()) {
         projected.push_back(
-            evaluateIntegerExpression(decoded, *plan.compiledIntegers[index]));
+            evaluateSqlArithmeticExpression(decoded, *plan.compiledIntegers[index]));
       } else if (index < plan.compiledCases.size() &&
                  plan.compiledCases[index].has_value()) {
         const auto &caseExpression = *select.caseExpressions[index];
