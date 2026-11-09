@@ -15,8 +15,7 @@ namespace {
 using unidb::sql::AggregateFunction;
 using unidb::sql::SqlValue;
 
-std::string addMagnitude(const std::string &left,
-                        const std::string &right) {
+std::string addMagnitude(const std::string &left, const std::string &right) {
   std::string result;
   std::size_t leftIndex = left.size();
   std::size_t rightIndex = right.size();
@@ -60,8 +59,8 @@ std::string subtractMagnitude(const std::string &larger,
   return result;
 }
 
-unidb::sql::SqlNumericValue sumNumericValues(
-    const std::vector<SqlValue> &values) {
+unidb::sql::SqlNumericValue
+sumNumericValues(const std::vector<SqlValue> &values) {
   using unidb::sql::SqlNumericValue;
   std::int32_t commonScale = std::numeric_limits<std::int32_t>::min();
   std::vector<SqlNumericValue> aligned;
@@ -111,8 +110,7 @@ unidb::sql::SqlNumericValue sumNumericValues(
       totalNegative = value.negative;
     }
   }
-  return normalizeSqlNumericValue(totalNegative, std::move(total),
-                                  commonScale);
+  return normalizeSqlNumericValue(totalNegative, std::move(total), commonScale);
 }
 
 std::string aggregateFunctionName(AggregateFunction function) {
