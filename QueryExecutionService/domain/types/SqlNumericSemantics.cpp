@@ -115,11 +115,19 @@ unidb::sql::SqlNumericValue parseSqlNumericLiteral(std::string_view literal) {
     if (position == exponentStart) {
       throw std::invalid_argument("NUMERIC exponent requires digits");
     }
+    std::uint64_t magnitude = 0;
     const auto parsed = std::from_chars(
-        literal.data() + exponentStart, literal.data() + position, exponent);
+        literal.data() + exponentStart, literal.data() + position, magnitude);
     if (parsed.ec != std::errc{} || parsed.ptr != literal.data() + position) {
       throw std::out_of_range("NUMERIC exponent is out of range");
     }
+    const auto maximumMagnitude =
+        static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max()) +
+        static_cast<std::uint64_t>(literal.size()) + 1U;
+    if (magnitude > maximumMagnitude) {
+      throw std::out_of_range("NUMERIC exponent is out of range");
+    }
+    exponent = static_cast<std::int64_t>(magnitude);
     if (exponentNegative) {
       exponent = -exponent;
     }
@@ -128,12 +136,6 @@ unidb::sql::SqlNumericValue parseSqlNumericLiteral(std::string_view literal) {
     throw std::invalid_argument("Invalid character in NUMERIC literal");
   }
 
-  if ((exponent < 0 &&
-       fractionalDigits > std::numeric_limits<std::int32_t>::max() + exponent) ||
-      (exponent > 0 &&
-       fractionalDigits < std::numeric_limits<std::int32_t>::min() + exponent)) {
-    throw std::out_of_range("NUMERIC scale is out of range");
-  }
   const auto scale = fractionalDigits - exponent;
   if (scale < std::numeric_limits<std::int32_t>::min() ||
       scale > std::numeric_limits<std::int32_t>::max()) {
