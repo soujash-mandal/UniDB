@@ -53,6 +53,15 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
   return 0;
 }
 
+int compareUnsignedMagnitudes(const std::string &left,
+                              const std::string &right) {
+  if (left.size() != right.size()) {
+    return left.size() < right.size() ? -1 : 1;
+  }
+  const int comparison = left.compare(right);
+  return comparison < 0 ? -1 : (comparison > 0 ? 1 : 0);
+}
+
 std::string addMagnitudes(const std::string &left, const std::string &right) {
   std::string result;
   result.reserve(std::max(left.size(), right.size()) + 1);
@@ -327,7 +336,8 @@ addSqlNumericValues(const unidb::sql::SqlNumericValue &left,
     return normalizeSqlNumericValue(
         left.negative, addMagnitudes(leftCoefficient, rightCoefficient), scale);
   }
-  const int comparison = leftCoefficient.compare(rightCoefficient);
+  const int comparison =
+      compareUnsignedMagnitudes(leftCoefficient, rightCoefficient);
   if (comparison == 0) {
     return normalizeSqlNumericValue(false, "0", 0);
   }
