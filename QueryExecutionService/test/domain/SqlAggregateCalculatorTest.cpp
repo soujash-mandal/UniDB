@@ -65,32 +65,33 @@ TEST(SqlAggregateCalculatorTest, CalculatesSumAndTruncatedIntegerAverage) {
 
 TEST(SqlAggregateCalculatorTest, CalculatesFloatingPointSumAndAverage) {
   const std::vector<SqlValue> realValues{1.5F, 2.25F, -0.5F};
-  EXPECT_FLOAT_EQ(std::get<float>(calculateAggregate(AggregateFunction::Sum,
-                                                     realValues, 3)),
-                  3.25F);
-  EXPECT_DOUBLE_EQ(std::get<double>(calculateAggregate(AggregateFunction::Avg,
-                                                       realValues, 3)),
-                   3.25 / 3.0);
+  const auto realSum =
+      calculateAggregate(AggregateFunction::Sum, realValues, 3);
+  const auto realAverage =
+      calculateAggregate(AggregateFunction::Avg, realValues, 3);
+  EXPECT_FLOAT_EQ(std::get<float>(realSum), 3.25F);
+  EXPECT_DOUBLE_EQ(std::get<double>(realAverage), 3.25 / 3.0);
 
   const std::vector<SqlValue> doubleValues{1.5, 2.25, -0.5};
-  EXPECT_DOUBLE_EQ(std::get<double>(calculateAggregate(AggregateFunction::Sum,
-                                                       doubleValues, 3)),
-                   3.25);
-  EXPECT_DOUBLE_EQ(std::get<double>(calculateAggregate(AggregateFunction::Avg,
-                                                       doubleValues, 3)),
-                   3.25 / 3.0);
+  const auto doubleSum =
+      calculateAggregate(AggregateFunction::Sum, doubleValues, 3);
+  const auto doubleAverage =
+      calculateAggregate(AggregateFunction::Avg, doubleValues, 3);
+  EXPECT_DOUBLE_EQ(std::get<double>(doubleSum), 3.25);
+  EXPECT_DOUBLE_EQ(std::get<double>(doubleAverage), 3.25 / 3.0);
 }
 
 TEST(SqlAggregateCalculatorTest, PreservesFloatingPointNonFiniteResults) {
-  const std::vector<SqlValue> values{std::numeric_limits<double>::infinity(),
-                                     1.0};
-  EXPECT_TRUE(std::isinf(
-      std::get<double>(calculateAggregate(AggregateFunction::Sum, values, 2))));
+  const std::vector<SqlValue> values{
+      std::numeric_limits<double>::infinity(), 1.0};
+  const auto sum = calculateAggregate(AggregateFunction::Sum, values, 2);
+  EXPECT_TRUE(std::isinf(std::get<double>(sum)));
 
-  const std::vector<SqlValue> nanValues{std::numeric_limits<float>::quiet_NaN(),
-                                        1.0F};
-  EXPECT_TRUE(std::isnan(std::get<double>(
-      calculateAggregate(AggregateFunction::Avg, nanValues, 2))));
+  const std::vector<SqlValue> nanValues{
+      std::numeric_limits<float>::quiet_NaN(), 1.0F};
+  const auto average =
+      calculateAggregate(AggregateFunction::Avg, nanValues, 2);
+  EXPECT_TRUE(std::isnan(std::get<double>(average)));
 }
 
 TEST(SqlAggregateCalculatorTest, RejectsSumOverflow) {
