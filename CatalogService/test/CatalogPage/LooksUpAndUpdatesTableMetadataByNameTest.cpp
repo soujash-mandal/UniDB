@@ -66,7 +66,6 @@ TEST(CatalogPageTest, RejectsUnknownNumericMetadataExtensionVersion) {
   EXPECT_THROW(page.get(13), std::runtime_error);
 }
 
-
 TEST(CatalogPageTest, PreservesUnmodifiedNumericWithoutMetadataExtension) {
   CatalogPage page;
   Table table{};
