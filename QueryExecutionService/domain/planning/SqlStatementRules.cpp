@@ -2,6 +2,9 @@
 
 #include "../codec/SqlTupleCodec.h"
 #include "../predicate/WherePredicateEvaluator.h"
+#include "../types/SqlNumericSemantics.h"
+
+#include <charconv>
 #include <algorithm>
 #include <limits>
 #include <set>
@@ -44,8 +47,8 @@ void validateCreateTable(const CreateTableStatement &statement) {
       const auto id = column.declaredType->id;
       if (id != SqlTypeId::SmallInt && id != SqlTypeId::Integer &&
           id != SqlTypeId::BigInt && id != SqlTypeId::Real &&
-          id != SqlTypeId::DoublePrecision && id != SqlTypeId::Boolean &&
-          id != SqlTypeId::Text) {
+          id != SqlTypeId::DoublePrecision && id != SqlTypeId::Numeric &&
+          id != SqlTypeId::Boolean && id != SqlTypeId::Text) {
         throw std::invalid_argument(
             "CREATE TABLE type is recognized but not yet supported");
       }
@@ -103,6 +106,17 @@ prepareInsertRows(const InsertStatement &statement,
           } else if (const auto *integer =
                          std::get_if<std::int64_t>(&values[inputIndex])) {
             numericValue = static_cast<double>(*integer);
+          } else if (const auto *decimal =
+                         std::get_if<SqlNumericValue>(&values[inputIndex])) {
+            const auto text = formatSqlNumericValue(*decimal);
+            const auto conversion = std::from_chars(
+                text.data(), text.data() + text.size(), numericValue,
+                std::chars_format::general);
+            if (conversion.ec != std::errc{} ||
+                conversion.ptr != text.data() + text.size()) {
+              throw std::invalid_argument(
+                  "REAL value is outside the supported range: " + found->name);
+            }
           } else {
             break;
           }
@@ -126,7 +140,27 @@ prepareInsertRows(const InsertStatement &statement,
             orderedValues[schemaIndex] = static_cast<double>(*integer);
             valueWasNormalized = true;
             valueMatchesColumn = true;
+          } else if (const auto *decimal =
+                         std::get_if<SqlNumericValue>(&values[inputIndex])) {
+            const auto text = formatSqlNumericValue(*decimal);
+            double converted{};
+            const auto conversion = std::from_chars(
+                text.data(), text.data() + text.size(), converted,
+                std::chars_format::general);
+            if (conversion.ec != std::errc{} ||
+                conversion.ptr != text.data() + text.size()) {
+              throw std::invalid_argument(
+                  "DOUBLE PRECISION value is outside the supported range: " +
+                  found->name);
+            }
+            orderedValues[schemaIndex] = converted;
+            valueWasNormalized = true;
+            valueMatchesColumn = true;
           }
+          break;
+        case SqlTypeId::Numeric:
+          valueMatchesColumn =
+              std::holds_alternative<SqlNumericValue>(values[inputIndex]);
           break;
         case SqlTypeId::Boolean:
           valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
