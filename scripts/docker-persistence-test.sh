@@ -396,13 +396,12 @@ finally:
 PY
 
 # 1.4 Send more than 64 KiB of piped SQL through one built-in TLS client.
-# Keep the byte-volume stress while avoiding hundreds of tiny, separately
-# persisted INSERT statements: 100 rows with 900-byte payloads still exceed
-# 64 KiB on the wire and produce a response far larger than the read buffer.
+# Keep the byte-volume stress with fewer statements and less total payload:
+# 200 rows with 320-byte payloads exceed 64 KiB including SQL syntax overhead.
 client_sql "CREATE TABLE tls_large_response (id INT, payload TEXT);" | grep -q '"ok":true'
 batch=""
-for index in $(seq 1 100); do
-  payload="row-${index}-$(printf '%0900d' 0)"
+for index in $(seq 1 200); do
+  payload="row-${index}-$(printf '%0320d' 0)"
   batch+="INSERT INTO tls_large_response (id, payload) VALUES (${index}, '${payload}');"$'\n'
 done
 batch_bytes="$(printf '%s' "$batch" | wc -c | tr -d ' ')"
@@ -412,8 +411,8 @@ if (( batch_bytes <= 65536 )); then
 fi
 batch_responses="$(client_sql_batch "$batch")"
 insert_count="$(grep -Fc '"affected_rows":1' <<<"$batch_responses")"
-if [[ "$insert_count" != "100" ]]; then
-  echo "Expected 100 successful inserts from one TLS client; got $insert_count." >&2
+if [[ "$insert_count" != "200" ]]; then
+  echo "Expected 200 successful inserts from one TLS client; got $insert_count." >&2
   exit 1
 fi
 
@@ -423,7 +422,7 @@ if (( ${#large_response} <= 4096 )); then
   echo "Expected TLS SELECT response larger than 4 KiB; got ${#large_response} bytes." >&2
   exit 1
 fi
-if ! grep -Fq 'row-100-' <<<"$large_response"; then
+if ! grep -Fq 'row-200-' <<<"$large_response"; then
   echo "Large TLS response was truncated before the final row." >&2
   exit 1
 fi
