@@ -132,7 +132,8 @@ TEST(SqlAggregateCalculatorTest, CalculatesExactNumericSumWithCancellation) {
             (unidb::sql::SqlNumericValue{false, "1", 0}));
 }
 
-TEST(SqlAggregateCalculatorTest, PreservesLargeNumericSumWithoutNativeOverflow) {
+TEST(SqlAggregateCalculatorTest,
+     PreservesLargeNumericSumWithoutNativeOverflow) {
   const std::vector<SqlValue> values{
       unidb::sql::SqlNumericValue{false, "999999999999999999999999999999", 4},
       unidb::sql::SqlNumericValue{false, "1", 4}};
