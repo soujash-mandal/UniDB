@@ -18,6 +18,87 @@ namespace QueryExecutionService::domain {
 using namespace unidb::sql;
 
 namespace {
+SqlNumericValue
+applyNumericModifier(const SqlNumericValue &value,
+                     const unidb::sql::SqlTypeModifier &modifier) {
+  if (!modifier.precision.has_value()) {
+    if (modifier.scale.has_value()) {
+      throw std::invalid_argument("NUMERIC scale requires precision");
+    }
+    return value;
+  }
+
+  const auto precision = *modifier.precision;
+  const auto targetScale = modifier.scale.value_or(0);
+  if (precision == 0 || precision > 1000 || targetScale < -1000 ||
+      targetScale > 1000) {
+    throw std::invalid_argument("NUMERIC precision or scale is out of range");
+  }
+
+  // Validate the incoming value before manipulating its canonical digits.
+  (void)formatSqlNumericValue(value);
+  std::string coefficient = value.coefficient;
+  const auto digitsToDiscard =
+      static_cast<std::int64_t>(value.scale) - targetScale;
+  if (digitsToDiscard > 0) {
+    const auto discard = static_cast<std::uint64_t>(digitsToDiscard);
+    char firstDiscardedDigit = '0';
+    if (discard <= coefficient.size()) {
+      firstDiscardedDigit =
+          coefficient[coefficient.size() - static_cast<std::size_t>(discard)];
+    }
+    const auto retainedLength =
+        discard >= coefficient.size()
+            ? std::size_t{0}
+            : coefficient.size() - static_cast<std::size_t>(discard);
+    coefficient =
+        retainedLength == 0 ? "0" : coefficient.substr(0, retainedLength);
+
+    // PostgreSQL NUMERIC rounds ties away from zero.
+    if (firstDiscardedDigit >= '5') {
+      std::size_t index = coefficient.size();
+      while (index > 0 && coefficient[index - 1] == '9') {
+        coefficient[index - 1] = '0';
+        --index;
+      }
+      if (index == 0) {
+        coefficient.insert(coefficient.begin(), '1');
+      } else {
+        ++coefficient[index - 1];
+      }
+    }
+  } else if (digitsToDiscard < 0) {
+    const auto appendedZeros = static_cast<std::uint64_t>(-digitsToDiscard);
+    if (appendedZeros > 1000) {
+      throw std::invalid_argument("NUMERIC precision or scale is out of range");
+    }
+    coefficient.append(static_cast<std::size_t>(appendedZeros), '0');
+  }
+
+  const auto normalized =
+      normalizeSqlNumericValue(value.negative, coefficient, targetScale);
+  if (normalized.coefficient == "0") {
+    return normalized;
+  }
+
+  // Precision counts digits at the declared scale, including trailing zeroes
+  // introduced when the input has fewer fractional digits than the typmod.
+  std::string scaledCoefficient = coefficient;
+  if (digitsToDiscard < 0) {
+    // coefficient already includes the zero-padding to the declared scale.
+    scaledCoefficient = coefficient;
+  }
+  const auto integerDigits =
+      static_cast<std::int64_t>(scaledCoefficient.size()) - targetScale;
+  const auto maximumIntegerDigits = std::max<std::int64_t>(
+      static_cast<std::int64_t>(precision) - targetScale, 0);
+  if (scaledCoefficient.size() > precision ||
+      integerDigits > maximumIntegerDigits) {
+    throw std::overflow_error("NUMERIC field overflow");
+  }
+  return normalized;
+}
+
 struct SqlValueRowLess {
   bool operator()(const std::vector<SqlValue> &left,
                   const std::vector<SqlValue> &right) const {
@@ -159,12 +240,18 @@ prepareInsertRows(const InsertStatement &statement,
           }
           break;
         case SqlTypeId::Numeric:
-          if (std::holds_alternative<SqlNumericValue>(values[inputIndex])) {
+          if (const auto *numeric =
+                  std::get_if<SqlNumericValue>(&values[inputIndex])) {
+            orderedValues[schemaIndex] =
+                applyNumericModifier(*numeric, found->declaredType->modifier);
+            valueWasNormalized = true;
             valueMatchesColumn = true;
           } else if (const auto *integer =
                          std::get_if<std::int64_t>(&values[inputIndex])) {
-            orderedValues[schemaIndex] =
+            const auto numeric =
                 parseSqlNumericLiteral(std::to_string(*integer));
+            orderedValues[schemaIndex] =
+                applyNumericModifier(numeric, found->declaredType->modifier);
             valueWasNormalized = true;
             valueMatchesColumn = true;
           }
