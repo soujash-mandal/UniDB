@@ -167,3 +167,11 @@ TEST(SqlNumericSemanticsTest, RejectsInvalidPrecisionAndScaleModifiers) {
   EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("1"), 2, 1001),
                std::invalid_argument);
 }
+
+
+TEST(SqlNumericSemanticsTest, RoundsSmallMagnitudesToCanonicalZero) {
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("0.0049"), 2, 2),
+            (unidb::sql::SqlNumericValue{false, "0", 0}));
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("-0.005"), 2, 2),
+            parseSqlNumericLiteral("-0.01"));
+}
