@@ -118,8 +118,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     }
     const auto aggregateDescriptor =
         plan.aggregateIndex.has_value()
-            ? aggregateResultDescriptor(
-                  aggregate.function, plan.schema[*plan.aggregateIndex])
+            ? aggregateResultDescriptor(aggregate.function,
+                                        plan.schema[*plan.aggregateIndex])
             : std::optional<SqlTypeDescriptor>{};
     result.columns.push_back(
         {aggregateName, aggregateType, aggregateDescriptor});
@@ -220,8 +220,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
             : SqlType::Int;
     const auto aggregateDescriptor =
         plan.aggregateIndex.has_value()
-            ? aggregateResultDescriptor(
-                  aggregate.function, plan.schema[*plan.aggregateIndex])
+            ? aggregateResultDescriptor(aggregate.function,
+                                        plan.schema[*plan.aggregateIndex])
             : std::optional<SqlTypeDescriptor>{};
     result.columns.push_back({outputName, outputType, aggregateDescriptor});
 
