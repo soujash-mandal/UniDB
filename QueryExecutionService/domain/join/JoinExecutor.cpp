@@ -166,11 +166,13 @@ executeCrossJoin(const SelectStatement &select,
   joinedSchema.reserve(leftSchema.size() + rightSchema.size());
   joinedTypes.reserve(leftTypes.size() + rightTypes.size());
   for (const auto &column : leftSchema) {
-    joinedSchema.push_back({leftQualifier + "." + column.name, column.type});
+    joinedSchema.push_back(
+        {leftQualifier + "." + column.name, column.type, column.declaredType});
     joinedTypes.push_back(column.type);
   }
   for (const auto &column : rightSchema) {
-    joinedSchema.push_back({rightQualifier + "." + column.name, column.type});
+    joinedSchema.push_back(
+        {rightQualifier + "." + column.name, column.type, column.declaredType});
     joinedTypes.push_back(column.type);
   }
 
@@ -346,7 +348,8 @@ QueryExecutionResult executeMultipleInnerJoins(
     rows = std::move(expanded);
     qualifiers.push_back(qualifier);
     for (const auto &c : schemas[j + 1]) {
-      combinedSchema.push_back({qualifier + "." + c.name, c.type});
+      combinedSchema.push_back(
+          {qualifier + "." + c.name, c.type, c.declaredType});
       combinedTypes.push_back(c.type);
     }
   }
