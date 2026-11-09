@@ -14,17 +14,16 @@ FakeQesRdbServicePort makeFloatingPointPort() {
       {"approximate", unidb::sql::SqlType::Int,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Real, {}}},
       {"precise", unidb::sql::SqlType::Int,
-       unidb::sql::SqlTypeDescriptor{
-           unidb::sql::SqlTypeId::DoublePrecision, {}}}};
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::DoublePrecision,
+                                     {}}}};
   const float realNaN = std::numeric_limits<float>::quiet_NaN();
   const double doubleNaN = std::numeric_limits<double>::quiet_NaN();
-  port.rows = {
-      SqlTupleCodec::encode(port.schema, {1.0F, 10.0}),
-      SqlTupleCodec::encode(port.schema, {1.0F, 10.0}),
-      SqlTupleCodec::encode(port.schema, {-0.0F, -0.0}),
-      SqlTupleCodec::encode(port.schema, {0.0F, 0.0}),
-      SqlTupleCodec::encode(port.schema, {realNaN, doubleNaN}),
-      SqlTupleCodec::encode(port.schema, {realNaN, doubleNaN})};
+  port.rows = {SqlTupleCodec::encode(port.schema, {1.0F, 10.0}),
+               SqlTupleCodec::encode(port.schema, {1.0F, 10.0}),
+               SqlTupleCodec::encode(port.schema, {-0.0F, -0.0}),
+               SqlTupleCodec::encode(port.schema, {0.0F, 0.0}),
+               SqlTupleCodec::encode(port.schema, {realNaN, doubleNaN}),
+               SqlTupleCodec::encode(port.schema, {realNaN, doubleNaN})};
   return port;
 }
 } // namespace
@@ -37,8 +36,9 @@ TEST(ExecuteQueryActionFloatingPointTest,
 
   const auto realOutcome = action.execute(
       "SELECT DISTINCT approximate FROM measurements ORDER BY approximate;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(realOutcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          realOutcome));
   const auto &realRows =
       std::get<QueryExecutionService::QueryExecutionResult>(realOutcome).rows;
   ASSERT_EQ(realRows.size(), 3U);
@@ -48,8 +48,9 @@ TEST(ExecuteQueryActionFloatingPointTest,
 
   const auto doubleOutcome = action.execute(
       "SELECT DISTINCT precise FROM measurements ORDER BY precise;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(doubleOutcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          doubleOutcome));
   const auto &doubleRows =
       std::get<QueryExecutionService::QueryExecutionResult>(doubleOutcome).rows;
   ASSERT_EQ(doubleRows.size(), 3U);
@@ -64,11 +65,12 @@ TEST(ExecuteQueryActionFloatingPointTest,
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT approximate, COUNT(*) FROM measurements "
-      "GROUP BY approximate ORDER BY approximate;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(outcome));
+  const auto outcome =
+      action.execute("SELECT approximate, COUNT(*) FROM measurements "
+                     "GROUP BY approximate ORDER BY approximate;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 3U);
@@ -86,10 +88,11 @@ TEST(ExecuteQueryActionFloatingPointTest,
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto minimum = action.execute(
-      "SELECT MIN(approximate) FROM measurements;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(minimum));
+  const auto minimum =
+      action.execute("SELECT MIN(approximate) FROM measurements;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          minimum));
   const auto &minimumResult =
       std::get<QueryExecutionService::QueryExecutionResult>(minimum);
   ASSERT_EQ(minimumResult.rows.size(), 1U);
@@ -98,10 +101,10 @@ TEST(ExecuteQueryActionFloatingPointTest,
   EXPECT_EQ(minimumResult.columns[0].declaredType->id,
             unidb::sql::SqlTypeId::Real);
 
-  const auto maximum = action.execute(
-      "SELECT MAX(precise) FROM measurements;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(maximum));
+  const auto maximum = action.execute("SELECT MAX(precise) FROM measurements;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          maximum));
   const auto &maximumResult =
       std::get<QueryExecutionService::QueryExecutionResult>(maximum);
   ASSERT_EQ(maximumResult.rows.size(), 1U);
