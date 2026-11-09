@@ -221,4 +221,74 @@ int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
   return left.negative ? -magnitude : magnitude;
 }
 
+
+unidb::sql::SqlNumericValue applySqlNumericTypmod(
+    const unidb::sql::SqlNumericValue &value, std::uint32_t precision,
+    std::int32_t scale) {
+  validateCanonicalValue(value);
+  if (precision == 0 || precision > 1000) {
+    throw std::invalid_argument(
+        "NUMERIC precision must be between 1 and 1000");
+  }
+  if (scale < -1000 || scale > 1000) {
+    throw std::invalid_argument("NUMERIC scale must be between -1000 and 1000");
+  }
+  if (value.coefficient == "0") {
+    return value;
+  }
+
+  std::string roundedCoefficient = value.coefficient;
+  const auto shift = static_cast<std::int64_t>(scale) - value.scale;
+  if (shift > 0) {
+    if (static_cast<std::uint64_t>(shift) >
+        roundedCoefficient.max_size() - roundedCoefficient.size()) {
+      throw std::out_of_range("NUMERIC value exceeds declared precision");
+    }
+    roundedCoefficient.append(static_cast<std::size_t>(shift), '0');
+  } else if (shift < 0) {
+    const auto discardedDigits = static_cast<std::uint64_t>(-shift);
+    bool roundUp = false;
+    if (discardedDigits <= roundedCoefficient.size()) {
+      const auto firstDiscarded =
+          roundedCoefficient[roundedCoefficient.size() -
+                             static_cast<std::size_t>(discardedDigits)];
+      roundUp = firstDiscarded >= '5';
+    }
+
+    if (discardedDigits >= roundedCoefficient.size()) {
+      roundedCoefficient = roundUp ? "1" : "0";
+    } else {
+      roundedCoefficient.resize(roundedCoefficient.size() -
+                                static_cast<std::size_t>(discardedDigits));
+      if (roundUp) {
+        std::size_t position = roundedCoefficient.size();
+        while (position > 0 && roundedCoefficient[position - 1] == '9') {
+          roundedCoefficient[position - 1] = '0';
+          --position;
+        }
+        if (position == 0) {
+          roundedCoefficient.insert(roundedCoefficient.begin(), '1');
+        } else {
+          ++roundedCoefficient[position - 1];
+        }
+      }
+    }
+  }
+
+  auto rounded = normalizeSqlNumericValue(value.negative,
+                                          std::move(roundedCoefficient), scale);
+  if (rounded.coefficient == "0") {
+    return rounded;
+  }
+
+  const auto integerDigits =
+      static_cast<std::int64_t>(rounded.coefficient.size()) - rounded.scale;
+  const auto maximumIntegerDigits =
+      static_cast<std::int64_t>(precision) - scale;
+  if (integerDigits > maximumIntegerDigits) {
+    throw std::out_of_range("NUMERIC value overflows declared precision");
+  }
+  return rounded;
+}
+
 } // namespace QueryExecutionService::domain
