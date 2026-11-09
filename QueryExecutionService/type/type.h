@@ -62,7 +62,11 @@ using SqlIntegerValue = std::variant<std::int16_t, std::int32_t, std::int64_t>;
 
 using SqlBooleanValue = bool;
 
-using SqlValue = std::variant<std::int64_t, std::string, SqlBooleanValue>;
+using SqlRealValue = float;
+using SqlDoublePrecisionValue = double;
+
+using SqlValue = std::variant<std::int64_t, std::string, SqlBooleanValue,
+                              SqlRealValue, SqlDoublePrecisionValue>;
 
 struct ColumnDefinition {
   std::string name;

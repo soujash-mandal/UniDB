@@ -1,6 +1,7 @@
 #include "../domain/codec/SqlTupleCodec.h"
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <limits>
 
 TEST(SqlTupleCodecTest, RoundTripsIntAndText) {
@@ -138,4 +139,77 @@ TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
   EXPECT_THROW(SqlTupleCodec::decode(
                    schema, std::vector<char>{0x01, static_cast<char>(0xff)}),
                std::runtime_error);
+}
+
+TEST(SqlTupleCodecTest, RoundTripsRealAndDoublePrecisionUsingDeclaredSchema) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"real_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}},
+      {"double_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{1.25F, -123.5};
+
+  const auto bytes = SqlTupleCodec::encode(schema, values);
+  EXPECT_EQ(bytes.size(), 13U);
+  EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
+}
+
+TEST(SqlTupleCodecTest, PreservesFloatingPointSpecialValuesAndSignedZero) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"real_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}},
+      {"double_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{
+      -0.0F, std::numeric_limits<double>::infinity()};
+
+  const auto bytes = SqlTupleCodec::encode(schema, values);
+  const auto decoded = SqlTupleCodec::decode(schema, bytes);
+  ASSERT_EQ(decoded.size(), 2U);
+  EXPECT_TRUE(std::signbit(std::get<float>(decoded[0])));
+  EXPECT_EQ(std::get<double>(decoded[1]),
+            std::numeric_limits<double>::infinity());
+}
+
+TEST(SqlTupleCodecTest, RejectsFloatingPointRuntimeWidthMismatch) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> realSchema{
+      {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}}};
+  const std::vector<ColumnDefinition> doubleSchema{
+      {"value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}}}};
+
+  EXPECT_THROW(SqlTupleCodec::encode(realSchema, {1.0}), std::invalid_argument);
+  EXPECT_THROW(SqlTupleCodec::encode(doubleSchema, {1.0F}),
+               std::invalid_argument);
+  EXPECT_THROW(SqlTupleCodec::encode(realSchema, {std::int64_t{1}}),
+               std::invalid_argument);
+}
+
+TEST(SqlTupleCodecTest, RejectsTruncatedAndTrailingFloatingPointBytes) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}}};
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x00}),
+               std::runtime_error);
+
+  auto bytes = SqlTupleCodec::encode(schema, {1.5F});
+  bytes.push_back(0x00);
+  EXPECT_THROW(SqlTupleCodec::decode(schema, bytes), std::runtime_error);
 }
