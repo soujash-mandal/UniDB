@@ -73,14 +73,26 @@ compileIntegerExpression(const IntegerExpression &expression,
     }
     const auto index =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
-    if (types[index] != SqlType::Int) {
-      throw std::invalid_argument("Numeric arithmetic requires a numeric column: " +
-                                  expression.columnName);
+    if (found->declaredType.has_value()) {
+      switch (found->declaredType->id) {
+      case unidb::sql::SqlTypeId::SmallInt:
+      case unidb::sql::SqlTypeId::Integer:
+      case unidb::sql::SqlTypeId::BigInt:
+        break;
+      case unidb::sql::SqlTypeId::Numeric:
+        compiled.numeric = true;
+        break;
+      default:
+        throw std::invalid_argument(
+            "Arithmetic expressions require an integer or NUMERIC column: " +
+            expression.columnName);
+      }
+    } else if (types[index] != SqlType::Int) {
+      throw std::invalid_argument(
+          "Arithmetic expressions require an integer column: " +
+          expression.columnName);
     }
     compiled.columnIndex = index;
-    compiled.numeric =
-        found->declaredType.has_value() &&
-        found->declaredType->id == unidb::sql::SqlTypeId::Numeric;
     return compiled;
   }
   if (expression.kind == IntegerExpression::Kind::Unary) {
