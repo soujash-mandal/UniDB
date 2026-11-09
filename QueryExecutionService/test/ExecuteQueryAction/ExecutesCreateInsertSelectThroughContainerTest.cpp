@@ -183,7 +183,8 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_TRUE(DatabaseStartup::execute(container));
 
     const auto created = container.executeQueryAction().execute(
-        "CREATE TABLE measurements (approximate REAL, precise DOUBLE PRECISION);");
+        "CREATE TABLE measurements (approximate REAL, precise DOUBLE "
+        "PRECISION);");
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             created));
@@ -207,8 +208,7 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_EQ(result.columns.size(), 2U);
     ASSERT_TRUE(result.columns[0].declaredType.has_value());
     ASSERT_TRUE(result.columns[1].declaredType.has_value());
-    EXPECT_EQ(result.columns[0].declaredType->id,
-              unidb::sql::SqlTypeId::Real);
+    EXPECT_EQ(result.columns[0].declaredType->id, unidb::sql::SqlTypeId::Real);
     EXPECT_EQ(result.columns[1].declaredType->id,
               unidb::sql::SqlTypeId::DoublePrecision);
   }
