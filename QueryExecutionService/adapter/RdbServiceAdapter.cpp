@@ -31,6 +31,10 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
     return RdbDataType::INT;
   case unidb::sql::SqlTypeId::BigInt:
     return RdbDataType::BIGINT;
+  case unidb::sql::SqlTypeId::Real:
+    return RdbDataType::FLOAT;
+  case unidb::sql::SqlTypeId::DoublePrecision:
+    return RdbDataType::DOUBLE;
   case unidb::sql::SqlTypeId::Boolean:
     return RdbDataType::BOOLEAN;
   case unidb::sql::SqlTypeId::Text:
@@ -46,6 +50,10 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
   case RdbDataType::INT:
   case RdbDataType::SMALLINT:
   case RdbDataType::BIGINT:
+  case RdbDataType::FLOAT:
+  case RdbDataType::DOUBLE:
+    // The declared descriptor remains authoritative until floating-point
+    // query execution adopts dedicated transitional execution tags.
     return unidb::sql::SqlType::Int;
   case RdbDataType::BOOLEAN:
     // The declared descriptor is authoritative until BOOLEAN query planning
@@ -69,6 +77,10 @@ unidb::sql::SqlTypeDescriptor descriptorFromRdbType(RdbDataType type) {
     return SqlTypeDescriptor{SqlTypeId::Integer, {}};
   case RdbDataType::BIGINT:
     return SqlTypeDescriptor{SqlTypeId::BigInt, {}};
+  case RdbDataType::FLOAT:
+    return SqlTypeDescriptor{SqlTypeId::Real, {}};
+  case RdbDataType::DOUBLE:
+    return SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}};
   case RdbDataType::BOOLEAN:
     return SqlTypeDescriptor{SqlTypeId::Boolean, {}};
   case RdbDataType::VARCHAR:
