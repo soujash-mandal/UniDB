@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstring>
 #include <stdexcept>
 
 TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
@@ -43,4 +44,23 @@ TEST(CatalogPageTest, RejectsNumericScaleWithoutPrecision) {
 
   EXPECT_THROW(page.insert(table), std::invalid_argument);
   EXPECT_FALSE(page.containsTableId(12));
+}
+
+
+TEST(CatalogPageTest, RejectsUnknownNumericMetadataExtensionVersion) {
+  CatalogPage page;
+  Table table{};
+  table.tableId = 13;
+  table.name = "unknown";
+  page.insert(table);
+
+  uint32_t payloadOffset = 0;
+  std::memcpy(&payloadOffset, page.data() + sizeof(uint32_t) * 4,
+              sizeof(payloadOffset));
+  constexpr std::size_t versionOffset = 4 + 4 + 7 + 4 + sizeof(uint32_t);
+  const uint8_t unsupportedVersion = 99;
+  std::memcpy(page.data() + payloadOffset + versionOffset, &unsupportedVersion,
+              sizeof(unsupportedVersion));
+
+  EXPECT_THROW(page.get(13), std::runtime_error);
 }
