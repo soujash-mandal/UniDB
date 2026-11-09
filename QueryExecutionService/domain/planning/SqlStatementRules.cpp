@@ -69,6 +69,7 @@ prepareInsertRows(const InsertStatement &statement,
                                     statement.columnNames[inputIndex]);
       }
       bool valueMatchesColumn = false;
+      bool valueWasNormalized = false;
       if (found->declaredType.has_value()) {
         using unidb::sql::SqlTypeId;
         switch (found->declaredType->id) {
@@ -94,16 +95,19 @@ prepareInsertRows(const InsertStatement &statement,
                 "REAL value is outside the supported range: " + found->name);
           }
           orderedValues[schemaIndex] = static_cast<float>(numericValue);
+          valueWasNormalized = true;
           valueMatchesColumn = true;
           break;
         }
         case SqlTypeId::DoublePrecision:
           if (const auto *floating = std::get_if<double>(&values[inputIndex])) {
             orderedValues[schemaIndex] = *floating;
+            valueWasNormalized = true;
             valueMatchesColumn = true;
           } else if (const auto *integer =
                          std::get_if<std::int64_t>(&values[inputIndex])) {
             orderedValues[schemaIndex] = static_cast<double>(*integer);
+            valueWasNormalized = true;
             valueMatchesColumn = true;
           }
           break;
@@ -130,7 +134,9 @@ prepareInsertRows(const InsertStatement &statement,
         throw std::invalid_argument(
             "INSERT value type does not match column: " + found->name);
       }
-      orderedValues[schemaIndex] = values[inputIndex];
+      if (!valueWasNormalized) {
+        orderedValues[schemaIndex] = values[inputIndex];
+      }
       assigned[schemaIndex] = true;
     }
     if (std::find(assigned.begin(), assigned.end(), false) != assigned.end()) {
