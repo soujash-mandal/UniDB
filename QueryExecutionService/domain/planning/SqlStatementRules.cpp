@@ -25,7 +25,8 @@ void validateCreateTable(const CreateTableStatement &statement) {
       using unidb::sql::SqlTypeId;
       const auto id = column.declaredType->id;
       if (id != SqlTypeId::SmallInt && id != SqlTypeId::Integer &&
-          id != SqlTypeId::BigInt && id != SqlTypeId::Boolean &&
+          id != SqlTypeId::BigInt && id != SqlTypeId::Real &&
+          id != SqlTypeId::DoublePrecision && id != SqlTypeId::Boolean &&
           id != SqlTypeId::Text) {
         throw std::invalid_argument(
             "CREATE TABLE type is recognized but not yet supported");
