@@ -128,3 +128,79 @@ TEST(ExecuteQueryActionNumericTest,
   ASSERT_EQ(rows.size(), 1U);
   EXPECT_FLOAT_EQ(std::get<float>(rows[0][0]), 1.25F);
 }
+
+TEST(ExecuteQueryActionNumericTest,
+     AppliesDeclaredPrecisionAndScaleWithHalfAwayFromZeroRounding) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlTypeModifier modifier;
+  modifier.precision = 5;
+  modifier.scale = 2;
+  port.schema = {{"amount", SqlType::Int,
+                  SqlTypeDescriptor{SqlTypeId::Numeric, modifier}}};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted = action.execute(
+      "INSERT INTO decimals (amount) VALUES (1.235), (-1.235), (12.3)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  ASSERT_EQ(port.insertedRows.size(), 3U);
+
+  const auto positive = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  const auto negative = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
+  const auto padded = SqlTupleCodec::decode(port.schema, port.insertedRows[2]);
+  EXPECT_EQ(std::get<SqlNumericValue>(positive[0]),
+            (SqlNumericValue{false, "124", 2}));
+  EXPECT_EQ(std::get<SqlNumericValue>(negative[0]),
+            (SqlNumericValue{true, "124", 2}));
+  EXPECT_EQ(std::get<SqlNumericValue>(padded[0]),
+            (SqlNumericValue{false, "123", 1}));
+
+  const auto overflow = action.execute(
+      "INSERT INTO decimals (amount) VALUES (999.995)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          overflow));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(overflow)
+                .message.find("NUMERIC field overflow"),
+            std::string::npos);
+}
+
+TEST(ExecuteQueryActionNumericTest,
+     SupportsNegativeScaleRoundingAndPrecisionOverflow) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlTypeModifier modifier;
+  modifier.precision = 3;
+  modifier.scale = -1;
+  port.schema = {{"amount", SqlType::Int,
+                  SqlTypeDescriptor{SqlTypeId::Numeric, modifier}}};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted = action.execute(
+      "INSERT INTO decimals (amount) VALUES (125), (-125), (1234)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  ASSERT_EQ(port.insertedRows.size(), 3U);
+
+  const auto positive = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  const auto negative = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
+  const auto large = SqlTupleCodec::decode(port.schema, port.insertedRows[2]);
+  EXPECT_EQ(std::get<SqlNumericValue>(positive[0]),
+            (SqlNumericValue{false, "13", -1}));
+  EXPECT_EQ(std::get<SqlNumericValue>(negative[0]),
+            (SqlNumericValue{true, "13", -1}));
+  EXPECT_EQ(std::get<SqlNumericValue>(large[0]),
+            (SqlNumericValue{false, "1234", 0}));
+
+  const auto overflow = action.execute(
+      "INSERT INTO decimals (amount) VALUES (9995)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          overflow));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(overflow)
+                .message.find("NUMERIC field overflow"),
+            std::string::npos);
+}
