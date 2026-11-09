@@ -15,6 +15,22 @@ namespace QueryExecutionService::domain {
 
 using namespace unidb::sql;
 
+namespace {
+struct SqlValueVectorLess {
+  bool operator()(const std::vector<SqlValue> &left,
+                  const std::vector<SqlValue> &right) const {
+    const auto commonSize = std::min(left.size(), right.size());
+    for (std::size_t index = 0; index < commonSize; ++index) {
+      const int comparison = compareSqlValues(left[index], right[index]);
+      if (comparison != 0) {
+        return comparison < 0;
+      }
+    }
+    return left.size() < right.size();
+  }
+};
+} // namespace
+
 std::vector<std::vector<SqlValue>> decodeAndFilterRows(
     const std::vector<std::vector<char>> &encodedRows,
     const std::vector<ColumnDefinition> &schema,
@@ -194,7 +210,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   }
 
   if (select.distinct) {
-    std::set<std::vector<SqlValue>> seenProjections;
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
     matchedRows.erase(
         std::remove_if(
             matchedRows.begin(), matchedRows.end(),
