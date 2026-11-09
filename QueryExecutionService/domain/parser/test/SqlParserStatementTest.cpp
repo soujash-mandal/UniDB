@@ -120,5 +120,60 @@ TEST(SqlParserTest, RejectsMalformedMultiRowInsertValues) {
   }
 }
 
+TEST(SqlParserTest, ParsesFloatingPointLiteralsAsDoubleValues) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("INSERT INTO measurements (a, b, c, d) VALUES "
+                   "(1.25, -2.5, 1e3, 1.25e-2)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 1U);
+  ASSERT_EQ(insert.rows[0].size(), 4U);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][0]), 1.25);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][1]), -2.5);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][2]), 1000.0);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][3]), 0.0125);
+}
+
+TEST(SqlParserTest, KeepsIntegerLiteralsAsIntegersBesideFloatingPointValues) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO measurements (whole, fractional) VALUES (7, 7.0)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 1U);
+  EXPECT_TRUE(std::holds_alternative<std::int64_t>(insert.rows[0][0]));
+  EXPECT_TRUE(std::holds_alternative<double>(insert.rows[0][1]));
+}
+
+TEST(SqlParserTest, RejectsMalformedFloatingPointExponents) {
+  SqlParserImpl parser;
+  for (const auto *sql : {"INSERT INTO measurements (value) VALUES (1e)",
+                          "INSERT INTO measurements (value) VALUES (1.0e+)"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+    EXPECT_EQ(std::get<SqlParseError>(result).code,
+              SqlParseErrorCode::SyntaxError)
+        << sql;
+  }
+}
+
+TEST(SqlParserTest, ParsesLeadingAndTrailingDecimalPointForms) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO measurements (leading, trailing) VALUES (.5, 1.)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 1U);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][0]), 0.5);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][1]), 1.0);
+}
+
 } // namespace
 } // namespace unidb::sql

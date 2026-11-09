@@ -1238,7 +1238,27 @@ private:
   }
 
   std::variant<SqlValue, SqlParseError> parseLiteral() {
-    if (match(TokenKind::Minus)) {
+    const bool negative = match(TokenKind::Minus);
+    const bool explicitPlus = !negative && match(TokenKind::Plus);
+    if (current().kind == TokenKind::Floating) {
+      std::string text = current().text;
+      if (negative) {
+        text.insert(text.begin(), '-');
+      }
+      double value{};
+      const auto conversion =
+          std::from_chars(text.data(), text.data() + text.size(), value,
+                          std::chars_format::general);
+      ++position_;
+      if (conversion.ec != std::errc{} ||
+          conversion.ptr != text.data() + text.size()) {
+        return SqlParseError{
+            SqlParseErrorCode::SyntaxError,
+            "Floating-point literal is out of range or invalid"};
+      }
+      return SqlValue{value};
+    }
+    if (negative) {
       if (current().kind != TokenKind::Integer) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected digits after '-' in integer literal"};
@@ -1265,6 +1285,10 @@ private:
                              "Integer literal is out of range"};
       }
       return SqlValue{value};
+    }
+    if (explicitPlus && current().kind != TokenKind::Integer) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Unary '+' requires a numeric literal"};
     }
     if (current().kind == TokenKind::String) {
       std::string value = current().text;

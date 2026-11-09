@@ -9,6 +9,7 @@ namespace unidb::sql::implementation {
 enum class TokenKind {
   Identifier,
   Integer,
+  Floating,
   String,
   LeftParen,
   RightParen,
