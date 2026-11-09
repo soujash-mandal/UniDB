@@ -91,7 +91,13 @@ processSelectRows(const unidb::sql::SelectStatement &select,
       throw std::invalid_argument("Duplicate SELECT output column name: " +
                                   aggregateName);
     }
-    result.columns.push_back({aggregateName, aggregateType});
+    const auto aggregateDescriptor =
+        aggregate.function == AggregateFunction::Min ||
+                aggregate.function == AggregateFunction::Max
+            ? plan.schema[*plan.aggregateIndex].declaredType
+            : std::optional<SqlTypeDescriptor>{};
+    result.columns.push_back(
+        {aggregateName, aggregateType, aggregateDescriptor});
 
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
@@ -187,7 +193,13 @@ processSelectRows(const unidb::sql::SelectStatement &select,
                 aggregate.function == AggregateFunction::Max
             ? plan.types[*plan.aggregateIndex]
             : SqlType::Int;
-    result.columns.push_back({outputName, outputType});
+    const auto aggregateDescriptor =
+        aggregate.function == AggregateFunction::Min ||
+                aggregate.function == AggregateFunction::Max
+            ? plan.schema[*plan.aggregateIndex].declaredType
+            : std::optional<SqlTypeDescriptor>{};
+    result.columns.push_back(
+        {outputName, outputType, aggregateDescriptor});
 
     std::vector<SqlValue> aggregateValues;
     if (aggregate.function != AggregateFunction::Count) {
