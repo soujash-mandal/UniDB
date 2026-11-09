@@ -1,6 +1,6 @@
 #include "SqlNumericRowCodec.h"
 
-#include "SqlNumericSemantics.h"
+#include "../types/SqlNumericSemantics.h"
 
 #include <bit>
 #include <limits>
