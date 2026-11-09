@@ -6,6 +6,7 @@
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace QueryExecutionService::domain {
 namespace {
@@ -108,19 +109,20 @@ std::string multiplyMagnitudes(const std::string &left,
   }
   std::vector<int> digits(left.size() + right.size(), 0);
   for (std::size_t i = left.size(); i > 0; --i) {
+    int carry = 0;
     for (std::size_t j = right.size(); j > 0; --j) {
       const auto position = i + j - 1;
-      const int product = (left[i - 1] - '0') * (right[j - 1] - '0');
-      digits[position] += product;
+      const int product =
+          (left[i - 1] - '0') * (right[j - 1] - '0') +
+          digits[position] + carry;
+      digits[position] = product % 10;
+      carry = product / 10;
     }
-  }
-  for (std::size_t i = digits.size(); i > 1; --i) {
-    digits[i - 2] += digits[i - 1] / 10;
-    digits[i - 1] %= 10;
+    digits[i - 1] += carry;
   }
   std::string result;
   result.reserve(digits.size());
-  std::size_t first = digits.front() == 0 ? 1 : 0;
+  const std::size_t first = digits.front() == 0 ? 1 : 0;
   for (std::size_t i = first; i < digits.size(); ++i) {
     result.push_back(static_cast<char>('0' + digits[i]));
   }
