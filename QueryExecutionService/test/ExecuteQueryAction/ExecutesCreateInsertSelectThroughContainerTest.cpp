@@ -281,3 +281,53 @@ TEST(ExecuteQueryActionIntegrationTest,
 
   std::filesystem::remove(databaseFile);
 }
+
+
+TEST(ExecuteQueryActionIntegrationTest,
+     PersistsNumericPrecisionAndScaleAcrossContainerRestart) {
+  const auto databaseFile = std::filesystem::temp_directory_path() /
+                            "unidb_numeric_schema_test.db";
+  std::filesystem::remove(databaseFile);
+
+  {
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+
+    const auto created = container.executeQueryAction().execute(
+        "CREATE TABLE decimal_values (amount NUMERIC(18, 4), "
+        "unbounded NUMERIC);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created))
+        << std::get<QueryExecutionService::QueryExecutionError>(created)
+               .message;
+    container.flushDirtyPages();
+  }
+
+  {
+    Container reopened(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_FALSE(DatabaseStartup::execute(reopened));
+
+    const auto selected =
+        reopened.executeQueryAction().execute("SELECT * FROM decimal_values;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    EXPECT_TRUE(result.rows.empty());
+    ASSERT_EQ(result.columns.size(), 2U);
+    ASSERT_TRUE(result.columns[0].declaredType.has_value());
+    ASSERT_TRUE(result.columns[1].declaredType.has_value());
+    EXPECT_EQ(result.columns[0].declaredType->id,
+              unidb::sql::SqlTypeId::Numeric);
+    EXPECT_EQ(result.columns[0].declaredType->modifier.precision, 18U);
+    EXPECT_EQ(result.columns[0].declaredType->modifier.scale, 4);
+    EXPECT_EQ(result.columns[1].declaredType->id,
+              unidb::sql::SqlTypeId::Numeric);
+    EXPECT_FALSE(result.columns[1].declaredType->modifier.precision.has_value());
+    EXPECT_FALSE(result.columns[1].declaredType->modifier.scale.has_value());
+  }
+
+  std::filesystem::remove(databaseFile);
+}
