@@ -51,8 +51,9 @@ SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
   return result;
 }
 
-SqlValue evaluateIntegerExpression(const std::vector<SqlValue> &row,
-                                   const CompiledIntegerExpression &expression) {
+SqlValue
+evaluateIntegerExpression(const std::vector<SqlValue> &row,
+                          const CompiledIntegerExpression &expression) {
   if (expression.kind == IntegerExpression::Kind::Literal) {
     if (expression.numericLiteral.has_value()) {
       return *expression.numericLiteral;
@@ -102,8 +103,8 @@ SqlValue evaluateIntegerExpression(const std::vector<SqlValue> &row,
     case IntegerBinaryOperator::Divide: {
       // UniDB SQL numeric division currently returns at least six fractional
       // digits, preserving any greater input scale.
-      const auto resultScale =
-          std::max<std::int32_t>(6, std::max(numericLeft.scale, numericRight.scale));
+      const auto resultScale = std::max<std::int32_t>(
+          6, std::max(numericLeft.scale, numericRight.scale));
       return divideSqlNumericValues(numericLeft, numericRight, resultScale);
     }
     }
@@ -132,7 +133,8 @@ SqlValue evaluateIntegerExpression(const std::vector<SqlValue> &row,
     if (integerRight == 0) {
       throw std::invalid_argument("Division by zero in integer expression");
     }
-    if (integerLeft == std::numeric_limits<std::int64_t>::min() && integerRight == -1) {
+    if (integerLeft == std::numeric_limits<std::int64_t>::min() &&
+        integerRight == -1) {
       throw std::invalid_argument("Integer division exceeds INT64 range");
     }
     return integerLeft / integerRight;
