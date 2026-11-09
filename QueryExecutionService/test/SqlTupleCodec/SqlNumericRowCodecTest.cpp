@@ -21,8 +21,9 @@ TEST(SqlNumericRowCodecTest, RoundTripsNegativeScaleAndZero) {
   const unidb::sql::SqlNumericValue negativeScale{false, "12345", -4};
   const unidb::sql::SqlNumericValue zero{false, "0", 0};
 
-  EXPECT_EQ(SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(negativeScale)),
-            negativeScale);
+  EXPECT_EQ(
+      SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(negativeScale)),
+      negativeScale);
   EXPECT_EQ(SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(zero)), zero);
 }
 

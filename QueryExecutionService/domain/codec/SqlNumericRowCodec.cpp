@@ -19,8 +19,7 @@ void appendLittleEndian(std::vector<char> &bytes, T value) {
   using Unsigned = std::make_unsigned_t<T>;
   const auto raw = static_cast<Unsigned>(value);
   for (std::size_t index = 0; index < sizeof(T); ++index) {
-    bytes.push_back(
-        static_cast<char>((raw >> (index * 8U)) & Unsigned{0xff}));
+    bytes.push_back(static_cast<char>((raw >> (index * 8U)) & Unsigned{0xff}));
   }
 }
 
@@ -34,9 +33,9 @@ T readLittleEndian(const std::vector<char> &bytes, std::size_t &offset) {
   using Unsigned = std::make_unsigned_t<T>;
   Unsigned raw{};
   for (std::size_t index = 0; index < sizeof(T); ++index) {
-    raw |= static_cast<Unsigned>(
-               static_cast<unsigned char>(bytes[offset + index]))
-           << (index * 8U);
+    raw |=
+        static_cast<Unsigned>(static_cast<unsigned char>(bytes[offset + index]))
+        << (index * 8U);
   }
   offset += sizeof(T);
   if constexpr (std::is_signed_v<T>) {
@@ -51,8 +50,7 @@ std::vector<char>
 SqlNumericRowCodec::encode(const unidb::sql::SqlNumericValue &value) {
   // Formatting validates that the value is already in canonical form.
   (void)formatSqlNumericValue(value);
-  if (value.coefficient.size() >
-      std::numeric_limits<std::uint32_t>::max()) {
+  if (value.coefficient.size() > std::numeric_limits<std::uint32_t>::max()) {
     throw std::invalid_argument("NUMERIC coefficient exceeds row length limit");
   }
 
@@ -80,16 +78,15 @@ SqlNumericRowCodec::decode(const std::vector<char> &bytes) {
     throw std::runtime_error("NUMERIC row value has an invalid sign");
   }
   const auto scale = readLittleEndian<std::int32_t>(bytes, offset);
-  const auto coefficientSize =
-      readLittleEndian<std::uint32_t>(bytes, offset);
+  const auto coefficientSize = readLittleEndian<std::uint32_t>(bytes, offset);
   if (coefficientSize == 0 || offset > bytes.size() ||
       coefficientSize != bytes.size() - offset) {
     throw std::runtime_error("NUMERIC row coefficient has an invalid length");
   }
 
   std::string coefficient(bytes.data() + offset, coefficientSize);
-  const auto value = normalizeSqlNumericValue(sign == 1,
-                                               std::move(coefficient), scale);
+  const auto value =
+      normalizeSqlNumericValue(sign == 1, std::move(coefficient), scale);
   if (value.negative != (sign == 1) ||
       value.coefficient !=
           std::string(bytes.data() + offset, coefficientSize) ||
