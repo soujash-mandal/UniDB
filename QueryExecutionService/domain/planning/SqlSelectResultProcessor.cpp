@@ -45,6 +45,7 @@ aggregateResultDescriptor(const AggregateFunction function,
 
   auto resultType = *inputColumn.declaredType;
   if (resultType.id == SqlTypeId::Numeric) {
+    resultType.modifier = {};
     return resultType;
   }
   if (resultType.id != SqlTypeId::Real &&
