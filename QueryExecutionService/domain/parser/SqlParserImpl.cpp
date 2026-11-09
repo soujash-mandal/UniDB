@@ -1,7 +1,7 @@
 #include "SqlParserImpl.h"
 
-#include "../types/SqlTypeRegistry.h"
 #include "../types/SqlNumericSemantics.h"
+#include "../types/SqlTypeRegistry.h"
 
 #include <cctype>
 #include <charconv>

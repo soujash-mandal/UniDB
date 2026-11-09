@@ -4,8 +4,8 @@
 #include "../predicate/WherePredicateEvaluator.h"
 #include "../types/SqlNumericSemantics.h"
 
-#include <charconv>
 #include <algorithm>
+#include <charconv>
 #include <limits>
 #include <set>
 #include <stdexcept>
@@ -109,9 +109,9 @@ prepareInsertRows(const InsertStatement &statement,
           } else if (const auto *decimal =
                          std::get_if<SqlNumericValue>(&values[inputIndex])) {
             const auto text = formatSqlNumericValue(*decimal);
-            const auto conversion = std::from_chars(
-                text.data(), text.data() + text.size(), numericValue,
-                std::chars_format::general);
+            const auto conversion =
+                std::from_chars(text.data(), text.data() + text.size(),
+                                numericValue, std::chars_format::general);
             if (conversion.ec != std::errc{} ||
                 conversion.ptr != text.data() + text.size()) {
               throw std::invalid_argument(
@@ -144,9 +144,9 @@ prepareInsertRows(const InsertStatement &statement,
                          std::get_if<SqlNumericValue>(&values[inputIndex])) {
             const auto text = formatSqlNumericValue(*decimal);
             double converted{};
-            const auto conversion = std::from_chars(
-                text.data(), text.data() + text.size(), converted,
-                std::chars_format::general);
+            const auto conversion =
+                std::from_chars(text.data(), text.data() + text.size(),
+                                converted, std::chars_format::general);
             if (conversion.ec != std::errc{} ||
                 conversion.ptr != text.data() + text.size()) {
               throw std::invalid_argument(

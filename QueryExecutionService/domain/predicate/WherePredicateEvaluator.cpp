@@ -36,14 +36,13 @@ void normalizeComparisonValue(const ColumnDefinition &column, SqlValue &value) {
     return;
   }
 
-  if (const auto *numeric =
-          std::get_if<unidb::sql::SqlNumericValue>(&value)) {
+  if (const auto *numeric = std::get_if<unidb::sql::SqlNumericValue>(&value)) {
     const auto text = formatSqlNumericValue(*numeric);
     if (type == SqlTypeId::Real) {
       float converted{};
-      const auto result = std::from_chars(
-          text.data(), text.data() + text.size(), converted,
-          std::chars_format::general);
+      const auto result =
+          std::from_chars(text.data(), text.data() + text.size(), converted,
+                          std::chars_format::general);
       if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
           !std::isfinite(converted)) {
         throw std::invalid_argument("REAL comparison value is out of range");
@@ -51,9 +50,9 @@ void normalizeComparisonValue(const ColumnDefinition &column, SqlValue &value) {
       value = converted;
     } else {
       double converted{};
-      const auto result = std::from_chars(
-          text.data(), text.data() + text.size(), converted,
-          std::chars_format::general);
+      const auto result =
+          std::from_chars(text.data(), text.data() + text.size(), converted,
+                          std::chars_format::general);
       if (result.ec != std::errc{} || result.ptr != text.data() + text.size()) {
         throw std::invalid_argument(
             "DOUBLE PRECISION comparison value is out of range");
