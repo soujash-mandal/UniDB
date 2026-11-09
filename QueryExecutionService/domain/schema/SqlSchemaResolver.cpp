@@ -21,6 +21,7 @@ std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
       case SqlTypeId::Real:
       case SqlTypeId::DoublePrecision:
       case SqlTypeId::Boolean:
+      case SqlTypeId::Numeric:
         types.push_back(SqlType::Int);
         continue;
       case SqlTypeId::Text:
