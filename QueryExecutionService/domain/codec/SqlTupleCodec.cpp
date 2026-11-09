@@ -72,8 +72,8 @@ bool usesDeclaredRowFormat(
   return everyColumnHasDeclaredType;
 }
 
-void appendDeclaredInteger(std::vector<char> &out,
-                           unidb::sql::SqlTypeId type, std::int64_t value) {
+void appendDeclaredInteger(std::vector<char> &out, unidb::sql::SqlTypeId type,
+                           std::int64_t value) {
   const auto checked =
       QueryExecutionService::domain::makeSqlIntegerValue(type, value);
   std::visit([&out](const auto integer) { appendLittleEndian(out, integer); },
@@ -144,9 +144,9 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::SqlType> &schema,
   return values;
 }
 
-std::vector<char> SqlTupleCodec::encode(
-    const std::vector<unidb::sql::ColumnDefinition> &schema,
-    const std::vector<unidb::sql::SqlValue> &values) {
+std::vector<char>
+SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
+                      const std::vector<unidb::sql::SqlValue> &values) {
   constexpr std::uint8_t rowFormatVersion = 1;
   const bool versioned = usesDeclaredRowFormat(schema);
   if (schema.size() != values.size()) {
@@ -202,9 +202,9 @@ std::vector<char> SqlTupleCodec::encode(
   return out;
 }
 
-std::vector<unidb::sql::SqlValue> SqlTupleCodec::decode(
-    const std::vector<unidb::sql::ColumnDefinition> &schema,
-    const std::vector<char> &bytes) {
+std::vector<unidb::sql::SqlValue>
+SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
+                      const std::vector<char> &bytes) {
   constexpr std::uint8_t rowFormatVersion = 1;
   const bool versioned = usesDeclaredRowFormat(schema);
   std::size_t offset = 0;

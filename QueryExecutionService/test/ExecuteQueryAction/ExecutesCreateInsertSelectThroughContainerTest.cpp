@@ -65,7 +65,6 @@ TEST(ExecuteQueryActionIntegrationTest,
   std::filesystem::remove(databaseFile);
 }
 
-
 TEST(ExecuteQueryActionIntegrationTest,
      StoresAndReadsPostgreSqlIntegerWidthsEndToEnd) {
   const auto databaseFile =
@@ -90,8 +89,8 @@ TEST(ExecuteQueryActionIntegrationTest,
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             inserted));
 
-    const auto selected = container.executeQueryAction().execute(
-        "SELECT * FROM integer_widths;");
+    const auto selected =
+        container.executeQueryAction().execute("SELECT * FROM integer_widths;");
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             selected));
@@ -110,14 +109,15 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionError>(
             overflow));
-    const auto afterOverflow = container.executeQueryAction().execute(
-        "SELECT * FROM integer_widths;");
+    const auto afterOverflow =
+        container.executeQueryAction().execute("SELECT * FROM integer_widths;");
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             afterOverflow));
-    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(
-                  afterOverflow).rows.size(),
-              1U);
+    EXPECT_EQ(
+        std::get<QueryExecutionService::QueryExecutionResult>(afterOverflow)
+            .rows.size(),
+        1U);
     container.flushDirtyPages();
   }
 

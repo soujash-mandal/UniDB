@@ -104,8 +104,8 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
   std::vector<unidb::sql::ColumnDefinition> columns;
   columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
-    unidb::sql::ColumnDefinition definition{
-        column.name, fromRdbType(column.type)};
+    unidb::sql::ColumnDefinition definition{column.name,
+                                            fromRdbType(column.type)};
     definition.declaredType = descriptorFromRdbType(column.type);
     columns.push_back(std::move(definition));
   }

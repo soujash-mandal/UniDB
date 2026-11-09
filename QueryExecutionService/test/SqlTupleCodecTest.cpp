@@ -33,7 +33,6 @@ TEST(SqlTupleCodecTest, RejectsTruncatedFieldsAndTrailingBytes) {
   EXPECT_THROW(SqlTupleCodec::decode(intSchema, encoded), std::runtime_error);
 }
 
-
 TEST(SqlTupleCodecTest, RoundTripsPostgreSqlIntegerWidthsUsingDeclaredSchema) {
   using unidb::sql::ColumnDefinition;
   using unidb::sql::SqlType;
