@@ -82,15 +82,14 @@ TEST(SqlAggregateCalculatorTest, CalculatesFloatingPointSumAndAverage) {
 }
 
 TEST(SqlAggregateCalculatorTest, PreservesFloatingPointNonFiniteResults) {
-  const std::vector<SqlValue> values{
-      std::numeric_limits<double>::infinity(), 1.0};
+  const std::vector<SqlValue> values{std::numeric_limits<double>::infinity(),
+                                     1.0};
   const auto sum = calculateAggregate(AggregateFunction::Sum, values, 2);
   EXPECT_TRUE(std::isinf(std::get<double>(sum)));
 
-  const std::vector<SqlValue> nanValues{
-      std::numeric_limits<float>::quiet_NaN(), 1.0F};
-  const auto average =
-      calculateAggregate(AggregateFunction::Avg, nanValues, 2);
+  const std::vector<SqlValue> nanValues{std::numeric_limits<float>::quiet_NaN(),
+                                        1.0F};
+  const auto average = calculateAggregate(AggregateFunction::Avg, nanValues, 2);
   EXPECT_TRUE(std::isnan(std::get<double>(average)));
 }
 
