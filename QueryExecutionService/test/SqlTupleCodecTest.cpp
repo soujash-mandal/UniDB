@@ -151,8 +151,7 @@ TEST(SqlTupleCodecTest, RoundTripsRealAndDoublePrecisionUsingDeclaredSchema) {
       {"real_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}},
       {"double_value", SqlType::Int,
        SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}}}};
-  const std::vector<unidb::sql::SqlValue> values{
-      1.25F, -123.5};
+  const std::vector<unidb::sql::SqlValue> values{1.25F, -123.5};
 
   const auto bytes = SqlTupleCodec::encode(schema, values);
   EXPECT_EQ(bytes.size(), 13U);
@@ -214,4 +213,3 @@ TEST(SqlTupleCodecTest, RejectsTruncatedAndTrailingFloatingPointBytes) {
   bytes.push_back(0x00);
   EXPECT_THROW(SqlTupleCodec::decode(schema, bytes), std::runtime_error);
 }
-

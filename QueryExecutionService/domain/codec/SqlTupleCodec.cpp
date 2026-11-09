@@ -231,8 +231,8 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       appendText(out, std::get<std::string>(values[index]));
       break;
     default:
-      throw std::invalid_argument(
-          "Tuple codec supports only integer, BOOLEAN, floating-point, and TEXT columns");
+      throw std::invalid_argument("Tuple codec supports only integer, BOOLEAN, "
+                                  "floating-point, and TEXT columns");
     }
   }
   return out;
