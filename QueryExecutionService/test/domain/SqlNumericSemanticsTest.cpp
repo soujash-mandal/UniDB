@@ -10,6 +10,7 @@
 using QueryExecutionService::domain::addSqlNumericValues;
 using QueryExecutionService::domain::compareSqlNumericValues;
 using QueryExecutionService::domain::formatSqlNumericValue;
+using QueryExecutionService::domain::divideSqlNumericValues;
 using QueryExecutionService::domain::multiplySqlNumericValues;
 using QueryExecutionService::domain::normalizeSqlNumericValue;
 using QueryExecutionService::domain::parseSqlNumericLiteral;
@@ -165,6 +166,41 @@ TEST(SqlNumericSemanticsTest,
   EXPECT_EQ(formatSqlNumericValue(multiplySqlNumericValues(
                 parseSqlNumericLiteral("1e3"), parseSqlNumericLiteral("2e-2"))),
             "20");
+}
+
+
+TEST(SqlNumericSemanticsTest, DividesExactlyAtTheRequestedScale) {
+  EXPECT_EQ(formatSqlNumericValue(divideSqlNumericValues(
+                parseSqlNumericLiteral("1"), parseSqlNumericLiteral("3"), 4)),
+            "0.3333");
+  EXPECT_EQ(formatSqlNumericValue(divideSqlNumericValues(
+                parseSqlNumericLiteral("1"), parseSqlNumericLiteral("8"), 2)),
+            "0.13");
+  EXPECT_EQ(formatSqlNumericValue(divideSqlNumericValues(
+                parseSqlNumericLiteral("-1"), parseSqlNumericLiteral("8"), 2)),
+            "-0.13");
+  EXPECT_EQ(formatSqlNumericValue(divideSqlNumericValues(
+                parseSqlNumericLiteral("100"), parseSqlNumericLiteral("4"), 0)),
+            "25");
+}
+
+TEST(SqlNumericSemanticsTest, DivisionUsesScaleAwareExactArithmetic) {
+  EXPECT_EQ(formatSqlNumericValue(divideSqlNumericValues(
+                parseSqlNumericLiteral("1.2"), parseSqlNumericLiteral("0.03"),
+                3)),
+            "40");
+  EXPECT_EQ(formatSqlNumericValue(divideSqlNumericValues(
+                parseSqlNumericLiteral("1"), parseSqlNumericLiteral("6"), 2)),
+            "0.17");
+}
+
+TEST(SqlNumericSemanticsTest, RejectsDivisionByZeroAndNonCanonicalInputs) {
+  EXPECT_THROW(divideSqlNumericValues(parseSqlNumericLiteral("1"),
+                                      parseSqlNumericLiteral("0"), 4),
+               std::invalid_argument);
+  EXPECT_THROW(divideSqlNumericValues({false, "01", 0},
+                                      parseSqlNumericLiteral("2"), 4),
+               std::invalid_argument);
 }
 
 TEST(SqlNumericSemanticsTest, RejectsNonCanonicalArithmeticInputs) {
