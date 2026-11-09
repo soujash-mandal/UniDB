@@ -28,6 +28,40 @@ std::vector<char> serializeTable(Table table) {
     uint8_t nullable = column.nullable ? 1 : 0;
     append(&nullable, sizeof(nullable));
   }
+  // Versioned extension keeps NUMERIC modifiers separate from the legacy
+  // column size field and makes future catalog metadata changes explicit.
+  constexpr uint32_t extensionMagic = 0x314D554E; // "NUM1" in little endian.
+  constexpr uint8_t extensionVersion = 1;
+  append(&extensionMagic, sizeof(extensionMagic));
+  append(&extensionVersion, sizeof(extensionVersion));
+  append(&columnCount, sizeof(columnCount));
+  for (const Column &column : table.columns) {
+    if (column.type != DataType::NUMERIC &&
+        (column.numericPrecision.has_value() || column.numericScale.has_value())) {
+      throw std::invalid_argument("NUMERIC modifiers require a NUMERIC column");
+    }
+    if (column.numericScale.has_value() && !column.numericPrecision.has_value()) {
+      throw std::invalid_argument("NUMERIC scale requires precision");
+    }
+    if (column.numericPrecision.has_value() &&
+        (*column.numericPrecision == 0 || *column.numericPrecision > 1000)) {
+      throw std::invalid_argument("NUMERIC precision must be between 1 and 1000");
+    }
+    if (column.numericScale.has_value() &&
+        (*column.numericScale < -1000 || *column.numericScale > 1000)) {
+      throw std::invalid_argument("NUMERIC scale must be between -1000 and 1000");
+    }
+    uint8_t flags = static_cast<uint8_t>(
+        (column.numericPrecision.has_value() ? 1 : 0) |
+        (column.numericScale.has_value() ? 2 : 0));
+    append(&flags, sizeof(flags));
+    if (column.numericPrecision.has_value()) {
+      append(&*column.numericPrecision, sizeof(*column.numericPrecision));
+    }
+    if (column.numericScale.has_value()) {
+      append(&*column.numericScale, sizeof(*column.numericScale));
+    }
+  }
   append(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
   return data;
 }
@@ -71,12 +105,68 @@ Table deserializeTable(std::vector<char> data) {
     column.nullable = nullable != 0;
     table.columns.push_back(column);
   }
+  // Old payloads ended immediately after the columns, or carried only the
+  // space-map root. New payloads add an explicitly versioned modifier block.
   if (offset == data.size()) {
     table.firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
-  } else {
+  } else if (data.size() - offset == sizeof(table.firstFreeSpaceMapPageId)) {
     read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
-    if (offset != data.size()) {
+  } else {
+    constexpr uint32_t extensionMagic = 0x314D554E;
+    uint32_t actualMagic = 0;
+    uint8_t version = 0;
+    uint32_t modifierCount = 0;
+    read(&actualMagic, sizeof(actualMagic));
+    if (actualMagic != extensionMagic) {
+      throw std::runtime_error("Unknown catalog table metadata extension");
+    }
+    read(&version, sizeof(version));
+    if (version != 1) {
+      throw std::runtime_error("Unsupported catalog table metadata version");
+    }
+    read(&modifierCount, sizeof(modifierCount));
+    if (modifierCount != columnCount) {
+      throw std::runtime_error("Invalid catalog column modifier count");
+    }
+    for (auto &column : table.columns) {
+      uint8_t flags = 0;
+      read(&flags, sizeof(flags));
+      if ((flags & ~uint8_t{3}) != 0) {
+        throw std::runtime_error("Invalid catalog column modifier flags");
+      }
+      if ((flags & 1) != 0) {
+        uint32_t precision = 0;
+        read(&precision, sizeof(precision));
+        column.numericPrecision = precision;
+      }
+      if ((flags & 2) != 0) {
+        int32_t scale = 0;
+        read(&scale, sizeof(scale));
+        column.numericScale = scale;
+      }
+      if (column.type != DataType::NUMERIC &&
+          (column.numericPrecision.has_value() || column.numericScale.has_value())) {
+        throw std::runtime_error("NUMERIC modifiers found on a non-NUMERIC column");
+      }
+      if (column.numericScale.has_value() && !column.numericPrecision.has_value()) {
+        throw std::runtime_error("NUMERIC scale is missing precision");
+      }
+      if (column.numericPrecision.has_value() &&
+          (*column.numericPrecision == 0 || *column.numericPrecision > 1000)) {
+        throw std::runtime_error("Invalid catalog NUMERIC precision");
+      }
+      if (column.numericScale.has_value() &&
+          (*column.numericScale < -1000 || *column.numericScale > 1000)) {
+        throw std::runtime_error("Invalid catalog NUMERIC scale");
+      }
+    }
+    if (offset != data.size() &&
+        data.size() - offset == sizeof(table.firstFreeSpaceMapPageId)) {
+      read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
+    } else if (offset != data.size()) {
       throw std::runtime_error("Unexpected trailing catalog table data");
+    } else {
+      table.firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
     }
   }
   return table;
