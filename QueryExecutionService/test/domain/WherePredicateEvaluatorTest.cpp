@@ -154,7 +154,7 @@ TEST(WherePredicateEvaluatorTest,
 
   WhereExpression realGreater;
   realGreater.predicate = WhereEquals{
-      "approximate", SqlValue{1.0F}, std::nullopt, {},
+      "approximate", SqlValue{1.0}, std::nullopt, {},
       ComparisonOperator::GreaterThan};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(realGreater, schema, types)));
