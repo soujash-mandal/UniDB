@@ -67,7 +67,7 @@ evaluateIntegerExpression(const std::vector<SqlValue> &row,
     if (!expression.operand) {
       throw std::invalid_argument("Malformed unary integer expression");
     }
-    const auto operand = evaluateIntegerExpression(row, *expression.operand);
+    const auto operand = evaluateSqlArithmeticExpression(row, *expression.operand);
     if (expression.numeric) {
       auto numeric = asNumeric(operand);
       if (expression.unaryOperation == IntegerUnaryOperator::Negative &&
@@ -88,8 +88,8 @@ evaluateIntegerExpression(const std::vector<SqlValue> &row,
   if (!expression.left || !expression.right) {
     throw std::invalid_argument("Malformed integer arithmetic expression");
   }
-  const auto left = evaluateIntegerExpression(row, *expression.left);
-  const auto right = evaluateIntegerExpression(row, *expression.right);
+  const auto left = evaluateSqlArithmeticExpression(row, *expression.left);
+  const auto right = evaluateSqlArithmeticExpression(row, *expression.right);
   if (expression.numeric) {
     const auto numericLeft = asNumeric(left);
     const auto numericRight = asNumeric(right);
@@ -140,6 +140,13 @@ evaluateIntegerExpression(const std::vector<SqlValue> &row,
     return integerLeft / integerRight;
   }
   throw std::invalid_argument("Unknown integer arithmetic operator");
+}
+
+std::int64_t
+evaluateIntegerExpression(const std::vector<SqlValue> &row,
+                          const CompiledIntegerExpression &expression) {
+  return std::get<std::int64_t>(
+      evaluateSqlArithmeticExpression(row, expression));
 }
 
 } // namespace QueryExecutionService::domain
