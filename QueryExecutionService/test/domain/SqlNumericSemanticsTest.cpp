@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -28,6 +29,12 @@ TEST(SqlNumericSemanticsTest, RejectsEmptyAndNonDigitCoefficients) {
                std::invalid_argument);
   EXPECT_THROW(normalizeSqlNumericValue(false, "12a3", 0),
                std::invalid_argument);
+}
+
+TEST(SqlNumericSemanticsTest, RejectsScaleUnderflowWhenRemovingTrailingZeroes) {
+  EXPECT_THROW(normalizeSqlNumericValue(
+                   false, "10", std::numeric_limits<std::int32_t>::min()),
+               std::out_of_range);
 }
 
 TEST(SqlNumericSemanticsTest, FormatsPositiveNegativeAndScaledValues) {
