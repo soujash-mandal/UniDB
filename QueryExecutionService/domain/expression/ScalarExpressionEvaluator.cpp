@@ -53,7 +53,7 @@ SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
 
 SqlValue
 evaluateSqlArithmeticExpression(const std::vector<SqlValue> &row,
-                          const CompiledIntegerExpression &expression) {
+                                const CompiledIntegerExpression &expression) {
   if (expression.kind == IntegerExpression::Kind::Literal) {
     if (expression.numericLiteral.has_value()) {
       return *expression.numericLiteral;
@@ -67,7 +67,8 @@ evaluateSqlArithmeticExpression(const std::vector<SqlValue> &row,
     if (!expression.operand) {
       throw std::invalid_argument("Malformed unary integer expression");
     }
-    const auto operand = evaluateSqlArithmeticExpression(row, *expression.operand);
+    const auto operand =
+        evaluateSqlArithmeticExpression(row, *expression.operand);
     if (expression.numeric) {
       auto numeric = asNumeric(operand);
       if (expression.unaryOperation == IntegerUnaryOperator::Negative &&

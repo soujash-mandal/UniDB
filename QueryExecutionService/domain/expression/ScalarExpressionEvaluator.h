@@ -35,9 +35,8 @@ evaluateTextFunction(const std::vector<unidb::sql::SqlValue> &row,
                      const CompiledTextFunction &expression);
 
 unidb::sql::SqlValue
-evaluateSqlArithmeticExpression(
-    const std::vector<unidb::sql::SqlValue> &row,
-    const CompiledIntegerExpression &expression);
+evaluateSqlArithmeticExpression(const std::vector<unidb::sql::SqlValue> &row,
+                                const CompiledIntegerExpression &expression);
 
 std::int64_t
 evaluateIntegerExpression(const std::vector<unidb::sql::SqlValue> &row,
