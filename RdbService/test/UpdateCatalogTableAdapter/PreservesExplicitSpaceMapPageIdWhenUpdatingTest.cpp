@@ -26,7 +26,7 @@ TEST(UpdateCatalogTableAdapterTest,
   adapter.updateTable(10, updated, 91);
 
   const Table stored = store.pages.at(10).getByName("events");
-  ASSERT_EQ(stored.columns.size(), 1U);
+  ASSERT_EQ(stored.columns.size(), 2U);
   EXPECT_EQ(stored.columns[0].type, DataType::BIGINT);
   EXPECT_EQ(stored.columns[0].size, 8U);
   ASSERT_EQ(stored.columns.size(), 2U);
