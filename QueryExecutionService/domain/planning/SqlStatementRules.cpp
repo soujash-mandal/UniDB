@@ -158,17 +158,34 @@ prepareInsertRows(const InsertStatement &statement,
             valueMatchesColumn = true;
           }
           break;
-        case SqlTypeId::Numeric:
-          if (std::holds_alternative<SqlNumericValue>(values[inputIndex])) {
+        case SqlTypeId::Numeric: {
+          const auto &modifier = found->declaredType->modifier;
+          const auto applyDeclaredModifiers = [&](SqlNumericValue numeric) {
+            if (modifier.precision.has_value()) {
+              return applySqlNumericTypmod(
+                  numeric, *modifier.precision, modifier.scale.value_or(0));
+            }
+            return numeric;
+          };
+          if (const auto *decimal =
+                  std::get_if<SqlNumericValue>(&values[inputIndex])) {
+            if (modifier.precision.has_value()) {
+              orderedValues[schemaIndex] = applyDeclaredModifiers(*decimal);
+              valueWasNormalized = true;
+            } else {
+              orderedValues[schemaIndex] = *decimal;
+              valueWasNormalized = true;
+            }
             valueMatchesColumn = true;
           } else if (const auto *integer =
                          std::get_if<std::int64_t>(&values[inputIndex])) {
-            orderedValues[schemaIndex] =
-                parseSqlNumericLiteral(std::to_string(*integer));
+            orderedValues[schemaIndex] = applyDeclaredModifiers(
+                parseSqlNumericLiteral(std::to_string(*integer)));
             valueWasNormalized = true;
             valueMatchesColumn = true;
           }
           break;
+        }
         case SqlTypeId::Boolean:
           valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
           break;
