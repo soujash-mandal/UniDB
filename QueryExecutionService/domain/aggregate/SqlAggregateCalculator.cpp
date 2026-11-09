@@ -55,6 +55,33 @@ SqlValue calculateAggregate(AggregateFunction function,
     return result;
   }
 
+  if (std::holds_alternative<float>(values.front())) {
+    if (function == AggregateFunction::Sum) {
+      float sum = 0.0F;
+      for (const auto &value : values) {
+        sum += std::get<float>(value);
+      }
+      return sum;
+    }
+
+    double sum = 0.0;
+    for (const auto &value : values) {
+      sum += static_cast<double>(std::get<float>(value));
+    }
+    return sum / static_cast<double>(values.size());
+  }
+
+  if (std::holds_alternative<double>(values.front())) {
+    double sum = 0.0;
+    for (const auto &value : values) {
+      sum += std::get<double>(value);
+    }
+    if (function == AggregateFunction::Avg) {
+      sum /= static_cast<double>(values.size());
+    }
+    return sum;
+  }
+
   std::int64_t sum = 0;
   for (const auto &value : values) {
     const auto integer = std::get<std::int64_t>(value);
