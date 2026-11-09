@@ -162,8 +162,8 @@ prepareInsertRows(const InsertStatement &statement,
           const auto &modifier = found->declaredType->modifier;
           const auto applyDeclaredModifiers = [&](SqlNumericValue numeric) {
             if (modifier.precision.has_value()) {
-              return applySqlNumericTypmod(
-                  numeric, *modifier.precision, modifier.scale.value_or(0));
+              return applySqlNumericTypmod(numeric, *modifier.precision,
+                                           modifier.scale.value_or(0));
             }
             return numeric;
           };

@@ -129,13 +129,12 @@ TEST(ExecuteQueryActionNumericTest,
   EXPECT_FLOAT_EQ(std::get<float>(rows[0][0]), 1.25F);
 }
 
-
 TEST(ExecuteQueryActionNumericTest,
      AppliesDeclaredPrecisionAndScaleDuringInsert) {
   FakeQesRdbServicePort port;
-  port.schema = {{"amount", SqlType::Int,
-                  SqlTypeDescriptor{SqlTypeId::Numeric, {.precision = 4,
-                                                         .scale = 2}}}};
+  port.schema = {
+      {"amount", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Numeric, {.precision = 4, .scale = 2}}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -146,8 +145,10 @@ TEST(ExecuteQueryActionNumericTest,
           inserted));
   ASSERT_EQ(port.insertedRows.size(), 2U);
 
-  const auto positive = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
-  const auto negative = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
+  const auto positive =
+      SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  const auto negative =
+      SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
   EXPECT_EQ(std::get<SqlNumericValue>(positive[0]),
             (SqlNumericValue{false, "1235", 2}));
   EXPECT_EQ(std::get<SqlNumericValue>(negative[0]),
@@ -157,9 +158,9 @@ TEST(ExecuteQueryActionNumericTest,
 TEST(ExecuteQueryActionNumericTest,
      RejectsNumericPrecisionOverflowAfterRounding) {
   FakeQesRdbServicePort port;
-  port.schema = {{"amount", SqlType::Int,
-                  SqlTypeDescriptor{SqlTypeId::Numeric, {.precision = 5,
-                                                         .scale = 2}}}};
+  port.schema = {
+      {"amount", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Numeric, {.precision = 5, .scale = 2}}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -171,12 +172,11 @@ TEST(ExecuteQueryActionNumericTest,
   EXPECT_TRUE(port.insertedRows.empty());
 }
 
-TEST(ExecuteQueryActionNumericTest,
-     AppliesNegativeScaleAndRejectsOverflow) {
+TEST(ExecuteQueryActionNumericTest, AppliesNegativeScaleAndRejectsOverflow) {
   FakeQesRdbServicePort port;
-  port.schema = {{"amount", SqlType::Int,
-                  SqlTypeDescriptor{SqlTypeId::Numeric, {.precision = 2,
-                                                         .scale = -3}}}};
+  port.schema = {
+      {"amount", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Numeric, {.precision = 2, .scale = -3}}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 

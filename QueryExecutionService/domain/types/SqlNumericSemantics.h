@@ -28,8 +28,8 @@ int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
 
 // Apply a declared NUMERIC(precision, scale) assignment typmod. Values are
 // rounded to scale (ties away from zero), then checked for precision overflow.
-unidb::sql::SqlNumericValue applySqlNumericTypmod(
-    const unidb::sql::SqlNumericValue &value, std::uint32_t precision,
-    std::int32_t scale = 0);
+unidb::sql::SqlNumericValue
+applySqlNumericTypmod(const unidb::sql::SqlNumericValue &value,
+                      std::uint32_t precision, std::int32_t scale = 0);
 
 } // namespace QueryExecutionService::domain

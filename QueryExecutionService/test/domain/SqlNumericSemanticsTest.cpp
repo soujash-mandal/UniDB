@@ -120,7 +120,6 @@ TEST(SqlNumericSemanticsTest, RejectsNumericLiteralExponentOverflow) {
                std::out_of_range);
 }
 
-
 TEST(SqlNumericSemanticsTest, RoundsDeclaredScaleWithTiesAwayFromZero) {
   EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("12.344"), 4, 2),
             parseSqlNumericLiteral("12.34"));

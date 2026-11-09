@@ -221,14 +221,12 @@ int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
   return left.negative ? -magnitude : magnitude;
 }
 
-
-unidb::sql::SqlNumericValue applySqlNumericTypmod(
-    const unidb::sql::SqlNumericValue &value, std::uint32_t precision,
-    std::int32_t scale) {
+unidb::sql::SqlNumericValue
+applySqlNumericTypmod(const unidb::sql::SqlNumericValue &value,
+                      std::uint32_t precision, std::int32_t scale) {
   validateCanonicalValue(value);
   if (precision == 0 || precision > 1000) {
-    throw std::invalid_argument(
-        "NUMERIC precision must be between 1 and 1000");
+    throw std::invalid_argument("NUMERIC precision must be between 1 and 1000");
   }
   if (scale < -1000 || scale > 1000) {
     throw std::invalid_argument("NUMERIC scale must be between -1000 and 1000");
