@@ -77,6 +77,37 @@ prepareInsertRows(const InsertStatement &statement,
           valueMatchesColumn =
               std::holds_alternative<std::int64_t>(values[inputIndex]);
           break;
+        case SqlTypeId::Real: {
+          double numericValue{};
+          if (const auto *floating =
+                  std::get_if<double>(&values[inputIndex])) {
+            numericValue = *floating;
+          } else if (const auto *integer =
+                         std::get_if<std::int64_t>(&values[inputIndex])) {
+            numericValue = static_cast<double>(*integer);
+          } else {
+            break;
+          }
+          if (numericValue > std::numeric_limits<float>::max() ||
+              numericValue < std::numeric_limits<float>::lowest()) {
+            throw std::invalid_argument(
+                "REAL value is outside the supported range: " + found->name);
+          }
+          orderedValues[schemaIndex] = static_cast<float>(numericValue);
+          valueMatchesColumn = true;
+          break;
+        }
+        case SqlTypeId::DoublePrecision:
+          if (const auto *floating =
+                  std::get_if<double>(&values[inputIndex])) {
+            orderedValues[schemaIndex] = *floating;
+            valueMatchesColumn = true;
+          } else if (const auto *integer =
+                         std::get_if<std::int64_t>(&values[inputIndex])) {
+            orderedValues[schemaIndex] = static_cast<double>(*integer);
+            valueMatchesColumn = true;
+          }
+          break;
         case SqlTypeId::Boolean:
           valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
           break;
