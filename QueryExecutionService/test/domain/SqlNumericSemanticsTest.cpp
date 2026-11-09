@@ -7,10 +7,13 @@
 #include <stdexcept>
 #include <string>
 
+using QueryExecutionService::domain::addSqlNumericValues;
 using QueryExecutionService::domain::compareSqlNumericValues;
 using QueryExecutionService::domain::formatSqlNumericValue;
+using QueryExecutionService::domain::multiplySqlNumericValues;
 using QueryExecutionService::domain::normalizeSqlNumericValue;
 using QueryExecutionService::domain::parseSqlNumericLiteral;
+using QueryExecutionService::domain::subtractSqlNumericValues;
 
 TEST(SqlNumericSemanticsTest, NormalizesLeadingAndTrailingZeroesExactly) {
   EXPECT_EQ(normalizeSqlNumericValue(false, "0001234500", 4),
@@ -117,4 +120,55 @@ TEST(SqlNumericSemanticsTest, RejectsMalformedNumericLiteralLexemes) {
 TEST(SqlNumericSemanticsTest, RejectsNumericLiteralExponentOverflow) {
   EXPECT_THROW(parseSqlNumericLiteral("1e999999999999999999999"),
                std::out_of_range);
+}
+
+TEST(SqlNumericSemanticsTest, AddsExactValuesAcrossDifferentScales) {
+  EXPECT_EQ(
+      formatSqlNumericValue(addSqlNumericValues(
+          parseSqlNumericLiteral("12.34"), parseSqlNumericLiteral("0.006"))),
+      "12.346");
+  EXPECT_EQ(
+      formatSqlNumericValue(addSqlNumericValues(
+          parseSqlNumericLiteral("-12.34"), parseSqlNumericLiteral("2.34"))),
+      "-10");
+}
+
+TEST(SqlNumericSemanticsTest, AddsOppositeSignsAndCancelsToCanonicalZero) {
+  EXPECT_EQ(addSqlNumericValues(parseSqlNumericLiteral("1.25"),
+                                parseSqlNumericLiteral("-1.25")),
+            (unidb::sql::SqlNumericValue{false, "0", 0}));
+  EXPECT_EQ(formatSqlNumericValue(addSqlNumericValues(
+                parseSqlNumericLiteral("-2"), parseSqlNumericLiteral("-3"))),
+            "-5");
+}
+
+TEST(SqlNumericSemanticsTest, SubtractsExactValuesAcrossDifferentScales) {
+  EXPECT_EQ(
+      formatSqlNumericValue(subtractSqlNumericValues(
+          parseSqlNumericLiteral("100.01"), parseSqlNumericLiteral("0.99"))),
+      "99.02");
+  EXPECT_EQ(formatSqlNumericValue(subtractSqlNumericValues(
+                parseSqlNumericLiteral("1"), parseSqlNumericLiteral("3"))),
+            "-2");
+}
+
+TEST(SqlNumericSemanticsTest,
+     MultipliesExactValuesWithoutMachineIntegerLimits) {
+  EXPECT_EQ(
+      formatSqlNumericValue(multiplySqlNumericValues(
+          parseSqlNumericLiteral("12.5"), parseSqlNumericLiteral("-0.04"))),
+      "-0.5");
+  EXPECT_EQ(formatSqlNumericValue(multiplySqlNumericValues(
+                parseSqlNumericLiteral("999999999999999999999"),
+                parseSqlNumericLiteral("999999999999999999999"))),
+            "999999999999999999998000000000000000000001");
+  EXPECT_EQ(formatSqlNumericValue(multiplySqlNumericValues(
+                parseSqlNumericLiteral("1e3"), parseSqlNumericLiteral("2e-2"))),
+            "20");
+}
+
+TEST(SqlNumericSemanticsTest, RejectsNonCanonicalArithmeticInputs) {
+  EXPECT_THROW(
+      addSqlNumericValues({false, "01", 0}, parseSqlNumericLiteral("1")),
+      std::invalid_argument);
 }

@@ -6,6 +6,7 @@
 #include <limits>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace QueryExecutionService::domain {
 namespace {
@@ -50,6 +51,108 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
     }
   }
   return 0;
+}
+
+int compareUnsignedMagnitudes(const std::string &left,
+                              const std::string &right) {
+  if (left.size() != right.size()) {
+    return left.size() < right.size() ? -1 : 1;
+  }
+  const int comparison = left.compare(right);
+  return comparison < 0 ? -1 : (comparison > 0 ? 1 : 0);
+}
+
+std::string addMagnitudes(const std::string &left, const std::string &right) {
+  std::string result;
+  result.reserve(std::max(left.size(), right.size()) + 1);
+  std::size_t leftIndex = left.size();
+  std::size_t rightIndex = right.size();
+  int carry = 0;
+  while (leftIndex > 0 || rightIndex > 0 || carry != 0) {
+    int digit = carry;
+    if (leftIndex > 0) {
+      digit += left[--leftIndex] - '0';
+    }
+    if (rightIndex > 0) {
+      digit += right[--rightIndex] - '0';
+    }
+    result.push_back(static_cast<char>('0' + digit % 10));
+    carry = digit / 10;
+  }
+  std::reverse(result.begin(), result.end());
+  return result;
+}
+
+std::string subtractMagnitudes(const std::string &larger,
+                               const std::string &smaller) {
+  std::string result;
+  result.reserve(larger.size());
+  std::size_t largerIndex = larger.size();
+  std::size_t smallerIndex = smaller.size();
+  int borrow = 0;
+  while (largerIndex > 0) {
+    int digit = larger[--largerIndex] - '0' - borrow;
+    if (smallerIndex > 0) {
+      digit -= smaller[--smallerIndex] - '0';
+    }
+    borrow = digit < 0 ? 1 : 0;
+    if (borrow != 0) {
+      digit += 10;
+    }
+    result.push_back(static_cast<char>('0' + digit));
+  }
+  std::reverse(result.begin(), result.end());
+  const auto firstNonZero = result.find_first_not_of('0');
+  return firstNonZero == std::string::npos ? "0" : result.substr(firstNonZero);
+}
+
+std::string multiplyMagnitudes(const std::string &left,
+                               const std::string &right) {
+  if (left == "0" || right == "0") {
+    return "0";
+  }
+  if (left.size() > std::string{}.max_size() - right.size()) {
+    throw std::length_error("NUMERIC multiplication result is too large");
+  }
+  std::vector<int> digits(left.size() + right.size(), 0);
+  for (std::size_t i = left.size(); i > 0; --i) {
+    int carry = 0;
+    for (std::size_t j = right.size(); j > 0; --j) {
+      const auto position = i + j - 1;
+      const int product =
+          (left[i - 1] - '0') * (right[j - 1] - '0') + digits[position] + carry;
+      digits[position] = product % 10;
+      carry = product / 10;
+    }
+    digits[i - 1] += carry;
+  }
+  std::string result;
+  result.reserve(digits.size());
+  const std::size_t first = digits.front() == 0 ? 1 : 0;
+  for (std::size_t i = first; i < digits.size(); ++i) {
+    result.push_back(static_cast<char>('0' + digits[i]));
+  }
+  return result;
+}
+
+std::pair<std::string, std::string>
+alignNumericCoefficients(const unidb::sql::SqlNumericValue &left,
+                         const unidb::sql::SqlNumericValue &right,
+                         std::int32_t &resultScale) {
+  resultScale = std::max(left.scale, right.scale);
+  std::string leftCoefficient = left.coefficient;
+  std::string rightCoefficient = right.coefficient;
+  const auto leftZeros = static_cast<std::uint64_t>(
+      static_cast<std::int64_t>(resultScale) - left.scale);
+  const auto rightZeros = static_cast<std::uint64_t>(
+      static_cast<std::int64_t>(resultScale) - right.scale);
+  if (leftZeros > leftCoefficient.max_size() - leftCoefficient.size() ||
+      rightZeros > rightCoefficient.max_size() - rightCoefficient.size()) {
+    throw std::length_error("NUMERIC arithmetic result is too large");
+  }
+  leftCoefficient.append(static_cast<std::size_t>(leftZeros), '0');
+  rightCoefficient.append(static_cast<std::size_t>(rightZeros), '0');
+  return {std::move(leftCoefficient), std::move(rightCoefficient)};
 }
 
 } // namespace
@@ -219,6 +322,64 @@ int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
 
   const int magnitude = compareMagnitude(left, right);
   return left.negative ? -magnitude : magnitude;
+}
+
+unidb::sql::SqlNumericValue
+addSqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                    const unidb::sql::SqlNumericValue &right) {
+  (void)compareSqlNumericValues(left, left);
+  (void)compareSqlNumericValues(right, right);
+  std::int32_t scale = 0;
+  auto [leftCoefficient, rightCoefficient] =
+      alignNumericCoefficients(left, right, scale);
+  if (left.negative == right.negative) {
+    return normalizeSqlNumericValue(
+        left.negative, addMagnitudes(leftCoefficient, rightCoefficient), scale);
+  }
+  const int comparison =
+      compareUnsignedMagnitudes(leftCoefficient, rightCoefficient);
+  if (comparison == 0) {
+    return normalizeSqlNumericValue(false, "0", 0);
+  }
+  if (comparison > 0) {
+    return normalizeSqlNumericValue(
+        left.negative, subtractMagnitudes(leftCoefficient, rightCoefficient),
+        scale);
+  }
+  return normalizeSqlNumericValue(
+      right.negative, subtractMagnitudes(rightCoefficient, leftCoefficient),
+      scale);
+}
+
+unidb::sql::SqlNumericValue
+subtractSqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                         const unidb::sql::SqlNumericValue &right) {
+  (void)compareSqlNumericValues(left, left);
+  (void)compareSqlNumericValues(right, right);
+  auto negatedRight = right;
+  if (negatedRight.coefficient != "0") {
+    negatedRight.negative = !negatedRight.negative;
+  }
+  return addSqlNumericValues(left, negatedRight);
+}
+
+unidb::sql::SqlNumericValue
+multiplySqlNumericValues(const unidb::sql::SqlNumericValue &left,
+                         const unidb::sql::SqlNumericValue &right) {
+  (void)compareSqlNumericValues(left, left);
+  (void)compareSqlNumericValues(right, right);
+  const auto scale = static_cast<std::int64_t>(left.scale) + right.scale;
+  if (scale < std::numeric_limits<std::int32_t>::min() ||
+      scale > std::numeric_limits<std::int32_t>::max()) {
+    throw std::out_of_range("NUMERIC multiplication scale is out of range");
+  }
+  if (left.coefficient == "0" || right.coefficient == "0") {
+    return normalizeSqlNumericValue(false, "0", 0);
+  }
+  return normalizeSqlNumericValue(
+      left.negative != right.negative,
+      multiplyMagnitudes(left.coefficient, right.coefficient),
+      static_cast<std::int32_t>(scale));
 }
 
 } // namespace QueryExecutionService::domain
