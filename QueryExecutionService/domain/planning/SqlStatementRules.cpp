@@ -149,7 +149,11 @@ combineUnionResults(const std::vector<QueryExecutionResult> &branches,
               : "UNION ALL branches must return the same number of columns");
     }
     for (std::size_t index = 0; index < combined.columns.size(); ++index) {
-      if (branch.columns[index].type != combined.columns[index].type) {
+      const auto &branchColumn = branch.columns[index];
+      const auto &combinedColumn = combined.columns[index];
+      const bool declaredTypesMatch =
+          branchColumn.declaredType == combinedColumn.declaredType;
+      if (branchColumn.type != combinedColumn.type || !declaredTypesMatch) {
         throw std::invalid_argument(
             removeDuplicates
                 ? "UNION columns must have matching types at each position"
