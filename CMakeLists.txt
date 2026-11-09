@@ -101,6 +101,7 @@ set(UNIDB_SOURCES
     QueryExecutionService/domain/types/SqlTypeRegistry.cpp
     QueryExecutionService/domain/types/SqlIntegerSemantics.cpp
     QueryExecutionService/domain/types/SqlNumericSemantics.cpp
+    QueryExecutionService/domain/codec/SqlNumericRowCodec.cpp
     QueryExecutionService/adapter/RdbServiceAdapter.cpp
     QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
     QueryExecutionService/domain/expression/ScalarExpressionEvaluator.cpp
@@ -244,6 +245,7 @@ add_executable(tests
     QueryExecutionService/test/domain/SqlTypeRegistryTest.cpp
     QueryExecutionService/test/domain/SqlIntegerSemanticsTest.cpp
     QueryExecutionService/test/domain/SqlNumericSemanticsTest.cpp
+    QueryExecutionService/test/SqlTupleCodec/SqlNumericRowCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/CreatesTableAndReturnsCommandResultTest.cpp
