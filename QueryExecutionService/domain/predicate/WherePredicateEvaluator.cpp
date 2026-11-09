@@ -24,9 +24,34 @@ int compareSqlValues(const SqlValue &left, const SqlValue &right) {
     const auto rightInt = std::get<std::int64_t>(right);
     return (*leftInt > rightInt) - (*leftInt < rightInt);
   }
+  if (const auto *leftBoolean = std::get_if<bool>(&left)) {
+    const bool rightBoolean = std::get<bool>(right);
+    return (*leftBoolean > rightBoolean) - (*leftBoolean < rightBoolean);
+  }
   const auto &leftText = std::get<std::string>(left);
   const auto &rightText = std::get<std::string>(right);
   return (leftText > rightText) - (leftText < rightText);
+}
+
+bool valueMatchesColumn(const ColumnDefinition &column, const SqlValue &value) {
+  using unidb::sql::SqlTypeId;
+  if (column.declaredType.has_value()) {
+    switch (column.declaredType->id) {
+    case SqlTypeId::Boolean:
+      return std::holds_alternative<bool>(value);
+    case SqlTypeId::SmallInt:
+    case SqlTypeId::Integer:
+    case SqlTypeId::BigInt:
+      return std::holds_alternative<std::int64_t>(value);
+    case SqlTypeId::Text:
+      return std::holds_alternative<std::string>(value);
+    default:
+      return false;
+    }
+  }
+  return column.type == SqlType::Int
+             ? std::holds_alternative<std::int64_t>(value)
+             : std::holds_alternative<std::string>(value);
 }
 
 bool matchesLikePattern(const std::string &value, const std::string &pattern) {
@@ -149,22 +174,17 @@ compileWhereExpression(const WhereExpression &expression,
       throw std::invalid_argument("LIKE requires a TEXT column: " +
                                   found->name);
     }
-    if (!isMembership) {
-      const bool valueIsInt =
-          std::holds_alternative<std::int64_t>(expression.predicate.value);
-      if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
-        throw std::invalid_argument("WHERE value type does not match column: " +
-                                    found->name);
-      }
+    if (!isMembership &&
+        !valueMatchesColumn(*found, expression.predicate.value)) {
+      throw std::invalid_argument("WHERE value type does not match column: " +
+                                  found->name);
     }
     if (isRange) {
       if (!expression.predicate.upperBound.has_value()) {
         throw std::invalid_argument(
             "BETWEEN predicates require two range bounds");
       }
-      const bool upperIsInt = std::holds_alternative<std::int64_t>(
-          *expression.predicate.upperBound);
-      if ((types[compiled.columnIndex] == SqlType::Int) != upperIsInt) {
+      if (!valueMatchesColumn(*found, *expression.predicate.upperBound)) {
         throw std::invalid_argument("WHERE value type does not match column: " +
                                     found->name);
       }
@@ -178,8 +198,7 @@ compileWhereExpression(const WhereExpression &expression,
         throw std::invalid_argument("IN list must contain at least one value");
       }
       for (const auto &value : expression.predicate.values) {
-        const bool valueIsInt = std::holds_alternative<std::int64_t>(value);
-        if ((types[compiled.columnIndex] == SqlType::Int) != valueIsInt) {
+        if (!valueMatchesColumn(*found, value)) {
           throw std::invalid_argument(
               "WHERE value type does not match column: " + found->name);
         }

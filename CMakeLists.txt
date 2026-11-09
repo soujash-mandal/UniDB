@@ -267,6 +267,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/BooleanSchemaAndInsertTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/BooleanQueryExecutionTest.cpp
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp
