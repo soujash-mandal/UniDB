@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -77,4 +78,35 @@ TEST(ExecuteQueryActionFloatingPointTest,
   EXPECT_EQ(std::get<std::int64_t>(rows[1][1]), 2);
   EXPECT_TRUE(std::isnan(std::get<float>(rows[2][0])));
   EXPECT_EQ(std::get<std::int64_t>(rows[2][1]), 2);
+}
+
+TEST(ExecuteQueryActionFloatingPointTest,
+     CalculatesFloatingPointMinimumAndMaximum) {
+  auto port = makeFloatingPointPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto minimum = action.execute(
+      "SELECT MIN(approximate) FROM measurements;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(minimum));
+  const auto &minimumResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(minimum);
+  ASSERT_EQ(minimumResult.rows.size(), 1U);
+  EXPECT_FLOAT_EQ(std::get<float>(minimumResult.rows[0][0]), 0.0F);
+  ASSERT_TRUE(minimumResult.columns[0].declaredType.has_value());
+  EXPECT_EQ(minimumResult.columns[0].declaredType->id,
+            unidb::sql::SqlTypeId::Real);
+
+  const auto maximum = action.execute(
+      "SELECT MAX(precise) FROM measurements;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(maximum));
+  const auto &maximumResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(maximum);
+  ASSERT_EQ(maximumResult.rows.size(), 1U);
+  EXPECT_TRUE(std::isnan(std::get<double>(maximumResult.rows[0][0])));
+  ASSERT_TRUE(maximumResult.columns[0].declaredType.has_value());
+  EXPECT_EQ(maximumResult.columns[0].declaredType->id,
+            unidb::sql::SqlTypeId::DoublePrecision);
 }
