@@ -2,6 +2,7 @@
 
 #include "../codec/SqlTupleCodec.h"
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <stdexcept>
 #include <string>
