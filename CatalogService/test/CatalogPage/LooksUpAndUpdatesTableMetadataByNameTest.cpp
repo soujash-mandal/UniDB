@@ -32,3 +32,16 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   EXPECT_EQ(updated.columns[3].numericScale, 4);
   EXPECT_THROW(page.getByName("missing"), std::runtime_error);
 }
+
+
+TEST(CatalogPageTest, RejectsNumericScaleWithoutPrecision) {
+  CatalogPage page;
+  Table table{};
+  table.tableId = 12;
+  table.name = "invalid_numeric";
+  table.columns = {Column{"amount", DataType::NUMERIC, 0, false}};
+  table.columns[0].numericScale = 2;
+
+  EXPECT_THROW(page.insert(table), std::invalid_argument);
+  EXPECT_FALSE(page.containsTableId(12));
+}
