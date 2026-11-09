@@ -28,12 +28,7 @@ std::vector<char> serializeTable(Table table) {
     uint8_t nullable = column.nullable ? 1 : 0;
     append(&nullable, sizeof(nullable));
   }
-  // Version 1 stores optional NUMERIC precision and scale per column.
-  constexpr uint32_t extensionMagic = 0x314D554E; // "NUM1" in little endian.
-  constexpr uint8_t extensionVersion = 1;
-  append(&extensionMagic, sizeof(extensionMagic));
-  append(&extensionVersion, sizeof(extensionVersion));
-  append(&columnCount, sizeof(columnCount));
+  bool hasNumericModifiers = false;
   for (const Column &column : table.columns) {
     if (column.type != DataType::NUMERIC &&
         (column.numericPrecision.has_value() ||
@@ -54,15 +49,30 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument(
           "NUMERIC scale must be between -1000 and 1000");
     }
-    uint8_t flags =
-        static_cast<uint8_t>((column.numericPrecision.has_value() ? 1 : 0) |
-                             (column.numericScale.has_value() ? 2 : 0));
-    append(&flags, sizeof(flags));
-    if (column.numericPrecision.has_value()) {
-      append(&*column.numericPrecision, sizeof(*column.numericPrecision));
-    }
-    if (column.numericScale.has_value()) {
-      append(&*column.numericScale, sizeof(*column.numericScale));
+    hasNumericModifiers =
+        hasNumericModifiers || column.numericPrecision.has_value() ||
+        column.numericScale.has_value();
+  }
+
+  // Keep the legacy payload size unchanged unless a column has modifiers.
+  // This avoids reducing catalog page capacity for ordinary tables.
+  if (hasNumericModifiers) {
+    constexpr uint32_t extensionMagic = 0x314D554E; // "NUM1" in little endian.
+    constexpr uint8_t extensionVersion = 1;
+    append(&extensionMagic, sizeof(extensionMagic));
+    append(&extensionVersion, sizeof(extensionVersion));
+    append(&columnCount, sizeof(columnCount));
+    for (const Column &column : table.columns) {
+      uint8_t flags =
+          static_cast<uint8_t>((column.numericPrecision.has_value() ? 1 : 0) |
+                               (column.numericScale.has_value() ? 2 : 0));
+      append(&flags, sizeof(flags));
+      if (column.numericPrecision.has_value()) {
+        append(&*column.numericPrecision, sizeof(*column.numericPrecision));
+      }
+      if (column.numericScale.has_value()) {
+        append(&*column.numericScale, sizeof(*column.numericScale));
+      }
     }
   }
   append(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
