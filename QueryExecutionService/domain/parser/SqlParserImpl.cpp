@@ -1,6 +1,7 @@
 #include "SqlParserImpl.h"
 
 #include "../types/SqlTypeRegistry.h"
+#include "../types/SqlNumericSemantics.h"
 
 #include <cctype>
 #include <charconv>
@@ -1245,18 +1246,13 @@ private:
       if (negative) {
         text.insert(text.begin(), '-');
       }
-      double value{};
-      const auto conversion =
-          std::from_chars(text.data(), text.data() + text.size(), value,
-                          std::chars_format::general);
       ++position_;
-      if (conversion.ec != std::errc{} ||
-          conversion.ptr != text.data() + text.size()) {
-        return SqlParseError{
-            SqlParseErrorCode::SyntaxError,
-            "Floating-point literal is out of range or invalid"};
+      try {
+        return SqlValue{
+            QueryExecutionService::domain::parseSqlNumericLiteral(text)};
+      } catch (const std::exception &error) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
       }
-      return SqlValue{value};
     }
     if (negative) {
       if (current().kind != TokenKind::Integer) {
