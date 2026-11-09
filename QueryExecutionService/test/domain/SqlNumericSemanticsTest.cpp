@@ -44,12 +44,9 @@ TEST(SqlNumericSemanticsTest, FormatsPositiveNegativeAndScaledValues) {
 }
 
 TEST(SqlNumericSemanticsTest, ComparesDifferentScalesExactly) {
-  const auto onePointTwo =
-      normalizeSqlNumericValue(false, "1200", 3);
-  const auto onePointNineteen =
-      normalizeSqlNumericValue(false, "119", 2);
-  const auto onePointTwoZero =
-      normalizeSqlNumericValue(false, "120", 2);
+  const auto onePointTwo = normalizeSqlNumericValue(false, "1200", 3);
+  const auto onePointNineteen = normalizeSqlNumericValue(false, "119", 2);
+  const auto onePointTwoZero = normalizeSqlNumericValue(false, "120", 2);
 
   EXPECT_GT(compareSqlNumericValues(onePointTwo, onePointNineteen), 0);
   EXPECT_EQ(compareSqlNumericValues(onePointTwo, onePointTwoZero), 0);
@@ -76,8 +73,7 @@ TEST(SqlNumericSemanticsTest, ComparesLargeValuesWithoutMachineIntegerLimits) {
 }
 
 TEST(SqlNumericSemanticsTest, RejectsNonCanonicalValuesAtPublicBoundaries) {
-  EXPECT_THROW(formatSqlNumericValue({false, "001", 0}),
-               std::invalid_argument);
+  EXPECT_THROW(formatSqlNumericValue({false, "001", 0}), std::invalid_argument);
   EXPECT_THROW(compareSqlNumericValues({true, "0", 0}, {false, "1", 0}),
                std::invalid_argument);
 }

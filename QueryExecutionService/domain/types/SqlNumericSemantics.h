@@ -10,9 +10,9 @@ namespace QueryExecutionService::domain {
 
 // Build the canonical finite-decimal representation from an unsigned digit
 // sequence, sign, and decimal scale. The coefficient must contain digits only.
-unidb::sql::SqlNumericValue
-normalizeSqlNumericValue(bool negative, std::string coefficient,
-                         std::int32_t scale);
+unidb::sql::SqlNumericValue normalizeSqlNumericValue(bool negative,
+                                                     std::string coefficient,
+                                                     std::int32_t scale);
 
 // Format a canonical finite-decimal value without losing precision.
 std::string formatSqlNumericValue(const unidb::sql::SqlNumericValue &value);

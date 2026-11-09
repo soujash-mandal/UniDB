@@ -18,12 +18,10 @@ void validateCanonicalValue(const unidb::sql::SqlNumericValue &value) {
   }
 
   if (value.coefficient.size() > 1 &&
-      (value.coefficient.front() == '0' ||
-       value.coefficient.back() == '0')) {
+      (value.coefficient.front() == '0' || value.coefficient.back() == '0')) {
     throw std::invalid_argument("NUMERIC coefficient is not normalized");
   }
-  if (value.coefficient == "0" &&
-      (value.negative || value.scale != 0)) {
+  if (value.coefficient == "0" && (value.negative || value.scale != 0)) {
     throw std::invalid_argument("NUMERIC zero is not normalized");
   }
 }
@@ -41,12 +39,10 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
   const auto commonLength =
       std::max(left.coefficient.size(), right.coefficient.size());
   for (std::size_t index = 0; index < commonLength; ++index) {
-    const char leftDigit = index < left.coefficient.size()
-                               ? left.coefficient[index]
-                               : '0';
-    const char rightDigit = index < right.coefficient.size()
-                                ? right.coefficient[index]
-                                : '0';
+    const char leftDigit =
+        index < left.coefficient.size() ? left.coefficient[index] : '0';
+    const char rightDigit =
+        index < right.coefficient.size() ? right.coefficient[index] : '0';
     if (leftDigit != rightDigit) {
       return leftDigit < rightDigit ? -1 : 1;
     }
@@ -56,9 +52,9 @@ int compareMagnitude(const unidb::sql::SqlNumericValue &left,
 
 } // namespace
 
-unidb::sql::SqlNumericValue
-normalizeSqlNumericValue(bool negative, std::string coefficient,
-                         std::int32_t scale) {
+unidb::sql::SqlNumericValue normalizeSqlNumericValue(bool negative,
+                                                     std::string coefficient,
+                                                     std::int32_t scale) {
   if (coefficient.empty() ||
       !std::all_of(coefficient.begin(), coefficient.end(),
                    [](const unsigned char character) {
@@ -84,16 +80,14 @@ normalizeSqlNumericValue(bool negative, std::string coefficient,
   return {negative, std::move(coefficient), scale};
 }
 
-std::string
-formatSqlNumericValue(const unidb::sql::SqlNumericValue &value) {
+std::string formatSqlNumericValue(const unidb::sql::SqlNumericValue &value) {
   validateCanonicalValue(value);
 
   std::string formatted;
   if (value.scale <= 0) {
     const auto trailingZeroCount =
         static_cast<std::uint64_t>(-static_cast<std::int64_t>(value.scale));
-    if (trailingZeroCount >
-        formatted.max_size() - value.coefficient.size()) {
+    if (trailingZeroCount > formatted.max_size() - value.coefficient.size()) {
       throw std::length_error("NUMERIC value is too large to format");
     }
     formatted = value.coefficient;
