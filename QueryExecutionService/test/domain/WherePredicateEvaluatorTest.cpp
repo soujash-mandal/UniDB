@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -14,6 +15,8 @@ using QueryExecutionService::domain::matchesWhereExpression;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
 using unidb::sql::SqlType;
+using unidb::sql::SqlTypeDescriptor;
+using unidb::sql::SqlTypeId;
 using unidb::sql::SqlValue;
 using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
@@ -120,4 +123,46 @@ TEST(WherePredicateEvaluatorTest,
       "id", std::string("1"), std::nullopt, {}, ComparisonOperator::Equal};
   EXPECT_THROW(compileWhereExpression(mismatch, schema, types),
                std::invalid_argument);
+}
+
+TEST(WherePredicateEvaluatorTest,
+     ComparesRealAndDoublePrecisionValuesIncludingPostgresNaNOrdering) {
+  EXPECT_LT(compareSqlValues(SqlValue{1.25F}, SqlValue{2.5F}), 0);
+  EXPECT_GT(compareSqlValues(SqlValue{2.5}, SqlValue{1.25}), 0);
+  EXPECT_EQ(compareSqlValues(SqlValue{-0.0F}, SqlValue{0.0F}), 0);
+  EXPECT_EQ(compareSqlValues(SqlValue{-0.0}, SqlValue{0.0}), 0);
+
+  const float realNaN = std::numeric_limits<float>::quiet_NaN();
+  const double doubleNaN = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_EQ(compareSqlValues(SqlValue{realNaN}, SqlValue{realNaN}), 0);
+  EXPECT_EQ(compareSqlValues(SqlValue{doubleNaN}, SqlValue{doubleNaN}), 0);
+  EXPECT_GT(compareSqlValues(SqlValue{realNaN}, SqlValue{1.0F}), 0);
+  EXPECT_LT(compareSqlValues(SqlValue{1.0}, SqlValue{doubleNaN}), 0);
+  EXPECT_THROW(compareSqlValues(SqlValue{1.0F}, SqlValue{1.0}),
+               std::invalid_argument);
+}
+
+TEST(WherePredicateEvaluatorTest,
+     CompilesAndEvaluatesRealAndDoublePrecisionWhereComparisons) {
+  const std::vector<ColumnDefinition> schema{
+      {"approximate", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}},
+      {"precise", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}}}};
+  const std::vector<SqlType> types{SqlType::Int, SqlType::Int};
+  const std::vector<SqlValue> row{1.5F, 2.5};
+
+  WhereExpression realGreater;
+  realGreater.predicate = WhereEquals{"approximate",
+                                      SqlValue{1.0},
+                                      std::nullopt,
+                                      {},
+                                      ComparisonOperator::GreaterThan};
+  EXPECT_TRUE(matchesWhereExpression(
+      row, compileWhereExpression(realGreater, schema, types)));
+
+  WhereExpression doubleEqual;
+  doubleEqual.predicate = WhereEquals{
+      "precise", SqlValue{2.5}, std::nullopt, {}, ComparisonOperator::Equal};
+  EXPECT_TRUE(matchesWhereExpression(
+      row, compileWhereExpression(doubleEqual, schema, types)));
 }
