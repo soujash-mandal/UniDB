@@ -57,6 +57,9 @@ TEST(SqlNumericRowCodecTest, RejectsNonCanonicalCoefficient) {
 TEST(SqlNumericRowCodecTest, RejectsNonCanonicalValuesDuringEncoding) {
   const unidb::sql::SqlNumericValue nonCanonical{false, "001", 0};
 
-  EXPECT_THROW(SqlNumericRowCodec::encode(nonCanonical),
-               std::invalid_argument);
+  const auto encodeNonCanonical = [&] {
+    return SqlNumericRowCodec::encode(nonCanonical);
+  };
+
+  EXPECT_THROW(encodeNonCanonical(), std::invalid_argument);
 }
