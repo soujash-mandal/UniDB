@@ -2,6 +2,7 @@
 
 #include "../types/SqlNumericSemantics.h"
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 #include <string>
