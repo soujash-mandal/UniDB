@@ -1,8 +1,11 @@
 #include "SqlParserImpl.h"
 
+#include "../types/SqlTypeRegistry.h"
+
 #include <cctype>
 #include <charconv>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -151,6 +154,110 @@ private:
            isKeyword("UNION") || isKeyword("CROSS");
   }
 
+  std::variant<SqlTypeDescriptor, SqlParseError> parseDeclaredType() {
+    if (current().kind != TokenKind::Identifier) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "Expected SQL type name"};
+    }
+
+    std::string name = upper(current().text);
+    ++position_;
+
+    if (name == "DOUBLE") {
+      if (!expectKeyword("PRECISION")) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected PRECISION after DOUBLE"};
+      }
+      name = "DOUBLE PRECISION";
+    } else if (name == "CHARACTER" && matchKeyword("VARYING")) {
+      name = "CHARACTER VARYING";
+    }
+
+    SqlTypeModifier modifier;
+    if (match(TokenKind::LeftParen)) {
+      const auto parseUnsigned = [this]() -> std::optional<std::uint32_t> {
+        if (current().kind != TokenKind::Integer) {
+          return std::nullopt;
+        }
+        std::uint32_t value{};
+        const auto &literal = current().text;
+        const auto result = std::from_chars(
+            literal.data(), literal.data() + literal.size(), value);
+        if (result.ec != std::errc{}) {
+          return std::nullopt;
+        }
+        ++position_;
+        return value;
+      };
+      const auto parseSigned = [this]() -> std::optional<std::int32_t> {
+        bool negative = match(TokenKind::Minus);
+        if (!negative) {
+          (void)match(TokenKind::Plus);
+        }
+        if (current().kind != TokenKind::Integer) {
+          return std::nullopt;
+        }
+        std::int32_t value{};
+        const auto &literal = current().text;
+        const auto result = std::from_chars(
+            literal.data(), literal.data() + literal.size(), value);
+        if (result.ec != std::errc{}) {
+          return std::nullopt;
+        }
+        ++position_;
+        return negative ? -value : value;
+      };
+
+      auto first = parseUnsigned();
+      if (!first.has_value()) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected a non-negative type modifier"};
+      }
+      if (match(TokenKind::Comma)) {
+        auto second = parseSigned();
+        if (!second.has_value()) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected NUMERIC scale after ','"};
+        }
+        modifier.precision = *first;
+        modifier.scale = *second;
+      } else if (name == "CHAR" || name == "CHARACTER" ||
+                 name == "CHARACTER VARYING" || name == "VARCHAR") {
+        modifier.length = *first;
+      } else if (name == "NUMERIC" || name == "DECIMAL") {
+        modifier.precision = *first;
+      } else {
+        modifier.temporalPrecision = *first;
+      }
+      if (!expect(TokenKind::RightParen)) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected ')' after SQL type modifier"};
+      }
+    }
+
+    if (name == "TIME" || name == "TIMESTAMP") {
+      if (matchKeyword("WITH")) {
+        if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected TIME ZONE after WITH"};
+        }
+        name += " WITH TIME ZONE";
+      } else if (matchKeyword("WITHOUT")) {
+        if (!expectKeyword("TIME") || !expectKeyword("ZONE")) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected TIME ZONE after WITHOUT"};
+        }
+        name += " WITHOUT TIME ZONE";
+      }
+    }
+
+    try {
+      return QueryExecutionService::domain::resolveSqlType(name, modifier);
+    } catch (const std::invalid_argument &error) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
+    }
+  }
+
   SqlParseResult parseCreateTable() {
     ++position_; // CREATE
     if (!expectKeyword("TABLE")) {
@@ -177,17 +284,16 @@ private:
       column.name = current().text;
       ++position_;
 
-      if (isKeyword("INT")) {
-        column.type = SqlType::Int;
-        ++position_;
-      } else if (isKeyword("TEXT")) {
-        column.type = SqlType::Text;
-        ++position_;
-      } else if (current().kind == TokenKind::Identifier) {
-        return unsupported("Column type is outside the V1 supported subset");
-      } else {
-        return syntaxError("Expected INT or TEXT after column name");
+      auto declaredType = parseDeclaredType();
+      if (const auto *error = std::get_if<SqlParseError>(&declaredType)) {
+        return *error;
       }
+      column.declaredType = std::get<SqlTypeDescriptor>(declaredType);
+      // Keep the transitional execution tag populated. The RDB adapter checks
+      // declaredType before using it, so unsupported types cannot be stored as
+      // an INT/TEXT column by accident.
+      column.type = column.declaredType->id == SqlTypeId::Text ? SqlType::Text
+                                                               : SqlType::Int;
       statement.columns.push_back(std::move(column));
 
       if (!match(TokenKind::Comma)) {
