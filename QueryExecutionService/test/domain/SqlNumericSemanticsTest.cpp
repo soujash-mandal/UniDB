@@ -10,6 +10,7 @@
 using QueryExecutionService::domain::compareSqlNumericValues;
 using QueryExecutionService::domain::formatSqlNumericValue;
 using QueryExecutionService::domain::normalizeSqlNumericValue;
+using QueryExecutionService::domain::parseSqlNumericLiteral;
 
 TEST(SqlNumericSemanticsTest, NormalizesLeadingAndTrailingZeroesExactly) {
   EXPECT_EQ(normalizeSqlNumericValue(false, "0001234500", 4),
@@ -83,4 +84,37 @@ TEST(SqlNumericSemanticsTest, RejectsNonCanonicalValuesAtPublicBoundaries) {
   EXPECT_THROW(formatSqlNumericValue({false, "001", 0}), std::invalid_argument);
   EXPECT_THROW(compareSqlNumericValues({true, "0", 0}, {false, "1", 0}),
                std::invalid_argument);
+}
+
+TEST(SqlNumericSemanticsTest, ParsesDecimalLiteralsWithoutFloatingPointLoss) {
+  EXPECT_EQ(parseSqlNumericLiteral("123.4500"),
+            (unidb::sql::SqlNumericValue{false, "12345", 2}));
+  EXPECT_EQ(parseSqlNumericLiteral("-0.00120"),
+            (unidb::sql::SqlNumericValue{true, "12", 4}));
+  EXPECT_EQ(parseSqlNumericLiteral(".5"),
+            (unidb::sql::SqlNumericValue{false, "5", 1}));
+  EXPECT_EQ(parseSqlNumericLiteral("5."),
+            (unidb::sql::SqlNumericValue{false, "5", 0}));
+}
+
+TEST(SqlNumericSemanticsTest, ParsesExponentNotationExactly) {
+  EXPECT_EQ(parseSqlNumericLiteral("1.25e2"),
+            (unidb::sql::SqlNumericValue{false, "125", 0}));
+  EXPECT_EQ(parseSqlNumericLiteral("1e-3"),
+            (unidb::sql::SqlNumericValue{false, "1", 3}));
+  EXPECT_EQ(parseSqlNumericLiteral("-12.50E+2"),
+            (unidb::sql::SqlNumericValue{true, "125", -1}));
+}
+
+TEST(SqlNumericSemanticsTest, RejectsMalformedNumericLiteralLexemes) {
+  for (const auto *literal : {"", "+", "-", ".", "1e", "1e+", "1.2.3",
+                              "1a", "1e2.3"}) {
+    EXPECT_THROW(parseSqlNumericLiteral(literal), std::invalid_argument)
+        << literal;
+  }
+}
+
+TEST(SqlNumericSemanticsTest, RejectsNumericLiteralExponentOverflow) {
+  EXPECT_THROW(parseSqlNumericLiteral("1e999999999999999999999"),
+               std::out_of_range);
 }
