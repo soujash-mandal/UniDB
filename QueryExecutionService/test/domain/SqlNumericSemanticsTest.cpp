@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 
+using QueryExecutionService::domain::applySqlNumericTypmod;
 using QueryExecutionService::domain::compareSqlNumericValues;
 using QueryExecutionService::domain::formatSqlNumericValue;
 using QueryExecutionService::domain::normalizeSqlNumericValue;
@@ -117,4 +118,53 @@ TEST(SqlNumericSemanticsTest, RejectsMalformedNumericLiteralLexemes) {
 TEST(SqlNumericSemanticsTest, RejectsNumericLiteralExponentOverflow) {
   EXPECT_THROW(parseSqlNumericLiteral("1e999999999999999999999"),
                std::out_of_range);
+}
+
+
+TEST(SqlNumericSemanticsTest, RoundsDeclaredScaleWithTiesAwayFromZero) {
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("12.344"), 4, 2),
+            parseSqlNumericLiteral("12.34"));
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("12.345"), 4, 2),
+            parseSqlNumericLiteral("12.35"));
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("-12.345"), 4, 2),
+            parseSqlNumericLiteral("-12.35"));
+}
+
+TEST(SqlNumericSemanticsTest, ChecksPrecisionAfterRounding) {
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("999.994"), 5, 2),
+            parseSqlNumericLiteral("999.99"));
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("999.995"), 5, 2),
+               std::out_of_range);
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("-1000"), 5, 2),
+               std::out_of_range);
+}
+
+TEST(SqlNumericSemanticsTest, SupportsNegativeDeclaredScale) {
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("12345"), 2, -3),
+            parseSqlNumericLiteral("12000"));
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("12500"), 2, -3),
+            parseSqlNumericLiteral("13000"));
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("99500"), 2, -3),
+               std::out_of_range);
+}
+
+TEST(SqlNumericSemanticsTest, DefaultsOmittedDeclaredScaleToZero) {
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("12.6"), 3),
+            parseSqlNumericLiteral("13"));
+}
+
+TEST(SqlNumericSemanticsTest, HandlesScaleGreaterThanPrecision) {
+  EXPECT_EQ(applySqlNumericTypmod(parseSqlNumericLiteral("0.00099"), 2, 5),
+            parseSqlNumericLiteral("0.00099"));
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("0.001"), 2, 5),
+               std::out_of_range);
+}
+
+TEST(SqlNumericSemanticsTest, RejectsInvalidPrecisionAndScaleModifiers) {
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("1"), 0, 0),
+               std::invalid_argument);
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("1"), 1001, 0),
+               std::invalid_argument);
+  EXPECT_THROW(applySqlNumericTypmod(parseSqlNumericLiteral("1"), 2, 1001),
+               std::invalid_argument);
 }
