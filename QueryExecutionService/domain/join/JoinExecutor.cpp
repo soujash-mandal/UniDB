@@ -52,11 +52,13 @@ executeInnerJoin(const SelectStatement &select,
   joinedSchema.reserve(leftSchema.size() + rightSchema.size());
   joinedTypes.reserve(leftTypes.size() + rightTypes.size());
   for (const auto &column : leftSchema) {
-    joinedSchema.push_back({leftQualifier + "." + column.name, column.type});
+    joinedSchema.push_back(
+        {leftQualifier + "." + column.name, column.type, column.declaredType});
     joinedTypes.push_back(column.type);
   }
   for (const auto &column : rightSchema) {
-    joinedSchema.push_back({rightQualifier + "." + column.name, column.type});
+    joinedSchema.push_back(
+        {rightQualifier + "." + column.name, column.type, column.declaredType});
     joinedTypes.push_back(column.type);
   }
 
@@ -241,7 +243,8 @@ QueryExecutionResult executeMultipleInnerJoins(
   std::vector<SqlType> combinedTypes;
   std::vector<std::vector<SqlValue>> rows = rowsByTable.front();
   for (const auto &c : schemas.front()) {
-    combinedSchema.push_back({qualifiers.front() + "." + c.name, c.type});
+    combinedSchema.push_back(
+        {qualifiers.front() + "." + c.name, c.type, c.declaredType});
     combinedTypes.push_back(c.type);
   }
   for (std::size_t j = 0; j < select.innerJoins.size(); ++j) {
