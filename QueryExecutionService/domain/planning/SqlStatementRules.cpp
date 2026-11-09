@@ -27,7 +27,8 @@ void validateCreateTable(const CreateTableStatement &statement) {
       using unidb::sql::SqlTypeId;
       const auto id = column.declaredType->id;
       if (id != SqlTypeId::SmallInt && id != SqlTypeId::Integer &&
-          id != SqlTypeId::BigInt && id != SqlTypeId::Text) {
+          id != SqlTypeId::BigInt && id != SqlTypeId::Boolean &&
+        id != SqlTypeId::Text) {
         throw std::invalid_argument(
             "CREATE TABLE type is recognized but not yet supported");
       }
@@ -40,7 +41,6 @@ void validateCreateTable(const CreateTableStatement &statement) {
 std::vector<std::vector<SqlValue>>
 prepareInsertRows(const InsertStatement &statement,
                   const std::vector<ColumnDefinition> &schema) {
-  const auto types = schemaTypes(schema);
   if (statement.rows.empty()) {
     throw std::invalid_argument("INSERT requires at least one VALUES row");
   }
@@ -68,9 +68,36 @@ prepareInsertRows(const InsertStatement &statement,
         throw std::invalid_argument("Duplicate INSERT column: " +
                                     statement.columnNames[inputIndex]);
       }
-      const bool valueIsInt =
-          std::holds_alternative<std::int64_t>(values[inputIndex]);
-      if ((types[schemaIndex] == SqlType::Int) != valueIsInt) {
+      bool valueMatchesColumn = false;
+      if (found->declaredType.has_value()) {
+        using unidb::sql::SqlTypeId;
+        switch (found->declaredType->id) {
+        case SqlTypeId::SmallInt:
+        case SqlTypeId::Integer:
+        case SqlTypeId::BigInt:
+          valueMatchesColumn =
+              std::holds_alternative<std::int64_t>(values[inputIndex]);
+          break;
+        case SqlTypeId::Boolean:
+          valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
+          break;
+        case SqlTypeId::Text:
+          valueMatchesColumn =
+              std::holds_alternative<std::string>(values[inputIndex]);
+          break;
+        default:
+          throw std::invalid_argument(
+              "INSERT column type is recognized but not yet supported: " +
+              found->name);
+        }
+      } else if (found->type == SqlType::Int) {
+        valueMatchesColumn =
+            std::holds_alternative<std::int64_t>(values[inputIndex]);
+      } else if (found->type == SqlType::Text) {
+        valueMatchesColumn =
+            std::holds_alternative<std::string>(values[inputIndex]);
+      }
+      if (!valueMatchesColumn) {
         throw std::invalid_argument(
             "INSERT value type does not match column: " + found->name);
       }
