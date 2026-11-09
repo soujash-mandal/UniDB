@@ -144,8 +144,7 @@ averageNumericValues(const std::vector<SqlValue> &values) {
   std::string quotient;
   quotient.reserve(numerator.size());
   for (const char digit : numerator) {
-    const auto current =
-        remainder * 10 + static_cast<unsigned>(digit - '0');
+    const auto current = remainder * 10 + static_cast<unsigned>(digit - '0');
     quotient.push_back(static_cast<char>('0' + current / divisor));
     remainder = current % divisor;
   }
@@ -158,7 +157,7 @@ averageNumericValues(const std::vector<SqlValue> &values) {
     quotient = incrementMagnitude(std::move(quotient));
   }
   return normalizeSqlNumericValue(sum.negative, std::move(quotient),
-                                 resultScale);
+                                  resultScale);
 }
 
 std::string aggregateFunctionName(AggregateFunction function) {

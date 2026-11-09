@@ -151,7 +151,8 @@ TEST(SqlAggregateCalculatorTest, CalculatesExactNumericAverage) {
             (unidb::sql::SqlNumericValue{false, "15", 1}));
 }
 
-TEST(SqlAggregateCalculatorTest, CalculatesRepeatingNumericAverageAtSixteenPlaces) {
+TEST(SqlAggregateCalculatorTest,
+     CalculatesRepeatingNumericAverageAtSixteenPlaces) {
   const std::vector<SqlValue> values{
       unidb::sql::SqlNumericValue{false, "1", 0},
       unidb::sql::SqlNumericValue{false, "0", 0},
@@ -163,11 +164,11 @@ TEST(SqlAggregateCalculatorTest, CalculatesRepeatingNumericAverageAtSixteenPlace
 }
 
 TEST(SqlAggregateCalculatorTest, PreservesNegativeNumericAverage) {
-  const std::vector<SqlValue> values{
-      unidb::sql::SqlNumericValue{true, "1", 0},
-      unidb::sql::SqlNumericValue{true, "2", 0}};
+  const std::vector<SqlValue> values{unidb::sql::SqlNumericValue{true, "1", 0},
+                                     unidb::sql::SqlNumericValue{true, "2", 0}};
   const auto average = calculateAggregate(AggregateFunction::Avg, values, 2);
-  EXPECT_EQ(unidb::sql::SqlNumericValue(std::get<unidb::sql::SqlNumericValue>(average)),
+  EXPECT_EQ(unidb::sql::SqlNumericValue(
+                std::get<unidb::sql::SqlNumericValue>(average)),
             (unidb::sql::SqlNumericValue{true, "15", 1}));
 }
 
@@ -177,7 +178,8 @@ TEST(SqlAggregateCalculatorTest, PreservesLargeNumericAverageExactly) {
       unidb::sql::SqlNumericValue{false, "999999999999999999999999999999", 4}};
   const auto average = calculateAggregate(AggregateFunction::Avg, values, 2);
   EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(average),
-            (unidb::sql::SqlNumericValue{false, "999999999999999999999999999999", 4}));
+            (unidb::sql::SqlNumericValue{false,
+                                         "999999999999999999999999999999", 4}));
 }
 
 TEST(SqlAggregateCalculatorTest, RejectsMixedNumericAndNonNumericSumValues) {
