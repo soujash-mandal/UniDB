@@ -236,10 +236,9 @@ TEST(SqlTupleCodecTest, RoundTripsNumericAlongsideOtherDeclaredTypes) {
   const auto decoded = SqlTupleCodec::decode(schema, encoded);
 
   EXPECT_EQ(decoded, values);
-  EXPECT_EQ(
-      QueryExecutionService::domain::formatSqlNumericValue(
-          std::get<SqlNumericValue>(decoded[2])),
-      "-123456789012345.6789");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(decoded[2])),
+            "-123456789012345.6789");
 }
 
 TEST(SqlTupleCodecTest, RejectsNumericRuntimeTypeMismatch) {
@@ -263,14 +262,13 @@ TEST(SqlTupleCodecTest, RejectsMalformedNumericPayloadInsideDeclaredRow) {
 
   const std::vector<ColumnDefinition> schema{
       {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
-  auto encoded = SqlTupleCodec::encode(
-      schema, {SqlNumericValue{false, "12345", 2}});
+  auto encoded =
+      SqlTupleCodec::encode(schema, {SqlNumericValue{false, "12345", 2}});
   ASSERT_GT(encoded.size(), 5U);
   encoded[5] = static_cast<char>(0x7f);
   EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
 
-  encoded = SqlTupleCodec::encode(schema,
-                                  {SqlNumericValue{false, "12345", 2}});
+  encoded = SqlTupleCodec::encode(schema, {SqlNumericValue{false, "12345", 2}});
   encoded.pop_back();
   EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
 }

@@ -57,8 +57,8 @@ unidb::sql::SqlNumericValue readNumeric(const std::vector<char> &bytes,
     throw std::runtime_error("Tuple NUMERIC value is truncated");
   }
   std::vector<char> encoded(bytes.begin() + static_cast<std::ptrdiff_t>(offset),
-                            bytes.begin() + static_cast<std::ptrdiff_t>(
-                                                offset + length));
+                            bytes.begin() +
+                                static_cast<std::ptrdiff_t>(offset + length));
   offset += length;
   return QueryExecutionService::domain::SqlNumericRowCodec::decode(encoded);
 }
@@ -325,8 +325,8 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       values.emplace_back(readText(bytes, offset));
       break;
     default:
-      throw std::invalid_argument(
-          "Tuple codec supports only integer, BOOLEAN, floating-point, NUMERIC, and TEXT columns");
+      throw std::invalid_argument("Tuple codec supports only integer, BOOLEAN, "
+                                  "floating-point, NUMERIC, and TEXT columns");
     }
   }
   if (offset != bytes.size()) {
