@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUN_ID="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$$"
-IMAGE="unidb:persistence-${RUN_ID}"
+IMAGE="${UNIDB_DOCKER_TEST_IMAGE:-unidb:persistence-${RUN_ID}}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 NETWORK="unidb-persistence-test-net-${RUN_ID}"
@@ -41,7 +41,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
+report_phase() {
+  local phase_name="$1"
+  local phase_started="$2"
+  echo "::notice title=Docker persistence timing::${phase_name}: $((SECONDS - phase_started))s"
+}
+
 # Generate disposable mutual-TLS credentials for the persistence integration test.
+phase_started=$SECONDS
 cat > "$TLS_DIR/ca.cnf" <<'EOF'
 [ req ]
 prompt = no
@@ -92,9 +99,17 @@ chmod 755 "$TLS_DIR"
 chmod 644 "$TLS_DIR/ca.crt" "$TLS_DIR/server.crt" "$TLS_DIR/server.key" \
   "$TLS_DIR/client.crt" "$TLS_DIR/client.key"
 chmod 600 "$TLS_DIR/ca.key"
+report_phase "TLS credential generation" "$phase_started"
 
-docker build -t "$IMAGE" .
-IMAGE_CREATED=1
+# CI supplies a BuildKit-cached image; local runs build their own image.
+if [[ -z "${UNIDB_DOCKER_TEST_IMAGE:-}" ]]; then
+  phase_started=$SECONDS
+  docker build -t "$IMAGE" .
+  IMAGE_CREATED=1
+  report_phase "Docker image build" "$phase_started"
+fi
+
+phase_started=$SECONDS
 docker network create "$NETWORK" >/dev/null
 docker volume create "$VOLUME" >/dev/null
 VOLUME_CREATED=1
@@ -228,7 +243,9 @@ wait_for_server() {
 
 start_container
 wait_for_server
+report_phase "Initial container startup and readiness" "$phase_started"
 
+phase_started=$SECONDS
 # A client without a trusted certificate must not receive any SQL response.
 unauthenticated_result="$(python3 - "$TLS_DIR" "$PORT" <<'PY'
 import socket
@@ -421,6 +438,9 @@ if ! grep -Fq 'row-600-' <<<"$large_response"; then
   exit 1
 fi
 
+report_phase "TLS and integration coverage" "$phase_started"
+
+phase_started=$SECONDS
 # Stop must trigger the server's graceful flush before the container is removed.
 if ! docker stop --time 10 "$CONTAINER" >/dev/null; then
   echo "Failed to stop the UniDB persistence-test container cleanly." >&2
@@ -447,4 +467,5 @@ if ! grep -Fq '"rows":[[7,"Ada"]]' <<<"$response"; then
   exit 1
 fi
 
+report_phase "Container recreation and volume persistence" "$phase_started"
 echo "Docker named-volume persistence test passed."
