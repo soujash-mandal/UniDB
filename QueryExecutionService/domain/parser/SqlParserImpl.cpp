@@ -558,6 +558,17 @@ private:
       }
       return std::get<IntegerExpression>(std::move(expression));
     }
+    if (current().kind == TokenKind::Floating) {
+      IntegerExpression expression;
+      try {
+        expression.numericLiteral =
+            QueryExecutionService::domain::parseSqlNumericLiteral(current().text);
+      } catch (const std::exception &error) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
+      }
+      ++position_;
+      return expression;
+    }
     if (current().kind == TokenKind::Integer) {
       const auto &text = current().text;
       std::int64_t value{};
@@ -599,6 +610,22 @@ private:
                                ? IntegerUnaryOperator::Positive
                                : IntegerUnaryOperator::Negative;
     ++position_;
+
+    if (current().kind == TokenKind::Floating) {
+      std::string text = current().text;
+      if (operation == IntegerUnaryOperator::Negative) {
+        text.insert(text.begin(), '-');
+      }
+      ++position_;
+      IntegerExpression expression;
+      try {
+        expression.numericLiteral =
+            QueryExecutionService::domain::parseSqlNumericLiteral(text);
+      } catch (const std::exception &error) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
+      }
+      return expression;
+    }
 
     // A negative literal may use the full signed range, including INT64_MIN.
     if (operation == IntegerUnaryOperator::Negative &&
@@ -712,10 +739,11 @@ private:
     } else {
       if (current().kind != TokenKind::Identifier &&
           current().kind != TokenKind::Integer &&
+          current().kind != TokenKind::Floating &&
           current().kind != TokenKind::LeftParen &&
           current().kind != TokenKind::Minus &&
           current().kind != TokenKind::Plus) {
-        return syntaxError("Expected '*', aggregate, CASE, column, or integer "
+        return syntaxError("Expected '*', aggregate, CASE, column, or numeric "
                            "expression after SELECT");
       }
       while (true) {

@@ -18,6 +18,8 @@ struct CompiledIntegerExpression {
   unidb::sql::IntegerExpression::Kind kind{
       unidb::sql::IntegerExpression::Kind::Literal};
   std::int64_t literal{0};
+  std::optional<unidb::sql::SqlNumericValue> numericLiteral;
+  bool numeric{false};
   std::size_t columnIndex{0};
   unidb::sql::IntegerBinaryOperator operation{
       unidb::sql::IntegerBinaryOperator::Add};
@@ -32,7 +34,7 @@ unidb::sql::SqlValue
 evaluateTextFunction(const std::vector<unidb::sql::SqlValue> &row,
                      const CompiledTextFunction &expression);
 
-std::int64_t
+unidb::sql::SqlValue
 evaluateIntegerExpression(const std::vector<unidb::sql::SqlValue> &row,
                           const CompiledIntegerExpression &expression);
 

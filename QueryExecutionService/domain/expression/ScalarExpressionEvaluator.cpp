@@ -1,5 +1,7 @@
 #include "ScalarExpressionEvaluator.h"
 
+#include "../types/SqlNumericSemantics.h"
+
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -10,6 +12,18 @@ using unidb::sql::IntegerExpression;
 using unidb::sql::IntegerUnaryOperator;
 using unidb::sql::SqlValue;
 using unidb::sql::TextFunction;
+
+namespace {
+unidb::sql::SqlNumericValue asNumeric(const SqlValue &value) {
+  if (const auto *numeric = std::get_if<unidb::sql::SqlNumericValue>(&value)) {
+    return *numeric;
+  }
+  if (const auto *integer = std::get_if<std::int64_t>(&value)) {
+    return parseSqlNumericLiteral(std::to_string(*integer));
+  }
+  throw std::invalid_argument("Numeric arithmetic requires numeric operands");
+}
+} // namespace
 
 SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
                               const CompiledTextFunction &expression) {
@@ -36,58 +50,91 @@ SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
   return result;
 }
 
-std::int64_t
-evaluateIntegerExpression(const std::vector<SqlValue> &row,
-                          const CompiledIntegerExpression &expression) {
+SqlValue evaluateIntegerExpression(const std::vector<SqlValue> &row,
+                                   const CompiledIntegerExpression &expression) {
   if (expression.kind == IntegerExpression::Kind::Literal) {
+    if (expression.numericLiteral.has_value()) {
+      return *expression.numericLiteral;
+    }
     return expression.literal;
   }
   if (expression.kind == IntegerExpression::Kind::Column) {
-    return std::get<std::int64_t>(row.at(expression.columnIndex));
+    return row.at(expression.columnIndex);
   }
   if (expression.kind == IntegerExpression::Kind::Unary) {
     if (!expression.operand) {
       throw std::invalid_argument("Malformed unary integer expression");
     }
     const auto operand = evaluateIntegerExpression(row, *expression.operand);
-    if (expression.unaryOperation == IntegerUnaryOperator::Positive) {
-      return operand;
+    if (expression.numeric) {
+      auto numeric = asNumeric(operand);
+      if (expression.unaryOperation == IntegerUnaryOperator::Negative &&
+          numeric.coefficient != "0") {
+        numeric.negative = !numeric.negative;
+      }
+      return numeric;
     }
-    if (operand == std::numeric_limits<std::int64_t>::min()) {
+    const auto integer = std::get<std::int64_t>(operand);
+    if (expression.unaryOperation == IntegerUnaryOperator::Positive) {
+      return integer;
+    }
+    if (integer == std::numeric_limits<std::int64_t>::min()) {
       throw std::invalid_argument("Integer negation exceeds INT64 range");
     }
-    return -operand;
+    return -integer;
   }
   if (!expression.left || !expression.right) {
     throw std::invalid_argument("Malformed integer arithmetic expression");
   }
   const auto left = evaluateIntegerExpression(row, *expression.left);
   const auto right = evaluateIntegerExpression(row, *expression.right);
+  if (expression.numeric) {
+    const auto numericLeft = asNumeric(left);
+    const auto numericRight = asNumeric(right);
+    switch (expression.operation) {
+    case IntegerBinaryOperator::Add:
+      return addSqlNumericValues(numericLeft, numericRight);
+    case IntegerBinaryOperator::Subtract:
+      return subtractSqlNumericValues(numericLeft, numericRight);
+    case IntegerBinaryOperator::Multiply:
+      return multiplySqlNumericValues(numericLeft, numericRight);
+    case IntegerBinaryOperator::Divide: {
+      // UniDB SQL numeric division currently returns at least six fractional
+      // digits, preserving any greater input scale.
+      const auto resultScale =
+          std::max<std::int32_t>(6, std::max(numericLeft.scale, numericRight.scale));
+      return divideSqlNumericValues(numericLeft, numericRight, resultScale);
+    }
+    }
+    throw std::invalid_argument("Unknown numeric arithmetic operator");
+  }
+  const auto integerLeft = std::get<std::int64_t>(left);
+  const auto integerRight = std::get<std::int64_t>(right);
   std::int64_t result{};
   switch (expression.operation) {
   case IntegerBinaryOperator::Add:
-    if (__builtin_add_overflow(left, right, &result)) {
+    if (__builtin_add_overflow(integerLeft, integerRight, &result)) {
       throw std::invalid_argument("Integer addition exceeds INT64 range");
     }
     return result;
   case IntegerBinaryOperator::Subtract:
-    if (__builtin_sub_overflow(left, right, &result)) {
+    if (__builtin_sub_overflow(integerLeft, integerRight, &result)) {
       throw std::invalid_argument("Integer subtraction exceeds INT64 range");
     }
     return result;
   case IntegerBinaryOperator::Multiply:
-    if (__builtin_mul_overflow(left, right, &result)) {
+    if (__builtin_mul_overflow(integerLeft, integerRight, &result)) {
       throw std::invalid_argument("Integer multiplication exceeds INT64 range");
     }
     return result;
   case IntegerBinaryOperator::Divide:
-    if (right == 0) {
+    if (integerRight == 0) {
       throw std::invalid_argument("Division by zero in integer expression");
     }
-    if (left == std::numeric_limits<std::int64_t>::min() && right == -1) {
+    if (integerLeft == std::numeric_limits<std::int64_t>::min() && integerRight == -1) {
       throw std::invalid_argument("Integer division exceeds INT64 range");
     }
-    return left / right;
+    return integerLeft / integerRight;
   }
   throw std::invalid_argument("Unknown integer arithmetic operator");
 }

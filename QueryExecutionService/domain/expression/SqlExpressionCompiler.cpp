@@ -57,6 +57,8 @@ compileIntegerExpression(const IntegerExpression &expression,
   compiled.kind = expression.kind;
   if (expression.kind == IntegerExpression::Kind::Literal) {
     compiled.literal = expression.literal;
+    compiled.numericLiteral = expression.numericLiteral;
+    compiled.numeric = expression.numericLiteral.has_value();
     return compiled;
   }
   if (expression.kind == IntegerExpression::Kind::Column) {
@@ -72,10 +74,13 @@ compileIntegerExpression(const IntegerExpression &expression,
     const auto index =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
     if (types[index] != SqlType::Int) {
-      throw std::invalid_argument("Integer arithmetic requires INT columns: " +
+      throw std::invalid_argument("Numeric arithmetic requires a numeric column: " +
                                   expression.columnName);
     }
     compiled.columnIndex = index;
+    compiled.numeric =
+        found->declaredType.has_value() &&
+        found->declaredType->id == unidb::sql::SqlTypeId::Numeric;
     return compiled;
   }
   if (expression.kind == IntegerExpression::Kind::Unary) {
@@ -86,6 +91,7 @@ compileIntegerExpression(const IntegerExpression &expression,
     compiled.operand =
         std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
             *expression.operand, schema, types, tableQualifier));
+    compiled.numeric = compiled.operand->numeric;
     return compiled;
   }
   if (!expression.left || !expression.right) {
@@ -98,6 +104,7 @@ compileIntegerExpression(const IntegerExpression &expression,
   compiled.right =
       std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
           *expression.right, schema, types, tableQualifier));
+  compiled.numeric = compiled.left->numeric || compiled.right->numeric;
   return compiled;
 }
 
