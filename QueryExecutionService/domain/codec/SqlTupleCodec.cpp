@@ -56,6 +56,18 @@ std::string readText(const std::vector<char> &bytes, std::size_t &offset) {
   return value;
 }
 
+template <typename Float, typename Bits>
+void appendFloatingPoint(std::vector<char> &out, Float value) {
+  static_assert(std::numeric_limits<Float>::is_iec559);
+  appendLittleEndian(out, std::bit_cast<Bits>(value));
+}
+
+template <typename Float, typename Bits>
+Float readFloatingPoint(const std::vector<char> &bytes, std::size_t &offset) {
+  static_assert(std::numeric_limits<Float>::is_iec559);
+  return std::bit_cast<Float>(readLittleEndian<Bits>(bytes, offset));
+}
+
 bool usesDeclaredRowFormat(
     const std::vector<unidb::sql::ColumnDefinition> &schema) {
   bool hasDeclaredType = false;
@@ -197,6 +209,21 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
           static_cast<std::uint8_t>(
               std::get<unidb::sql::SqlBooleanValue>(values[index]) ? 1 : 0));
       break;
+    case SqlTypeId::Real:
+      if (!std::holds_alternative<unidb::sql::SqlRealValue>(values[index])) {
+        throw std::invalid_argument("Expected REAL value");
+      }
+      appendFloatingPoint<float, std::uint32_t>(
+          out, std::get<unidb::sql::SqlRealValue>(values[index]));
+      break;
+    case SqlTypeId::DoublePrecision:
+      if (!std::holds_alternative<unidb::sql::SqlDoublePrecisionValue>(
+              values[index])) {
+        throw std::invalid_argument("Expected DOUBLE PRECISION value");
+      }
+      appendFloatingPoint<double, std::uint64_t>(
+          out, std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
+      break;
     case SqlTypeId::Text:
       if (!std::holds_alternative<std::string>(values[index])) {
         throw std::invalid_argument("Expected TEXT value");
@@ -205,7 +232,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       break;
     default:
       throw std::invalid_argument(
-          "Tuple codec supports only integer, BOOLEAN, and TEXT columns");
+          "Tuple codec supports only integer, BOOLEAN, floating-point, and TEXT columns");
     }
   }
   return out;
@@ -252,6 +279,14 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       values.emplace_back(encoded == 1);
       break;
     }
+    case SqlTypeId::Real:
+      values.emplace_back(
+          readFloatingPoint<float, std::uint32_t>(bytes, offset));
+      break;
+    case SqlTypeId::DoublePrecision:
+      values.emplace_back(
+          readFloatingPoint<double, std::uint64_t>(bytes, offset));
+      break;
     case SqlTypeId::Text:
       values.emplace_back(readText(bytes, offset));
       break;
