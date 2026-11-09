@@ -1,4 +1,5 @@
 #include "../../domain/aggregate/SqlAggregateCalculator.h"
+#include "../../domain/types/SqlNumericSemantics.h"
 
 #include <gtest/gtest.h>
 
@@ -140,6 +141,46 @@ TEST(SqlAggregateCalculatorTest,
   const auto sum = calculateAggregate(AggregateFunction::Sum, values, 2);
   EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(sum),
             (unidb::sql::SqlNumericValue{false, "1", -26}));
+}
+
+TEST(SqlAggregateCalculatorTest, CalculatesExactNumericAverage) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{false, "1", 0},
+      unidb::sql::SqlNumericValue{false, "2", 0}};
+  const auto average = calculateAggregate(AggregateFunction::Avg, values, 2);
+  EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(average),
+            (unidb::sql::SqlNumericValue{false, "15", 1}));
+}
+
+TEST(SqlAggregateCalculatorTest,
+     CalculatesRepeatingNumericAverageAtSixteenPlaces) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{false, "1", 0},
+      unidb::sql::SqlNumericValue{false, "0", 0},
+      unidb::sql::SqlNumericValue{false, "0", 0}};
+  const auto average = calculateAggregate(AggregateFunction::Avg, values, 3);
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<unidb::sql::SqlNumericValue>(average)),
+            "0.3333333333333333");
+}
+
+TEST(SqlAggregateCalculatorTest, PreservesNegativeNumericAverage) {
+  const std::vector<SqlValue> values{unidb::sql::SqlNumericValue{true, "1", 0},
+                                     unidb::sql::SqlNumericValue{true, "2", 0}};
+  const auto average = calculateAggregate(AggregateFunction::Avg, values, 2);
+  EXPECT_EQ(unidb::sql::SqlNumericValue(
+                std::get<unidb::sql::SqlNumericValue>(average)),
+            (unidb::sql::SqlNumericValue{true, "15", 1}));
+}
+
+TEST(SqlAggregateCalculatorTest, PreservesLargeNumericAverageExactly) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{false, "999999999999999999999999999999", 4},
+      unidb::sql::SqlNumericValue{false, "999999999999999999999999999999", 4}};
+  const auto average = calculateAggregate(AggregateFunction::Avg, values, 2);
+  EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(average),
+            (unidb::sql::SqlNumericValue{false,
+                                         "999999999999999999999999999999", 4}));
 }
 
 TEST(SqlAggregateCalculatorTest, RejectsMixedNumericAndNonNumericSumValues) {
