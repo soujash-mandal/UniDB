@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUN_ID="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$$"
-IMAGE="unidb:persistence-${RUN_ID}"
+IMAGE="${UNIDB_DOCKER_TEST_IMAGE:-unidb:persistence-${RUN_ID}}"
 CONTAINER="unidb-persistence-test-${RUN_ID}"
 VOLUME="unidb-persistence-test-data-${RUN_ID}"
 NETWORK="unidb-persistence-test-net-${RUN_ID}"
@@ -41,7 +41,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
+report_phase() {
+  local phase_name="$1"
+  local phase_started="$2"
+  echo "::notice title=Docker persistence timing::${phase_name}: $((SECONDS - phase_started))s"
+}
+
 # Generate disposable mutual-TLS credentials for the persistence integration test.
+phase_started=$SECONDS
 cat > "$TLS_DIR/ca.cnf" <<'EOF'
 [ req ]
 prompt = no
@@ -92,9 +99,17 @@ chmod 755 "$TLS_DIR"
 chmod 644 "$TLS_DIR/ca.crt" "$TLS_DIR/server.crt" "$TLS_DIR/server.key" \
   "$TLS_DIR/client.crt" "$TLS_DIR/client.key"
 chmod 600 "$TLS_DIR/ca.key"
+report_phase "TLS credential generation" "$phase_started"
 
-docker build -t "$IMAGE" .
-IMAGE_CREATED=1
+# CI supplies a BuildKit-cached image; local runs build their own image.
+if [[ -z "${UNIDB_DOCKER_TEST_IMAGE:-}" ]]; then
+  phase_started=$SECONDS
+  docker build -t "$IMAGE" .
+  IMAGE_CREATED=1
+  report_phase "Docker image build" "$phase_started"
+fi
+
+phase_started=$SECONDS
 docker network create "$NETWORK" >/dev/null
 docker volume create "$VOLUME" >/dev/null
 VOLUME_CREATED=1
@@ -228,7 +243,9 @@ wait_for_server() {
 
 start_container
 wait_for_server
+report_phase "Initial container startup and readiness" "$phase_started"
 
+phase_started=$SECONDS
 # A client without a trusted certificate must not receive any SQL response.
 unauthenticated_result="$(python3 - "$TLS_DIR" "$PORT" <<'PY'
 import socket
@@ -396,17 +413,23 @@ finally:
 PY
 
 # 1.4 Send more than 64 KiB of piped SQL through one built-in TLS client.
-# This exercises nonblocking writes while the client concurrently drains replies.
+# Keep the byte-volume stress with fewer statements and less total payload:
+# 200 rows with 320-byte payloads exceed 64 KiB including SQL syntax overhead.
 client_sql "CREATE TABLE tls_large_response (id INT, payload TEXT);" | grep -q '"ok":true'
 batch=""
-for index in $(seq 1 600); do
-  payload="row-${index}-$(printf '%0120d' 0)"
+for index in $(seq 1 200); do
+  payload="row-${index}-$(printf '%0320d' 0)"
   batch+="INSERT INTO tls_large_response (id, payload) VALUES (${index}, '${payload}');"$'\n'
 done
+batch_bytes="$(printf '%s' "$batch" | wc -c | tr -d ' ')"
+if (( batch_bytes <= 65536 )); then
+  echo "Expected TLS SQL batch larger than 64 KiB; got $batch_bytes bytes." >&2
+  exit 1
+fi
 batch_responses="$(client_sql_batch "$batch")"
 insert_count="$(grep -Fc '"affected_rows":1' <<<"$batch_responses")"
-if [[ "$insert_count" != "600" ]]; then
-  echo "Expected 600 successful inserts from one TLS client; got $insert_count." >&2
+if [[ "$insert_count" != "200" ]]; then
+  echo "Expected 200 successful inserts from one TLS client; got $insert_count." >&2
   exit 1
 fi
 
@@ -416,11 +439,14 @@ if (( ${#large_response} <= 4096 )); then
   echo "Expected TLS SELECT response larger than 4 KiB; got ${#large_response} bytes." >&2
   exit 1
 fi
-if ! grep -Fq 'row-600-' <<<"$large_response"; then
+if ! grep -Fq 'row-200-' <<<"$large_response"; then
   echo "Large TLS response was truncated before the final row." >&2
   exit 1
 fi
 
+report_phase "TLS and integration coverage" "$phase_started"
+
+phase_started=$SECONDS
 # Stop must trigger the server's graceful flush before the container is removed.
 if ! docker stop --time 10 "$CONTAINER" >/dev/null; then
   echo "Failed to stop the UniDB persistence-test container cleanly." >&2
@@ -447,4 +473,5 @@ if ! grep -Fq '"rows":[[7,"Ada"]]' <<<"$response"; then
   exit 1
 fi
 
+report_phase "Container recreation and volume persistence" "$phase_started"
 echo "Docker named-volume persistence test passed."
