@@ -266,10 +266,12 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/ParenthesizedWhereExpressionsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ReturnsStructuredParseAndExecutionErrorsTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/BooleanSchemaAndInsertTest.cpp
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp
     QueryExecutionService/domain/parser/test/SqlParserStatementTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserBooleanTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserTypeDeclarationTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserWhereTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserSelectClauseTest.cpp
