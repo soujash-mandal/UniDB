@@ -1,6 +1,7 @@
 #include "WherePredicateEvaluator.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -13,6 +14,15 @@ using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
 using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
+
+template <typename T> int compareFloatingPoint(T left, T right) {
+  const bool leftIsNaN = std::isnan(left);
+  const bool rightIsNaN = std::isnan(right);
+  if (leftIsNaN || rightIsNaN) {
+    return leftIsNaN == rightIsNaN ? 0 : (leftIsNaN ? 1 : -1);
+  }
+  return (left > right) - (left < right);
+}
 } // namespace
 
 int compareSqlValues(const SqlValue &left, const SqlValue &right) {
@@ -23,6 +33,12 @@ int compareSqlValues(const SqlValue &left, const SqlValue &right) {
   if (const auto *leftInt = std::get_if<std::int64_t>(&left)) {
     const auto rightInt = std::get<std::int64_t>(right);
     return (*leftInt > rightInt) - (*leftInt < rightInt);
+  }
+  if (const auto *leftReal = std::get_if<float>(&left)) {
+    return compareFloatingPoint(*leftReal, std::get<float>(right));
+  }
+  if (const auto *leftDouble = std::get_if<double>(&left)) {
+    return compareFloatingPoint(*leftDouble, std::get<double>(right));
   }
   if (const auto *leftBoolean = std::get_if<bool>(&left)) {
     const bool rightBoolean = std::get<bool>(right);
@@ -43,6 +59,10 @@ bool valueMatchesColumn(const ColumnDefinition &column, const SqlValue &value) {
     case SqlTypeId::Integer:
     case SqlTypeId::BigInt:
       return std::holds_alternative<std::int64_t>(value);
+    case SqlTypeId::Real:
+      return std::holds_alternative<float>(value);
+    case SqlTypeId::DoublePrecision:
+      return std::holds_alternative<double>(value);
     case SqlTypeId::Text:
       return std::holds_alternative<std::string>(value);
     default:
