@@ -171,3 +171,47 @@ TEST(ExecuteQueryActionIntegrationTest,
 
   std::filesystem::remove(databaseFile);
 }
+
+TEST(ExecuteQueryActionIntegrationTest,
+     PersistsFloatingPointColumnTypesAcrossContainerRestart) {
+  const auto databaseFile = std::filesystem::temp_directory_path() /
+                            "unidb_floating_point_schema_test.db";
+  std::filesystem::remove(databaseFile);
+
+  {
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+
+    const auto created = container.executeQueryAction().execute(
+        "CREATE TABLE measurements (approximate REAL, precise DOUBLE PRECISION);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created));
+    container.flushDirtyPages();
+  }
+
+  {
+    Container reopened(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_FALSE(DatabaseStartup::execute(reopened));
+
+    // A SELECT after restart forces the RDB adapter to reconstruct the
+    // canonical floating-point descriptors from persisted catalog metadata.
+    const auto selected =
+        reopened.executeQueryAction().execute("SELECT * FROM measurements;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    EXPECT_TRUE(result.rows.empty());
+    ASSERT_EQ(result.columns.size(), 2U);
+    ASSERT_TRUE(result.columns[0].declaredType.has_value());
+    ASSERT_TRUE(result.columns[1].declaredType.has_value());
+    EXPECT_EQ(result.columns[0].declaredType->id,
+              unidb::sql::SqlTypeId::Real);
+    EXPECT_EQ(result.columns[1].declaredType->id,
+              unidb::sql::SqlTypeId::DoublePrecision);
+  }
+
+  std::filesystem::remove(databaseFile);
+}
