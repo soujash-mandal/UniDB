@@ -3,6 +3,7 @@
 #include "../../RdbService/domain/RdbTable.h"
 
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
