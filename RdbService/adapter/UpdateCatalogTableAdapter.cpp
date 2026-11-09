@@ -34,8 +34,9 @@ Table toCatalogTable(const RdbTableDefinition &table,
   result.firstFreeSpaceMapPageId = firstSpaceMapPageId;
   result.columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
-    result.columns.push_back(Column{column.name, toCatalogType(column.type),
-                                    column.size, column.nullable});
+    result.columns.push_back(
+        Column{column.name, toCatalogType(column.type), column.size,
+               column.nullable, column.numericPrecision, column.numericScale});
   }
   return result;
 }

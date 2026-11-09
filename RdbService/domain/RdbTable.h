@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -24,6 +25,8 @@ struct RdbColumn {
   RdbDataType type;
   uint16_t size = 0;
   bool nullable = false;
+  std::optional<std::uint32_t> numericPrecision;
+  std::optional<std::int32_t> numericScale;
 };
 
 struct RdbTableDefinition {

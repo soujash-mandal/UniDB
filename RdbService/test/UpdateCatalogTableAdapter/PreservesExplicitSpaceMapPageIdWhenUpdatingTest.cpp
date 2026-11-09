@@ -21,13 +21,17 @@ TEST(UpdateCatalogTableAdapterTest,
   RdbTableDefinition updated;
   updated.tableId = 9;
   updated.name = "events";
-  updated.columns = {RdbColumn{"id", RdbDataType::BIGINT, 8, false}};
+  updated.columns = {
+      RdbColumn{"id", RdbDataType::BIGINT, 8, false},
+      RdbColumn{"amount", RdbDataType::NUMERIC, 0, false, 10, -2}};
   adapter.updateTable(10, updated, 91);
 
   const Table stored = store.pages.at(10).getByName("events");
-  ASSERT_EQ(stored.columns.size(), 1U);
+  ASSERT_EQ(stored.columns.size(), 2U);
   EXPECT_EQ(stored.columns[0].type, DataType::BIGINT);
   EXPECT_EQ(stored.columns[0].size, 8U);
+  EXPECT_EQ(stored.columns[1].numericPrecision, 10U);
+  EXPECT_EQ(stored.columns[1].numericScale, -2);
   EXPECT_EQ(stored.firstFreeSpaceMapPageId, 91U);
   EXPECT_FALSE(store.hasPinnedPages());
 }

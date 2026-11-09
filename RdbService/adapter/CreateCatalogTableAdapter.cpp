@@ -32,7 +32,8 @@ std::vector<Column> toCatalogColumns(const std::vector<RdbColumn> &columns) {
   result.reserve(columns.size());
   for (const auto &column : columns) {
     result.push_back(Column{column.name, toCatalogType(column.type),
-                            column.size, column.nullable});
+                            column.size, column.nullable,
+                            column.numericPrecision, column.numericScale});
   }
   return result;
 }

@@ -16,7 +16,7 @@ TEST(CreateCatalogTableAdapterTest,
   table.columns = {
       RdbColumn{"event_id", RdbDataType::INT, 4, false},
       RdbColumn{"description", RdbDataType::VARCHAR, 120, true},
-      RdbColumn{"amount", RdbDataType::NUMERIC, 0, false},
+      RdbColumn{"amount", RdbDataType::NUMERIC, 0, false, 18, 6},
   };
 
   const uint32_t tableId = adapter.createTable(10, 7, table);
@@ -28,6 +28,8 @@ TEST(CreateCatalogTableAdapterTest,
   EXPECT_EQ(stored.columns[0].type, DataType::INT);
   EXPECT_EQ(stored.columns[1].type, DataType::VARCHAR);
   EXPECT_EQ(stored.columns[2].type, DataType::NUMERIC);
+  EXPECT_EQ(stored.columns[2].numericPrecision, 18U);
+  EXPECT_EQ(stored.columns[2].numericScale, 6);
   EXPECT_EQ(stored.columns[1].size, 120U);
   EXPECT_TRUE(stored.columns[1].nullable);
   EXPECT_FALSE(store.hasPinnedPages());
