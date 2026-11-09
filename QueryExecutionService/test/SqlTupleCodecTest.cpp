@@ -1,6 +1,7 @@
 #include "../domain/codec/SqlTupleCodec.h"
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <limits>
 
 TEST(SqlTupleCodecTest, RoundTripsIntAndText) {
