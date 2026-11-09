@@ -21,8 +21,9 @@ TEST(UpdateCatalogTableAdapterTest,
   RdbTableDefinition updated;
   updated.tableId = 9;
   updated.name = "events";
-  updated.columns = {RdbColumn{"id", RdbDataType::BIGINT, 8, false},
-                     RdbColumn{"amount", RdbDataType::NUMERIC, 0, false, 10, -2}};
+  updated.columns = {
+      RdbColumn{"id", RdbDataType::BIGINT, 8, false},
+      RdbColumn{"amount", RdbDataType::NUMERIC, 0, false, 10, -2}};
   adapter.updateTable(10, updated, 91);
 
   const Table stored = store.pages.at(10).getByName("events");

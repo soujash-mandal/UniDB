@@ -282,11 +282,10 @@ TEST(ExecuteQueryActionIntegrationTest,
   std::filesystem::remove(databaseFile);
 }
 
-
 TEST(ExecuteQueryActionIntegrationTest,
      PersistsNumericPrecisionAndScaleAcrossContainerRestart) {
-  const auto databaseFile = std::filesystem::temp_directory_path() /
-                            "unidb_numeric_schema_test.db";
+  const auto databaseFile =
+      std::filesystem::temp_directory_path() / "unidb_numeric_schema_test.db";
   std::filesystem::remove(databaseFile);
 
   {
@@ -325,7 +324,8 @@ TEST(ExecuteQueryActionIntegrationTest,
     EXPECT_EQ(result.columns[0].declaredType->modifier.scale, 4);
     EXPECT_EQ(result.columns[1].declaredType->id,
               unidb::sql::SqlTypeId::Numeric);
-    EXPECT_FALSE(result.columns[1].declaredType->modifier.precision.has_value());
+    EXPECT_FALSE(
+        result.columns[1].declaredType->modifier.precision.has_value());
     EXPECT_FALSE(result.columns[1].declaredType->modifier.scale.has_value());
   }
 

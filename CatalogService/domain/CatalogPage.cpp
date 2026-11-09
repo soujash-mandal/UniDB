@@ -37,23 +37,27 @@ std::vector<char> serializeTable(Table table) {
   append(&columnCount, sizeof(columnCount));
   for (const Column &column : table.columns) {
     if (column.type != DataType::NUMERIC &&
-        (column.numericPrecision.has_value() || column.numericScale.has_value())) {
+        (column.numericPrecision.has_value() ||
+         column.numericScale.has_value())) {
       throw std::invalid_argument("NUMERIC modifiers require a NUMERIC column");
     }
-    if (column.numericScale.has_value() && !column.numericPrecision.has_value()) {
+    if (column.numericScale.has_value() &&
+        !column.numericPrecision.has_value()) {
       throw std::invalid_argument("NUMERIC scale requires precision");
     }
     if (column.numericPrecision.has_value() &&
         (*column.numericPrecision == 0 || *column.numericPrecision > 1000)) {
-      throw std::invalid_argument("NUMERIC precision must be between 1 and 1000");
+      throw std::invalid_argument(
+          "NUMERIC precision must be between 1 and 1000");
     }
     if (column.numericScale.has_value() &&
         (*column.numericScale < -1000 || *column.numericScale > 1000)) {
-      throw std::invalid_argument("NUMERIC scale must be between -1000 and 1000");
+      throw std::invalid_argument(
+          "NUMERIC scale must be between -1000 and 1000");
     }
-    uint8_t flags = static_cast<uint8_t>(
-        (column.numericPrecision.has_value() ? 1 : 0) |
-        (column.numericScale.has_value() ? 2 : 0));
+    uint8_t flags =
+        static_cast<uint8_t>((column.numericPrecision.has_value() ? 1 : 0) |
+                             (column.numericScale.has_value() ? 2 : 0));
     append(&flags, sizeof(flags));
     if (column.numericPrecision.has_value()) {
       append(&*column.numericPrecision, sizeof(*column.numericPrecision));
@@ -145,10 +149,13 @@ Table deserializeTable(std::vector<char> data) {
         column.numericScale = scale;
       }
       if (column.type != DataType::NUMERIC &&
-          (column.numericPrecision.has_value() || column.numericScale.has_value())) {
-        throw std::runtime_error("NUMERIC modifiers found on a non-NUMERIC column");
+          (column.numericPrecision.has_value() ||
+           column.numericScale.has_value())) {
+        throw std::runtime_error(
+            "NUMERIC modifiers found on a non-NUMERIC column");
       }
-      if (column.numericScale.has_value() && !column.numericPrecision.has_value()) {
+      if (column.numericScale.has_value() &&
+          !column.numericPrecision.has_value()) {
         throw std::runtime_error("NUMERIC scale is missing precision");
       }
       if (column.numericPrecision.has_value() &&
@@ -162,7 +169,8 @@ Table deserializeTable(std::vector<char> data) {
     }
     if (offset != data.size() &&
         data.size() - offset == sizeof(table.firstFreeSpaceMapPageId)) {
-      read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
+      read(&table.firstFreeSpaceMapPageId,
+           sizeof(table.firstFreeSpaceMapPageId));
     } else if (offset != data.size()) {
       throw std::runtime_error("Unexpected trailing catalog table data");
     } else {
