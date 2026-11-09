@@ -52,7 +52,7 @@ SqlValue evaluateTextFunction(const std::vector<SqlValue> &row,
 }
 
 SqlValue
-evaluateIntegerExpression(const std::vector<SqlValue> &row,
+evaluateSqlArithmeticExpression(const std::vector<SqlValue> &row,
                           const CompiledIntegerExpression &expression) {
   if (expression.kind == IntegerExpression::Kind::Literal) {
     if (expression.numericLiteral.has_value()) {
