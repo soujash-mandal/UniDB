@@ -29,7 +29,6 @@ TEST(UpdateCatalogTableAdapterTest,
   ASSERT_EQ(stored.columns.size(), 2U);
   EXPECT_EQ(stored.columns[0].type, DataType::BIGINT);
   EXPECT_EQ(stored.columns[0].size, 8U);
-  ASSERT_EQ(stored.columns.size(), 2U);
   EXPECT_EQ(stored.columns[1].numericPrecision, 10U);
   EXPECT_EQ(stored.columns[1].numericScale, -2);
   EXPECT_EQ(stored.firstFreeSpaceMapPageId, 91U);
