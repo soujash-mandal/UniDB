@@ -25,8 +25,12 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
   }
 
   switch (column.declaredType->id) {
+  case unidb::sql::SqlTypeId::SmallInt:
+    return RdbDataType::SMALLINT;
   case unidb::sql::SqlTypeId::Integer:
     return RdbDataType::INT;
+  case unidb::sql::SqlTypeId::BigInt:
+    return RdbDataType::BIGINT;
   case unidb::sql::SqlTypeId::Text:
     return RdbDataType::VARCHAR;
   default:
@@ -38,9 +42,29 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
 unidb::sql::SqlType fromRdbType(RdbDataType type) {
   switch (type) {
   case RdbDataType::INT:
+  case RdbDataType::SMALLINT:
+  case RdbDataType::BIGINT:
     return unidb::sql::SqlType::Int;
   case RdbDataType::VARCHAR:
     return unidb::sql::SqlType::Text;
+  default:
+    throw std::invalid_argument(
+        "Table schema contains a type outside the V1 SQL subset");
+  }
+}
+
+unidb::sql::SqlTypeDescriptor descriptorFromRdbType(RdbDataType type) {
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  switch (type) {
+  case RdbDataType::SMALLINT:
+    return SqlTypeDescriptor{SqlTypeId::SmallInt, {}};
+  case RdbDataType::INT:
+    return SqlTypeDescriptor{SqlTypeId::Integer, {}};
+  case RdbDataType::BIGINT:
+    return SqlTypeDescriptor{SqlTypeId::BigInt, {}};
+  case RdbDataType::VARCHAR:
+    return SqlTypeDescriptor{SqlTypeId::Text, {}};
   default:
     throw std::invalid_argument(
         "Table schema contains a type outside the V1 SQL subset");
@@ -80,7 +104,10 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
   std::vector<unidb::sql::ColumnDefinition> columns;
   columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
-    columns.push_back({column.name, fromRdbType(column.type)});
+    unidb::sql::ColumnDefinition definition{column.name,
+                                            fromRdbType(column.type)};
+    definition.declaredType = descriptorFromRdbType(column.type);
+    columns.push_back(std::move(definition));
   }
   return columns;
 }

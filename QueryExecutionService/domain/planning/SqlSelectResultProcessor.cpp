@@ -17,12 +17,12 @@ using namespace unidb::sql;
 
 std::vector<std::vector<SqlValue>> decodeAndFilterRows(
     const std::vector<std::vector<char>> &encodedRows,
-    const std::vector<SqlType> &types,
+    const std::vector<ColumnDefinition> &schema,
     const std::optional<CompiledWhereExpression> &compiledWhere) {
   std::vector<std::vector<SqlValue>> matchedRows;
   matchedRows.reserve(encodedRows.size());
   for (const auto &bytes : encodedRows) {
-    auto decoded = SqlTupleCodec::decode(types, bytes);
+    auto decoded = SqlTupleCodec::decode(schema, bytes);
     if (compiledWhere.has_value() &&
         !matchesWhereExpression(decoded, *compiledWhere)) {
       continue;

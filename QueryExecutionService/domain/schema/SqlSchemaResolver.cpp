@@ -12,6 +12,22 @@ std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
   std::vector<SqlType> types;
   types.reserve(schema.size());
   for (const auto &column : schema) {
+    if (column.declaredType.has_value()) {
+      using unidb::sql::SqlTypeId;
+      switch (column.declaredType->id) {
+      case SqlTypeId::SmallInt:
+      case SqlTypeId::Integer:
+      case SqlTypeId::BigInt:
+        types.push_back(SqlType::Int);
+        continue;
+      case SqlTypeId::Text:
+        types.push_back(SqlType::Text);
+        continue;
+      default:
+        throw std::invalid_argument(
+            "Column type is outside the currently supported SQL subset");
+      }
+    }
     if (column.type != SqlType::Int && column.type != SqlType::Text) {
       throw std::invalid_argument("Column type is outside the V1 SQL subset");
     }

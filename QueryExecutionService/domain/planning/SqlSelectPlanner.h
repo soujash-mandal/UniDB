@@ -21,6 +21,7 @@ struct SelectPlan {
     bool ascending;
   };
 
+  std::vector<unidb::sql::ColumnDefinition> schema;
   std::vector<unidb::sql::SqlType> types;
   std::optional<CompiledWhereExpression> compiledWhere;
   std::vector<std::size_t> selectedIndexes;

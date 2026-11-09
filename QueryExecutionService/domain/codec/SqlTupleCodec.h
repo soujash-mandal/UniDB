@@ -12,4 +12,11 @@ public:
   static std::vector<unidb::sql::SqlValue>
   decode(const std::vector<unidb::sql::SqlType> &schema,
          const std::vector<char> &bytes);
+
+  static std::vector<char>
+  encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
+         const std::vector<unidb::sql::SqlValue> &values);
+  static std::vector<unidb::sql::SqlValue>
+  decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
+         const std::vector<char> &bytes);
 };
