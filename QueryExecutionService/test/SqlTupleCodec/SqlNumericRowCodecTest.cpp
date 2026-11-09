@@ -12,19 +12,20 @@ using QueryExecutionService::domain::SqlNumericRowCodec;
 TEST(SqlNumericRowCodecTest, RoundTripsExactValuesWithoutPrecisionLoss) {
   const unidb::sql::SqlNumericValue value{
       true, "123456789012345678901234567890123456789", 17};
+  const auto encoded = SqlNumericRowCodec::encode(value);
+  const auto decoded = SqlNumericRowCodec::decode(encoded);
 
-  EXPECT_EQ(
-      SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(value)), value);
+  EXPECT_EQ(decoded, value);
 }
 
 TEST(SqlNumericRowCodecTest, RoundTripsNegativeScaleAndZero) {
   const unidb::sql::SqlNumericValue negativeScale{false, "12345", -4};
   const unidb::sql::SqlNumericValue zero{false, "0", 0};
+  const auto encodedNegativeScale = SqlNumericRowCodec::encode(negativeScale);
+  const auto encodedZero = SqlNumericRowCodec::encode(zero);
 
-  EXPECT_EQ(
-      SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(negativeScale)),
-      negativeScale);
-  EXPECT_EQ(SqlNumericRowCodec::decode(SqlNumericRowCodec::encode(zero)), zero);
+  EXPECT_EQ(SqlNumericRowCodec::decode(encodedNegativeScale), negativeScale);
+  EXPECT_EQ(SqlNumericRowCodec::decode(encodedZero), zero);
 }
 
 TEST(SqlNumericRowCodecTest, RejectsUnknownFormatVersion) {
@@ -54,6 +55,8 @@ TEST(SqlNumericRowCodecTest, RejectsNonCanonicalCoefficient) {
 }
 
 TEST(SqlNumericRowCodecTest, RejectsNonCanonicalValuesDuringEncoding) {
-  EXPECT_THROW(SqlNumericRowCodec::encode({false, "001", 0}),
+  const unidb::sql::SqlNumericValue nonCanonical{false, "001", 0};
+
+  EXPECT_THROW(SqlNumericRowCodec::encode(nonCanonical),
                std::invalid_argument);
 }
