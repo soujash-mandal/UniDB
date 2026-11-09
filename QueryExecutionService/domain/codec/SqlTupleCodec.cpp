@@ -56,6 +56,22 @@ std::string readText(const std::vector<char> &bytes, std::size_t &offset) {
   return value;
 }
 
+bool usesDeclaredRowFormat(
+    const std::vector<unidb::sql::ColumnDefinition> &schema) {
+  bool hasDeclaredType = false;
+  bool everyColumnHasDeclaredType = !schema.empty();
+  for (const auto &column : schema) {
+    hasDeclaredType = hasDeclaredType || column.declaredType.has_value();
+    everyColumnHasDeclaredType =
+        everyColumnHasDeclaredType && column.declaredType.has_value();
+  }
+  if (hasDeclaredType && !everyColumnHasDeclaredType) {
+    throw std::invalid_argument(
+        "Tuple schema cannot mix declared and transitional column types");
+  }
+  return everyColumnHasDeclaredType;
+}
+
 void appendDeclaredInteger(std::vector<char> &out,
                            unidb::sql::SqlTypeId type, std::int64_t value) {
   const auto checked =
@@ -132,13 +148,16 @@ std::vector<char> SqlTupleCodec::encode(
     const std::vector<unidb::sql::ColumnDefinition> &schema,
     const std::vector<unidb::sql::SqlValue> &values) {
   constexpr std::uint8_t rowFormatVersion = 1;
+  const bool versioned = usesDeclaredRowFormat(schema);
   if (schema.size() != values.size()) {
     throw std::invalid_argument(
         "Tuple value count does not match table schema");
   }
 
   std::vector<char> out;
-  appendLittleEndian(out, rowFormatVersion);
+  if (versioned) {
+    appendLittleEndian(out, rowFormatVersion);
+  }
   for (std::size_t index = 0; index < schema.size(); ++index) {
     const auto &column = schema[index];
     if (!column.declaredType.has_value()) {
@@ -187,8 +206,10 @@ std::vector<unidb::sql::SqlValue> SqlTupleCodec::decode(
     const std::vector<unidb::sql::ColumnDefinition> &schema,
     const std::vector<char> &bytes) {
   constexpr std::uint8_t rowFormatVersion = 1;
+  const bool versioned = usesDeclaredRowFormat(schema);
   std::size_t offset = 0;
-  if (readLittleEndian<std::uint8_t>(bytes, offset) != rowFormatVersion) {
+  if (versioned &&
+      readLittleEndian<std::uint8_t>(bytes, offset) != rowFormatVersion) {
     throw std::runtime_error("Unsupported SQL tuple row format version");
   }
 
