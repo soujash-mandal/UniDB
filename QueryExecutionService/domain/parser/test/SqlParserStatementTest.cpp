@@ -162,5 +162,18 @@ TEST(SqlParserTest, RejectsMalformedFloatingPointExponents) {
   }
 }
 
+TEST(SqlParserTest, ParsesLeadingAndTrailingDecimalPointForms) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO measurements (leading, trailing) VALUES (.5, 1.)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 1U);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][0]), 0.5);
+  EXPECT_DOUBLE_EQ(std::get<double>(insert.rows[0][1]), 1.0);
+}
+
 } // namespace
 } // namespace unidb::sql
