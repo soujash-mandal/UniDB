@@ -21,6 +21,8 @@ RdbDataType fromCatalogType(DataType type) {
     return RdbDataType::VARCHAR;
   case DataType::SMALLINT:
     return RdbDataType::SMALLINT;
+  case DataType::NUMERIC:
+    return RdbDataType::NUMERIC;
   }
   throw std::invalid_argument("Unsupported catalog column type");
 }
