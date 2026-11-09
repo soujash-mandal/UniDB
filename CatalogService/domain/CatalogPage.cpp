@@ -28,8 +28,7 @@ std::vector<char> serializeTable(Table table) {
     uint8_t nullable = column.nullable ? 1 : 0;
     append(&nullable, sizeof(nullable));
   }
-  // Versioned extension keeps NUMERIC modifiers separate from the legacy
-  // column size field and makes future catalog metadata changes explicit.
+  // Version 1 stores optional NUMERIC precision and scale per column.
   constexpr uint32_t extensionMagic = 0x314D554E; // "NUM1" in little endian.
   constexpr uint8_t extensionVersion = 1;
   append(&extensionMagic, sizeof(extensionMagic));
