@@ -159,7 +159,7 @@ TEST(SqlAggregateCalculatorTest,
       unidb::sql::SqlNumericValue{false, "0", 0},
       unidb::sql::SqlNumericValue{false, "0", 0}};
   const auto average = calculateAggregate(AggregateFunction::Avg, values, 3);
-  EXPECT_EQ(unidb::sql::formatSqlNumericValue(
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
                 std::get<unidb::sql::SqlNumericValue>(average)),
             "0.3333333333333333");
 }
