@@ -20,7 +20,6 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
   ASSERT_EQ(loaded.columns.size(), 4U);
   EXPECT_EQ(loaded.columns[1].name, "name");
   EXPECT_EQ(loaded.columns[2].type, DataType::SMALLINT);
-  ASSERT_EQ(loaded.columns.size(), 4U);
   EXPECT_EQ(loaded.columns[3].type, DataType::NUMERIC);
   EXPECT_EQ(loaded.columns[3].numericPrecision, 12U);
   EXPECT_EQ(loaded.columns[3].numericScale, 4);
