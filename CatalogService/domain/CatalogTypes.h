@@ -9,7 +9,16 @@ using CatalogTableId = uint32_t;
 static constexpr uint32_t CATALOG_INVALID_PAGE_ID = UINT32_MAX;
 
 // Append new values only: the numeric value is persisted in catalog pages.
-enum class DataType { INT, BIGINT, FLOAT, DOUBLE, BOOLEAN, VARCHAR, SMALLINT };
+enum class DataType {
+  INT,
+  BIGINT,
+  FLOAT,
+  DOUBLE,
+  BOOLEAN,
+  VARCHAR,
+  SMALLINT,
+  NUMERIC
+};
 
 struct Column {
   std::string name;

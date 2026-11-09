@@ -15,7 +15,8 @@ enum class RdbDataType {
   DOUBLE,
   BOOLEAN,
   VARCHAR,
-  SMALLINT
+  SMALLINT,
+  NUMERIC
 };
 
 struct RdbColumn {
