@@ -25,8 +25,9 @@ TEST(ExecuteQueryActionBooleanTest, ProjectsBooleanValuesWithTheirRuntimeType) {
 
   const auto outcome = action.execute("SELECT enabled FROM flags;");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 3U);
@@ -42,8 +43,9 @@ TEST(ExecuteQueryActionBooleanTest, FiltersBooleanEqualityAndInequality) {
 
   const auto trueRows =
       action.execute("SELECT enabled FROM flags WHERE enabled = TRUE;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      trueRows));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          trueRows));
   const auto &trueResult =
       std::get<QueryExecutionService::QueryExecutionResult>(trueRows);
   ASSERT_EQ(trueResult.rows.size(), 1U);
@@ -51,8 +53,9 @@ TEST(ExecuteQueryActionBooleanTest, FiltersBooleanEqualityAndInequality) {
 
   const auto falseRows =
       action.execute("SELECT enabled FROM flags WHERE enabled != TRUE;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      falseRows));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          falseRows));
   const auto &falseResult =
       std::get<QueryExecutionService::QueryExecutionResult>(falseRows);
   ASSERT_EQ(falseResult.rows.size(), 2U);
@@ -67,8 +70,8 @@ TEST(ExecuteQueryActionBooleanTest, SupportsBooleanInAndNotInPredicates) {
 
   const auto in = action.execute(
       "SELECT enabled FROM flags WHERE enabled IN (TRUE) ORDER BY enabled;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      in));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(in));
   const auto &inRows =
       std::get<QueryExecutionService::QueryExecutionResult>(in).rows;
   ASSERT_EQ(inRows.size(), 1U);
@@ -76,8 +79,9 @@ TEST(ExecuteQueryActionBooleanTest, SupportsBooleanInAndNotInPredicates) {
 
   const auto notIn =
       action.execute("SELECT enabled FROM flags WHERE enabled NOT IN (TRUE);");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      notIn));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          notIn));
   const auto &notInRows =
       std::get<QueryExecutionService::QueryExecutionResult>(notIn).rows;
   ASSERT_EQ(notInRows.size(), 2U);
@@ -93,8 +97,9 @@ TEST(ExecuteQueryActionBooleanTest, OrdersFalseBeforeTrue) {
   const auto outcome =
       action.execute("SELECT enabled FROM flags ORDER BY enabled ASC;");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 3U);
@@ -110,8 +115,9 @@ TEST(ExecuteQueryActionBooleanTest, SupportsDistinctAndGroupingByBoolean) {
 
   const auto distinct =
       action.execute("SELECT DISTINCT enabled FROM flags ORDER BY enabled;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      distinct));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          distinct));
   const auto &distinctRows =
       std::get<QueryExecutionService::QueryExecutionResult>(distinct).rows;
   ASSERT_EQ(distinctRows.size(), 2U);
@@ -120,8 +126,9 @@ TEST(ExecuteQueryActionBooleanTest, SupportsDistinctAndGroupingByBoolean) {
 
   const auto grouped = action.execute(
       "SELECT enabled, COUNT(*) FROM flags GROUP BY enabled ORDER BY enabled;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      grouped));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          grouped));
   const auto &groupedRows =
       std::get<QueryExecutionService::QueryExecutionResult>(grouped).rows;
   ASSERT_EQ(groupedRows.size(), 2U);
