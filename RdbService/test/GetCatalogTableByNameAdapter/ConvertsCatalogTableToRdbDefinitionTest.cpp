@@ -15,7 +15,7 @@ TEST(GetCatalogTableByNameAdapterTest,
       Column{"id", DataType::BIGINT, 8, false},
       Column{"name", DataType::VARCHAR, 80, true},
       Column{"active", DataType::BOOLEAN, 1, false},
-      Column{"amount", DataType::NUMERIC, 0, false},
+      Column{"amount", DataType::NUMERIC, 0, false, 24, 8},
   };
   page.insert(table);
   store.seed(10, page);
@@ -35,5 +35,7 @@ TEST(GetCatalogTableByNameAdapterTest,
   EXPECT_TRUE(result.columns[1].nullable);
   EXPECT_EQ(result.columns[2].type, RdbDataType::BOOLEAN);
   EXPECT_EQ(result.columns[3].type, RdbDataType::NUMERIC);
+  EXPECT_EQ(result.columns[3].numericPrecision, 24U);
+  EXPECT_EQ(result.columns[3].numericScale, 8);
   EXPECT_FALSE(store.hasPinnedPages());
 }
