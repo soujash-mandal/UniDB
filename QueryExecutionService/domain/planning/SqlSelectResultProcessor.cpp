@@ -15,6 +15,22 @@ namespace QueryExecutionService::domain {
 
 using namespace unidb::sql;
 
+namespace {
+struct SqlValueVectorLess {
+  bool operator()(const std::vector<SqlValue> &left,
+                  const std::vector<SqlValue> &right) const {
+    const auto commonSize = std::min(left.size(), right.size());
+    for (std::size_t index = 0; index < commonSize; ++index) {
+      const int comparison = compareSqlValues(left[index], right[index]);
+      if (comparison != 0) {
+        return comparison < 0;
+      }
+    }
+    return left.size() < right.size();
+  }
+};
+} // namespace
+
 std::vector<std::vector<SqlValue>> decodeAndFilterRows(
     const std::vector<std::vector<char>> &encodedRows,
     const std::vector<ColumnDefinition> &schema,
@@ -51,7 +67,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
             ? plan.types[*plan.aggregateIndex]
             : SqlType::Int;
     using GroupRows = std::map<std::vector<SqlValue>,
-                               std::vector<const std::vector<SqlValue> *>>;
+                               std::vector<const std::vector<SqlValue> *>,
+                               SqlValueVectorLess>;
     GroupRows groups;
     for (const auto &row : matchedRows) {
       std::vector<SqlValue> key;
@@ -75,7 +92,13 @@ processSelectRows(const unidb::sql::SelectStatement &select,
       throw std::invalid_argument("Duplicate SELECT output column name: " +
                                   aggregateName);
     }
-    result.columns.push_back({aggregateName, aggregateType});
+    const auto aggregateDescriptor =
+        aggregate.function == AggregateFunction::Min ||
+                aggregate.function == AggregateFunction::Max
+            ? plan.schema[*plan.aggregateIndex].declaredType
+            : std::optional<SqlTypeDescriptor>{};
+    result.columns.push_back(
+        {aggregateName, aggregateType, aggregateDescriptor});
 
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
@@ -171,7 +194,12 @@ processSelectRows(const unidb::sql::SelectStatement &select,
                 aggregate.function == AggregateFunction::Max
             ? plan.types[*plan.aggregateIndex]
             : SqlType::Int;
-    result.columns.push_back({outputName, outputType});
+    const auto aggregateDescriptor =
+        aggregate.function == AggregateFunction::Min ||
+                aggregate.function == AggregateFunction::Max
+            ? plan.schema[*plan.aggregateIndex].declaredType
+            : std::optional<SqlTypeDescriptor>{};
+    result.columns.push_back({outputName, outputType, aggregateDescriptor});
 
     std::vector<SqlValue> aggregateValues;
     if (aggregate.function != AggregateFunction::Count) {
@@ -194,7 +222,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   }
 
   if (select.distinct) {
-    std::set<std::vector<SqlValue>> seenProjections;
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
     matchedRows.erase(
         std::remove_if(
             matchedRows.begin(), matchedRows.end(),
