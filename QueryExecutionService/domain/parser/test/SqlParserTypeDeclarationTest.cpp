@@ -29,13 +29,13 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
   SqlParserImpl parser;
   const auto result = parser.parse(
       "CREATE TABLE typed (amount NUMERIC(12, 3), label CHARACTER VARYING(40), "
-      "fixed CHAR(4), score DOUBLE PRECISION, active BOOL, "
+      "fixed CHAR(4), score DOUBLE PRECISION, active BOOLEAN, alias BOOL, "
       "created TIMESTAMP WITH TIME ZONE, precise TIMESTAMP(3) WITH TIME ZONE)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &columns =
       std::get<CreateTableStatement>(std::get<SqlStatement>(result)).columns;
-  ASSERT_EQ(columns.size(), 7U);
+  ASSERT_EQ(columns.size(), 8U);
   EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Numeric);
   EXPECT_EQ(columns[0].declaredType->modifier.precision, 12U);
   EXPECT_EQ(columns[0].declaredType->modifier.scale, 3);
@@ -44,9 +44,10 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
   EXPECT_EQ(columns[2].declaredType->id, SqlTypeId::Char);
   EXPECT_EQ(columns[3].declaredType->id, SqlTypeId::DoublePrecision);
   EXPECT_EQ(columns[4].declaredType->id, SqlTypeId::Boolean);
-  EXPECT_EQ(columns[5].declaredType->id, SqlTypeId::TimestampWithTimeZone);
+  EXPECT_EQ(columns[5].declaredType->id, SqlTypeId::Boolean);
   EXPECT_EQ(columns[6].declaredType->id, SqlTypeId::TimestampWithTimeZone);
-  EXPECT_EQ(columns[6].declaredType->modifier.temporalPrecision, 3U);
+  EXPECT_EQ(columns[7].declaredType->id, SqlTypeId::TimestampWithTimeZone);
+  EXPECT_EQ(columns[7].declaredType->modifier.temporalPrecision, 3U);
 }
 
 TEST(SqlParserTypeDeclarationTest, PreservesTransitionalIntAndTextTags) {

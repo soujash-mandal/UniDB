@@ -1271,8 +1271,13 @@ private:
       ++position_;
       return SqlValue{std::move(value)};
     }
-    if (current().kind == TokenKind::Unsupported || isKeyword("NULL") ||
-        isKeyword("TRUE") || isKeyword("FALSE")) {
+    if (matchKeyword("TRUE")) {
+      return SqlValue{true};
+    }
+    if (matchKeyword("FALSE")) {
+      return SqlValue{false};
+    }
+    if (current().kind == TokenKind::Unsupported || isKeyword("NULL")) {
       return SqlParseError{SqlParseErrorCode::UnsupportedStatement,
                            "Literal type is outside the V1 supported subset"};
     }

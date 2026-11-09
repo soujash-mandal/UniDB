@@ -74,13 +74,18 @@ TEST(SqlParserTest, RejectsMismatchedInsertColumnAndValueCounts) {
             SqlParseErrorCode::SyntaxError);
 }
 
-TEST(SqlParserTest, RejectsUnsupportedLiteralTypes) {
+TEST(SqlParserTest, ParsesBooleanInsertLiteralsCaseInsensitively) {
   SqlParserImpl parser;
-  const auto result = parser.parse("INSERT INTO users (active) VALUES (TRUE)");
+  const auto result = parser.parse(
+      "INSERT INTO users (enabled) VALUES (TRUE), (false), (TrUe)");
 
-  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
-  EXPECT_EQ(std::get<SqlParseError>(result).code,
-            SqlParseErrorCode::UnsupportedStatement);
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 3U);
+  EXPECT_TRUE(std::get<bool>(insert.rows[0][0]));
+  EXPECT_FALSE(std::get<bool>(insert.rows[1][0]));
+  EXPECT_TRUE(std::get<bool>(insert.rows[2][0]));
 }
 
 TEST(SqlParserTest, ParsesMultipleInsertValueRows) {

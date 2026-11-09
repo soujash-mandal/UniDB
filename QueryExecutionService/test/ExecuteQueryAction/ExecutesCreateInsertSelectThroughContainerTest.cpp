@@ -123,3 +123,51 @@ TEST(ExecuteQueryActionIntegrationTest,
 
   std::filesystem::remove(databaseFile);
 }
+
+TEST(ExecuteQueryActionIntegrationTest,
+     CreatesAndInsertsBooleanColumnsAcrossContainerRestart) {
+  const auto databaseFile = std::filesystem::temp_directory_path() /
+                            "unidb_boolean_schema_integration_test.db";
+  std::filesystem::remove(databaseFile);
+
+  {
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+
+    const auto created = container.executeQueryAction().execute(
+        "CREATE TABLE flags (enabled BOOLEAN, visible BOOL);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created));
+
+    const auto inserted = container.executeQueryAction().execute(
+        "INSERT INTO flags (enabled, visible) VALUES (TRUE, FALSE), "
+        "(false, true);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            inserted));
+    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(inserted)
+                  .affectedRows,
+              2U);
+    container.flushDirtyPages();
+  }
+
+  {
+    Container reopened(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_FALSE(DatabaseStartup::execute(reopened));
+
+    // Reading the persisted BOOLEAN catalog type and inserting again verifies
+    // the RDB adapter reconstructs the canonical descriptor after restart.
+    const auto inserted = reopened.executeQueryAction().execute(
+        "INSERT INTO flags (enabled, visible) VALUES (TRUE, TRUE);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            inserted));
+    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(inserted)
+                  .affectedRows,
+              1U);
+    reopened.flushDirtyPages();
+  }
+
+  std::filesystem::remove(databaseFile);
+}
