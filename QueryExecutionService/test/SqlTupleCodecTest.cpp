@@ -135,6 +135,7 @@ TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
                std::runtime_error);
   EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x02}),
                std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01, static_cast<char>(0xff)}),
+  EXPECT_THROW(SqlTupleCodec::decode(
+                   schema, std::vector<char>{0x01, static_cast<char>(0xff)}),
                std::runtime_error);
 }
