@@ -147,8 +147,10 @@ TEST(ExecuteQueryActionNumericTest,
           inserted));
   ASSERT_EQ(port.insertedRows.size(), 3U);
 
-  const auto positive = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
-  const auto negative = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
+  const auto positive =
+      SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  const auto negative =
+      SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
   const auto padded = SqlTupleCodec::decode(port.schema, port.insertedRows[2]);
   EXPECT_EQ(std::get<SqlNumericValue>(positive[0]),
             (SqlNumericValue{false, "124", 2}));
@@ -157,8 +159,8 @@ TEST(ExecuteQueryActionNumericTest,
   EXPECT_EQ(std::get<SqlNumericValue>(padded[0]),
             (SqlNumericValue{false, "123", 1}));
 
-  const auto overflow = action.execute(
-      "INSERT INTO decimals (amount) VALUES (999.995)");
+  const auto overflow =
+      action.execute("INSERT INTO decimals (amount) VALUES (999.995)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           overflow));
@@ -185,8 +187,10 @@ TEST(ExecuteQueryActionNumericTest,
           inserted));
   ASSERT_EQ(port.insertedRows.size(), 3U);
 
-  const auto positive = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
-  const auto negative = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
+  const auto positive =
+      SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  const auto negative =
+      SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
   const auto large = SqlTupleCodec::decode(port.schema, port.insertedRows[2]);
   EXPECT_EQ(std::get<SqlNumericValue>(positive[0]),
             (SqlNumericValue{false, "13", -1}));
@@ -195,8 +199,8 @@ TEST(ExecuteQueryActionNumericTest,
   EXPECT_EQ(std::get<SqlNumericValue>(large[0]),
             (SqlNumericValue{false, "123", -1}));
 
-  const auto overflow = action.execute(
-      "INSERT INTO decimals (amount) VALUES (9995)");
+  const auto overflow =
+      action.execute("INSERT INTO decimals (amount) VALUES (9995)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           overflow));

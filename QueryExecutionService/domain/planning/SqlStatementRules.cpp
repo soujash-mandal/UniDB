@@ -18,9 +18,9 @@ namespace QueryExecutionService::domain {
 using namespace unidb::sql;
 
 namespace {
-SqlNumericValue applyNumericModifier(
-    const SqlNumericValue &value,
-    const unidb::sql::SqlTypeModifier &modifier) {
+SqlNumericValue
+applyNumericModifier(const SqlNumericValue &value,
+                     const unidb::sql::SqlTypeModifier &modifier) {
   if (!modifier.precision.has_value()) {
     if (modifier.scale.has_value()) {
       throw std::invalid_argument("NUMERIC scale requires precision");
@@ -51,7 +51,8 @@ SqlNumericValue applyNumericModifier(
         discard >= coefficient.size()
             ? std::size_t{0}
             : coefficient.size() - static_cast<std::size_t>(discard);
-    coefficient = retainedLength == 0 ? "0" : coefficient.substr(0, retainedLength);
+    coefficient =
+        retainedLength == 0 ? "0" : coefficient.substr(0, retainedLength);
 
     // PostgreSQL NUMERIC rounds ties away from zero.
     if (firstDiscardedDigit >= '5') {
@@ -89,9 +90,8 @@ SqlNumericValue applyNumericModifier(
   }
   const auto integerDigits =
       static_cast<std::int64_t>(scaledCoefficient.size()) - targetScale;
-  const auto maximumIntegerDigits =
-      std::max<std::int64_t>(static_cast<std::int64_t>(precision) - targetScale,
-                             0);
+  const auto maximumIntegerDigits = std::max<std::int64_t>(
+      static_cast<std::int64_t>(precision) - targetScale, 0);
   if (scaledCoefficient.size() > precision ||
       integerDigits > maximumIntegerDigits) {
     throw std::overflow_error("NUMERIC field overflow");
