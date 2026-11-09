@@ -29,6 +29,29 @@ struct SqlValueVectorLess {
     return left.size() < right.size();
   }
 };
+
+std::optional<SqlTypeDescriptor> aggregateResultDescriptor(
+    const AggregateFunction function, const ColumnDefinition &inputColumn) {
+  if (function == AggregateFunction::Min || function == AggregateFunction::Max) {
+    return inputColumn.declaredType;
+  }
+  if ((function != AggregateFunction::Sum &&
+       function != AggregateFunction::Avg) ||
+      !inputColumn.declaredType.has_value()) {
+    return std::nullopt;
+  }
+
+  auto resultType = *inputColumn.declaredType;
+  if (resultType.id != SqlTypeId::Real &&
+      resultType.id != SqlTypeId::DoublePrecision) {
+    return std::nullopt;
+  }
+  if (function == AggregateFunction::Avg &&
+      resultType.id == SqlTypeId::Real) {
+    resultType.id = SqlTypeId::DoublePrecision;
+  }
+  return resultType;
+}
 } // namespace
 
 std::vector<std::vector<SqlValue>> decodeAndFilterRows(
@@ -93,10 +116,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
                                   aggregateName);
     }
     const auto aggregateDescriptor =
-        aggregate.function == AggregateFunction::Min ||
-                aggregate.function == AggregateFunction::Max
-            ? plan.schema[*plan.aggregateIndex].declaredType
-            : std::optional<SqlTypeDescriptor>{};
+        aggregateResultDescriptor(aggregate.function,
+                                  plan.schema[*plan.aggregateIndex]);
     result.columns.push_back(
         {aggregateName, aggregateType, aggregateDescriptor});
 
@@ -195,10 +216,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
             ? plan.types[*plan.aggregateIndex]
             : SqlType::Int;
     const auto aggregateDescriptor =
-        aggregate.function == AggregateFunction::Min ||
-                aggregate.function == AggregateFunction::Max
-            ? plan.schema[*plan.aggregateIndex].declaredType
-            : std::optional<SqlTypeDescriptor>{};
+        aggregateResultDescriptor(aggregate.function,
+                                  plan.schema[*plan.aggregateIndex]);
     result.columns.push_back({outputName, outputType, aggregateDescriptor});
 
     std::vector<SqlValue> aggregateValues;
