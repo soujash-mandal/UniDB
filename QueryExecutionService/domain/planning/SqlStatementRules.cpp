@@ -80,8 +80,7 @@ prepareInsertRows(const InsertStatement &statement,
           break;
         case SqlTypeId::Real: {
           double numericValue{};
-          if (const auto *floating =
-                  std::get_if<double>(&values[inputIndex])) {
+          if (const auto *floating = std::get_if<double>(&values[inputIndex])) {
             numericValue = *floating;
           } else if (const auto *integer =
                          std::get_if<std::int64_t>(&values[inputIndex])) {
@@ -99,8 +98,7 @@ prepareInsertRows(const InsertStatement &statement,
           break;
         }
         case SqlTypeId::DoublePrecision:
-          if (const auto *floating =
-                  std::get_if<double>(&values[inputIndex])) {
+          if (const auto *floating = std::get_if<double>(&values[inputIndex])) {
             orderedValues[schemaIndex] = *floating;
             valueMatchesColumn = true;
           } else if (const auto *integer =

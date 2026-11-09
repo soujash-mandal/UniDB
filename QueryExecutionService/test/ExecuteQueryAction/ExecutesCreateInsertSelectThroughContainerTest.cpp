@@ -174,8 +174,8 @@ TEST(ExecuteQueryActionIntegrationTest,
 
 TEST(ExecuteQueryActionIntegrationTest,
      InsertsAndSelectsRealAndDoublePrecisionValues) {
-  const auto databaseFile =
-      std::filesystem::temp_directory_path() / "unidb_floating_point_values_test.db";
+  const auto databaseFile = std::filesystem::temp_directory_path() /
+                            "unidb_floating_point_values_test.db";
   std::filesystem::remove(databaseFile);
 
   {
@@ -183,7 +183,8 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_TRUE(DatabaseStartup::execute(container));
 
     const auto created = container.executeQueryAction().execute(
-        "CREATE TABLE measurements (approximate REAL, precise DOUBLE PRECISION);");
+        "CREATE TABLE measurements (approximate REAL, precise DOUBLE "
+        "PRECISION);");
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             created));
@@ -194,7 +195,8 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             inserted))
-        << std::get<QueryExecutionService::QueryExecutionError>(inserted).message;
+        << std::get<QueryExecutionService::QueryExecutionError>(inserted)
+               .message;
     EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(inserted)
                   .affectedRows,
               3U);
@@ -226,9 +228,10 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             afterOverflow));
-    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(afterOverflow)
-                  .rows.size(),
-              3U);
+    EXPECT_EQ(
+        std::get<QueryExecutionService::QueryExecutionResult>(afterOverflow)
+            .rows.size(),
+        3U);
     container.flushDirtyPages();
   }
 
