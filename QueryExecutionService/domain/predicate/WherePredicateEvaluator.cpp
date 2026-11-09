@@ -15,8 +15,7 @@ using unidb::sql::SqlValue;
 using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
 
-void normalizeComparisonValue(const ColumnDefinition &column,
-                              SqlValue &value) {
+void normalizeComparisonValue(const ColumnDefinition &column, SqlValue &value) {
   using unidb::sql::SqlTypeId;
   if (!column.declaredType.has_value() ||
       column.declaredType->id != SqlTypeId::Real) {
@@ -205,21 +204,17 @@ compileWhereExpression(const WhereExpression &expression,
     for (auto &value : predicate.values) {
       normalizeComparisonValue(*found, value);
     }
-    const bool isMembership =
-        predicate.comparison == ComparisonOperator::In ||
-        predicate.comparison == ComparisonOperator::NotIn;
-    const bool isRange =
-        predicate.comparison == ComparisonOperator::Between ||
-        predicate.comparison == ComparisonOperator::NotBetween;
-    const bool isLike =
-        predicate.comparison == ComparisonOperator::Like ||
-        predicate.comparison == ComparisonOperator::NotLike;
+    const bool isMembership = predicate.comparison == ComparisonOperator::In ||
+                              predicate.comparison == ComparisonOperator::NotIn;
+    const bool isRange = predicate.comparison == ComparisonOperator::Between ||
+                         predicate.comparison == ComparisonOperator::NotBetween;
+    const bool isLike = predicate.comparison == ComparisonOperator::Like ||
+                        predicate.comparison == ComparisonOperator::NotLike;
     if (isLike && types[compiled.columnIndex] != SqlType::Text) {
       throw std::invalid_argument("LIKE requires a TEXT column: " +
                                   found->name);
     }
-    if (!isMembership &&
-        !valueMatchesColumn(*found, predicate.value)) {
+    if (!isMembership && !valueMatchesColumn(*found, predicate.value)) {
       throw std::invalid_argument("WHERE value type does not match column: " +
                                   found->name);
     }
@@ -233,8 +228,7 @@ compileWhereExpression(const WhereExpression &expression,
                                     found->name);
       }
     }
-    if (isLike &&
-        !std::holds_alternative<std::string>(predicate.value)) {
+    if (isLike && !std::holds_alternative<std::string>(predicate.value)) {
       throw std::invalid_argument("LIKE pattern must be TEXT");
     }
     if (isMembership) {

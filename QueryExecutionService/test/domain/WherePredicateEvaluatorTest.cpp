@@ -145,24 +145,24 @@ TEST(WherePredicateEvaluatorTest,
 TEST(WherePredicateEvaluatorTest,
      CompilesAndEvaluatesRealAndDoublePrecisionWhereComparisons) {
   const std::vector<ColumnDefinition> schema{
-      {"approximate", SqlType::Int,
-       SqlTypeDescriptor{SqlTypeId::Real, {}}},
+      {"approximate", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Real, {}}},
       {"precise", SqlType::Int,
        SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}}}};
   const std::vector<SqlType> types{SqlType::Int, SqlType::Int};
   const std::vector<SqlValue> row{1.5F, 2.5};
 
   WhereExpression realGreater;
-  realGreater.predicate = WhereEquals{
-      "approximate", SqlValue{1.0}, std::nullopt, {},
-      ComparisonOperator::GreaterThan};
+  realGreater.predicate = WhereEquals{"approximate",
+                                      SqlValue{1.0},
+                                      std::nullopt,
+                                      {},
+                                      ComparisonOperator::GreaterThan};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(realGreater, schema, types)));
 
   WhereExpression doubleEqual;
   doubleEqual.predicate = WhereEquals{
-      "precise", SqlValue{2.5}, std::nullopt, {},
-      ComparisonOperator::Equal};
+      "precise", SqlValue{2.5}, std::nullopt, {}, ComparisonOperator::Equal};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(doubleEqual, schema, types)));
 }
