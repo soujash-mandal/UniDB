@@ -48,7 +48,9 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
   case RdbDataType::BIGINT:
     return unidb::sql::SqlType::Int;
   case RdbDataType::BOOLEAN:
-    return unidb::sql::SqlType::Int; // Transitional tag; declaredType is authoritative.
+    // The declared descriptor is authoritative until BOOLEAN query planning
+    // adopts a dedicated transitional execution tag.
+    return unidb::sql::SqlType::Int;
   case RdbDataType::VARCHAR:
     return unidb::sql::SqlType::Text;
   default:
