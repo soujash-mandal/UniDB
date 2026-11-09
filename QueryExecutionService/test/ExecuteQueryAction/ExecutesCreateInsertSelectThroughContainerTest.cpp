@@ -173,6 +173,69 @@ TEST(ExecuteQueryActionIntegrationTest,
 }
 
 TEST(ExecuteQueryActionIntegrationTest,
+     InsertsAndSelectsRealAndDoublePrecisionValues) {
+  const auto databaseFile =
+      std::filesystem::temp_directory_path() / "unidb_floating_point_values_test.db";
+  std::filesystem::remove(databaseFile);
+
+  {
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+
+    const auto created = container.executeQueryAction().execute(
+        "CREATE TABLE measurements (approximate REAL, precise DOUBLE PRECISION);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created));
+
+    const auto inserted = container.executeQueryAction().execute(
+        "INSERT INTO measurements (approximate, precise) VALUES "
+        "(1.25, 1.234567890123), (-2.5, 1e3), (7, 8);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            inserted))
+        << std::get<QueryExecutionService::QueryExecutionError>(inserted).message;
+    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(inserted)
+                  .affectedRows,
+              3U);
+
+    const auto selected =
+        container.executeQueryAction().execute("SELECT * FROM measurements;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    ASSERT_EQ(result.rows.size(), 3U);
+    ASSERT_EQ(result.rows[0].size(), 2U);
+    EXPECT_FLOAT_EQ(std::get<float>(result.rows[0][0]), 1.25F);
+    EXPECT_DOUBLE_EQ(std::get<double>(result.rows[0][1]), 1.234567890123);
+    EXPECT_FLOAT_EQ(std::get<float>(result.rows[1][0]), -2.5F);
+    EXPECT_DOUBLE_EQ(std::get<double>(result.rows[1][1]), 1000.0);
+    EXPECT_FLOAT_EQ(std::get<float>(result.rows[2][0]), 7.0F);
+    EXPECT_DOUBLE_EQ(std::get<double>(result.rows[2][1]), 8.0);
+
+    const auto overflow = container.executeQueryAction().execute(
+        "INSERT INTO measurements (approximate, precise) VALUES "
+        "(3.5e38, 9.0);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+            overflow));
+    const auto afterOverflow =
+        container.executeQueryAction().execute("SELECT * FROM measurements;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            afterOverflow));
+    EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionResult>(afterOverflow)
+                  .rows.size(),
+              3U);
+    container.flushDirtyPages();
+  }
+
+  std::filesystem::remove(databaseFile);
+}
+
+TEST(ExecuteQueryActionIntegrationTest,
      PersistsFloatingPointColumnTypesAcrossContainerRestart) {
   const auto databaseFile = std::filesystem::temp_directory_path() /
                             "unidb_floating_point_schema_test.db";
