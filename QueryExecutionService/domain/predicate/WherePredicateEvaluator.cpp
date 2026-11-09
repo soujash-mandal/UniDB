@@ -190,15 +190,15 @@ compileWhereExpression(const WhereExpression &expression,
   if (expression.kind == WhereExpression::Kind::Predicate) {
     const auto found =
         std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-          return column.name == predicate.columnName;
+          return column.name == expression.predicate.columnName;
         });
     if (found == schema.end()) {
       throw std::invalid_argument("Unknown WHERE column: " +
-                                  predicate.columnName);
+                                  expression.predicate.columnName);
     }
     compiled.columnIndex =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
-    auto predicate = predicate;
+    auto predicate = expression.predicate;
     normalizeComparisonValue(*found, predicate.value);
     if (predicate.upperBound.has_value()) {
       normalizeComparisonValue(*found, *predicate.upperBound);
