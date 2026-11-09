@@ -120,12 +120,11 @@ TEST(SqlParserTest, RejectsMalformedMultiRowInsertValues) {
   }
 }
 
-
 TEST(SqlParserTest, ParsesFloatingPointLiteralsAsDoubleValues) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO measurements (a, b, c, d) VALUES "
-      "(1.25, -2.5, 1e3, 1.25e-2)");
+  const auto result =
+      parser.parse("INSERT INTO measurements (a, b, c, d) VALUES "
+                   "(1.25, -2.5, 1e3, 1.25e-2)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &insert =
@@ -140,8 +139,8 @@ TEST(SqlParserTest, ParsesFloatingPointLiteralsAsDoubleValues) {
 
 TEST(SqlParserTest, KeepsIntegerLiteralsAsIntegersBesideFloatingPointValues) {
   SqlParserImpl parser;
-  const auto result =
-      parser.parse("INSERT INTO measurements (whole, fractional) VALUES (7, 7.0)");
+  const auto result = parser.parse(
+      "INSERT INTO measurements (whole, fractional) VALUES (7, 7.0)");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &insert =
@@ -153,9 +152,8 @@ TEST(SqlParserTest, KeepsIntegerLiteralsAsIntegersBesideFloatingPointValues) {
 
 TEST(SqlParserTest, RejectsMalformedFloatingPointExponents) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "INSERT INTO measurements (value) VALUES (1e)",
-           "INSERT INTO measurements (value) VALUES (1.0e+)"}) {
+  for (const auto *sql : {"INSERT INTO measurements (value) VALUES (1e)",
+                          "INSERT INTO measurements (value) VALUES (1.0e+)"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
     EXPECT_EQ(std::get<SqlParseError>(result).code,

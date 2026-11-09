@@ -1248,14 +1248,15 @@ private:
         text.insert(text.begin(), '+');
       }
       double value{};
-      const auto conversion = std::from_chars(
-          text.data(), text.data() + text.size(), value,
-          std::chars_format::general);
+      const auto conversion =
+          std::from_chars(text.data(), text.data() + text.size(), value,
+                          std::chars_format::general);
       ++position_;
       if (conversion.ec != std::errc{} ||
           conversion.ptr != text.data() + text.size()) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Floating-point literal is out of range or invalid"};
+        return SqlParseError{
+            SqlParseErrorCode::SyntaxError,
+            "Floating-point literal is out of range or invalid"};
       }
       return SqlValue{value};
     }
