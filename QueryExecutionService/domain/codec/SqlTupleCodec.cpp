@@ -188,6 +188,14 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       appendDeclaredInteger(out, column.declaredType->id,
                             std::get<std::int64_t>(values[index]));
       break;
+    case SqlTypeId::Boolean:
+      if (!std::holds_alternative<unidb::sql::SqlBooleanValue>(values[index])) {
+        throw std::invalid_argument("Expected BOOLEAN value");
+      }
+      appendLittleEndian(
+          out, static_cast<std::uint8_t>(
+                   std::get<unidb::sql::SqlBooleanValue>(values[index]) ? 1 : 0));
+      break;
     case SqlTypeId::Text:
       if (!std::holds_alternative<std::string>(values[index])) {
         throw std::invalid_argument("Expected TEXT value");
@@ -196,7 +204,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       break;
     default:
       throw std::invalid_argument(
-          "Tuple codec supports only integer and TEXT columns");
+          "Tuple codec supports only integer, BOOLEAN, and TEXT columns");
     }
   }
   return out;
@@ -235,12 +243,21 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       values.emplace_back(
           readDeclaredInteger(column.declaredType->id, bytes, offset));
       break;
+    case SqlTypeId::Boolean: {
+      const auto encoded =
+          readLittleEndian<std::uint8_t>(bytes, offset);
+      if (encoded > 1) {
+        throw std::runtime_error("Tuple BOOLEAN value has an invalid encoding");
+      }
+      values.emplace_back(encoded == 1);
+      break;
+    }
     case SqlTypeId::Text:
       values.emplace_back(readText(bytes, offset));
       break;
     default:
       throw std::invalid_argument(
-          "Tuple codec supports only integer and TEXT columns");
+          "Tuple codec supports only integer, BOOLEAN, and TEXT columns");
     }
   }
   if (offset != bytes.size()) {

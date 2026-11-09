@@ -60,7 +60,9 @@ enum class SqlType { Int, Text };
 
 using SqlIntegerValue = std::variant<std::int16_t, std::int32_t, std::int64_t>;
 
-using SqlValue = std::variant<std::int64_t, std::string>;
+using SqlBooleanValue = bool;
+
+using SqlValue = std::variant<std::int64_t, std::string, SqlBooleanValue>;
 
 struct ColumnDefinition {
   std::string name;

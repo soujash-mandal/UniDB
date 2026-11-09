@@ -89,3 +89,57 @@ TEST(SqlTupleCodecTest, RejectsTruncatedAndUnknownVersionDeclaredRows) {
       SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x01, 0x00, 0x02}),
       std::runtime_error);
 }
+
+
+TEST(SqlTupleCodecTest, RoundTripsBooleanValuesUsingDeclaredSchema) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"false_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Boolean, {}}},
+      {"true_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{false, true};
+
+  const auto bytes = SqlTupleCodec::encode(schema, values);
+  ASSERT_EQ(bytes.size(), 3U);
+  EXPECT_EQ(static_cast<unsigned char>(bytes[0]), 1U);
+  EXPECT_EQ(static_cast<unsigned char>(bytes[1]), 0U);
+  EXPECT_EQ(static_cast<unsigned char>(bytes[2]), 1U);
+  EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
+}
+
+TEST(SqlTupleCodecTest, RejectsNonBooleanValuesForDeclaredBooleanColumns) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
+  EXPECT_THROW(SqlTupleCodec::encode(schema, {std::int64_t{1}}),
+               std::invalid_argument);
+  EXPECT_THROW(SqlTupleCodec::encode(schema, {std::string("true")}),
+               std::invalid_argument);
+}
+
+TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01}),
+               std::runtime_error);
+  EXPECT_THROW(
+      SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x02}),
+      std::runtime_error);
+  EXPECT_THROW(
+      SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0xff}),
+      std::runtime_error);
+}
