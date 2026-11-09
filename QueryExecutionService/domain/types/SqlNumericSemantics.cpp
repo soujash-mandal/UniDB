@@ -244,6 +244,8 @@ applySqlNumericTypmod(const unidb::sql::SqlNumericValue &value,
     }
     roundedCoefficient.append(static_cast<std::size_t>(shift), '0');
   } else if (shift < 0) {
+    // PostgreSQL NUMERIC rounds halfway cases away from zero; the sign is
+    // applied after rounding the absolute coefficient.
     const auto discardedDigits = static_cast<std::uint64_t>(-shift);
     bool roundUp = false;
     if (discardedDigits <= roundedCoefficient.size()) {
