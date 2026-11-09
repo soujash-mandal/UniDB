@@ -8,6 +8,10 @@
 
 namespace QueryExecutionService::domain {
 
+// Parse a SQL decimal literal, including an optional sign and exponent, without
+// converting through a binary floating-point type.
+unidb::sql::SqlNumericValue parseSqlNumericLiteral(std::string_view literal);
+
 // Build the canonical finite-decimal representation from an unsigned digit
 // sequence, sign, and decimal scale. The coefficient must contain digits only.
 unidb::sql::SqlNumericValue normalizeSqlNumericValue(bool negative,
