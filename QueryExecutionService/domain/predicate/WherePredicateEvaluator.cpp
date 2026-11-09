@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -14,6 +15,22 @@ using unidb::sql::SqlType;
 using unidb::sql::SqlValue;
 using unidb::sql::WhereEquals;
 using unidb::sql::WhereExpression;
+
+void normalizeComparisonValue(const ColumnDefinition &column,
+                              SqlValue &value) {
+  using unidb::sql::SqlTypeId;
+  if (!column.declaredType.has_value() ||
+      column.declaredType->id != SqlTypeId::Real) {
+    return;
+  }
+  if (const auto *doubleValue = std::get_if<double>(&value)) {
+    const float realValue = static_cast<float>(*doubleValue);
+    if (std::isfinite(*doubleValue) && !std::isfinite(realValue)) {
+      throw std::invalid_argument("REAL comparison value is out of range");
+    }
+    value = realValue;
+  }
+}
 
 template <typename T> int compareFloatingPoint(T left, T right) {
   const bool leftIsNaN = std::isnan(left);
@@ -173,58 +190,66 @@ compileWhereExpression(const WhereExpression &expression,
   if (expression.kind == WhereExpression::Kind::Predicate) {
     const auto found =
         std::find_if(schema.begin(), schema.end(), [&](const auto &column) {
-          return column.name == expression.predicate.columnName;
+          return column.name == predicate.columnName;
         });
     if (found == schema.end()) {
       throw std::invalid_argument("Unknown WHERE column: " +
-                                  expression.predicate.columnName);
+                                  predicate.columnName);
     }
     compiled.columnIndex =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
+    auto predicate = predicate;
+    normalizeComparisonValue(*found, predicate.value);
+    if (predicate.upperBound.has_value()) {
+      normalizeComparisonValue(*found, *predicate.upperBound);
+    }
+    for (auto &value : predicate.values) {
+      normalizeComparisonValue(*found, value);
+    }
     const bool isMembership =
-        expression.predicate.comparison == ComparisonOperator::In ||
-        expression.predicate.comparison == ComparisonOperator::NotIn;
+        predicate.comparison == ComparisonOperator::In ||
+        predicate.comparison == ComparisonOperator::NotIn;
     const bool isRange =
-        expression.predicate.comparison == ComparisonOperator::Between ||
-        expression.predicate.comparison == ComparisonOperator::NotBetween;
+        predicate.comparison == ComparisonOperator::Between ||
+        predicate.comparison == ComparisonOperator::NotBetween;
     const bool isLike =
-        expression.predicate.comparison == ComparisonOperator::Like ||
-        expression.predicate.comparison == ComparisonOperator::NotLike;
+        predicate.comparison == ComparisonOperator::Like ||
+        predicate.comparison == ComparisonOperator::NotLike;
     if (isLike && types[compiled.columnIndex] != SqlType::Text) {
       throw std::invalid_argument("LIKE requires a TEXT column: " +
                                   found->name);
     }
     if (!isMembership &&
-        !valueMatchesColumn(*found, expression.predicate.value)) {
+        !valueMatchesColumn(*found, predicate.value)) {
       throw std::invalid_argument("WHERE value type does not match column: " +
                                   found->name);
     }
     if (isRange) {
-      if (!expression.predicate.upperBound.has_value()) {
+      if (!predicate.upperBound.has_value()) {
         throw std::invalid_argument(
             "BETWEEN predicates require two range bounds");
       }
-      if (!valueMatchesColumn(*found, *expression.predicate.upperBound)) {
+      if (!valueMatchesColumn(*found, *predicate.upperBound)) {
         throw std::invalid_argument("WHERE value type does not match column: " +
                                     found->name);
       }
     }
     if (isLike &&
-        !std::holds_alternative<std::string>(expression.predicate.value)) {
+        !std::holds_alternative<std::string>(predicate.value)) {
       throw std::invalid_argument("LIKE pattern must be TEXT");
     }
     if (isMembership) {
-      if (expression.predicate.values.empty()) {
+      if (predicate.values.empty()) {
         throw std::invalid_argument("IN list must contain at least one value");
       }
-      for (const auto &value : expression.predicate.values) {
+      for (const auto &value : predicate.values) {
         if (!valueMatchesColumn(*found, value)) {
           throw std::invalid_argument(
               "WHERE value type does not match column: " + found->name);
         }
       }
     }
-    compiled.predicate = expression.predicate;
+    compiled.predicate = predicate;
     return compiled;
   }
 
