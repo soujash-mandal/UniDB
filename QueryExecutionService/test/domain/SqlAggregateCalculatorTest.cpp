@@ -111,3 +111,40 @@ TEST(SqlAggregateCalculatorTest, RejectsNonCountAggregatesOnEmptyInput) {
     EXPECT_THROW(calculateAggregate(function, {}, 0), std::invalid_argument);
   }
 }
+
+TEST(SqlAggregateCalculatorTest, CalculatesExactNumericSumAcrossScales) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{false, "12345", 2},
+      unidb::sql::SqlNumericValue{false, "55", 1},
+      unidb::sql::SqlNumericValue{true, "25", 2}};
+  const auto sum = calculateAggregate(AggregateFunction::Sum, values, 3);
+  const auto &numeric = std::get<unidb::sql::SqlNumericValue>(sum);
+  EXPECT_EQ(numeric, (unidb::sql::SqlNumericValue{false, "1287", 1}));
+}
+
+TEST(SqlAggregateCalculatorTest, CalculatesExactNumericSumWithCancellation) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{true, "999", 2},
+      unidb::sql::SqlNumericValue{false, "999", 2},
+      unidb::sql::SqlNumericValue{false, "1", 0}};
+  const auto sum = calculateAggregate(AggregateFunction::Sum, values, 3);
+  EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(sum),
+            (unidb::sql::SqlNumericValue{false, "1", 0}));
+}
+
+TEST(SqlAggregateCalculatorTest,
+     PreservesLargeNumericSumWithoutNativeOverflow) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{false, "999999999999999999999999999999", 4},
+      unidb::sql::SqlNumericValue{false, "1", 4}};
+  const auto sum = calculateAggregate(AggregateFunction::Sum, values, 2);
+  EXPECT_EQ(std::get<unidb::sql::SqlNumericValue>(sum),
+            (unidb::sql::SqlNumericValue{false, "1", -26}));
+}
+
+TEST(SqlAggregateCalculatorTest, RejectsMixedNumericAndNonNumericSumValues) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNumericValue{false, "10", 1}, std::int64_t{2}};
+  EXPECT_THROW(calculateAggregate(AggregateFunction::Sum, values, 2),
+               std::invalid_argument);
+}

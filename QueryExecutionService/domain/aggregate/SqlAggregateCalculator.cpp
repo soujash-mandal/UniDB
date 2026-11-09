@@ -1,7 +1,9 @@
 #include "SqlAggregateCalculator.h"
 
 #include "../predicate/WherePredicateEvaluator.h"
+#include "../types/SqlNumericSemantics.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -12,6 +14,104 @@ namespace {
 
 using unidb::sql::AggregateFunction;
 using unidb::sql::SqlValue;
+
+std::string addMagnitude(const std::string &left, const std::string &right) {
+  std::string result;
+  std::size_t leftIndex = left.size();
+  std::size_t rightIndex = right.size();
+  int carry = 0;
+  while (leftIndex > 0 || rightIndex > 0 || carry != 0) {
+    int digit = carry;
+    if (leftIndex > 0) {
+      digit += left[--leftIndex] - '0';
+    }
+    if (rightIndex > 0) {
+      digit += right[--rightIndex] - '0';
+    }
+    result.push_back(static_cast<char>('0' + digit % 10));
+    carry = digit / 10;
+  }
+  std::reverse(result.begin(), result.end());
+  return result;
+}
+
+std::string subtractMagnitude(const std::string &larger,
+                              const std::string &smaller) {
+  std::string result;
+  std::size_t leftIndex = larger.size();
+  std::size_t rightIndex = smaller.size();
+  int borrow = 0;
+  while (leftIndex > 0) {
+    int digit = larger[--leftIndex] - '0' - borrow;
+    if (rightIndex > 0) {
+      digit -= smaller[--rightIndex] - '0';
+    }
+    borrow = digit < 0 ? 1 : 0;
+    if (borrow != 0) {
+      digit += 10;
+    }
+    result.push_back(static_cast<char>('0' + digit));
+  }
+  while (result.size() > 1 && result.back() == '0') {
+    result.pop_back();
+  }
+  std::reverse(result.begin(), result.end());
+  return result;
+}
+
+unidb::sql::SqlNumericValue
+sumNumericValues(const std::vector<SqlValue> &values) {
+  using unidb::sql::SqlNumericValue;
+  std::int32_t commonScale = std::numeric_limits<std::int32_t>::min();
+  std::vector<SqlNumericValue> aligned;
+  aligned.reserve(values.size());
+  for (const auto &value : values) {
+    const auto *numeric = std::get_if<SqlNumericValue>(&value);
+    if (numeric == nullptr) {
+      throw std::invalid_argument("SUM requires values of a consistent type");
+    }
+    (void)formatSqlNumericValue(*numeric);
+    commonScale = std::max(commonScale, numeric->scale);
+    aligned.push_back(*numeric);
+  }
+
+  bool totalNegative = false;
+  std::string total = "0";
+  for (auto &value : aligned) {
+    const auto padding = static_cast<std::int64_t>(commonScale) - value.scale;
+    if (padding > 100000) {
+      throw std::overflow_error("NUMERIC SUM scale exceeds supported range");
+    }
+    value.coefficient.append(static_cast<std::size_t>(padding), '0');
+    if (value.coefficient == "0") {
+      continue;
+    }
+    if (total == "0") {
+      total = value.coefficient;
+      totalNegative = value.negative;
+      continue;
+    }
+    if (totalNegative == value.negative) {
+      total = addMagnitude(total, value.coefficient);
+      continue;
+    }
+
+    const auto magnitudeOrder =
+        total.size() == value.coefficient.size()
+            ? total.compare(value.coefficient)
+            : (total.size() < value.coefficient.size() ? -1 : 1);
+    if (magnitudeOrder == 0) {
+      total = "0";
+      totalNegative = false;
+    } else if (magnitudeOrder > 0) {
+      total = subtractMagnitude(total, value.coefficient);
+    } else {
+      total = subtractMagnitude(value.coefficient, total);
+      totalNegative = value.negative;
+    }
+  }
+  return normalizeSqlNumericValue(totalNegative, std::move(total), commonScale);
+}
 
 std::string aggregateFunctionName(AggregateFunction function) {
   switch (function) {
@@ -53,6 +153,13 @@ SqlValue calculateAggregate(AggregateFunction function,
       }
     }
     return result;
+  }
+
+  if (std::holds_alternative<unidb::sql::SqlNumericValue>(values.front())) {
+    if (function != AggregateFunction::Sum) {
+      throw std::invalid_argument("NUMERIC aggregate is not yet supported");
+    }
+    return sumNumericValues(values);
   }
 
   if (std::holds_alternative<float>(values.front())) {
