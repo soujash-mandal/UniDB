@@ -79,7 +79,7 @@ TEST(ExecuteQueryActionNumericTest,
             std::get<SqlNumericValue>(first[0]));
 }
 
-TEST(ExecuteQueryActionNumericTest, RejectsNonDecimalValueForNumericColumn) {
+TEST(ExecuteQueryActionNumericTest, CoercesIntegerLiteralIntoNumericColumn) {
   auto port = makeNumericPort();
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
@@ -87,6 +87,9 @@ TEST(ExecuteQueryActionNumericTest, RejectsNonDecimalValueForNumericColumn) {
   const auto outcome =
       action.execute("INSERT INTO decimals (amount) VALUES (42)");
   ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionError>(outcome));
-  EXPECT_EQ(port.insertCalls, 0U);
+              QueryExecutionService::QueryExecutionResult>(outcome));
+  ASSERT_EQ(port.insertedRows.size(), 1U);
+  const auto decoded = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  EXPECT_EQ(std::get<SqlNumericValue>(decoded[0]),
+            (SqlNumericValue{false, "42", 0}));
 }
