@@ -313,8 +313,16 @@ int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
   validateCanonicalValue(left);
   validateCanonicalValue(right);
 
-  if (left.coefficient == "0" && right.coefficient == "0") {
+  const bool leftIsZero = left.coefficient == "0";
+  const bool rightIsZero = right.coefficient == "0";
+  if (leftIsZero && rightIsZero) {
     return 0;
+  }
+  if (leftIsZero) {
+    return right.negative ? 1 : -1;
+  }
+  if (rightIsZero) {
+    return left.negative ? -1 : 1;
   }
   if (left.negative != right.negative) {
     return left.negative ? -1 : 1;
