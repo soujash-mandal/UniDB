@@ -27,10 +27,10 @@ TEST(SqlCharacterSemanticsTest, RejectsMalformedUtf8) {
 }
 
 TEST(SqlCharacterSemanticsTest, BlankPadsCharToDeclaredCharacterLength) {
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("CHAR", {.length = 5}),
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 5}),
                                        "cat"),
             "cat  ");
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("CHAR(3)"), "cat"),
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 3}), "cat"),
             "cat");
 }
 
@@ -43,7 +43,7 @@ TEST(SqlCharacterSemanticsTest,
 }
 
 TEST(SqlCharacterSemanticsTest, EnforcesVarcharLengthInCharacters) {
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR(2)"), "東京"),
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR", unidb::sql::SqlTypeModifier{.length = 2}), "東京"),
             "東京");
   EXPECT_THROW(
       normalizeSqlCharacterValue(resolveSqlType("VARCHAR(2)"), "東京市"),
@@ -51,7 +51,7 @@ TEST(SqlCharacterSemanticsTest, EnforcesVarcharLengthInCharacters) {
 }
 
 TEST(SqlCharacterSemanticsTest, VarcharAllowsExcessTrailingSpaces) {
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR(3)"), "cat  "),
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR", unidb::sql::SqlTypeModifier{.length = 3}), "cat  "),
             "cat");
 }
 
