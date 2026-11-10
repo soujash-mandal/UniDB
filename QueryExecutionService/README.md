@@ -19,7 +19,7 @@ The implementation is intentionally a subset of PostgreSQL 18. The support notes
 | INSERT / SELECT | Exact round trips through the versioned row codec and catalog type metadata |
 | Assignment | Declared precision/scale enforcement; scale rounding is half away from zero; precision overflow is rejected |
 | Comparison | Exact equality and ordering comparisons |
-| Query operations | Exact `WHERE` comparisons, `ORDER BY`, `DISTINCT`, and `GROUP BY` |
+| Query operations | Exact `WHERE` comparisons, `IN` / `NOT IN`, inclusive `BETWEEN` / `NOT BETWEEN`, `ORDER BY`, `DISTINCT`, and `GROUP BY` |
 | Arithmetic | Exact `+`, `-`, `*`, and `/` expressions; division uses the QES decimal division scale/rounding rule |
 | Aggregates | Exact `SUM`, `AVG`, `MIN`, and `MAX` results |
 | Grouped aggregates | `HAVING` comparisons for the selected aggregate, including exact decimal literals and integer literals compared against NUMERIC results |
@@ -29,7 +29,7 @@ The implementation keeps SQL type descriptors and runtime values distinct from s
 ## Query semantics and current limits
 
 - `AND` has higher precedence than `OR`; parentheses group and nest predicates. Nesting is limited to 128 levels.
-- `IN` / `NOT IN` and inclusive `BETWEEN` / `NOT BETWEEN` currently accept non-empty INT or TEXT literal lists/bounds. Values must match the target column type.
+- `IN` / `NOT IN` accept non-empty INT, TEXT, or exact NUMERIC literal lists; inclusive `BETWEEN` / `NOT BETWEEN` accept INT, TEXT, or exact NUMERIC bounds. Integer literals are normalized to exact NUMERIC values when compared with NUMERIC columns. Values must otherwise match the target column type.
 - SQL `NULL`, three-valued logic, and nullable row values are not supported by this feature set.
 - Explicit SQL casts and general PostgreSQL implicit-coercion rules are not implemented.
 - `ORDER BY` supports source columns and SELECT output aliases with `ASC` / `DESC`. Output aliases take precedence over source-column names when both match.
