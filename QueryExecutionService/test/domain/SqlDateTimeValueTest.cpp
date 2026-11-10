@@ -8,9 +8,9 @@
 using QueryExecutionService::domain::SqlDate;
 using QueryExecutionService::domain::SqlInterval;
 using QueryExecutionService::domain::SqlTime;
-using QueryExecutionService::domain::SqlTimeWithTimeZone;
 using QueryExecutionService::domain::SqlTimestamp;
 using QueryExecutionService::domain::SqlTimestampWithTimeZone;
+using QueryExecutionService::domain::SqlTimeWithTimeZone;
 
 static_assert(!std::is_convertible_v<SqlDate, SqlTime>);
 static_assert(!std::is_convertible_v<SqlTime, SqlTimestamp>);
@@ -53,17 +53,14 @@ TEST(SqlDateTimeValueTest, TimestampWithTimeZoneStoresAnInstant) {
   const SqlTimestampWithTimeZone atEpoch{0};
   const SqlTimestampWithTimeZone afterEpoch{1};
 
-  EXPECT_LT(beforeEpoch.microsecondsSinceEpoch,
-            atEpoch.microsecondsSinceEpoch);
-  EXPECT_LT(atEpoch.microsecondsSinceEpoch,
-            afterEpoch.microsecondsSinceEpoch);
+  EXPECT_LT(beforeEpoch.microsecondsSinceEpoch, atEpoch.microsecondsSinceEpoch);
+  EXPECT_LT(atEpoch.microsecondsSinceEpoch, afterEpoch.microsecondsSinceEpoch);
 }
 
 TEST(SqlDateTimeValueTest, IntervalKeepsCalendarAndTimeComponentsDistinct) {
   const SqlInterval oneMonth{.months = 1};
   const SqlInterval thirtyDays{.days = 30};
-  const SqlInterval oneDayAndOneSecond{
-      .days = 1, .microseconds = 1000000};
+  const SqlInterval oneDayAndOneSecond{.days = 1, .microseconds = 1000000};
 
   EXPECT_NE(oneMonth, thirtyDays);
   EXPECT_EQ(oneMonth.months, 1);
