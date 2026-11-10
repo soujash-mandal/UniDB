@@ -99,10 +99,11 @@ TEST(ExecuteQueryActionTest, RejectsDistinctOrderByColumnOutsideProjection) {
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));
-  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
-                .message.find(
-                    "ORDER BY column must appear in SELECT list when DISTINCT"),
-            std::string::npos);
+  EXPECT_NE(
+      std::get<QueryExecutionService::QueryExecutionError>(outcome)
+          .message.find(
+              "ORDER BY column must appear in SELECT list when DISTINCT"),
+      std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
@@ -111,9 +112,11 @@ TEST(ExecuteQueryActionTest, DistinctUsesCharBlankPaddedEquality) {
   port.schema = {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}}};
-  port.rows = {SqlTupleCodec::encode(port.schema, {std::string("a")}),
-               SqlTupleCodec::encode(port.schema, {std::string("a  ")}),
-               SqlTupleCodec::encode(port.schema, {std::string("b")})};
+  port.rows = {
+      SqlTupleCodec::encode(port.schema, {std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::string("a  ")}),
+      SqlTupleCodec::encode(port.schema, {std::string("b")}),
+  };
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -133,8 +136,10 @@ TEST(ExecuteQueryActionTest, DistinctKeepsVarcharTrailingSpacesSignificant) {
   port.schema = {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}}};
-  port.rows = {SqlTupleCodec::encode(port.schema, {std::string("a")}),
-               SqlTupleCodec::encode(port.schema, {std::string("a ")})};
+  port.rows = {
+      SqlTupleCodec::encode(port.schema, {std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::string("a ")}),
+  };
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
