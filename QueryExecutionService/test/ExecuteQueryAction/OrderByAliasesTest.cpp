@@ -136,8 +136,9 @@ TEST(ExecuteQueryActionTest, OrdersCharValuesUsingBlankPaddedSemantics) {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
       {"id", unidb::sql::SqlType::Int}};
-  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
-                                                      unidb::sql::SqlType::Int};
+  const auto types =
+      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                       unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
       SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}}),
