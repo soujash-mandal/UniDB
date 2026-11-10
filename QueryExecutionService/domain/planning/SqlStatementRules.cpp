@@ -2,6 +2,7 @@
 
 #include "../codec/SqlTupleCodec.h"
 #include "../predicate/WherePredicateEvaluator.h"
+#include "../types/SqlCharacterSemantics.h"
 #include "../types/SqlNumericSemantics.h"
 
 #include <algorithm>
@@ -129,7 +130,8 @@ void validateCreateTable(const CreateTableStatement &statement) {
       if (id != SqlTypeId::SmallInt && id != SqlTypeId::Integer &&
           id != SqlTypeId::BigInt && id != SqlTypeId::Real &&
           id != SqlTypeId::DoublePrecision && id != SqlTypeId::Numeric &&
-          id != SqlTypeId::Boolean && id != SqlTypeId::Text) {
+          id != SqlTypeId::Boolean && id != SqlTypeId::Char &&
+          id != SqlTypeId::Varchar && id != SqlTypeId::Text) {
         throw std::invalid_argument(
             "CREATE TABLE type is recognized but not yet supported");
       }
@@ -259,9 +261,16 @@ prepareInsertRows(const InsertStatement &statement,
         case SqlTypeId::Boolean:
           valueMatchesColumn = std::holds_alternative<bool>(values[inputIndex]);
           break;
+        case SqlTypeId::Char:
+        case SqlTypeId::Varchar:
         case SqlTypeId::Text:
-          valueMatchesColumn =
-              std::holds_alternative<std::string>(values[inputIndex]);
+          if (const auto *textValue =
+                  std::get_if<std::string>(&values[inputIndex])) {
+            orderedValues[schemaIndex] =
+                normalizeSqlCharacterValue(*found->declaredType, *textValue);
+            valueWasNormalized = true;
+            valueMatchesColumn = true;
+          }
           break;
         default:
           throw std::invalid_argument(
