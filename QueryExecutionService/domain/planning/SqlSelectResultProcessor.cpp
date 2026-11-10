@@ -241,22 +241,6 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     return result;
   }
 
-  if (select.distinct) {
-    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
-    matchedRows.erase(
-        std::remove_if(
-            matchedRows.begin(), matchedRows.end(),
-            [&](const auto &row) {
-              std::vector<SqlValue> projection;
-              projection.reserve(plan.selectedIndexes.size());
-              for (const auto index : plan.selectedIndexes) {
-                projection.push_back(row[index]);
-              }
-              return !seenProjections.insert(std::move(projection)).second;
-            }),
-        matchedRows.end());
-  }
-
   const auto projectRow = [&](const std::vector<SqlValue> &decoded) {
     std::vector<SqlValue> projected;
     projected.reserve(plan.selectedIndexes.size());
@@ -296,11 +280,27 @@ processSelectRows(const unidb::sql::SelectStatement &select,
       std::any_of(plan.orderIndexes.begin(), plan.orderIndexes.end(),
                   [](const auto &order) { return order.projected; });
   std::vector<std::vector<SqlValue>> projectedRows;
-  if (ordersByProjection) {
+  if (select.distinct || ordersByProjection) {
     projectedRows.reserve(matchedRows.size());
     for (const auto &row : matchedRows) {
       projectedRows.push_back(projectRow(row));
     }
+  }
+
+  if (select.distinct) {
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
+    std::vector<std::vector<SqlValue>> distinctRows;
+    std::vector<std::vector<SqlValue>> distinctProjections;
+    distinctRows.reserve(matchedRows.size());
+    distinctProjections.reserve(projectedRows.size());
+    for (std::size_t index = 0; index < matchedRows.size(); ++index) {
+      if (seenProjections.insert(projectedRows[index]).second) {
+        distinctRows.push_back(std::move(matchedRows[index]));
+        distinctProjections.push_back(std::move(projectedRows[index]));
+      }
+    }
+    matchedRows = std::move(distinctRows);
+    projectedRows = std::move(distinctProjections);
   }
 
   if (!plan.orderIndexes.empty()) {
