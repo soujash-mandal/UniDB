@@ -107,6 +107,7 @@ struct IntegerExpression {
   enum class Kind { Literal, Column, Unary, Binary };
   Kind kind{Kind::Literal};
   std::int64_t literal{0};
+  std::optional<SqlNumericValue> numericLiteral;
   std::string columnName;
   IntegerBinaryOperator operation{IntegerBinaryOperator::Add};
   IntegerUnaryOperator unaryOperation{IntegerUnaryOperator::Positive};

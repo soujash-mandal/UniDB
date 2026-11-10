@@ -95,3 +95,31 @@ TEST(SqlParserIntegerExpressionTest, RejectsMalformedAndOutOfRangeExpressions) {
 
 } // namespace
 } // namespace unidb::sql
+
+namespace unidb::sql {
+namespace {
+
+TEST(SqlParserIntegerExpressionTest, ParsesExactDecimalArithmeticLiterals) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT amount + 0.125, -1.25 * amount FROM users");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(select.integerExpressions.size(), 2U);
+  ASSERT_TRUE(select.integerExpressions[0].has_value());
+  ASSERT_NE(select.integerExpressions[0]->right, nullptr);
+  ASSERT_TRUE(select.integerExpressions[0]->right->numericLiteral.has_value());
+  EXPECT_EQ(*select.integerExpressions[0]->right->numericLiteral,
+            (SqlNumericValue{false, "125", 3}));
+
+  ASSERT_TRUE(select.integerExpressions[1].has_value());
+  ASSERT_NE(select.integerExpressions[1]->left, nullptr);
+  ASSERT_TRUE(select.integerExpressions[1]->left->numericLiteral.has_value());
+  EXPECT_EQ(*select.integerExpressions[1]->left->numericLiteral,
+            (SqlNumericValue{true, "125", 2}));
+}
+
+} // namespace
+} // namespace unidb::sql

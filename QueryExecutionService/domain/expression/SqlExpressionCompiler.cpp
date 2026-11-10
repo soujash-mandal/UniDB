@@ -57,6 +57,8 @@ compileIntegerExpression(const IntegerExpression &expression,
   compiled.kind = expression.kind;
   if (expression.kind == IntegerExpression::Kind::Literal) {
     compiled.literal = expression.literal;
+    compiled.numericLiteral = expression.numericLiteral;
+    compiled.numeric = expression.numericLiteral.has_value();
     return compiled;
   }
   if (expression.kind == IntegerExpression::Kind::Column) {
@@ -71,9 +73,24 @@ compileIntegerExpression(const IntegerExpression &expression,
     }
     const auto index =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
-    if (types[index] != SqlType::Int) {
-      throw std::invalid_argument("Integer arithmetic requires INT columns: " +
-                                  expression.columnName);
+    if (found->declaredType.has_value()) {
+      switch (found->declaredType->id) {
+      case unidb::sql::SqlTypeId::SmallInt:
+      case unidb::sql::SqlTypeId::Integer:
+      case unidb::sql::SqlTypeId::BigInt:
+        break;
+      case unidb::sql::SqlTypeId::Numeric:
+        compiled.numeric = true;
+        break;
+      default:
+        throw std::invalid_argument(
+            "Arithmetic expressions require an integer or NUMERIC column: " +
+            expression.columnName);
+      }
+    } else if (types[index] != SqlType::Int) {
+      throw std::invalid_argument(
+          "Arithmetic expressions require an integer column: " +
+          expression.columnName);
     }
     compiled.columnIndex = index;
     return compiled;
@@ -86,6 +103,7 @@ compileIntegerExpression(const IntegerExpression &expression,
     compiled.operand =
         std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
             *expression.operand, schema, types, tableQualifier));
+    compiled.numeric = compiled.operand->numeric;
     return compiled;
   }
   if (!expression.left || !expression.right) {
@@ -98,6 +116,7 @@ compileIntegerExpression(const IntegerExpression &expression,
   compiled.right =
       std::make_shared<CompiledIntegerExpression>(compileIntegerExpression(
           *expression.right, schema, types, tableQualifier));
+  compiled.numeric = compiled.left->numeric || compiled.right->numeric;
   return compiled;
 }
 

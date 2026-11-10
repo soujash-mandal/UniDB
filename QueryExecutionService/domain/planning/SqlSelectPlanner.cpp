@@ -103,9 +103,13 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
         const auto alias = itemIndex < select.columnAliases.size()
                                ? select.columnAliases[itemIndex]
                                : std::optional<std::string>{};
+        std::optional<SqlTypeDescriptor> expressionType;
+        if (compiled.numeric) {
+          expressionType = SqlTypeDescriptor{SqlTypeId::Numeric, {}};
+        }
         plan.selectedColumns.push_back(
             {alias.value_or("EXPR" + std::to_string(itemIndex + 1)),
-             SqlType::Int});
+             SqlType::Int, expressionType});
         plan.compiledCases.push_back(std::nullopt);
         plan.compiledIntegers.push_back(compiled);
         plan.compiledTextFunctions.push_back(std::nullopt);
