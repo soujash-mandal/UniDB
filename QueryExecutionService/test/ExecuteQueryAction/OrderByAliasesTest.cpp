@@ -135,7 +135,7 @@ TEST(ExecuteQueryActionTest, OrdersCharValuesUsingBlankPaddedSemantics) {
   port.schema = {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
-      {"id", unidb::sql::SqlType::Int}};
+      {"id", unidb::sql::SqlType::Int,\n       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}}};
   port.rows = {
       SqlTupleCodec::encode(port.schema, {std::string("a  "), std::int64_t{1}}),
       SqlTupleCodec::encode(port.schema, {std::string("a"), std::int64_t{2}}),
