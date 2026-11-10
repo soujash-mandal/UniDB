@@ -70,7 +70,6 @@ TEST(ExecuteQueryActionUnionTest, RejectsDifferentColumnTypes) {
             std::string::npos);
 }
 
-
 TEST(ExecuteQueryActionUnionTest, UsesCharBlankPaddedEquality) {
   FakeQesRdbServicePort port;
   port.schema = {
@@ -165,4 +164,32 @@ TEST(ExecuteQueryActionUnionTest, AppliesDeclaredCharacterTypePerColumn) {
   ASSERT_EQ(result.rows.size(), 2U);
   EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "x");
   EXPECT_EQ(std::get<std::string>(result.rows[1][1]), "x ");
+}
+
+
+TEST(ExecuteQueryActionUnionTest, KeepsTextTrailingSpacesSignificant) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"id", unidb::sql::SqlType::Int},
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}}};
+  port.rows = {
+      SqlTupleCodec::encode(port.schema,
+                            {std::int64_t{7}, std::string("a")}),
+      SqlTupleCodec::encode(port.schema,
+                            {std::int64_t{8}, std::string("a ")}),
+  };
+
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT name FROM people WHERE id = 7 "
+                     "UNION SELECT name FROM people WHERE id = 8;");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
 }
