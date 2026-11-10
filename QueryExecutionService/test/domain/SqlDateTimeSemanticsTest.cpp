@@ -24,8 +24,8 @@ TEST(SqlDateTimeSemanticsTest, ConvertsBcDatesAcrossTheEraBoundary) {
   const auto lastBcDay = domain::makeSqlDate(-1, 12, 31);
   const auto firstAdDay = domain::makeSqlDate(1, 1, 1);
 
-  EXPECT_EQ(firstAdDay.daysSincePostgresEpoch -
-                lastBcDay.daysSincePostgresEpoch,
+  EXPECT_EQ(firstAdDay.daysSinceEpoch -
+                lastBcDay.daysSinceEpoch,
             1);
 }
 
