@@ -308,6 +308,57 @@ std::string formatSqlNumericValue(const unidb::sql::SqlNumericValue &value) {
   return formatted;
 }
 
+std::int32_t selectSqlNumericDivisionScale(
+    const unidb::sql::SqlNumericValue &left,
+    const unidb::sql::SqlNumericValue &right) {
+  validateCanonicalValue(left);
+  validateCanonicalValue(right);
+  if (right.coefficient == "0") {
+    throw std::invalid_argument("Division by zero in NUMERIC expression");
+  }
+  if (left.coefficient == "0") {
+    return std::clamp<std::int32_t>(
+        std::max({left.scale, right.scale, 16}), 0, 1000);
+  }
+
+  const auto leftExponent =
+      static_cast<std::int64_t>(left.coefficient.size()) - left.scale;
+  const auto rightExponent =
+      static_cast<std::int64_t>(right.coefficient.size()) - right.scale;
+  auto quotientExponent = leftExponent - rightExponent;
+
+  const auto commonLength =
+      std::max(left.coefficient.size(), right.coefficient.size());
+  int mantissaComparison = 0;
+  for (std::size_t index = 0; index < commonLength; ++index) {
+    const char leftDigit = index < left.coefficient.size()
+                               ? left.coefficient[index]
+                               : '0';
+    const char rightDigit = index < right.coefficient.size()
+                                ? right.coefficient[index]
+                                : '0';
+    if (leftDigit != rightDigit) {
+      mantissaComparison = leftDigit < rightDigit ? -1 : 1;
+      break;
+    }
+  }
+  if (mantissaComparison < 0) {
+    --quotientExponent;
+  }
+
+  // PostgreSQL groups decimal digits in fours internally. Its default
+  // division scale targets at least 16 significant digits, rounded up to
+  // the next four-digit boundary, while respecting both input scales.
+  auto quotientWeight = quotientExponent / 4;
+  if (quotientExponent % 4 < 0) {
+    --quotientWeight;
+  }
+  const auto significantScale = 16 - quotientWeight * 4;
+  const auto selectedScale =
+      std::max<std::int64_t>({significantScale, left.scale, right.scale, 0});
+  return static_cast<std::int32_t>(std::min<std::int64_t>(selectedScale, 1000));
+}
+
 int compareSqlNumericValues(const unidb::sql::SqlNumericValue &left,
                             const unidb::sql::SqlNumericValue &right) {
   validateCanonicalValue(left);

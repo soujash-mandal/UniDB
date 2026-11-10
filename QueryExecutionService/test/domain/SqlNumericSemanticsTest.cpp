@@ -207,3 +207,22 @@ TEST(SqlNumericSemanticsTest, RejectsNonCanonicalArithmeticInputs) {
       addSqlNumericValues({false, "01", 0}, parseSqlNumericLiteral("1")),
       std::invalid_argument);
 }
+
+TEST(SqlNumericSemanticsTest,
+     SelectsPostgresStyleDivisionScaleFromResultMagnitude) {
+  EXPECT_EQ(selectSqlNumericDivisionScale(parseSqlNumericLiteral("1"),
+                                          parseSqlNumericLiteral("3")),
+            20);
+  EXPECT_EQ(selectSqlNumericDivisionScale(parseSqlNumericLiteral("5"),
+                                          parseSqlNumericLiteral("2")),
+            16);
+  EXPECT_EQ(selectSqlNumericDivisionScale(parseSqlNumericLiteral("1000000"),
+                                          parseSqlNumericLiteral("3")),
+            12);
+  EXPECT_EQ(selectSqlNumericDivisionScale(parseSqlNumericLiteral("0.001"),
+                                          parseSqlNumericLiteral("3")),
+            20);
+  EXPECT_EQ(selectSqlNumericDivisionScale(parseSqlNumericLiteral("1e-20"),
+                                          parseSqlNumericLiteral("3")),
+            40);
+}

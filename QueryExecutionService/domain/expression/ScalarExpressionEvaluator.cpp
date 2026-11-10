@@ -102,10 +102,8 @@ evaluateSqlArithmeticExpression(const std::vector<SqlValue> &row,
     case IntegerBinaryOperator::Multiply:
       return multiplySqlNumericValues(numericLeft, numericRight);
     case IntegerBinaryOperator::Divide: {
-      // UniDB SQL numeric division currently returns at least six fractional
-      // digits, preserving any greater input scale.
-      const auto resultScale = std::max<std::int32_t>(
-          6, std::max(numericLeft.scale, numericRight.scale));
+      const auto resultScale =
+          selectSqlNumericDivisionScale(numericLeft, numericRight);
       return divideSqlNumericValues(numericLeft, numericRight, resultScale);
     }
     }

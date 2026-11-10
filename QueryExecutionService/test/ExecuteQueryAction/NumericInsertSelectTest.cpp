@@ -378,3 +378,30 @@ TEST(ExecuteQueryActionNumericTest,
             (std::vector<std::string>{"0.1", "0.2", "0.3",
                                       "0.3000000000000000000001", "1"}));
 }
+
+TEST(ExecuteQueryActionNumericTest,
+     UsesPostgresStyleSignificantDigitsForNumericDivision) {
+  auto port = makeNumericPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (amount) VALUES (1), (1000000)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto selected =
+      action.execute("SELECT amount / 3 FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          selected));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(selected).rows;
+  ASSERT_EQ(rows.size(), 2U);
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(rows[0][0])),
+            "0.33333333333333333333");
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(rows[1][0])),
+            "333333.333333");
+}

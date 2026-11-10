@@ -36,8 +36,13 @@ unidb::sql::SqlNumericValue
 multiplySqlNumericValues(const unidb::sql::SqlNumericValue &left,
                          const unidb::sql::SqlNumericValue &right);
 
+// Select a PostgreSQL-style default division scale from operand magnitudes.
+// The rule targets at least 16 significant digits and respects operand scales.
+std::int32_t selectSqlNumericDivisionScale(
+    const unidb::sql::SqlNumericValue &left,
+    const unidb::sql::SqlNumericValue &right);
+
 // Divide exactly at the requested result scale, rounding half away from zero.
-// This is a low-level decimal primitive; SQL type coercion chooses the scale.
 unidb::sql::SqlNumericValue
 divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
                        const unidb::sql::SqlNumericValue &right,
