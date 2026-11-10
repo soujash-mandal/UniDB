@@ -42,7 +42,7 @@ TEST(SqlTupleCodec, RejectsMalformedUtf8InCharacterRows) {
       ColumnDefinition{"body", SqlType::Text,
                        SqlTypeDescriptor{SqlTypeId::Text, {}}},
   };
-  const std::vector<unidb::sql::SqlValue> values{std::string("\\xc0", 1)};
+  const std::vector<unidb::sql::SqlValue> values{std::string("\xc0", 1)};
   EXPECT_THROW(SqlTupleCodec::encode(schema, values), std::invalid_argument);
 
   const std::vector<char> malformedRow{1, 1, 0, 0, 0, static_cast<char>(0xc0)};
