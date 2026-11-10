@@ -2,8 +2,8 @@
 
 #include "../codec/SqlTupleCodec.h"
 #include "../predicate/WherePredicateEvaluator.h"
-#include "../types/SqlNumericSemantics.h"
 #include "../types/SqlCharacterSemantics.h"
+#include "../types/SqlNumericSemantics.h"
 
 #include <algorithm>
 #include <charconv>
@@ -266,8 +266,8 @@ prepareInsertRows(const InsertStatement &statement,
         case SqlTypeId::Text:
           if (const auto *textValue =
                   std::get_if<std::string>(&values[inputIndex])) {
-            orderedValues[schemaIndex] = normalizeSqlCharacterValue(
-                *found->declaredType, *textValue);
+            orderedValues[schemaIndex] =
+                normalizeSqlCharacterValue(*found->declaredType, *textValue);
             valueWasNormalized = true;
             valueMatchesColumn = true;
           }
