@@ -72,7 +72,7 @@ TEST(ExecuteQueryActionCharacterTest, RejectsMalformedUtf8BeforeWriting) {
   unidb::sql::InsertStatement statement;
   statement.tableName = "labels";
   statement.columnNames = {"value"};
-  statement.rows = {{std::string("\\xc0", 1)}};
+  statement.rows = {{std::string("\xc0", 1)}};
   EXPECT_THROW(QueryExecutionService::domain::prepareInsertRows(
                    statement, port.schema),
                std::invalid_argument);
