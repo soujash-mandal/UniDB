@@ -121,6 +121,5 @@ TEST(SqlParserIntegerExpressionTest, ParsesExactDecimalArithmeticLiterals) {
             (SqlNumericValue{true, "125", 2}));
 }
 
-
 } // namespace
 } // namespace unidb::sql
