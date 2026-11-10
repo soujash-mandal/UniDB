@@ -101,7 +101,8 @@ TEST(WherePredicateEvaluatorTest,
       {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {8}}},
       {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {8}}}};
   const std::vector<SqlType> types{SqlType::Text, SqlType::Text};
-  const std::vector<SqlValue> row{std::string(" é猫     "), std::string("é猫  ")};
+  const std::vector<SqlValue> row{std::string(" é猫     "),
+                                  std::string("é猫  ")};
 
   WhereExpression fixed;
   fixed.predicate = WhereEquals{"fixed",
