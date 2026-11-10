@@ -188,6 +188,7 @@ add_executable(tests
     CatalogService/test/CatalogPage/LooksUpAndUpdatesTableMetadataByNameTest.cpp
     CatalogService/test/CatalogPage/RepeatedGrowingUpdatesReuseCompactedPayloadSpaceTest.cpp
     CatalogService/test/CatalogPage/ReadsLegacyTablePayloadWithoutFreeSpaceMapPageIdTest.cpp
+    CatalogService/test/CatalogPage/RoundTripsCharacterTypeMetadataTest.cpp
     CatalogService/test/CatalogPage/CatalogPageTestSupport.h
     TupleService/test/TuplePage/UsesFullPageCapacityAndSkipsDeletedSlotsTest.cpp
     TupleService/test/TuplePage/RejectsCorruptSlotBoundsDuringScanTest.cpp
@@ -242,6 +243,7 @@ add_executable(tests
     QueryExecutionService/test/domain/ScalarExpressionEvaluatorTest.cpp
     QueryExecutionService/test/domain/SqlAggregateCalculatorTest.cpp
     QueryExecutionService/test/SqlTupleCodecTest.cpp
+    QueryExecutionService/test/SqlTupleCodecCharacterTypesTest.cpp
     QueryExecutionService/test/SqlTypeDescriptorTest.cpp
     QueryExecutionService/test/domain/SqlTypeRegistryTest.cpp
     QueryExecutionService/test/domain/SqlIntegerSemanticsTest.cpp

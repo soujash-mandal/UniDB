@@ -18,7 +18,9 @@ enum class DataType {
   BOOLEAN,
   VARCHAR,
   SMALLINT,
-  NUMERIC
+  NUMERIC,
+  CHAR,
+  TEXT
 };
 
 struct Column {
@@ -28,6 +30,7 @@ struct Column {
   bool nullable = false;
   std::optional<std::uint32_t> numericPrecision;
   std::optional<std::int32_t> numericScale;
+  std::optional<std::uint32_t> characterLength;
 };
 
 // Logical catalog metadata, independent of page layout.

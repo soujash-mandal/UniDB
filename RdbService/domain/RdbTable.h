@@ -17,7 +17,9 @@ enum class RdbDataType {
   BOOLEAN,
   VARCHAR,
   SMALLINT,
-  NUMERIC
+  NUMERIC,
+  CHAR,
+  TEXT
 };
 
 struct RdbColumn {
@@ -27,6 +29,7 @@ struct RdbColumn {
   bool nullable = false;
   std::optional<std::uint32_t> numericPrecision;
   std::optional<std::int32_t> numericScale;
+  std::optional<std::uint32_t> characterLength;
 };
 
 struct RdbTableDefinition {

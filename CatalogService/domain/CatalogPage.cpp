@@ -49,30 +49,43 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument(
           "NUMERIC scale must be between -1000 and 1000");
     }
+    const bool characterType =
+        column.type == DataType::CHAR || column.type == DataType::VARCHAR;
+    if (column.type == DataType::CHAR &&
+        (!column.characterLength || *column.characterLength == 0))
+      throw std::invalid_argument("CHAR requires a positive length");
+    if (column.type == DataType::VARCHAR && column.characterLength &&
+        *column.characterLength == 0)
+      throw std::invalid_argument("VARCHAR length must be positive");
+    if (!characterType && column.characterLength)
+      throw std::invalid_argument("Character length requires CHAR or VARCHAR");
     if (column.numericPrecision.has_value() ||
-        column.numericScale.has_value()) {
+        column.numericScale.has_value() || column.characterLength.has_value())
       hasNumericModifiers = true;
-    }
   }
 
   // Keep the legacy payload size unchanged unless a column has modifiers.
   // This avoids reducing catalog page capacity for ordinary tables.
   if (hasNumericModifiers) {
-    constexpr uint32_t extensionMagic = 0x314D554E; // "NUM1" in little endian.
-    constexpr uint8_t extensionVersion = 1;
+    constexpr uint32_t extensionMagic = 0x32444F4D; // "MOD2" in little endian.
+    constexpr uint8_t extensionVersion = 2;
     append(&extensionMagic, sizeof(extensionMagic));
     append(&extensionVersion, sizeof(extensionVersion));
     append(&columnCount, sizeof(columnCount));
     for (const Column &column : table.columns) {
       uint8_t flags =
           static_cast<uint8_t>((column.numericPrecision.has_value() ? 1 : 0) |
-                               (column.numericScale.has_value() ? 2 : 0));
+                               (column.numericScale.has_value() ? 2 : 0) |
+                               (column.characterLength.has_value() ? 4 : 0));
       append(&flags, sizeof(flags));
       if (column.numericPrecision.has_value()) {
         append(&*column.numericPrecision, sizeof(*column.numericPrecision));
       }
       if (column.numericScale.has_value()) {
         append(&*column.numericScale, sizeof(*column.numericScale));
+      }
+      if (column.characterLength.has_value()) {
+        append(&*column.characterLength, sizeof(*column.characterLength));
       }
     }
   }
@@ -126,16 +139,18 @@ Table deserializeTable(std::vector<char> data) {
   } else if (data.size() - offset == sizeof(table.firstFreeSpaceMapPageId)) {
     read(&table.firstFreeSpaceMapPageId, sizeof(table.firstFreeSpaceMapPageId));
   } else {
-    constexpr uint32_t extensionMagic = 0x314D554E;
+    constexpr uint32_t legacyExtensionMagic = 0x314D554E;
+    constexpr uint32_t extensionMagic = 0x32444F4D;
     uint32_t actualMagic = 0;
     uint8_t version = 0;
     uint32_t modifierCount = 0;
     read(&actualMagic, sizeof(actualMagic));
-    if (actualMagic != extensionMagic) {
+    if (actualMagic != extensionMagic && actualMagic != legacyExtensionMagic) {
       throw std::runtime_error("Unknown catalog table metadata extension");
     }
     read(&version, sizeof(version));
-    if (version != 1) {
+    if ((actualMagic == legacyExtensionMagic && version != 1) ||
+        (actualMagic == extensionMagic && version != 2)) {
       throw std::runtime_error("Unsupported catalog table metadata version");
     }
     read(&modifierCount, sizeof(modifierCount));
@@ -145,7 +160,8 @@ Table deserializeTable(std::vector<char> data) {
     for (auto &column : table.columns) {
       uint8_t flags = 0;
       read(&flags, sizeof(flags));
-      if ((flags & ~uint8_t{3}) != 0) {
+      const uint8_t allowedFlags = version == 1 ? 3 : 7;
+      if ((flags & static_cast<uint8_t>(~allowedFlags)) != 0) {
         throw std::runtime_error("Invalid catalog column modifier flags");
       }
       if ((flags & 1) != 0) {
@@ -157,6 +173,11 @@ Table deserializeTable(std::vector<char> data) {
         int32_t scale = 0;
         read(&scale, sizeof(scale));
         column.numericScale = scale;
+      }
+      if ((flags & 4) != 0) {
+        uint32_t length = 0;
+        read(&length, sizeof(length));
+        column.characterLength = length;
       }
       if (column.type != DataType::NUMERIC &&
           (column.numericPrecision.has_value() ||
@@ -175,6 +196,20 @@ Table deserializeTable(std::vector<char> data) {
       if (column.numericScale.has_value() &&
           (*column.numericScale < -1000 || *column.numericScale > 1000)) {
         throw std::runtime_error("Invalid catalog NUMERIC scale");
+      }
+      if (column.type == DataType::CHAR &&
+          (!column.characterLength.has_value() ||
+           *column.characterLength == 0)) {
+        throw std::runtime_error("Invalid catalog CHAR length");
+      }
+      if (column.type == DataType::VARCHAR &&
+          column.characterLength.has_value() && *column.characterLength == 0) {
+        throw std::runtime_error("Invalid catalog VARCHAR length");
+      }
+      if (column.type != DataType::CHAR && column.type != DataType::VARCHAR &&
+          column.characterLength.has_value()) {
+        throw std::runtime_error(
+            "Character length found on non-character column");
       }
     }
     if (offset != data.size() &&
