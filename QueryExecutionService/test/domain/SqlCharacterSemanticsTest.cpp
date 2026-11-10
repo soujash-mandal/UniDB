@@ -71,7 +71,8 @@ TEST(SqlCharacterSemanticsTest, VarcharAllowsExcessTrailingSpaces) {
 }
 
 TEST(SqlCharacterSemanticsTest, UnboundedVarcharAndTextPreserveInput) {
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), "a  "), "a  ");
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), "a  "),
+            "a  ");
   EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("TEXT"), "a  "), "a  ");
 }
 
