@@ -108,7 +108,6 @@ TEST(ExecuteQueryActionTest, DistinctGroupedAggregateKeepsUniqueGroupRows) {
   EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 12);
 }
 
-
 TEST(ExecuteQueryActionTest, GroupByUsesCharBlankPaddedEquality) {
   FakeQesRdbServicePort port;
   port.schema = {
@@ -116,17 +115,22 @@ TEST(ExecuteQueryActionTest, GroupByUsesCharBlankPaddedEquality) {
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {8}}},
       {"salary", unidb::sql::SqlType::Int,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}}};
-  port.rows = {
-      SqlTupleCodec::encode(port.schema, {std::string("eng"), std::int64_t{10}}),
-      SqlTupleCodec::encode(port.schema, {std::string("eng   "), std::int64_t{20}}),
-      SqlTupleCodec::encode(port.schema, {std::string("sales"), std::int64_t{5}})};
+  port.rows = {SqlTupleCodec::encode(port.schema,
+                                     {std::string("eng"), std::int64_t{10}}),
+               SqlTupleCodec::encode(port.schema,
+                                     {std::string("eng   "), std::int64_t{20}}),
+               SqlTupleCodec::encode(port.schema,
+                                     {std::string("sales"), std::int64_t{5}})};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
   const auto outcome = action.execute(
       "SELECT department, SUM(salary) FROM employees GROUP BY department;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(outcome));
-  const auto &result = std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
   EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 30);
   EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 5);
@@ -139,15 +143,19 @@ TEST(ExecuteQueryActionTest, GroupByKeepsVarcharTrailingSpacesSignificant) {
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}},
       {"salary", unidb::sql::SqlType::Int,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}}};
-  port.rows = {
-      SqlTupleCodec::encode(port.schema, {std::string("eng"), std::int64_t{10}}),
-      SqlTupleCodec::encode(port.schema, {std::string("eng "), std::int64_t{20}})};
+  port.rows = {SqlTupleCodec::encode(port.schema,
+                                     {std::string("eng"), std::int64_t{10}}),
+               SqlTupleCodec::encode(port.schema,
+                                     {std::string("eng "), std::int64_t{20}})};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
   const auto outcome = action.execute(
       "SELECT department, SUM(salary) FROM employees GROUP BY department;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(outcome));
-  const auto &result = std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
 }
