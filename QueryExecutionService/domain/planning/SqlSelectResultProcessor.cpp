@@ -30,11 +30,23 @@ int compareValuesForOrder(
 }
 
 struct SqlValueVectorLess {
+  std::vector<std::optional<SqlTypeDescriptor>> declaredTypes;
+
   bool operator()(const std::vector<SqlValue> &left,
                   const std::vector<SqlValue> &right) const {
     const auto commonSize = std::min(left.size(), right.size());
     for (std::size_t index = 0; index < commonSize; ++index) {
-      const int comparison = compareSqlValues(left[index], right[index]);
+      int comparison = 0;
+      if (index < declaredTypes.size() && declaredTypes[index].has_value() &&
+          (declaredTypes[index]->id == SqlTypeId::Char ||
+           declaredTypes[index]->id == SqlTypeId::Varchar ||
+           declaredTypes[index]->id == SqlTypeId::Text)) {
+        comparison = compareSqlCharacterValues(
+            *declaredTypes[index], std::get<std::string>(left[index]),
+            std::get<std::string>(right[index]));
+      } else {
+        comparison = compareSqlValues(left[index], right[index]);
+      }
       if (comparison != 0) {
         return comparison < 0;
       }
@@ -110,7 +122,12 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     using GroupRows = std::map<std::vector<SqlValue>,
                                std::vector<const std::vector<SqlValue> *>,
                                SqlValueVectorLess>;
-    GroupRows groups;
+    std::vector<std::optional<SqlTypeDescriptor>> groupTypes;
+    groupTypes.reserve(plan.groupIndexes.size());
+    for (const auto index : plan.groupIndexes) {
+      groupTypes.push_back(plan.schema[index].declaredType);
+    }
+    GroupRows groups{SqlValueVectorLess{groupTypes}};
     for (const auto &row : matchedRows) {
       std::vector<SqlValue> key;
       key.reserve(plan.groupIndexes.size());
@@ -141,7 +158,13 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     result.columns.push_back(
         {aggregateName, aggregateType, aggregateDescriptor});
 
-    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenGroupedRows;
+    std::vector<std::optional<SqlTypeDescriptor>> groupedOutputTypes;
+    groupedOutputTypes.reserve(result.columns.size());
+    for (const auto &column : result.columns) {
+      groupedOutputTypes.push_back(column.declaredType);
+    }
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenGroupedRows{
+        SqlValueVectorLess{groupedOutputTypes}};
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
       if (aggregate.function != AggregateFunction::Count) {
@@ -308,7 +331,13 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   }
 
   if (select.distinct) {
-    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
+    std::vector<std::optional<SqlTypeDescriptor>> projectionTypes;
+    projectionTypes.reserve(plan.selectedColumns.size());
+    for (const auto &column : plan.selectedColumns) {
+      projectionTypes.push_back(column.declaredType);
+    }
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections{
+        SqlValueVectorLess{projectionTypes}};
     std::vector<std::vector<SqlValue>> distinctRows;
     std::vector<std::vector<SqlValue>> distinctProjections;
     distinctRows.reserve(matchedRows.size());
