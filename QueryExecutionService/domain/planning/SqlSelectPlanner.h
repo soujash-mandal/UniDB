@@ -15,10 +15,12 @@ struct SelectPlan {
     std::size_t index;
     bool ascending;
     bool projected;
+    std::optional<unidb::sql::SqlTypeDescriptor> declaredType;
   };
   struct GroupOrderIndex {
     std::size_t index;
     bool ascending;
+    std::optional<unidb::sql::SqlTypeDescriptor> declaredType;
   };
 
   std::vector<unidb::sql::ColumnDefinition> schema;
