@@ -255,6 +255,8 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       }
       appendNumeric(out, std::get<unidb::sql::SqlNumericValue>(values[index]));
       break;
+    case SqlTypeId::Char:
+    case SqlTypeId::Varchar:
     case SqlTypeId::Text:
       if (!std::holds_alternative<std::string>(values[index])) {
         throw std::invalid_argument("Expected TEXT value");
@@ -321,6 +323,8 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
     case SqlTypeId::Numeric:
       values.emplace_back(readNumeric(bytes, offset));
       break;
+    case SqlTypeId::Char:
+    case SqlTypeId::Varchar:
     case SqlTypeId::Text:
       values.emplace_back(readText(bytes, offset));
       break;
