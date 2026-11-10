@@ -79,13 +79,12 @@ TEST(ExecuteQueryActionTest, RejectsInvalidGroupProjectionBeforeReadingRows) {
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
-
 TEST(ExecuteQueryActionTest, DistinctGroupedAggregateKeepsUniqueGroupRows) {
   FakeQesRdbServicePort port;
   port.schema = {{"department", unidb::sql::SqlType::Text},
                  {"salary", unidb::sql::SqlType::Int}};
-  const auto types = std::vector<unidb::sql::SqlType>{
-      unidb::sql::SqlType::Text, unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{10}}),
       SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{20}}),
