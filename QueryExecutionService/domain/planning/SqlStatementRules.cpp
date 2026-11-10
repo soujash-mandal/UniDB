@@ -101,16 +101,34 @@ applyNumericModifier(const SqlNumericValue &value,
 }
 
 struct SqlValueRowLess {
+  std::vector<std::optional<SqlTypeDescriptor>> declaredTypes;
+
   bool operator()(const std::vector<SqlValue> &left,
                   const std::vector<SqlValue> &right) const {
-    return std::lexicographical_compare(
-        left.begin(), left.end(), right.begin(), right.end(),
-        [](const SqlValue &leftValue, const SqlValue &rightValue) {
-          if (leftValue.index() != rightValue.index()) {
-            return leftValue.index() < rightValue.index();
-          }
-          return compareSqlValues(leftValue, rightValue) < 0;
-        });
+    const auto commonSize = std::min(left.size(), right.size());
+    for (std::size_t index = 0; index < commonSize; ++index) {
+      const auto &leftValue = left[index];
+      const auto &rightValue = right[index];
+      if (leftValue.index() != rightValue.index()) {
+        return leftValue.index() < rightValue.index();
+      }
+
+      int comparison = 0;
+      if (index < declaredTypes.size() && declaredTypes[index].has_value() &&
+          (declaredTypes[index]->id == SqlTypeId::Char ||
+           declaredTypes[index]->id == SqlTypeId::Varchar ||
+           declaredTypes[index]->id == SqlTypeId::Text)) {
+        comparison = compareSqlCharacterValues(
+            *declaredTypes[index], std::get<std::string>(leftValue),
+            std::get<std::string>(rightValue));
+      } else {
+        comparison = compareSqlValues(leftValue, rightValue);
+      }
+      if (comparison != 0) {
+        return comparison < 0;
+      }
+    }
+    return left.size() < right.size();
   }
 };
 } // namespace
@@ -326,7 +344,13 @@ combineUnionResults(const std::vector<QueryExecutionResult> &branches,
   combined.kind = QueryExecutionResultKind::Rows;
   combined.message = "Rows selected";
   combined.columns = branches.front().columns;
-  std::set<std::vector<SqlValue>, SqlValueRowLess> seenRows;
+  std::vector<std::optional<SqlTypeDescriptor>> declaredTypes;
+  declaredTypes.reserve(combined.columns.size());
+  for (const auto &column : combined.columns) {
+    declaredTypes.push_back(column.declaredType);
+  }
+  std::set<std::vector<SqlValue>, SqlValueRowLess> seenRows{
+      SqlValueRowLess{declaredTypes}};
   for (const auto &branch : branches) {
     if (branch.kind != QueryExecutionResultKind::Rows) {
       throw std::invalid_argument(removeDuplicates
