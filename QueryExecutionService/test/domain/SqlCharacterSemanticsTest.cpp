@@ -18,11 +18,11 @@ TEST(SqlCharacterSemanticsTest, CountsUtf8CharactersRatherThanBytes) {
 }
 
 TEST(SqlCharacterSemanticsTest, RejectsMalformedUtf8) {
-  EXPECT_THROW(countSqlCharacters(std::string("\\xc0\\xaf", 2)),
+  EXPECT_THROW(countSqlCharacters(std::string("\xc0\xaf", 2)),
                std::invalid_argument);
-  EXPECT_THROW(countSqlCharacters(std::string("\\xe2\\x82", 2)),
+  EXPECT_THROW(countSqlCharacters(std::string("\xe2\x82", 2)),
                std::invalid_argument);
-  EXPECT_THROW(countSqlCharacters(std::string("\\xed\\xa0\\x80", 3)),
+  EXPECT_THROW(countSqlCharacters(std::string("\xed\xa0\x80", 3)),
                std::invalid_argument);
 }
 
