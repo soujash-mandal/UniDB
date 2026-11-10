@@ -241,30 +241,6 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     return result;
   }
 
-  const bool hasIntegerExpression = std::any_of(
-      select.integerExpressions.begin(), select.integerExpressions.end(),
-      [](const auto &expression) { return expression.has_value(); });
-  if (hasIntegerExpression && select.distinct) {
-    throw std::invalid_argument(
-        "SELECT DISTINCT cannot be combined with integer expressions yet");
-  }
-
-  if (select.distinct) {
-    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
-    matchedRows.erase(
-        std::remove_if(
-            matchedRows.begin(), matchedRows.end(),
-            [&](const auto &row) {
-              std::vector<SqlValue> projection;
-              projection.reserve(plan.selectedIndexes.size());
-              for (const auto index : plan.selectedIndexes) {
-                projection.push_back(row[index]);
-              }
-              return !seenProjections.insert(std::move(projection)).second;
-            }),
-        matchedRows.end());
-  }
-
   const auto projectRow = [&](const std::vector<SqlValue> &decoded) {
     std::vector<SqlValue> projected;
     projected.reserve(plan.selectedIndexes.size());
@@ -303,12 +279,29 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   const bool ordersByProjection =
       std::any_of(plan.orderIndexes.begin(), plan.orderIndexes.end(),
                   [](const auto &order) { return order.projected; });
+  const bool hasMaterializedProjections = select.distinct || ordersByProjection;
   std::vector<std::vector<SqlValue>> projectedRows;
-  if (ordersByProjection) {
+  if (hasMaterializedProjections) {
     projectedRows.reserve(matchedRows.size());
     for (const auto &row : matchedRows) {
       projectedRows.push_back(projectRow(row));
     }
+  }
+
+  if (select.distinct) {
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
+    std::vector<std::vector<SqlValue>> distinctRows;
+    std::vector<std::vector<SqlValue>> distinctProjections;
+    distinctRows.reserve(matchedRows.size());
+    distinctProjections.reserve(projectedRows.size());
+    for (std::size_t index = 0; index < matchedRows.size(); ++index) {
+      if (seenProjections.insert(projectedRows[index]).second) {
+        distinctRows.push_back(std::move(matchedRows[index]));
+        distinctProjections.push_back(std::move(projectedRows[index]));
+      }
+    }
+    matchedRows = std::move(distinctRows);
+    projectedRows = std::move(distinctProjections);
   }
 
   if (!plan.orderIndexes.empty()) {
@@ -337,17 +330,17 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     std::vector<std::vector<SqlValue>> sortedRows;
     std::vector<std::vector<SqlValue>> sortedProjections;
     sortedRows.reserve(matchedRows.size());
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       sortedProjections.reserve(projectedRows.size());
     }
     for (const auto index : rowOrder) {
       sortedRows.push_back(std::move(matchedRows[index]));
-      if (ordersByProjection) {
+      if (hasMaterializedProjections) {
         sortedProjections.push_back(std::move(projectedRows[index]));
       }
     }
     matchedRows = std::move(sortedRows);
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       projectedRows = std::move(sortedProjections);
     }
   }
@@ -357,7 +350,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
                                  : static_cast<std::size_t>(select.offset);
   if (offset > 0) {
     matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       projectedRows.erase(projectedRows.begin(),
                           projectedRows.begin() + offset);
     }
@@ -365,11 +358,11 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   if (select.limit.has_value() && *select.limit < matchedRows.size()) {
     const auto limit = static_cast<std::size_t>(*select.limit);
     matchedRows.resize(limit);
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       projectedRows.resize(limit);
     }
   }
-  if (!ordersByProjection) {
+  if (!hasMaterializedProjections) {
     projectedRows.reserve(matchedRows.size());
     for (const auto &row : matchedRows) {
       projectedRows.push_back(projectRow(row));
