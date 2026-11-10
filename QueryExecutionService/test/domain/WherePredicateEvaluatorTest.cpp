@@ -34,6 +34,95 @@ TEST(WherePredicateEvaluatorTest, ComparesIntegerAndTextValues) {
       0);
 }
 
+TEST(WherePredicateEvaluatorTest,
+     AppliesBlankPaddedComparisonOnlyToCharColumns) {
+  const std::vector<ColumnDefinition> schema{
+      {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {8}}},
+      {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {8}}},
+      {"plain", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
+  const std::vector<SqlType> types{SqlType::Text, SqlType::Text, SqlType::Text};
+  const std::vector<SqlValue> row{std::string("hello   "),
+                                  std::string("hello   "),
+                                  std::string("hello   ")};
+
+  const auto equals = [&](const std::string &column, const std::string &value) {
+    WhereExpression expression;
+    expression.predicate =
+        WhereEquals{column, value, std::nullopt, {}, ComparisonOperator::Equal};
+    return matchesWhereExpression(
+        row, compileWhereExpression(expression, schema, types));
+  };
+
+  EXPECT_TRUE(equals("fixed", "hello"));
+  EXPECT_FALSE(equals("bounded", "hello"));
+  EXPECT_FALSE(equals("plain", "hello"));
+  EXPECT_TRUE(equals("fixed", "hello   "));
+  EXPECT_TRUE(equals("bounded", "hello   "));
+}
+
+TEST(WherePredicateEvaluatorTest,
+     AppliesCharComparisonToOrderingMembershipAndRanges) {
+  const std::vector<ColumnDefinition> schema{
+      {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {5}}}};
+  const std::vector<SqlType> types{SqlType::Text};
+  const std::vector<SqlValue> row{std::string("cat  ")};
+
+  WhereExpression greater;
+  greater.predicate = WhereEquals{"fixed",
+                                  std::string("cat"),
+                                  std::nullopt,
+                                  {},
+                                  ComparisonOperator::GreaterThan};
+  EXPECT_FALSE(matchesWhereExpression(
+      row, compileWhereExpression(greater, schema, types)));
+
+  WhereExpression membership;
+  membership.predicate = WhereEquals{"fixed",
+                                     std::string("unused"),
+                                     std::nullopt,
+                                     {std::string("cat")},
+                                     ComparisonOperator::In};
+  EXPECT_TRUE(matchesWhereExpression(
+      row, compileWhereExpression(membership, schema, types)));
+
+  WhereExpression range;
+  range.predicate = WhereEquals{"fixed",
+                                std::string("cat"),
+                                std::string("cat"),
+                                {},
+                                ComparisonOperator::Between};
+  EXPECT_TRUE(matchesWhereExpression(
+      row, compileWhereExpression(range, schema, types)));
+}
+
+TEST(WherePredicateEvaluatorTest,
+     CharacterComparisonPreservesLeadingSpacesAndUtf8) {
+  const std::vector<ColumnDefinition> schema{
+      {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {8}}},
+      {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {8}}}};
+  const std::vector<SqlType> types{SqlType::Text, SqlType::Text};
+  const std::vector<SqlValue> row{std::string(" é猫     "),
+                                  std::string("é猫  ")};
+
+  WhereExpression fixed;
+  fixed.predicate = WhereEquals{"fixed",
+                                std::string(" é猫"),
+                                std::nullopt,
+                                {},
+                                ComparisonOperator::Equal};
+  EXPECT_TRUE(matchesWhereExpression(
+      row, compileWhereExpression(fixed, schema, types)));
+
+  WhereExpression varchar;
+  varchar.predicate = WhereEquals{"bounded",
+                                  std::string("é猫"),
+                                  std::nullopt,
+                                  {},
+                                  ComparisonOperator::Equal};
+  EXPECT_FALSE(matchesWhereExpression(
+      row, compileWhereExpression(varchar, schema, types)));
+}
+
 TEST(WherePredicateEvaluatorTest, RejectsValuesWithDifferentTypes) {
   EXPECT_THROW(
       compareSqlValues(SqlValue{std::int64_t{1}}, SqlValue{std::string("1")}),
