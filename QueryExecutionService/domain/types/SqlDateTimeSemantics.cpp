@@ -11,16 +11,15 @@ bool isLeapYear(std::int32_t year) {
   return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
 }
 
-constexpr std::array<std::uint8_t, 12> daysInMonth{
-    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+constexpr std::array<std::uint8_t, 12> daysInMonth{31, 28, 31, 30, 31, 30,
+                                                   31, 31, 30, 31, 30, 31};
 
 constexpr std::int64_t microsecondsPerSecond = 1'000'000;
 constexpr std::int64_t microsecondsPerDay = 86'400 * microsecondsPerSecond;
 
 } // namespace
 
-SqlDate makeSqlDate(std::int32_t year, std::uint8_t month,
-                    std::uint8_t day) {
+SqlDate makeSqlDate(std::int32_t year, std::uint8_t month, std::uint8_t day) {
   if (year == 0 || month < 1 || month > 12) {
     throw std::invalid_argument("Invalid SQL calendar date");
   }
@@ -36,14 +35,15 @@ SqlDate makeSqlDate(std::int32_t year, std::uint8_t month,
   // Howard Hinnant's proleptic-Gregorian civil-date conversion.
   std::int64_t adjustedYear = year;
   adjustedYear -= month <= 2;
-  const auto era = (adjustedYear >= 0 ? adjustedYear : adjustedYear - 399) / 400;
+  const auto era =
+      (adjustedYear >= 0 ? adjustedYear : adjustedYear - 399) / 400;
   const auto yearOfEra = adjustedYear - era * 400;
-  const auto adjustedMonth = static_cast<std::int32_t>(month) +
-                             (month > 2 ? -3 : 9);
+  const auto adjustedMonth =
+      static_cast<std::int32_t>(month) + (month > 2 ? -3 : 9);
   const auto dayOfYear =
       (153 * adjustedMonth + 2) / 5 + static_cast<std::int32_t>(day) - 1;
-  const auto dayOfEra = yearOfEra * 365 + yearOfEra / 4 -
-                        yearOfEra / 100 + dayOfYear;
+  const auto dayOfEra =
+      yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
   const auto daysSinceUnixEpoch = era * 146097 + dayOfEra - 719468;
   constexpr std::int64_t postgresEpochFromUnixEpoch = 10957;
   const auto result = daysSinceUnixEpoch + postgresEpochFromUnixEpoch;
@@ -80,7 +80,8 @@ std::int64_t roundSqlFractionalSeconds(std::int64_t microseconds,
     throw std::out_of_range("Fractional seconds must be between 0 and 999999");
   }
   if (precision > 6) {
-    throw std::invalid_argument("SQL temporal precision must be between 0 and 6");
+    throw std::invalid_argument(
+        "SQL temporal precision must be between 0 and 6");
   }
 
   std::int64_t scale = 1;
