@@ -72,10 +72,10 @@ TEST(SqlDateTimeValueTest, IntervalKeepsCalendarAndTimeComponentsDistinct) {
 }
 
 TEST(SqlDateTimeValueTest, ValueTypesSupportStructuralEquality) {
-  EXPECT_EQ(SqlTimeWithTimeZone{SqlTime{100}, 3600},
-            SqlTimeWithTimeZone{SqlTime{100}, 3600});
-  EXPECT_EQ(SqlTimestamp{SqlDate{2}, SqlTime{3}},
-            SqlTimestamp{SqlDate{2}, SqlTime{3}});
+  EXPECT_EQ((SqlTimeWithTimeZone{SqlTime{100}, 3600}),
+            (SqlTimeWithTimeZone{SqlTime{100}, 3600}));
+  EXPECT_EQ((SqlTimestamp{SqlDate{2}, SqlTime{3}}),
+            (SqlTimestamp{SqlDate{2}, SqlTime{3}}));
   EXPECT_EQ(SqlTimestampWithTimeZone{123}, SqlTimestampWithTimeZone{123});
-  EXPECT_EQ(SqlInterval{1, 2, 3}, SqlInterval{1, 2, 3});
+  EXPECT_EQ((SqlInterval{1, 2, 3}), (SqlInterval{1, 2, 3}));
 }
