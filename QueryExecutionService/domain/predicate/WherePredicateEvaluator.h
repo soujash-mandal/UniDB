@@ -3,6 +3,7 @@
 #include "../contract/sqlStatement.h"
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace QueryExecutionService::domain {
@@ -11,6 +12,7 @@ struct CompiledWhereExpression {
   unidb::sql::WhereExpression::Kind kind{
       unidb::sql::WhereExpression::Kind::Predicate};
   std::size_t columnIndex{0};
+  std::optional<unidb::sql::SqlTypeDescriptor> declaredType;
   unidb::sql::WhereEquals predicate;
   std::vector<CompiledWhereExpression> children;
 };
