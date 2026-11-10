@@ -279,8 +279,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   const bool ordersByProjection =
       std::any_of(plan.orderIndexes.begin(), plan.orderIndexes.end(),
                   [](const auto &order) { return order.projected; });
-  const bool hasMaterializedProjections =
-      select.distinct || ordersByProjection;
+  const bool hasMaterializedProjections = select.distinct || ordersByProjection;
   std::vector<std::vector<SqlValue>> projectedRows;
   if (hasMaterializedProjections) {
     projectedRows.reserve(matchedRows.size());
