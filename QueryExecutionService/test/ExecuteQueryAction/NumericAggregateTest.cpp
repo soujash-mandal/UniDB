@@ -153,3 +153,86 @@ TEST(ExecuteQueryActionNumericAggregateTest,
   EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(result.rows[0][1])),
             "0.6");
 }
+
+TEST(ExecuteQueryActionNumericAggregateTest,
+     CalculatesExactNumericMinimumAndMaximum) {
+  auto port = makeNumericAggregatePort();
+  unidb::sql::SqlParserImpl parser;
+  insertNumericRows(port, parser, "(0.1), (0.20), (1.25), (1.0)");
+
+  auto action = makeQesAction(port, parser);
+  const auto minimum = action.execute("SELECT MIN(amount) FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          minimum));
+  const auto &minimumRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(minimum).rows;
+  ASSERT_EQ(minimumRows.size(), 1U);
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(minimumRows[0][0])),
+            "0.1");
+
+  const auto maximum = action.execute("SELECT MAX(amount) FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          maximum));
+  const auto &maximumRows =
+      std::get<QueryExecutionService::QueryExecutionResult>(maximum).rows;
+  ASSERT_EQ(maximumRows.size(), 1U);
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(maximumRows[0][0])),
+            "1.25");
+}
+
+TEST(ExecuteQueryActionNumericAggregateTest,
+     FiltersGroupedNumericMinimumAndMaximumWithExactHavingValues) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"department", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}},
+      {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (department, amount) VALUES "
+                     "('engineering', 0.1), ('engineering', 0.2), "
+                     "('sales', 0.5), ('sales', 0.1), "
+                     "('operations', 1.0), ('operations', 1.25), "
+                     "('support', 0.2)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto minimum =
+      action.execute("SELECT department, MIN(amount) AS lowest FROM decimals "
+                     "GROUP BY department HAVING MIN(amount) = 0.1 "
+                     "ORDER BY department ASC");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          minimum));
+  const auto &minimumResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(minimum);
+  ASSERT_EQ(minimumResult.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(minimumResult.rows[0][0]), "engineering");
+  EXPECT_EQ(formatSqlNumericValue(
+                std::get<SqlNumericValue>(minimumResult.rows[0][1])),
+            "0.1");
+  EXPECT_EQ(std::get<std::string>(minimumResult.rows[1][0]), "sales");
+  EXPECT_EQ(formatSqlNumericValue(
+                std::get<SqlNumericValue>(minimumResult.rows[1][1])),
+            "0.1");
+
+  const auto maximum =
+      action.execute("SELECT department, MAX(amount) AS highest FROM decimals "
+                     "GROUP BY department HAVING MAX(amount) >= 1 "
+                     "ORDER BY department ASC");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          maximum));
+  const auto &maximumResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(maximum);
+  ASSERT_EQ(maximumResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(maximumResult.rows[0][0]), "operations");
+  EXPECT_EQ(formatSqlNumericValue(
+                std::get<SqlNumericValue>(maximumResult.rows[0][1])),
+            "1.25");
+}
