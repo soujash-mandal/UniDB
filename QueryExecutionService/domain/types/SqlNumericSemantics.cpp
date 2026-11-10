@@ -308,17 +308,17 @@ std::string formatSqlNumericValue(const unidb::sql::SqlNumericValue &value) {
   return formatted;
 }
 
-std::int32_t selectSqlNumericDivisionScale(
-    const unidb::sql::SqlNumericValue &left,
-    const unidb::sql::SqlNumericValue &right) {
+std::int32_t
+selectSqlNumericDivisionScale(const unidb::sql::SqlNumericValue &left,
+                              const unidb::sql::SqlNumericValue &right) {
   validateCanonicalValue(left);
   validateCanonicalValue(right);
   if (right.coefficient == "0") {
     throw std::invalid_argument("Division by zero in NUMERIC expression");
   }
   if (left.coefficient == "0") {
-    return std::clamp<std::int32_t>(
-        std::max({left.scale, right.scale, 16}), 0, 1000);
+    return std::clamp<std::int32_t>(std::max({left.scale, right.scale, 16}), 0,
+                                    1000);
   }
 
   const auto leftExponent =
@@ -331,12 +331,10 @@ std::int32_t selectSqlNumericDivisionScale(
       std::max(left.coefficient.size(), right.coefficient.size());
   int mantissaComparison = 0;
   for (std::size_t index = 0; index < commonLength; ++index) {
-    const char leftDigit = index < left.coefficient.size()
-                               ? left.coefficient[index]
-                               : '0';
-    const char rightDigit = index < right.coefficient.size()
-                                ? right.coefficient[index]
-                                : '0';
+    const char leftDigit =
+        index < left.coefficient.size() ? left.coefficient[index] : '0';
+    const char rightDigit =
+        index < right.coefficient.size() ? right.coefficient[index] : '0';
     if (leftDigit != rightDigit) {
       mantissaComparison = leftDigit < rightDigit ? -1 : 1;
       break;

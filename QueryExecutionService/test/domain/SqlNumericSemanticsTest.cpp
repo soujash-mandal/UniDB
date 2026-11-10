@@ -14,8 +14,8 @@ using QueryExecutionService::domain::formatSqlNumericValue;
 using QueryExecutionService::domain::multiplySqlNumericValues;
 using QueryExecutionService::domain::normalizeSqlNumericValue;
 using QueryExecutionService::domain::parseSqlNumericLiteral;
-using QueryExecutionService::domain::subtractSqlNumericValues;
 using QueryExecutionService::domain::selectSqlNumericDivisionScale;
+using QueryExecutionService::domain::subtractSqlNumericValues;
 
 TEST(SqlNumericSemanticsTest, NormalizesLeadingAndTrailingZeroesExactly) {
   EXPECT_EQ(normalizeSqlNumericValue(false, "0001234500", 4),

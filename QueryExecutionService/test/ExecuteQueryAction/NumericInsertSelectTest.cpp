@@ -392,8 +392,7 @@ TEST(ExecuteQueryActionNumericTest,
           inserted));
   port.rows = port.insertedRows;
 
-  const auto selected =
-      action.execute("SELECT amount / 3 FROM decimals");
+  const auto selected = action.execute("SELECT amount / 3 FROM decimals");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           selected));
