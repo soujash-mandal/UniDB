@@ -190,6 +190,18 @@ Table deserializeTable(std::vector<char> data) {
           (*column.numericScale < -1000 || *column.numericScale > 1000)) {
         throw std::runtime_error("Invalid catalog NUMERIC scale");
       }
+      if (column.type == DataType::CHAR &&
+          (!column.characterLength.has_value() || *column.characterLength == 0)) {
+        throw std::runtime_error("Invalid catalog CHAR length");
+      }
+      if (column.type == DataType::VARCHAR && column.characterLength.has_value() &&
+          *column.characterLength == 0) {
+        throw std::runtime_error("Invalid catalog VARCHAR length");
+      }
+      if (column.type != DataType::CHAR && column.type != DataType::VARCHAR &&
+          column.characterLength.has_value()) {
+        throw std::runtime_error("Character length found on non-character column");
+      }
     }
     if (offset != data.size() &&
         data.size() - offset == sizeof(table.firstFreeSpaceMapPageId)) {
