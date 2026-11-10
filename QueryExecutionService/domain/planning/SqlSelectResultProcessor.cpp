@@ -279,8 +279,10 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   const bool ordersByProjection =
       std::any_of(plan.orderIndexes.begin(), plan.orderIndexes.end(),
                   [](const auto &order) { return order.projected; });
+  const bool hasMaterializedProjections =
+      select.distinct || ordersByProjection;
   std::vector<std::vector<SqlValue>> projectedRows;
-  if (select.distinct || ordersByProjection) {
+  if (hasMaterializedProjections) {
     projectedRows.reserve(matchedRows.size());
     for (const auto &row : matchedRows) {
       projectedRows.push_back(projectRow(row));
@@ -329,17 +331,17 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     std::vector<std::vector<SqlValue>> sortedRows;
     std::vector<std::vector<SqlValue>> sortedProjections;
     sortedRows.reserve(matchedRows.size());
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       sortedProjections.reserve(projectedRows.size());
     }
     for (const auto index : rowOrder) {
       sortedRows.push_back(std::move(matchedRows[index]));
-      if (ordersByProjection) {
+      if (hasMaterializedProjections) {
         sortedProjections.push_back(std::move(projectedRows[index]));
       }
     }
     matchedRows = std::move(sortedRows);
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       projectedRows = std::move(sortedProjections);
     }
   }
@@ -349,7 +351,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
                                  : static_cast<std::size_t>(select.offset);
   if (offset > 0) {
     matchedRows.erase(matchedRows.begin(), matchedRows.begin() + offset);
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       projectedRows.erase(projectedRows.begin(),
                           projectedRows.begin() + offset);
     }
@@ -357,11 +359,11 @@ processSelectRows(const unidb::sql::SelectStatement &select,
   if (select.limit.has_value() && *select.limit < matchedRows.size()) {
     const auto limit = static_cast<std::size_t>(*select.limit);
     matchedRows.resize(limit);
-    if (ordersByProjection) {
+    if (hasMaterializedProjections) {
       projectedRows.resize(limit);
     }
   }
-  if (!ordersByProjection) {
+  if (!hasMaterializedProjections) {
     projectedRows.reserve(matchedRows.size());
     for (const auto &row : matchedRows) {
       projectedRows.push_back(projectRow(row));
