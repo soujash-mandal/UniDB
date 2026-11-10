@@ -1,6 +1,7 @@
 #include "WherePredicateEvaluator.h"
 
 #include "../types/SqlNumericSemantics.h"
+#include "../types/SqlCharacterSemantics.h"
 
 #include <algorithm>
 #include <charconv>
@@ -89,16 +90,11 @@ int compareValuesForColumn(
     const SqlValue &left, const SqlValue &right,
     const std::optional<unidb::sql::SqlTypeDescriptor> &declaredType) {
   if (declaredType.has_value() &&
-      declaredType->id == unidb::sql::SqlTypeId::Char) {
-    auto leftText = std::string_view(std::get<std::string>(left));
-    auto rightText = std::string_view(std::get<std::string>(right));
-    while (!leftText.empty() && leftText.back() == ' ') {
-      leftText.remove_suffix(1);
-    }
-    while (!rightText.empty() && rightText.back() == ' ') {
-      rightText.remove_suffix(1);
-    }
-    return (leftText > rightText) - (leftText < rightText);
+      (declaredType->id == unidb::sql::SqlTypeId::Char ||
+       declaredType->id == unidb::sql::SqlTypeId::Varchar ||
+       declaredType->id == unidb::sql::SqlTypeId::Text)) {
+    return compareSqlCharacterValues(*declaredType, std::get<std::string>(left),
+                                     std::get<std::string>(right));
   }
   return compareSqlValues(left, right);
 }
