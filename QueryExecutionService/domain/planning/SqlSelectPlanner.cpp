@@ -247,10 +247,6 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
       throw std::invalid_argument(
           "GROUP BY requires one aggregate expression in SELECT");
     }
-    if (select.distinct) {
-      throw std::invalid_argument(
-          "Grouped aggregate SELECT cannot be combined with DISTINCT");
-    }
     if (select.columnNames != select.groupBy) {
       throw std::invalid_argument(
           "SELECT columns must exactly match GROUP BY columns");
@@ -271,9 +267,10 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
   }
   if (select.aggregate.has_value()) {
     const auto &aggregate = *select.aggregate;
-    if (select.distinct || (select.groupBy.empty() &&
-                            (!select.orderBy.empty() ||
-                             select.limit.has_value() || select.offset != 0))) {
+    if ((select.groupBy.empty() && select.distinct) ||
+        (select.groupBy.empty() &&
+         (!select.orderBy.empty() || select.limit.has_value() ||
+          select.offset != 0))) {
       throw std::invalid_argument(
           "Aggregate SELECT cannot be combined with DISTINCT, ORDER BY, "
           "LIMIT, or OFFSET");

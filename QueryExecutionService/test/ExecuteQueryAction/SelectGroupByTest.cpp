@@ -78,3 +78,32 @@ TEST(ExecuteQueryActionTest, RejectsInvalidGroupProjectionBeforeReadingRows) {
           outcome));
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+TEST(ExecuteQueryActionTest, DistinctGroupedAggregateKeepsUniqueGroupRows) {
+  FakeQesRdbServicePort port;
+  port.schema = {{"department", unidb::sql::SqlType::Text},
+                 {"salary", unidb::sql::SqlType::Int}};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
+  port.rows = {
+      SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{10}}),
+      SqlTupleCodec::encode(types, {std::string("eng"), std::int64_t{20}}),
+      SqlTupleCodec::encode(types, {std::string("sales"), std::int64_t{5}}),
+      SqlTupleCodec::encode(types, {std::string("sales"), std::int64_t{7}})};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT DISTINCT department, SUM(salary) AS payroll FROM employees "
+      "GROUP BY department ORDER BY payroll DESC;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "eng");
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 30);
+  EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "sales");
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 12);
+}

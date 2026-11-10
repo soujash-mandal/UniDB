@@ -128,6 +128,7 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     result.columns.push_back(
         {aggregateName, aggregateType, aggregateDescriptor});
 
+    std::set<std::vector<SqlValue>, SqlValueVectorLess> seenGroupedRows;
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
       if (aggregate.function != AggregateFunction::Count) {
@@ -176,7 +177,9 @@ processSelectRows(const unidb::sql::SelectStatement &select,
 
       auto outputRow = key;
       outputRow.push_back(std::move(aggregateValue));
-      result.rows.push_back(std::move(outputRow));
+      if (!select.distinct || seenGroupedRows.insert(outputRow).second) {
+        result.rows.push_back(std::move(outputRow));
+      }
     }
 
     if (!plan.groupedOrderIndexes.empty()) {

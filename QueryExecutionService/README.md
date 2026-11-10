@@ -35,7 +35,7 @@ The implementation keeps SQL type descriptors and runtime values distinct from s
 - `ORDER BY` supports source columns and SELECT output aliases with `ASC` / `DESC`. Output aliases take precedence over source-column names when both match.
 - Filtering, grouping, aggregate evaluation, and sorting operate in memory on rows returned by the RDB Action.
 - Grouped aggregate SELECT supports `ORDER BY` on projected grouping columns and the aggregate output alias, including multiple ordering terms. `HAVING` is evaluated before ordering; `LIMIT` and `OFFSET` are applied afterward.
-- `DISTINCT` over grouped aggregate queries remains unsupported.
+- `SELECT DISTINCT` is supported for grouped aggregate output rows; duplicate group/aggregate result rows are removed after `HAVING` and before `ORDER BY`, `LIMIT`, and `OFFSET`.
 - Multi-row `INSERT` validates and encodes rows before writes begin, then reuses the existing single-row RDB Action sequentially. Inserts are not transactional: if a later storage operation fails, earlier rows remain committed and the error reports the number inserted.
 
 ## Ports and adapters
