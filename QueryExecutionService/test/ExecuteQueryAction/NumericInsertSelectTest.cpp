@@ -208,3 +208,90 @@ TEST(ExecuteQueryActionNumericTest,
                 .message.find("NUMERIC field overflow"),
             std::string::npos);
 }
+
+
+TEST(ExecuteQueryActionNumericTest, EvaluatesExactNumericArithmeticInSelect) {
+  auto port = makeNumericPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (amount) VALUES (0.1)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto selected = action.execute(
+      "SELECT amount + 0.2, amount - 0.2, amount * 3, amount / 4 "
+      "FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          selected));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(selected).rows;
+  ASSERT_EQ(rows.size(), 1U);
+  ASSERT_EQ(rows[0].size(), 4U);
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][0])),
+            "0.3");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][1])),
+            "-0.1");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][2])),
+            "0.3");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][3])),
+            "0.025");
+}
+
+TEST(ExecuteQueryActionNumericTest, EvaluatesMixedIntegerAndNumericArithmetic) {
+  auto port = makeNumericPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (amount) VALUES (1.25)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto selected =
+      action.execute("SELECT amount + 2, 2 * amount FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          selected));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(selected).rows;
+  ASSERT_EQ(rows.size(), 1U);
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][0])),
+            "3.25");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][1])),
+            "2.5");
+}
+
+TEST(ExecuteQueryActionNumericTest, ReportsNumericDivisionByZero) {
+  auto port = makeNumericPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (amount) VALUES (1.25)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto outcome =
+      action.execute("SELECT amount / 0.0 FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find("Division by zero"),
+            std::string::npos);
+}
