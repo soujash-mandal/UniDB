@@ -42,7 +42,7 @@ TEST(ExecuteQueryActionCharacterTest, RejectsVarcharOverflowByCharacters) {
   auto action = makeQesAction(port, parser);
 
   const auto created =
-      action.execute("CREATE TABLE labels (bounded VARCHAR(2))");
+      action.execute("CREATE TABLE labels (bounded VARCHAR(1))");
   ASSERT_TRUE(std::holds_alternative<
               QueryExecutionService::QueryExecutionResult>(created));
   port.schema = port.createdColumns;
