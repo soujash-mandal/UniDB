@@ -77,12 +77,9 @@ TEST(ExecuteQueryActionUnionTest, UsesCharBlankPaddedEquality) {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}}};
   port.rows = {
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{7}, std::string("a")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{8}, std::string("a  ")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{9}, std::string("b")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{7}, std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{8}, std::string("a  ")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{9}, std::string("b")}),
   };
 
   unidb::sql::SqlParserImpl parser;
@@ -109,10 +106,8 @@ TEST(ExecuteQueryActionUnionTest, KeepsVarcharTrailingSpacesSignificant) {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}}};
   port.rows = {
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{7}, std::string("a")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{8}, std::string("a ")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{7}, std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{8}, std::string("a ")}),
   };
 
   unidb::sql::SqlParserImpl parser;
@@ -138,15 +133,12 @@ TEST(ExecuteQueryActionUnionTest, AppliesDeclaredCharacterTypePerColumn) {
       {"code", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}}};
   port.rows = {
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{7}, std::string("a"),
-                             std::string("x")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{8}, std::string("a  "),
-                             std::string("x")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{9}, std::string("a"),
-                             std::string("x ")}),
+      SqlTupleCodec::encode(
+          port.schema, {std::int64_t{7}, std::string("a"), std::string("x")}),
+      SqlTupleCodec::encode(
+          port.schema, {std::int64_t{8}, std::string("a  "), std::string("x")}),
+      SqlTupleCodec::encode(
+          port.schema, {std::int64_t{9}, std::string("a"), std::string("x ")}),
   };
 
   unidb::sql::SqlParserImpl parser;
@@ -166,7 +158,6 @@ TEST(ExecuteQueryActionUnionTest, AppliesDeclaredCharacterTypePerColumn) {
   EXPECT_EQ(std::get<std::string>(result.rows[1][1]), "x ");
 }
 
-
 TEST(ExecuteQueryActionUnionTest, KeepsTextTrailingSpacesSignificant) {
   FakeQesRdbServicePort port;
   port.schema = {
@@ -174,10 +165,8 @@ TEST(ExecuteQueryActionUnionTest, KeepsTextTrailingSpacesSignificant) {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}}};
   port.rows = {
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{7}, std::string("a")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{8}, std::string("a ")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{7}, std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{8}, std::string("a ")}),
   };
 
   unidb::sql::SqlParserImpl parser;
