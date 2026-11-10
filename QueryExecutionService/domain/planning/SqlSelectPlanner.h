@@ -34,6 +34,7 @@ struct SelectPlan {
   std::optional<std::size_t> aggregateIndex;
   std::vector<std::size_t> groupIndexes;
   std::vector<GroupOrderIndex> groupedOrderIndexes;
+  std::optional<unidb::sql::SqlValue> havingValue;
 };
 
 SelectPlan
