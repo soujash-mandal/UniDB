@@ -249,6 +249,7 @@ add_executable(tests
     QueryExecutionService/test/domain/SqlIntegerSemanticsTest.cpp
     QueryExecutionService/test/domain/SqlNumericSemanticsTest.cpp
     QueryExecutionService/test/domain/SqlCharacterSemanticsTest.cpp
+    QueryExecutionService/test/domain/SqlDateTimeValueTest.cpp
     QueryExecutionService/test/SqlTupleCodec/SqlNumericRowCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
