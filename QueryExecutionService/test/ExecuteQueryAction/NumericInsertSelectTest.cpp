@@ -295,7 +295,6 @@ TEST(ExecuteQueryActionNumericTest, ReportsNumericDivisionByZero) {
             std::string::npos);
 }
 
-
 TEST(ExecuteQueryActionNumericTest,
      SupportsDistinctExactNumericArithmeticExpressions) {
   auto port = makeNumericPort();
