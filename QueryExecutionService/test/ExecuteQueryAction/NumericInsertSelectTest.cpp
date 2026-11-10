@@ -326,3 +326,59 @@ TEST(ExecuteQueryActionNumericTest,
                 std::get<SqlNumericValue>(rows[2][0])),
             "0.4");
 }
+
+
+TEST(ExecuteQueryActionNumericTest,
+     SupportsExactNumericInNotInBetweenAndNotBetweenPredicates) {
+  auto port = makeNumericPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted = action.execute(
+      "INSERT INTO decimals (amount) VALUES "
+      "(0.1), (0.2), (0.3), (0.3000000000000000000001), (1)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto selectValues = [&](const std::string &predicate) {
+    const auto outcome =
+        action.execute("SELECT amount FROM decimals WHERE " + predicate);
+    EXPECT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            outcome))
+        << predicate;
+    if (!std::holds_alternative<
+            QueryExecutionService::QueryExecutionResult>(outcome)) {
+      return std::vector<std::string>{};
+    }
+    const auto &rows =
+        std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
+    std::vector<std::string> values;
+    for (const auto &row : rows) {
+      values.push_back(QueryExecutionService::domain::formatSqlNumericValue(
+          std::get<SqlNumericValue>(row[0])));
+    }
+    return values;
+  };
+
+  EXPECT_EQ(selectValues(
+                "amount IN (0.1, 0.3000000000000000000001, 1)"),
+            (std::vector<std::string>{"0.1", "0.3000000000000000000001",
+                                      "1"}));
+  EXPECT_EQ(selectValues("amount NOT IN (0.1, 0.3, 1)"),
+            (std::vector<std::string>{"0.2",
+                                      "0.3000000000000000000001"}));
+  EXPECT_EQ(selectValues("amount BETWEEN 0.1 AND 0.3"),
+            (std::vector<std::string>{"0.1", "0.2", "0.3"}));
+  EXPECT_EQ(selectValues("amount NOT BETWEEN 0.1 AND 0.3"),
+            (std::vector<std::string>{"0.3000000000000000000001", "1"}));
+
+  // Integer literals are normalized to exact NUMERIC values for these
+  // predicates, just as they are for ordinary NUMERIC comparisons.
+  EXPECT_EQ(selectValues("amount IN (1)"), (std::vector<std::string>{"1"}));
+  EXPECT_EQ(selectValues("amount BETWEEN 0 AND 1"),
+            (std::vector<std::string>{"0.1", "0.2", "0.3",
+                                      "0.3000000000000000000001", "1"}));
+}
