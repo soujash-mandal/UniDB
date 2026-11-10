@@ -3,6 +3,7 @@
 #include "../aggregate/SqlAggregateCalculator.h"
 #include "../codec/SqlTupleCodec.h"
 #include "../predicate/WherePredicateEvaluator.h"
+#include "../types/SqlCharacterSemantics.h"
 
 #include <algorithm>
 #include <map>
@@ -16,6 +17,18 @@ namespace QueryExecutionService::domain {
 using namespace unidb::sql;
 
 namespace {
+int compareValuesForOrder(
+    const SqlValue &left, const SqlValue &right,
+    const std::optional<SqlTypeDescriptor> &declaredType) {
+  if (declaredType.has_value() && (declaredType->id == SqlTypeId::Char ||
+                                   declaredType->id == SqlTypeId::Varchar ||
+                                   declaredType->id == SqlTypeId::Text)) {
+    return compareSqlCharacterValues(*declaredType, std::get<std::string>(left),
+                                     std::get<std::string>(right));
+  }
+  return compareSqlValues(left, right);
+}
+
 struct SqlValueVectorLess {
   bool operator()(const std::vector<SqlValue> &left,
                   const std::vector<SqlValue> &right) const {
@@ -187,8 +200,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
           result.rows.begin(), result.rows.end(),
           [&](const auto &left, const auto &right) {
             for (const auto &order : plan.groupedOrderIndexes) {
-              const int comparison =
-                  compareSqlValues(left[order.index], right[order.index]);
+              const int comparison = compareValuesForOrder(
+                  left[order.index], right[order.index], order.declaredType);
               if (comparison != 0) {
                 return order.ascending ? comparison < 0 : comparison > 0;
               }
@@ -325,7 +338,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
             const auto &right = order.projected
                                     ? projectedRows[rightIndex][order.index]
                                     : matchedRows[rightIndex][order.index];
-            const int comparison = compareSqlValues(left, right);
+            const int comparison =
+                compareValuesForOrder(left, right, order.declaredType);
             if (comparison != 0) {
               return order.ascending ? comparison < 0 : comparison > 0;
             }

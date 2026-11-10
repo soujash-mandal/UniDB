@@ -212,7 +212,8 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
       if (alias != plan.selectedColumns.end()) {
         const auto projectionIndex = static_cast<std::size_t>(
             std::distance(plan.selectedColumns.begin(), alias));
-        plan.orderIndexes.push_back({projectionIndex, order.ascending, true});
+        plan.orderIndexes.push_back(
+            {projectionIndex, order.ascending, true, alias->declaredType});
         continue;
       }
 
@@ -235,7 +236,8 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
                                     "list when DISTINCT is used: " +
                                     order.columnName);
       }
-      plan.orderIndexes.push_back({orderIndex, order.ascending, false});
+      plan.orderIndexes.push_back(
+          {orderIndex, order.ascending, false, found->declaredType});
     }
   }
 
@@ -354,12 +356,18 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
         plan.groupedOrderIndexes.push_back(
             {static_cast<std::size_t>(
                  std::distance(plan.selectedColumns.begin(), projected)),
-             order.ascending});
+             order.ascending, projected->declaredType});
         continue;
       }
       if (order.columnName == aggregateName) {
+        const auto aggregateType =
+            (aggregate.function == AggregateFunction::Min ||
+             aggregate.function == AggregateFunction::Max) &&
+                    plan.aggregateIndex.has_value()
+                ? plan.schema[*plan.aggregateIndex].declaredType
+                : std::optional<SqlTypeDescriptor>{};
         plan.groupedOrderIndexes.push_back(
-            {plan.selectedColumns.size(), order.ascending});
+            {plan.selectedColumns.size(), order.ascending, aggregateType});
         continue;
       }
 
@@ -377,7 +385,7 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
       plan.groupedOrderIndexes.push_back(
           {static_cast<std::size_t>(
                std::distance(plan.groupIndexes.begin(), groupIndex)),
-           order.ascending});
+           order.ascending, schema[*groupIndex].declaredType});
     }
   }
   return plan;

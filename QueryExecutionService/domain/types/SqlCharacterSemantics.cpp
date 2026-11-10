@@ -1,6 +1,7 @@
 #include "SqlCharacterSemantics.h"
 
 #include <stdexcept>
+#include <string_view>
 
 namespace QueryExecutionService::domain {
 namespace {
@@ -82,6 +83,24 @@ std::size_t countSqlCharacters(std::string_view value) {
     offset += utf8SequenceLength(value, offset);
   }
   return count;
+}
+
+int compareSqlCharacterValues(const unidb::sql::SqlTypeDescriptor &type,
+                              std::string_view left, std::string_view right) {
+  using unidb::sql::SqlTypeId;
+  if (type.id != SqlTypeId::Char && type.id != SqlTypeId::Varchar &&
+      type.id != SqlTypeId::Text) {
+    throw std::invalid_argument("SQL type is not a character type");
+  }
+  if (type.id == SqlTypeId::Char) {
+    while (!left.empty() && left.back() == ' ') {
+      left.remove_suffix(1);
+    }
+    while (!right.empty() && right.back() == ' ') {
+      right.remove_suffix(1);
+    }
+  }
+  return left.compare(right);
 }
 
 std::string
