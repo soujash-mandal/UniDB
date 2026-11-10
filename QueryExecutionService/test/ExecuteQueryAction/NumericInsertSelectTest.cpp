@@ -1,4 +1,5 @@
 #include "../../domain/codec/SqlTupleCodec.h"
+#include "../../domain/types/SqlNumericSemantics.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
