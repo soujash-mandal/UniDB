@@ -37,8 +37,8 @@ TEST(WherePredicateEvaluatorTest, ComparesIntegerAndTextValues) {
 TEST(WherePredicateEvaluatorTest,
      AppliesBlankPaddedComparisonOnlyToCharColumns) {
   const std::vector<ColumnDefinition> schema{
-      {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {5}}},
-      {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {5}}},
+      {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {8}}},
+      {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {8}}},
       {"plain", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
   const std::vector<SqlType> types{SqlType::Text, SqlType::Text, SqlType::Text};
   const std::vector<SqlValue> row{std::string("hello   "),
@@ -65,7 +65,7 @@ TEST(WherePredicateEvaluatorTest,
   const std::vector<ColumnDefinition> schema{
       {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {5}}}};
   const std::vector<SqlType> types{SqlType::Text};
-  const std::vector<SqlValue> row{std::string("cat   ")};
+  const std::vector<SqlValue> row{std::string("cat  ")};
 
   WhereExpression greater;
   greater.predicate = WhereEquals{"fixed",
@@ -101,7 +101,7 @@ TEST(WherePredicateEvaluatorTest,
       {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {8}}},
       {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {8}}}};
   const std::vector<SqlType> types{SqlType::Text, SqlType::Text};
-  const std::vector<SqlValue> row{std::string(" é猫  "), std::string("é猫  ")};
+  const std::vector<SqlValue> row{std::string(" é猫     "), std::string("é猫  ")};
 
   WhereExpression fixed;
   fixed.predicate = WhereEquals{"fixed",
