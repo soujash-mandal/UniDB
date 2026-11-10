@@ -42,8 +42,7 @@ TEST(ExecuteQueryActionNumericAggregateTest,
   auto action = makeQesAction(port, parser);
   const auto sum = action.execute("SELECT SUM(amount) FROM decimals");
   ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-          sum));
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(sum));
   const auto &sumRows =
       std::get<QueryExecutionService::QueryExecutionResult>(sum).rows;
   ASSERT_EQ(sumRows.size(), 1U);
@@ -57,9 +56,8 @@ TEST(ExecuteQueryActionNumericAggregateTest,
   const auto &averageRows =
       std::get<QueryExecutionService::QueryExecutionResult>(average).rows;
   ASSERT_EQ(averageRows.size(), 1U);
-  EXPECT_EQ(
-      formatSqlNumericValue(std::get<SqlNumericValue>(averageRows[0][0])),
-      "0.15");
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(averageRows[0][0])),
+            "0.15");
 }
 
 TEST(ExecuteQueryActionNumericAggregateTest,
@@ -71,18 +69,18 @@ TEST(ExecuteQueryActionNumericAggregateTest,
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto inserted = action.execute(
-      "INSERT INTO decimals (department, amount) VALUES "
-      "('engineering', 0.1), ('engineering', 0.2), "
-      "('sales', 0.5), ('sales', 0.1), ('support', 0.2)");
+  const auto inserted =
+      action.execute("INSERT INTO decimals (department, amount) VALUES "
+                     "('engineering', 0.1), ('engineering', 0.2), "
+                     "('sales', 0.5), ('sales', 0.1), ('support', 0.2)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           inserted));
   port.rows = port.insertedRows;
 
-  const auto selected = action.execute(
-      "SELECT department, SUM(amount) AS total FROM decimals "
-      "GROUP BY department ORDER BY total DESC");
+  const auto selected =
+      action.execute("SELECT department, SUM(amount) AS total FROM decimals "
+                     "GROUP BY department ORDER BY total DESC");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           selected));
@@ -110,9 +108,8 @@ TEST(ExecuteQueryActionNumericAggregateTest,
   insertNumericRows(port, parser, "(1.0), (1.00), (2.0), (2.00)");
 
   auto action = makeQesAction(port, parser);
-  const auto selected = action.execute(
-      "SELECT amount, COUNT(*) FROM decimals "
-      "GROUP BY amount ORDER BY amount ASC");
+  const auto selected = action.execute("SELECT amount, COUNT(*) FROM decimals "
+                                       "GROUP BY amount ORDER BY amount ASC");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           selected));
