@@ -236,3 +236,21 @@ TEST(ExecuteQueryActionNumericAggregateTest,
                 std::get<SqlNumericValue>(maximumResult.rows[0][1])),
             "1.25");
 }
+
+TEST(ExecuteQueryActionNumericAggregateTest,
+     UsesMagnitudeAwareDivisionPrecisionForAverage) {
+  auto port = makeNumericAggregatePort();
+  unidb::sql::SqlParserImpl parser;
+  insertNumericRows(port, parser, "(1), (0), (0)");
+
+  auto action = makeQesAction(port, parser);
+  const auto average = action.execute("SELECT AVG(amount) FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          average));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(average).rows;
+  ASSERT_EQ(rows.size(), 1U);
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(rows[0][0])),
+            "0.33333333333333333333");
+}

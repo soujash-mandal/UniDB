@@ -20,7 +20,7 @@ The implementation is intentionally a subset of PostgreSQL 18. The support notes
 | Assignment | Declared precision/scale enforcement; scale rounding is half away from zero; precision overflow is rejected |
 | Comparison | Exact equality and ordering comparisons |
 | Query operations | Exact `WHERE` comparisons, `IN` / `NOT IN`, inclusive `BETWEEN` / `NOT BETWEEN`, `ORDER BY`, `DISTINCT`, and `GROUP BY` |
-| Arithmetic | Exact `+`, `-`, `*`, and `/` expressions; division uses the QES decimal division scale/rounding rule |
+| Arithmetic | Exact `+`, `-`, `*`, and `/` expressions; division targets at least 16 significant digits using a magnitude-aware PostgreSQL-style scale rule and rounds half away from zero |
 | Aggregates | Exact `SUM`, `AVG`, `MIN`, and `MAX` results |
 | Grouped aggregates | `HAVING` comparisons for the selected aggregate, including exact decimal literals and integer literals compared against NUMERIC results |
 
@@ -31,7 +31,7 @@ The implementation keeps SQL type descriptors and runtime values distinct from s
 - `AND` has higher precedence than `OR`; parentheses group and nest predicates. Nesting is limited to 128 levels.
 - `IN` / `NOT IN` accept non-empty INT, TEXT, or exact NUMERIC literal lists; inclusive `BETWEEN` / `NOT BETWEEN` accept INT, TEXT, or exact NUMERIC bounds. Integer literals are normalized to exact NUMERIC values when compared with NUMERIC columns. Values must otherwise match the target column type.
 - SQL `NULL`, three-valued logic, and nullable row values are not supported by this feature set.
-- Explicit SQL casts and general PostgreSQL implicit-coercion rules are not implemented.
+- Explicit SQL casts and general PostgreSQL implicit-coercion rules are not implemented. NUMERIC values use a canonical representation that removes insignificant trailing zeroes, so PostgreSQL's original display scale for operands is not retained.
 - `ORDER BY` supports source columns and SELECT output aliases with `ASC` / `DESC`. Output aliases take precedence over source-column names when both match.
 - Filtering, grouping, aggregate evaluation, and sorting operate in memory on rows returned by the RDB Action.
 - Grouped aggregate SELECT supports `ORDER BY` on projected grouping columns and the aggregate output alias, including multiple ordering terms. `HAVING` is evaluated before ordering; `LIMIT` and `OFFSET` are applied afterward.

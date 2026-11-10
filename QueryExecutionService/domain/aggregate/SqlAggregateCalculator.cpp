@@ -113,51 +113,12 @@ sumNumericValues(const std::vector<SqlValue> &values) {
   return normalizeSqlNumericValue(totalNegative, std::move(total), commonScale);
 }
 
-std::string incrementMagnitude(std::string value) {
-  for (std::size_t index = value.size(); index > 0; --index) {
-    if (value[index - 1] != '9') {
-      ++value[index - 1];
-      return value;
-    }
-    value[index - 1] = '0';
-  }
-  value.insert(value.begin(), '1');
-  return value;
-}
-
 unidb::sql::SqlNumericValue
 averageNumericValues(const std::vector<SqlValue> &values) {
-  using unidb::sql::SqlNumericValue;
   const auto sum = sumNumericValues(values);
-  constexpr std::int32_t minimumResultScale = 16;
-  const auto resultScale = std::max(sum.scale, minimumResultScale);
-  const auto padding = static_cast<std::int64_t>(resultScale) - sum.scale;
-  if (padding > 100000) {
-    throw std::overflow_error("NUMERIC AVG scale exceeds supported range");
-  }
-
-  std::string numerator = sum.coefficient;
-  numerator.append(static_cast<std::size_t>(padding), '0');
-  const auto divisor = static_cast<std::uint64_t>(values.size());
-  using WideUnsigned = unsigned __int128;
-  WideUnsigned remainder = 0;
-  std::string quotient;
-  quotient.reserve(numerator.size());
-  for (const char digit : numerator) {
-    const auto current = remainder * 10 + static_cast<unsigned>(digit - '0');
-    quotient.push_back(static_cast<char>('0' + current / divisor));
-    remainder = current % divisor;
-  }
-
-  const auto firstSignificant = quotient.find_first_not_of('0');
-  quotient = firstSignificant == std::string::npos
-                 ? "0"
-                 : quotient.substr(firstSignificant);
-  if (remainder * 2 >= divisor) {
-    quotient = incrementMagnitude(std::move(quotient));
-  }
-  return normalizeSqlNumericValue(sum.negative, std::move(quotient),
-                                  resultScale);
+  const auto count = parseSqlNumericLiteral(std::to_string(values.size()));
+  const auto resultScale = selectSqlNumericDivisionScale(sum, count);
+  return divideSqlNumericValues(sum, count, resultScale);
 }
 
 std::string aggregateFunctionName(AggregateFunction function) {
