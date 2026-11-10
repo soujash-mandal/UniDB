@@ -64,7 +64,7 @@ TEST(ExecuteQueryActionNumericAggregateTest,
      GroupsExactNumericSumsAndOrdersByAggregateResult) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"department", SqlType::Text},
+      {"department", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}},
       {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
