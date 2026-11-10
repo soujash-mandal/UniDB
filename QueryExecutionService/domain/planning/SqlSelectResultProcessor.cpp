@@ -20,10 +20,9 @@ namespace {
 int compareValuesForOrder(
     const SqlValue &left, const SqlValue &right,
     const std::optional<SqlTypeDescriptor> &declaredType) {
-  if (declaredType.has_value() &&
-      (declaredType->id == SqlTypeId::Char ||
-       declaredType->id == SqlTypeId::Varchar ||
-       declaredType->id == SqlTypeId::Text)) {
+  if (declaredType.has_value() && (declaredType->id == SqlTypeId::Char ||
+                                   declaredType->id == SqlTypeId::Varchar ||
+                                   declaredType->id == SqlTypeId::Text)) {
     return compareSqlCharacterValues(*declaredType, std::get<std::string>(left),
                                      std::get<std::string>(right));
   }
@@ -201,9 +200,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
           result.rows.begin(), result.rows.end(),
           [&](const auto &left, const auto &right) {
             for (const auto &order : plan.groupedOrderIndexes) {
-              const int comparison =
-                  compareValuesForOrder(left[order.index], right[order.index],
-                                   order.declaredType);
+              const int comparison = compareValuesForOrder(
+                  left[order.index], right[order.index], order.declaredType);
               if (comparison != 0) {
                 return order.ascending ? comparison < 0 : comparison > 0;
               }

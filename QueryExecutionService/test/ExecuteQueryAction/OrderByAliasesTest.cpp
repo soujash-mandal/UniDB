@@ -130,16 +130,14 @@ TEST(ExecuteQueryActionTest, AppliesLimitAfterSortingByProjectionAlias) {
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "A");
 }
 
-
 TEST(ExecuteQueryActionTest, OrdersCharValuesUsingBlankPaddedSemantics) {
   FakeQesRdbServicePort port;
   port.schema = {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
       {"id", unidb::sql::SqlType::Int}};
-  const auto types =
-      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
-                                       unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
       SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}}),
@@ -167,9 +165,8 @@ TEST(ExecuteQueryActionTest, OrdersVarcharValuesWithTrailingSpacesSignificant) {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}},
       {"id", unidb::sql::SqlType::Int}};
-  const auto types =
-      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
-                                       unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("a "), std::int64_t{1}}),
       SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}})};
@@ -195,9 +192,8 @@ TEST(ExecuteQueryActionTest, AppliesCharacterSemanticsWhenOrderingByAlias) {
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
       {"id", unidb::sql::SqlType::Int}};
-  const auto types =
-      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
-                                       unidb::sql::SqlType::Int};
+  const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                                      unidb::sql::SqlType::Int};
   port.rows = {
       SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
       SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}})};

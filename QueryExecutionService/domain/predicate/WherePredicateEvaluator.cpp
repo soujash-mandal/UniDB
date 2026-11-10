@@ -1,7 +1,7 @@
 #include "WherePredicateEvaluator.h"
 
-#include "../types/SqlNumericSemantics.h"
 #include "../types/SqlCharacterSemantics.h"
+#include "../types/SqlNumericSemantics.h"
 
 #include <algorithm>
 #include <charconv>
