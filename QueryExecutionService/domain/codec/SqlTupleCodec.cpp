@@ -1,8 +1,8 @@
 #include "SqlTupleCodec.h"
 #include "SqlNumericRowCodec.h"
 
-#include "../types/SqlIntegerSemantics.h"
 #include "../types/SqlCharacterSemantics.h"
+#include "../types/SqlIntegerSemantics.h"
 
 #include <bit>
 #include <limits>

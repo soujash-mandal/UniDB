@@ -21,20 +21,26 @@ void validateTableDefinition(const RdbTableDefinition &table) {
     if (!columnNames.insert(column.name).second) {
       throw std::invalid_argument("Column names must be unique");
     }
-    if ((column.type == RdbDataType::CHAR || column.type == RdbDataType::VARCHAR) &&
+    if ((column.type == RdbDataType::CHAR ||
+         column.type == RdbDataType::VARCHAR) &&
         column.characterLength.has_value() && *column.characterLength == 0) {
       throw std::invalid_argument("Character length must be positive");
     }
-    if (column.type == RdbDataType::CHAR && !column.characterLength.has_value()) {
+    if (column.type == RdbDataType::CHAR &&
+        !column.characterLength.has_value()) {
       throw std::invalid_argument("CHAR columns require a declared length");
     }
-    if (column.type != RdbDataType::CHAR && column.type != RdbDataType::VARCHAR &&
+    if (column.type != RdbDataType::CHAR &&
+        column.type != RdbDataType::VARCHAR &&
         column.characterLength.has_value()) {
       throw std::invalid_argument("Character length requires CHAR or VARCHAR");
     }
-    if ((column.type == RdbDataType::VARCHAR || column.type == RdbDataType::CHAR ||
-         column.type == RdbDataType::TEXT) && column.size == 0) {
-      throw std::invalid_argument("Character columns require a positive storage size");
+    if ((column.type == RdbDataType::VARCHAR ||
+         column.type == RdbDataType::CHAR ||
+         column.type == RdbDataType::TEXT) &&
+        column.size == 0) {
+      throw std::invalid_argument(
+          "Character columns require a positive storage size");
     }
   }
 }

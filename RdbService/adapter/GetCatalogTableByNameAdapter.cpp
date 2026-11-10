@@ -39,8 +39,7 @@ RdbTableDefinition fromCatalogTable(const Table &table) {
   for (const auto &column : table.columns) {
     result.columns.push_back(RdbColumn{
         column.name, fromCatalogType(column.type), column.size, column.nullable,
-        column.numericPrecision, column.numericScale,
-        column.characterLength});
+        column.numericPrecision, column.numericScale, column.characterLength});
   }
   return result;
 }

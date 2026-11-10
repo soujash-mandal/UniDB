@@ -7,9 +7,12 @@ TEST(CatalogPage, RoundTripsCharacterTypeIdentityAndLengthModifiers) {
   Table table = makeCatalogPageTestTable(41, "character_types");
   table.columns = {
       Column{"fixed", DataType::CHAR, 0, false, std::nullopt, std::nullopt, 5},
-      Column{"bounded", DataType::VARCHAR, 0, false, std::nullopt, std::nullopt, 32},
-      Column{"unbounded", DataType::VARCHAR, 0, false, std::nullopt, std::nullopt, std::nullopt},
-      Column{"body", DataType::TEXT, 0, false, std::nullopt, std::nullopt, std::nullopt},
+      Column{"bounded", DataType::VARCHAR, 0, false, std::nullopt, std::nullopt,
+             32},
+      Column{"unbounded", DataType::VARCHAR, 0, false, std::nullopt,
+             std::nullopt, std::nullopt},
+      Column{"body", DataType::TEXT, 0, false, std::nullopt, std::nullopt,
+             std::nullopt},
   };
 
   page.insert(table);

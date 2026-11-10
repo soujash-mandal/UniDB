@@ -49,11 +49,19 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument(
           "NUMERIC scale must be between -1000 and 1000");
     }
-    const bool characterType = column.type == DataType::CHAR || column.type == DataType::VARCHAR;
-    if (column.type == DataType::CHAR && (!column.characterLength || *column.characterLength == 0)) throw std::invalid_argument("CHAR requires a positive length");
-    if (column.type == DataType::VARCHAR && column.characterLength && *column.characterLength == 0) throw std::invalid_argument("VARCHAR length must be positive");
-    if (!characterType && column.characterLength) throw std::invalid_argument("Character length requires CHAR or VARCHAR");
-    if (column.numericPrecision.has_value() || column.numericScale.has_value() || column.characterLength.has_value()) hasNumericModifiers = true;
+    const bool characterType =
+        column.type == DataType::CHAR || column.type == DataType::VARCHAR;
+    if (column.type == DataType::CHAR &&
+        (!column.characterLength || *column.characterLength == 0))
+      throw std::invalid_argument("CHAR requires a positive length");
+    if (column.type == DataType::VARCHAR && column.characterLength &&
+        *column.characterLength == 0)
+      throw std::invalid_argument("VARCHAR length must be positive");
+    if (!characterType && column.characterLength)
+      throw std::invalid_argument("Character length requires CHAR or VARCHAR");
+    if (column.numericPrecision.has_value() ||
+        column.numericScale.has_value() || column.characterLength.has_value())
+      hasNumericModifiers = true;
   }
 
   // Keep the legacy payload size unchanged unless a column has modifiers.
@@ -190,16 +198,18 @@ Table deserializeTable(std::vector<char> data) {
         throw std::runtime_error("Invalid catalog NUMERIC scale");
       }
       if (column.type == DataType::CHAR &&
-          (!column.characterLength.has_value() || *column.characterLength == 0)) {
+          (!column.characterLength.has_value() ||
+           *column.characterLength == 0)) {
         throw std::runtime_error("Invalid catalog CHAR length");
       }
-      if (column.type == DataType::VARCHAR && column.characterLength.has_value() &&
-          *column.characterLength == 0) {
+      if (column.type == DataType::VARCHAR &&
+          column.characterLength.has_value() && *column.characterLength == 0) {
         throw std::runtime_error("Invalid catalog VARCHAR length");
       }
       if (column.type != DataType::CHAR && column.type != DataType::VARCHAR &&
           column.characterLength.has_value()) {
-        throw std::runtime_error("Character length found on non-character column");
+        throw std::runtime_error(
+            "Character length found on non-character column");
       }
     }
     if (offset != data.size() &&
