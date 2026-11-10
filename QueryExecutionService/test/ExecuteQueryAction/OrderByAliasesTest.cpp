@@ -139,9 +139,9 @@ TEST(ExecuteQueryActionTest, OrdersCharValuesUsingBlankPaddedSemantics) {
   const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
                                                       unidb::sql::SqlType::Int};
   port.rows = {
-      SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
-      SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}}),
-      SqlTupleCodec::encode(types, {std::string("b "), std::int64_t{3}})};
+      SqlTupleCodec::encode(port.schema, {std::string("a  "), std::int64_t{1}}),
+      SqlTupleCodec::encode(port.schema, {std::string("a"), std::int64_t{2}}),
+      SqlTupleCodec::encode(port.schema, {std::string("b "), std::int64_t{3}})};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -168,8 +168,8 @@ TEST(ExecuteQueryActionTest, OrdersVarcharValuesWithTrailingSpacesSignificant) {
   const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
                                                       unidb::sql::SqlType::Int};
   port.rows = {
-      SqlTupleCodec::encode(types, {std::string("a "), std::int64_t{1}}),
-      SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}})};
+      SqlTupleCodec::encode(port.schema, {std::string("a "), std::int64_t{1}}),
+      SqlTupleCodec::encode(port.schema, {std::string("a"), std::int64_t{2}})};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -195,8 +195,8 @@ TEST(ExecuteQueryActionTest, AppliesCharacterSemanticsWhenOrderingByAlias) {
   const auto types = std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
                                                       unidb::sql::SqlType::Int};
   port.rows = {
-      SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
-      SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}})};
+      SqlTupleCodec::encode(port.schema, {std::string("a  "), std::int64_t{1}}),
+      SqlTupleCodec::encode(port.schema, {std::string("a"), std::int64_t{2}})};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
