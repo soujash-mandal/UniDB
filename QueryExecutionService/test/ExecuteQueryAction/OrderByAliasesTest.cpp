@@ -129,3 +129,90 @@ TEST(ExecuteQueryActionTest, AppliesLimitAfterSortingByProjectionAlias) {
   EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "B");
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "A");
 }
+
+
+TEST(ExecuteQueryActionTest, OrdersCharValuesUsingBlankPaddedSemantics) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
+      {"id", unidb::sql::SqlType::Int}};
+  const auto types =
+      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                       unidb::sql::SqlType::Int};
+  port.rows = {
+      SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
+      SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}}),
+      SqlTupleCodec::encode(types, {std::string("b "), std::int64_t{3}})};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT name, id FROM people ORDER BY name ASC;");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 3U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 2);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[2][1]), 3);
+}
+
+TEST(ExecuteQueryActionTest, OrdersVarcharValuesWithTrailingSpacesSignificant) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}},
+      {"id", unidb::sql::SqlType::Int}};
+  const auto types =
+      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                       unidb::sql::SqlType::Int};
+  port.rows = {
+      SqlTupleCodec::encode(types, {std::string("a "), std::int64_t{1}}),
+      SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}})};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT name, id FROM people ORDER BY name DESC;");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 2);
+}
+
+TEST(ExecuteQueryActionTest, AppliesCharacterSemanticsWhenOrderingByAlias) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
+      {"id", unidb::sql::SqlType::Int}};
+  const auto types =
+      std::vector<unidb::sql::SqlType>{unidb::sql::SqlType::Text,
+                                       unidb::sql::SqlType::Int};
+  port.rows = {
+      SqlTupleCodec::encode(types, {std::string("a  "), std::int64_t{1}}),
+      SqlTupleCodec::encode(types, {std::string("a"), std::int64_t{2}})};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome =
+      action.execute("SELECT name AS label, id FROM people ORDER BY label;");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 1);
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 2);
+}
