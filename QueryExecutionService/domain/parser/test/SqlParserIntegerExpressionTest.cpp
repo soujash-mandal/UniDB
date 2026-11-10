@@ -96,6 +96,9 @@ TEST(SqlParserIntegerExpressionTest, RejectsMalformedAndOutOfRangeExpressions) {
 } // namespace
 } // namespace unidb::sql
 
+namespace unidb::sql {
+namespace {
+
 TEST(SqlParserIntegerExpressionTest, ParsesExactDecimalArithmeticLiterals) {
   SqlParserImpl parser;
   const auto result =
@@ -117,3 +120,7 @@ TEST(SqlParserIntegerExpressionTest, ParsesExactDecimalArithmeticLiterals) {
   EXPECT_EQ(*select.integerExpressions[1]->left->numericLiteral,
             (SqlNumericValue{true, "125", 2}));
 }
+
+
+} // namespace
+} // namespace unidb::sql
