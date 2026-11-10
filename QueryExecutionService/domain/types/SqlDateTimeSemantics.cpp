@@ -25,7 +25,8 @@ SqlDate makeSqlDate(std::int32_t year, std::uint8_t month, std::uint8_t day) {
   }
 
   // SQL BC years omit year zero; map them to astronomical numbering.
-  const std::int64_t astronomicalYear = year < 0 ? std::int64_t{year} + 1 : year;
+  const std::int64_t astronomicalYear =
+      year < 0 ? std::int64_t{year} + 1 : year;
 
   auto maximumDay = daysInMonth[month - 1];
   if (month == 2 && isLeapYear(astronomicalYear)) {

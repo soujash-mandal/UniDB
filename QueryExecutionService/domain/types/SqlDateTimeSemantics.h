@@ -34,7 +34,8 @@ void validateSqlTimestamp(const SqlTimestamp &timestamp);
 
 /**
  * Round fractional-second microseconds to the requested precision (0..6).
- * A result of 1,000,000 signals that the caller must carry into the next second.
+ * A result of 1,000,000 signals that the caller must carry into the next
+ * second.
  * @throws std::out_of_range for invalid microsecond values.
  * @throws std::invalid_argument for precision greater than six.
  */
