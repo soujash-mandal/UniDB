@@ -23,6 +23,10 @@ DataType toCatalogType(RdbDataType type) {
     return DataType::SMALLINT;
   case RdbDataType::NUMERIC:
     return DataType::NUMERIC;
+  case RdbDataType::CHAR:
+    return DataType::CHAR;
+  case RdbDataType::TEXT:
+    return DataType::TEXT;
   }
   throw std::invalid_argument("Unsupported RDB column type");
 }
@@ -36,7 +40,8 @@ Table toCatalogTable(const RdbTableDefinition &table,
   for (const auto &column : table.columns) {
     result.columns.push_back(
         Column{column.name, toCatalogType(column.type), column.size,
-               column.nullable, column.numericPrecision, column.numericScale});
+               column.nullable, column.numericPrecision, column.numericScale,
+               column.characterLength});
   }
   return result;
 }
