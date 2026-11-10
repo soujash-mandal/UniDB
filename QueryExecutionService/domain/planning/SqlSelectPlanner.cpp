@@ -3,6 +3,7 @@
 #include "../expression/SqlExpressionCompiler.h"
 #include "../predicate/WhereExpressionNormalizer.h"
 #include "../schema/SqlSchemaResolver.h"
+#include "../types/SqlNumericSemantics.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -304,16 +305,34 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
         throw std::invalid_argument(
             "HAVING aggregate must match the SELECT aggregate");
       }
-      const SqlType resultType =
-          aggregate.function == AggregateFunction::Min ||
-                  aggregate.function == AggregateFunction::Max
-              ? types[*plan.aggregateIndex]
-              : SqlType::Int;
-      const bool valueIsInt =
-          std::holds_alternative<std::int64_t>(having.value);
-      if ((resultType == SqlType::Int) != valueIsInt) {
-        throw std::invalid_argument(
-            "HAVING value type does not match aggregate result type");
+      const bool numericAggregate =
+          aggregate.function != AggregateFunction::Count &&
+          plan.aggregateIndex.has_value() &&
+          plan.schema[*plan.aggregateIndex].declaredType.has_value() &&
+          plan.schema[*plan.aggregateIndex].declaredType->id ==
+              SqlTypeId::Numeric;
+      if (numericAggregate) {
+        if (const auto *integer = std::get_if<std::int64_t>(&having.value)) {
+          plan.havingValue = parseSqlNumericLiteral(std::to_string(*integer));
+        } else if (std::holds_alternative<SqlNumericValue>(having.value)) {
+          plan.havingValue = having.value;
+        } else {
+          throw std::invalid_argument(
+              "HAVING value type does not match aggregate result type");
+        }
+      } else {
+        const SqlType resultType =
+            aggregate.function == AggregateFunction::Min ||
+                    aggregate.function == AggregateFunction::Max
+                ? types[*plan.aggregateIndex]
+                : SqlType::Int;
+        const bool valueIsInt =
+            std::holds_alternative<std::int64_t>(having.value);
+        if ((resultType == SqlType::Int) != valueIsInt) {
+          throw std::invalid_argument(
+              "HAVING value type does not match aggregate result type");
+        }
+        plan.havingValue = having.value;
       }
     }
   }

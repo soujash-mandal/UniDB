@@ -121,3 +121,35 @@ TEST(ExecuteQueryActionNumericAggregateTest,
   EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(rows[1][0])), "2");
   EXPECT_EQ(std::get<std::int64_t>(rows[1][1]), 2);
 }
+
+TEST(ExecuteQueryActionNumericAggregateTest,
+     FiltersGroupedNumericAggregatesWithExactHavingComparison) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"department", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}},
+      {"amount", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Numeric, {}}}};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted =
+      action.execute("INSERT INTO decimals (department, amount) VALUES "
+                     "('engineering', 0.1), ('engineering', 0.2), "
+                     "('sales', 0.5), ('sales', 0.1), ('support', 0.2)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto selected =
+      action.execute("SELECT department, SUM(amount) AS total FROM decimals "
+                     "GROUP BY department HAVING SUM(amount) > 0.3");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          selected));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(selected);
+  ASSERT_EQ(result.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "sales");
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(result.rows[0][1])),
+            "0.6");
+}

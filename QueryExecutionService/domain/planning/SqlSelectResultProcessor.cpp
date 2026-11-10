@@ -140,8 +140,11 @@ processSelectRows(const unidb::sql::SelectStatement &select,
           calculateAggregate(aggregate.function, aggregateValues, rows.size());
 
       if (select.having.has_value()) {
+        if (!plan.havingValue.has_value()) {
+          throw std::logic_error("HAVING value was not planned");
+        }
         const int comparison =
-            compareSqlValues(aggregateValue, select.having->value);
+            compareSqlValues(aggregateValue, *plan.havingValue);
         bool matches = false;
         switch (select.having->comparison) {
         case ComparisonOperator::Equal:
