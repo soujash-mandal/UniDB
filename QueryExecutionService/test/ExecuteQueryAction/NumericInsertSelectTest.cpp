@@ -403,5 +403,5 @@ TEST(ExecuteQueryActionNumericTest,
   EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(rows[0][0])),
             "0.33333333333333333333");
   EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(rows[1][0])),
-            "333333.333333");
+            "333333.333333333333");
 }
