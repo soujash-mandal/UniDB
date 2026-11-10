@@ -55,7 +55,6 @@ std::vector<char> serializeTable(Table table) {
     if (!characterType && column.characterLength) throw std::invalid_argument("Character length requires CHAR or VARCHAR");
     if (column.numericPrecision.has_value() || column.numericScale.has_value() || column.characterLength.has_value()) hasNumericModifiers = true;
   }
-  }
 
   // Keep the legacy payload size unchanged unless a column has modifiers.
   // This avoids reducing catalog page capacity for ordinary tables.
