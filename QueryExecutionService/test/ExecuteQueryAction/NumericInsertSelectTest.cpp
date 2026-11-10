@@ -327,16 +327,15 @@ TEST(ExecuteQueryActionNumericTest,
             "0.4");
 }
 
-
 TEST(ExecuteQueryActionNumericTest,
      SupportsExactNumericInNotInBetweenAndNotBetweenPredicates) {
   auto port = makeNumericPort();
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto inserted = action.execute(
-      "INSERT INTO decimals (amount) VALUES "
-      "(0.1), (0.2), (0.3), (0.3000000000000000000001), (1)");
+  const auto inserted =
+      action.execute("INSERT INTO decimals (amount) VALUES "
+                     "(0.1), (0.2), (0.3), (0.3000000000000000000001), (1)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           inserted));
@@ -349,8 +348,8 @@ TEST(ExecuteQueryActionNumericTest,
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             outcome))
         << predicate;
-    if (!std::holds_alternative<
-            QueryExecutionService::QueryExecutionResult>(outcome)) {
+    if (!std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            outcome)) {
       return std::vector<std::string>{};
     }
     const auto &rows =
@@ -363,13 +362,10 @@ TEST(ExecuteQueryActionNumericTest,
     return values;
   };
 
-  EXPECT_EQ(selectValues(
-                "amount IN (0.1, 0.3000000000000000000001, 1)"),
-            (std::vector<std::string>{"0.1", "0.3000000000000000000001",
-                                      "1"}));
+  EXPECT_EQ(selectValues("amount IN (0.1, 0.3000000000000000000001, 1)"),
+            (std::vector<std::string>{"0.1", "0.3000000000000000000001", "1"}));
   EXPECT_EQ(selectValues("amount NOT IN (0.1, 0.3, 1)"),
-            (std::vector<std::string>{"0.2",
-                                      "0.3000000000000000000001"}));
+            (std::vector<std::string>{"0.2", "0.3000000000000000000001"}));
   EXPECT_EQ(selectValues("amount BETWEEN 0.1 AND 0.3"),
             (std::vector<std::string>{"0.1", "0.2", "0.3"}));
   EXPECT_EQ(selectValues("amount NOT BETWEEN 0.1 AND 0.3"),
