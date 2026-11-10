@@ -7,6 +7,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace QueryExecutionService::domain {
@@ -83,6 +84,24 @@ template <typename T> int compareFloatingPoint(T left, T right) {
   }
   return (left > right) - (left < right);
 }
+
+int compareValuesForColumn(
+    const SqlValue &left, const SqlValue &right,
+    const std::optional<unidb::sql::SqlTypeDescriptor> &declaredType) {
+  if (declaredType.has_value() &&
+      declaredType->id == unidb::sql::SqlTypeId::Char) {
+    auto leftText = std::string_view(std::get<std::string>(left));
+    auto rightText = std::string_view(std::get<std::string>(right));
+    while (!leftText.empty() && leftText.back() == ' ') {
+      leftText.remove_suffix(1);
+    }
+    while (!rightText.empty() && rightText.back() == ' ') {
+      rightText.remove_suffix(1);
+    }
+    return (leftText > rightText) - (leftText < rightText);
+  }
+  return compareSqlValues(left, right);
+}
 } // namespace
 
 int compareSqlValues(const SqlValue &left, const SqlValue &right) {
@@ -130,6 +149,8 @@ bool valueMatchesColumn(const ColumnDefinition &column, const SqlValue &value) {
       return std::holds_alternative<double>(value);
     case SqlTypeId::Numeric:
       return std::holds_alternative<unidb::sql::SqlNumericValue>(value);
+    case SqlTypeId::Char:
+    case SqlTypeId::Varchar:
     case SqlTypeId::Text:
       return std::holds_alternative<std::string>(value);
     default:
@@ -170,7 +191,9 @@ bool matchesLikePattern(const std::string &value, const std::string &pattern) {
   return patternIndex == pattern.size();
 }
 
-bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
+bool matchesWhere(
+    const SqlValue &rowValue, const WhereEquals &predicate,
+    const std::optional<unidb::sql::SqlTypeDescriptor> &declaredType) {
   if (predicate.comparison == ComparisonOperator::Like ||
       predicate.comparison == ComparisonOperator::NotLike) {
     const auto *textValue = std::get_if<std::string>(&rowValue);
@@ -189,8 +212,8 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
           "BETWEEN predicates require two range bounds");
     }
     const bool withinRange =
-        compareSqlValues(rowValue, predicate.value) >= 0 &&
-        compareSqlValues(rowValue, *predicate.upperBound) <= 0;
+        compareValuesForColumn(rowValue, predicate.value, declaredType) >= 0 &&
+        compareValuesForColumn(rowValue, *predicate.upperBound, declaredType) <= 0;
     return predicate.comparison == ComparisonOperator::Between ? withinRange
                                                                : !withinRange;
   }
@@ -199,12 +222,13 @@ bool matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate) {
     const bool found =
         std::any_of(predicate.values.begin(), predicate.values.end(),
                     [&](const auto &value) {
-                      return compareSqlValues(rowValue, value) == 0;
+                      return compareValuesForColumn(rowValue, value, declaredType) == 0;
                     });
     return predicate.comparison == ComparisonOperator::In ? found : !found;
   }
 
-  const int comparison = compareSqlValues(rowValue, predicate.value);
+  const int comparison =
+      compareValuesForColumn(rowValue, predicate.value, declaredType);
   switch (predicate.comparison) {
   case ComparisonOperator::Equal:
     return comparison == 0;
@@ -248,6 +272,7 @@ compileWhereExpression(const WhereExpression &expression,
     }
     compiled.columnIndex =
         static_cast<std::size_t>(std::distance(schema.begin(), found));
+    compiled.declaredType = found->declaredType;
     auto predicate = expression.predicate;
     normalizeComparisonValue(*found, predicate.value);
     if (predicate.upperBound.has_value()) {
@@ -311,7 +336,8 @@ compileWhereExpression(const WhereExpression &expression,
 bool matchesWhereExpression(const std::vector<SqlValue> &row,
                             const CompiledWhereExpression &expression) {
   if (expression.kind == WhereExpression::Kind::Predicate) {
-    return matchesWhere(row[expression.columnIndex], expression.predicate);
+    return matchesWhere(row[expression.columnIndex], expression.predicate,
+                        expression.declaredType);
   }
   if (expression.kind == WhereExpression::Kind::And) {
     return std::all_of(
