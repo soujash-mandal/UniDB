@@ -38,8 +38,12 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
     return RdbDataType::DOUBLE;
   case unidb::sql::SqlTypeId::Boolean:
     return RdbDataType::BOOLEAN;
-  case unidb::sql::SqlTypeId::Text:
+  case unidb::sql::SqlTypeId::Char:
+    return RdbDataType::CHAR;
+  case unidb::sql::SqlTypeId::Varchar:
     return RdbDataType::VARCHAR;
+  case unidb::sql::SqlTypeId::Text:
+    return RdbDataType::TEXT;
   case unidb::sql::SqlTypeId::Numeric:
     return RdbDataType::NUMERIC;
   default:
@@ -66,6 +70,8 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
     // adopts a dedicated transitional execution tag.
     return unidb::sql::SqlType::Int;
   case RdbDataType::VARCHAR:
+  case RdbDataType::CHAR:
+  case RdbDataType::TEXT:
     return unidb::sql::SqlType::Text;
   default:
     throw std::invalid_argument(
@@ -90,7 +96,17 @@ unidb::sql::SqlTypeDescriptor descriptorFromRdbType(const RdbColumn &column) {
     return SqlTypeDescriptor{SqlTypeId::DoublePrecision, {}};
   case RdbDataType::BOOLEAN:
     return SqlTypeDescriptor{SqlTypeId::Boolean, {}};
-  case RdbDataType::VARCHAR:
+  case RdbDataType::CHAR: {
+    unidb::sql::SqlTypeModifier modifier;
+    modifier.length = column.characterLength;
+    return SqlTypeDescriptor{SqlTypeId::Char, modifier};
+  }
+  case RdbDataType::VARCHAR: {
+    unidb::sql::SqlTypeModifier modifier;
+    modifier.length = column.characterLength;
+    return SqlTypeDescriptor{SqlTypeId::Varchar, modifier};
+  }
+  case RdbDataType::TEXT:
     return SqlTypeDescriptor{SqlTypeId::Text, {}};
   case RdbDataType::NUMERIC: {
     unidb::sql::SqlTypeModifier modifier;
@@ -124,7 +140,10 @@ uint32_t RdbServiceAdapter::createTable(
   for (const auto &column : statement.columns) {
     const auto type = toRdbType(column);
     const uint16_t size =
-        type == RdbDataType::VARCHAR ? std::numeric_limits<uint16_t>::max() : 0;
+        (type == RdbDataType::VARCHAR || type == RdbDataType::CHAR ||
+         type == RdbDataType::TEXT)
+            ? std::numeric_limits<uint16_t>::max()
+            : 0;
     std::optional<std::uint32_t> numericPrecision;
     std::optional<std::int32_t> numericScale;
     if (column.declaredType.has_value() &&
@@ -132,8 +151,15 @@ uint32_t RdbServiceAdapter::createTable(
       numericPrecision = column.declaredType->modifier.precision;
       numericScale = column.declaredType->modifier.scale;
     }
+    std::optional<std::uint32_t> characterLength;
+    if (column.declaredType.has_value() &&
+        (column.declaredType->id == unidb::sql::SqlTypeId::Char ||
+         column.declaredType->id == unidb::sql::SqlTypeId::Varchar)) {
+      characterLength = column.declaredType->modifier.length;
+    }
     table.columns.push_back(RdbColumn{column.name, type, size, false,
-                                      numericPrecision, numericScale});
+                                      numericPrecision, numericScale,
+                                      characterLength});
   }
   return createTableAction.execute(metadataPageId, std::move(table));
 }
