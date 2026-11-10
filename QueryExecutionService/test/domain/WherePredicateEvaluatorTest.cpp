@@ -47,8 +47,8 @@ TEST(WherePredicateEvaluatorTest,
 
   const auto equals = [&](const std::string &column, const std::string &value) {
     WhereExpression expression;
-    expression.predicate = WhereEquals{column, value, std::nullopt, {},
-                                       ComparisonOperator::Equal};
+    expression.predicate =
+        WhereEquals{column, value, std::nullopt, {}, ComparisonOperator::Equal};
     return matchesWhereExpression(
         row, compileWhereExpression(expression, schema, types));
   };
@@ -68,21 +68,29 @@ TEST(WherePredicateEvaluatorTest,
   const std::vector<SqlValue> row{std::string("cat   ")};
 
   WhereExpression greater;
-  greater.predicate = WhereEquals{"fixed", std::string("cat"), std::nullopt,
-                                  {}, ComparisonOperator::GreaterThan};
+  greater.predicate = WhereEquals{"fixed",
+                                  std::string("cat"),
+                                  std::nullopt,
+                                  {},
+                                  ComparisonOperator::GreaterThan};
   EXPECT_FALSE(matchesWhereExpression(
       row, compileWhereExpression(greater, schema, types)));
 
   WhereExpression membership;
-  membership.predicate = WhereEquals{"fixed", std::string("unused"),
-                                     std::nullopt, {std::string("cat")},
+  membership.predicate = WhereEquals{"fixed",
+                                     std::string("unused"),
+                                     std::nullopt,
+                                     {std::string("cat")},
                                      ComparisonOperator::In};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(membership, schema, types)));
 
   WhereExpression range;
-  range.predicate = WhereEquals{"fixed", std::string("cat"), std::string("cat"),
-                                {}, ComparisonOperator::Between};
+  range.predicate = WhereEquals{"fixed",
+                                std::string("cat"),
+                                std::string("cat"),
+                                {},
+                                ComparisonOperator::Between};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(range, schema, types)));
 }
@@ -93,18 +101,23 @@ TEST(WherePredicateEvaluatorTest,
       {"fixed", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Char, {8}}},
       {"bounded", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {8}}}};
   const std::vector<SqlType> types{SqlType::Text, SqlType::Text};
-  const std::vector<SqlValue> row{std::string(" é猫  "),
-                                  std::string("é猫  ")};
+  const std::vector<SqlValue> row{std::string(" é猫  "), std::string("é猫  ")};
 
   WhereExpression fixed;
-  fixed.predicate = WhereEquals{"fixed", std::string(" é猫"),
-                                std::nullopt, {}, ComparisonOperator::Equal};
+  fixed.predicate = WhereEquals{"fixed",
+                                std::string(" é猫"),
+                                std::nullopt,
+                                {},
+                                ComparisonOperator::Equal};
   EXPECT_TRUE(matchesWhereExpression(
       row, compileWhereExpression(fixed, schema, types)));
 
   WhereExpression varchar;
-  varchar.predicate = WhereEquals{"bounded", std::string("é猫"),
-                                  std::nullopt, {}, ComparisonOperator::Equal};
+  varchar.predicate = WhereEquals{"bounded",
+                                  std::string("é猫"),
+                                  std::nullopt,
+                                  {},
+                                  ComparisonOperator::Equal};
   EXPECT_FALSE(matchesWhereExpression(
       row, compileWhereExpression(varchar, schema, types)));
 }

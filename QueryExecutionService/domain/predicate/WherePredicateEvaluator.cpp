@@ -213,17 +213,18 @@ bool matchesWhere(
     }
     const bool withinRange =
         compareValuesForColumn(rowValue, predicate.value, declaredType) >= 0 &&
-        compareValuesForColumn(rowValue, *predicate.upperBound, declaredType) <= 0;
+        compareValuesForColumn(rowValue, *predicate.upperBound, declaredType) <=
+            0;
     return predicate.comparison == ComparisonOperator::Between ? withinRange
                                                                : !withinRange;
   }
   if (predicate.comparison == ComparisonOperator::In ||
       predicate.comparison == ComparisonOperator::NotIn) {
-    const bool found =
-        std::any_of(predicate.values.begin(), predicate.values.end(),
-                    [&](const auto &value) {
-                      return compareValuesForColumn(rowValue, value, declaredType) == 0;
-                    });
+    const bool found = std::any_of(
+        predicate.values.begin(), predicate.values.end(),
+        [&](const auto &value) {
+          return compareValuesForColumn(rowValue, value, declaredType) == 0;
+        });
     return predicate.comparison == ComparisonOperator::In ? found : !found;
   }
 
