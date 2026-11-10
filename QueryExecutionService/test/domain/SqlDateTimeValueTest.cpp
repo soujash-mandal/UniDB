@@ -10,9 +10,9 @@ namespace domain = QueryExecutionService::domain;
 using domain::SqlDate;
 using domain::SqlInterval;
 using domain::SqlTime;
-using domain::SqlTimeWithTimeZone;
 using domain::SqlTimestamp;
 using domain::SqlTimestampWithTimeZone;
+using domain::SqlTimeWithTimeZone;
 
 static_assert(!std::is_convertible_v<SqlDate, SqlTime>);
 static_assert(!std::is_convertible_v<SqlTime, SqlTimestamp>);
