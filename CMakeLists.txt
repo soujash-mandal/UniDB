@@ -102,6 +102,7 @@ set(UNIDB_SOURCES
     QueryExecutionService/domain/types/SqlIntegerSemantics.cpp
     QueryExecutionService/domain/types/SqlNumericSemantics.cpp
     QueryExecutionService/domain/types/SqlCharacterSemantics.cpp
+    QueryExecutionService/domain/types/SqlDateTimeSemantics.cpp
     QueryExecutionService/domain/codec/SqlNumericRowCodec.cpp
     QueryExecutionService/adapter/RdbServiceAdapter.cpp
     QueryExecutionService/domain/predicate/WherePredicateEvaluator.cpp
@@ -250,6 +251,7 @@ add_executable(tests
     QueryExecutionService/test/domain/SqlNumericSemanticsTest.cpp
     QueryExecutionService/test/domain/SqlCharacterSemanticsTest.cpp
     QueryExecutionService/test/domain/SqlDateTimeValueTest.cpp
+    QueryExecutionService/test/domain/SqlDateTimeSemanticsTest.cpp
     QueryExecutionService/test/SqlTupleCodec/SqlNumericRowCodecTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianEncodingTest.cpp
     QueryExecutionService/test/SqlTupleCodec/LittleEndianDecodingTest.cpp
