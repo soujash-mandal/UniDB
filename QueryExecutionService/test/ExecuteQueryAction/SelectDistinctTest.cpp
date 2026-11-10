@@ -99,11 +99,10 @@ TEST(ExecuteQueryActionTest, RejectsDistinctOrderByColumnOutsideProjection) {
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));
-  EXPECT_NE(
-      std::get<QueryExecutionService::QueryExecutionError>(outcome)
-          .message.find(
-              "ORDER BY column must appear in SELECT list when DISTINCT"),
-      std::string::npos);
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome)
+                .message.find(
+                    "ORDER BY column must appear in SELECT list when DISTINCT"),
+            std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
