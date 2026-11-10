@@ -18,11 +18,11 @@ TEST(SqlCharacterSemanticsTest, CountsUtf8CharactersRatherThanBytes) {
 }
 
 TEST(SqlCharacterSemanticsTest, RejectsMalformedUtf8) {
-  EXPECT_THROW(countSqlCharacters(std::string("\xc0\xaf", 2)),
+  EXPECT_THROW(countSqlCharacters(std::string("\\xc0\\xaf", 2)),
                std::invalid_argument);
-  EXPECT_THROW(countSqlCharacters(std::string("\xe2\x82", 2)),
+  EXPECT_THROW(countSqlCharacters(std::string("\\xe2\\x82", 2)),
                std::invalid_argument);
-  EXPECT_THROW(countSqlCharacters(std::string("\xed\xa0\x80", 3)),
+  EXPECT_THROW(countSqlCharacters(std::string("\\xed\\xa0\\x80", 3)),
                std::invalid_argument);
 }
 
@@ -41,9 +41,11 @@ TEST(SqlCharacterSemanticsTest, BlankPadsCharToDeclaredCharacterLength) {
 
 TEST(SqlCharacterSemanticsTest,
      AllowsOnlyExcessTrailingSpacesBeyondCharLength) {
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("CHAR(3)"), "cat  "),
-            "cat");
-  EXPECT_THROW(normalizeSqlCharacterValue(resolveSqlType("CHAR(3)"), "cats"),
+  const auto charType =
+      resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 3});
+
+  EXPECT_EQ(normalizeSqlCharacterValue(charType, "cat  "), "cat");
+  EXPECT_THROW(normalizeSqlCharacterValue(charType, "cats"),
                std::invalid_argument);
 }
 
@@ -54,7 +56,9 @@ TEST(SqlCharacterSemanticsTest, EnforcesVarcharLengthInCharacters) {
           "東京"),
       "東京");
   EXPECT_THROW(
-      normalizeSqlCharacterValue(resolveSqlType("VARCHAR(2)"), "東京市"),
+      normalizeSqlCharacterValue(
+          resolveSqlType("VARCHAR", unidb::sql::SqlTypeModifier{.length = 2}),
+          "東京市"),
       std::invalid_argument);
 }
 
@@ -67,8 +71,7 @@ TEST(SqlCharacterSemanticsTest, VarcharAllowsExcessTrailingSpaces) {
 }
 
 TEST(SqlCharacterSemanticsTest, UnboundedVarcharAndTextPreserveInput) {
-  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), "a  "),
-            "a  ");
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), "a  "), "a  ");
   EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("TEXT"), "a  "), "a  ");
 }
 
