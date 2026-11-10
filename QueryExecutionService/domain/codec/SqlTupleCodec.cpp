@@ -2,6 +2,7 @@
 #include "SqlNumericRowCodec.h"
 
 #include "../types/SqlIntegerSemantics.h"
+#include "../types/SqlCharacterSemantics.h"
 
 #include <bit>
 #include <limits>
@@ -64,6 +65,7 @@ unidb::sql::SqlNumericValue readNumeric(const std::vector<char> &bytes,
 }
 
 void appendText(std::vector<char> &out, const std::string &value) {
+  (void)QueryExecutionService::domain::countSqlCharacters(value);
   if (value.size() > std::numeric_limits<uint32_t>::max()) {
     throw std::invalid_argument("TEXT value exceeds V1 tuple length limit");
   }
@@ -77,6 +79,7 @@ std::string readText(const std::vector<char> &bytes, std::size_t &offset) {
     throw std::runtime_error("Tuple text value is truncated");
   }
   std::string value(bytes.data() + offset, length);
+  (void)QueryExecutionService::domain::countSqlCharacters(value);
   offset += length;
   return value;
 }
