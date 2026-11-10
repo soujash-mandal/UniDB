@@ -1,4 +1,5 @@
 #include "../../domain/codec/SqlTupleCodec.h"
+#include "../../domain/planning/SqlStatementRules.h"
 #include "ExecuteQueryActionTestSupport.h"
 
 #include <gtest/gtest.h>
@@ -58,10 +59,11 @@ TEST(ExecuteQueryActionCharacterTest, RejectsVarcharOverflowByCharacters) {
 
 TEST(ExecuteQueryActionCharacterTest, RejectsMalformedUtf8BeforeWriting) {
   FakeQesRdbServicePort port;
+  unidb::sql::SqlTypeModifier modifier;
+  modifier.length = 2;
   port.schema = {{"value", unidb::sql::SqlType::Text,
                   unidb::sql::SqlTypeDescriptor{
-                      unidb::sql::SqlTypeId::Varchar,
-                      unidb::sql::SqlTypeModifier{2, {}, {}}}}};
+                      unidb::sql::SqlTypeId::Varchar, modifier}}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
