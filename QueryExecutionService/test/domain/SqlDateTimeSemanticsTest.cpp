@@ -20,6 +20,20 @@ TEST(SqlDateTimeSemanticsTest, AcceptsLeapDaysOnlyInLeapYears) {
   EXPECT_THROW(domain::makeSqlDate(2023, 2, 29), std::invalid_argument);
 }
 
+TEST(SqlDateTimeSemanticsTest, ConvertsBcDatesAcrossTheEraBoundary) {
+  const auto lastBcDay = domain::makeSqlDate(-1, 12, 31);
+  const auto firstAdDay = domain::makeSqlDate(1, 1, 1);
+
+  EXPECT_EQ(firstAdDay.daysSincePostgresEpoch -
+                lastBcDay.daysSincePostgresEpoch,
+            1);
+}
+
+TEST(SqlDateTimeSemanticsTest, AppliesLeapYearRulesToBcYearNumbering) {
+  EXPECT_NO_THROW(domain::makeSqlDate(-1, 2, 29));
+  EXPECT_THROW(domain::makeSqlDate(-4, 2, 29), std::invalid_argument);
+}
+
 TEST(SqlDateTimeSemanticsTest, RejectsInvalidCalendarComponents) {
   EXPECT_THROW(domain::makeSqlDate(2000, 0, 1), std::invalid_argument);
   EXPECT_THROW(domain::makeSqlDate(2000, 13, 1), std::invalid_argument);
