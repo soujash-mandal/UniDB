@@ -73,7 +73,8 @@ TEST(ExecuteQueryActionUnionTest, RejectsDifferentColumnTypes) {
 TEST(ExecuteQueryActionUnionTest, UsesCharBlankPaddedEquality) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"id", unidb::sql::SqlType::Int},
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}}};
   port.rows = {
@@ -102,7 +103,8 @@ TEST(ExecuteQueryActionUnionTest, UsesCharBlankPaddedEquality) {
 TEST(ExecuteQueryActionUnionTest, KeepsVarcharTrailingSpacesSignificant) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"id", unidb::sql::SqlType::Int},
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}}};
   port.rows = {
@@ -127,7 +129,8 @@ TEST(ExecuteQueryActionUnionTest, KeepsVarcharTrailingSpacesSignificant) {
 TEST(ExecuteQueryActionUnionTest, AppliesDeclaredCharacterTypePerColumn) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"id", unidb::sql::SqlType::Int},
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}},
       {"code", unidb::sql::SqlType::Text,
@@ -161,7 +164,8 @@ TEST(ExecuteQueryActionUnionTest, AppliesDeclaredCharacterTypePerColumn) {
 TEST(ExecuteQueryActionUnionTest, KeepsTextTrailingSpacesSignificant) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"id", unidb::sql::SqlType::Int},
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}}};
   port.rows = {
