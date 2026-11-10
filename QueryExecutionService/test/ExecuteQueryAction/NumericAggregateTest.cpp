@@ -162,23 +162,23 @@ TEST(ExecuteQueryActionNumericAggregateTest,
 
   auto action = makeQesAction(port, parser);
   const auto minimum = action.execute("SELECT MIN(amount) FROM decimals");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(minimum));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          minimum));
   const auto &minimumRows =
       std::get<QueryExecutionService::QueryExecutionResult>(minimum).rows;
   ASSERT_EQ(minimumRows.size(), 1U);
-  EXPECT_EQ(formatSqlNumericValue(
-                std::get<SqlNumericValue>(minimumRows[0][0])),
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(minimumRows[0][0])),
             "0.1");
 
   const auto maximum = action.execute("SELECT MAX(amount) FROM decimals");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(maximum));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          maximum));
   const auto &maximumRows =
       std::get<QueryExecutionService::QueryExecutionResult>(maximum).rows;
   ASSERT_EQ(maximumRows.size(), 1U);
-  EXPECT_EQ(formatSqlNumericValue(
-                std::get<SqlNumericValue>(maximumRows[0][0])),
+  EXPECT_EQ(formatSqlNumericValue(std::get<SqlNumericValue>(maximumRows[0][0])),
             "1.25");
 }
 
@@ -197,16 +197,18 @@ TEST(ExecuteQueryActionNumericAggregateTest,
                      "('sales', 0.5), ('sales', 0.1), "
                      "('operations', 1.0), ('operations', 1.25), "
                      "('support', 0.2)");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(inserted));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
   port.rows = port.insertedRows;
 
-  const auto minimum = action.execute(
-      "SELECT department, MIN(amount) AS lowest FROM decimals "
-      "GROUP BY department HAVING MIN(amount) = 0.1 "
-      "ORDER BY department ASC");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(minimum));
+  const auto minimum =
+      action.execute("SELECT department, MIN(amount) AS lowest FROM decimals "
+                     "GROUP BY department HAVING MIN(amount) = 0.1 "
+                     "ORDER BY department ASC");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          minimum));
   const auto &minimumResult =
       std::get<QueryExecutionService::QueryExecutionResult>(minimum);
   ASSERT_EQ(minimumResult.rows.size(), 2U);
@@ -219,12 +221,13 @@ TEST(ExecuteQueryActionNumericAggregateTest,
                 std::get<SqlNumericValue>(minimumResult.rows[1][1])),
             "0.1");
 
-  const auto maximum = action.execute(
-      "SELECT department, MAX(amount) AS highest FROM decimals "
-      "GROUP BY department HAVING MAX(amount) >= 1 "
-      "ORDER BY department ASC");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(maximum));
+  const auto maximum =
+      action.execute("SELECT department, MAX(amount) AS highest FROM decimals "
+                     "GROUP BY department HAVING MAX(amount) >= 1 "
+                     "ORDER BY department ASC");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          maximum));
   const auto &maximumResult =
       std::get<QueryExecutionService::QueryExecutionResult>(maximum);
   ASSERT_EQ(maximumResult.rows.size(), 1U);
