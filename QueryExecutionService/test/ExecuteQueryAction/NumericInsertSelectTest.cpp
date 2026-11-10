@@ -399,8 +399,10 @@ TEST(ExecuteQueryActionNumericTest,
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(selected).rows;
   ASSERT_EQ(rows.size(), 2U);
-  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(std::get<SqlNumericValue>(rows[0][0])),
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][0])),
             "0.33333333333333333333");
-  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(std::get<SqlNumericValue>(rows[1][0])),
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[1][0])),
             "333333.333333333333");
 }
