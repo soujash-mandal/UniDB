@@ -283,6 +283,7 @@ add_executable(tests
     QueryExecutionService/domain/parser/test/SqlParserBooleanTest.cpp
         QueryExecutionService/test/ExecuteQueryAction/NumericInsertSelectTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/CharacterInsertAssignmentTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/CharacterTypesPersistAcrossRestartTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/NumericAggregateTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserTypeDeclarationTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserWhereTest.cpp
