@@ -210,7 +210,6 @@ TEST(ExecuteQueryActionNumericTest,
             std::string::npos);
 }
 
-
 TEST(ExecuteQueryActionNumericTest, EvaluatesExactNumericArithmeticInSelect) {
   auto port = makeNumericPort();
   unidb::sql::SqlParserImpl parser;
@@ -287,8 +286,7 @@ TEST(ExecuteQueryActionNumericTest, ReportsNumericDivisionByZero) {
           inserted));
   port.rows = port.insertedRows;
 
-  const auto outcome =
-      action.execute("SELECT amount / 0.0 FROM decimals");
+  const auto outcome = action.execute("SELECT amount / 0.0 FROM decimals");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           outcome));

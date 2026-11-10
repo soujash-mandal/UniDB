@@ -96,7 +96,6 @@ TEST(SqlParserIntegerExpressionTest, RejectsMalformedAndOutOfRangeExpressions) {
 } // namespace
 } // namespace unidb::sql
 
-
 TEST(SqlParserIntegerExpressionTest, ParsesExactDecimalArithmeticLiterals) {
   SqlParserImpl parser;
   const auto result =
