@@ -7,7 +7,7 @@
 namespace QueryExecutionService::domain {
 namespace {
 
-bool isLeapYear(std::int32_t year) {
+bool isLeapYear(std::int64_t year) {
   return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
 }
 
@@ -24,8 +24,11 @@ SqlDate makeSqlDate(std::int32_t year, std::uint8_t month, std::uint8_t day) {
     throw std::invalid_argument("Invalid SQL calendar date");
   }
 
+  // SQL BC years omit year zero; map them to astronomical numbering.
+  const std::int64_t astronomicalYear = year < 0 ? std::int64_t{year} + 1 : year;
+
   auto maximumDay = daysInMonth[month - 1];
-  if (month == 2 && isLeapYear(year)) {
+  if (month == 2 && isLeapYear(astronomicalYear)) {
     ++maximumDay;
   }
   if (day < 1 || day > maximumDay) {
@@ -33,7 +36,7 @@ SqlDate makeSqlDate(std::int32_t year, std::uint8_t month, std::uint8_t day) {
   }
 
   // Howard Hinnant's proleptic-Gregorian civil-date conversion.
-  std::int64_t adjustedYear = year;
+  std::int64_t adjustedYear = astronomicalYear;
   adjustedYear -= month <= 2;
   const auto era =
       (adjustedYear >= 0 ? adjustedYear : adjustedYear - 399) / 400;
@@ -46,7 +49,7 @@ SqlDate makeSqlDate(std::int32_t year, std::uint8_t month, std::uint8_t day) {
       yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
   const auto daysSinceUnixEpoch = era * 146097 + dayOfEra - 719468;
   constexpr std::int64_t postgresEpochFromUnixEpoch = 10957;
-  const auto result = daysSinceUnixEpoch + postgresEpochFromUnixEpoch;
+  const auto result = daysSinceUnixEpoch - postgresEpochFromUnixEpoch;
 
   if (result < std::numeric_limits<std::int32_t>::min() ||
       result > std::numeric_limits<std::int32_t>::max()) {
