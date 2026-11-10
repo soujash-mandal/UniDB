@@ -5,12 +5,14 @@
 #include <cstdint>
 #include <type_traits>
 
-using QueryExecutionService::domain::SqlDate;
-using QueryExecutionService::domain::SqlInterval;
-using QueryExecutionService::domain::SqlTime;
-using QueryExecutionService::domain::SqlTimestamp;
-using QueryExecutionService::domain::SqlTimestampWithTimeZone;
-using QueryExecutionService::domain::SqlTimeWithTimeZone;
+namespace domain = QueryExecutionService::domain;
+
+using domain::SqlDate;
+using domain::SqlInterval;
+using domain::SqlTime;
+using domain::SqlTimeWithTimeZone;
+using domain::SqlTimestamp;
+using domain::SqlTimestampWithTimeZone;
 
 static_assert(!std::is_convertible_v<SqlDate, SqlTime>);
 static_assert(!std::is_convertible_v<SqlTime, SqlTimestamp>);
