@@ -9,6 +9,7 @@
 
 TEST(ExecuteQueryActionCharacterIntegrationTest,
      PersistsCharacterTypesAndNormalizedValuesAcrossRestart) {
+  using Result = QueryExecutionService::QueryExecutionResult;
   const auto databaseFile = std::filesystem::temp_directory_path() /
                             "unidb_character_types_restart_test.db";
   std::filesystem::remove(databaseFile);
@@ -20,16 +21,14 @@ TEST(ExecuteQueryActionCharacterIntegrationTest,
     const auto created = container.executeQueryAction().execute(
         "CREATE TABLE labels (fixed CHAR(5), bounded VARCHAR(8), "
         "unbounded VARCHAR, description TEXT)");
-    ASSERT_TRUE(std::holds_alternative<
-                QueryExecutionService::QueryExecutionResult>(created))
+    ASSERT_TRUE(std::holds_alternative<Result>(created))
         << std::get<QueryExecutionService::QueryExecutionError>(created)
                .message;
 
     const auto inserted = container.executeQueryAction().execute(
         "INSERT INTO labels (fixed, bounded, unbounded, description) "
         "VALUES ('cat', 'éclair', '  keep  ', 'hello 🌍')");
-    ASSERT_TRUE(std::holds_alternative<
-                QueryExecutionService::QueryExecutionResult>(inserted))
+    ASSERT_TRUE(std::holds_alternative<Result>(inserted))
         << std::get<QueryExecutionService::QueryExecutionError>(inserted)
                .message;
     container.flushDirtyPages();
@@ -41,8 +40,7 @@ TEST(ExecuteQueryActionCharacterIntegrationTest,
 
     const auto selected =
         reopened.executeQueryAction().execute("SELECT * FROM labels");
-    ASSERT_TRUE(std::holds_alternative<
-                QueryExecutionService::QueryExecutionResult>(selected))
+    ASSERT_TRUE(std::holds_alternative<Result>(selected))
         << std::get<QueryExecutionService::QueryExecutionError>(selected)
                .message;
     const auto &result =
