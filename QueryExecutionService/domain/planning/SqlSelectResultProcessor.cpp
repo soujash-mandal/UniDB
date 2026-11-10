@@ -241,14 +241,6 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     return result;
   }
 
-  const bool hasIntegerExpression = std::any_of(
-      select.integerExpressions.begin(), select.integerExpressions.end(),
-      [](const auto &expression) { return expression.has_value(); });
-  if (hasIntegerExpression && select.distinct) {
-    throw std::invalid_argument(
-        "SELECT DISTINCT cannot be combined with integer expressions yet");
-  }
-
   if (select.distinct) {
     std::set<std::vector<SqlValue>, SqlValueVectorLess> seenProjections;
     matchedRows.erase(

@@ -294,3 +294,36 @@ TEST(ExecuteQueryActionNumericTest, ReportsNumericDivisionByZero) {
                 .message.find("Division by zero"),
             std::string::npos);
 }
+
+
+TEST(ExecuteQueryActionNumericTest,
+     SupportsDistinctExactNumericArithmeticExpressions) {
+  auto port = makeNumericPort();
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto inserted = action.execute(
+      "INSERT INTO decimals (amount) VALUES (0.1), (0.1), (0.2), (0.3)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted));
+  port.rows = port.insertedRows;
+
+  const auto selected =
+      action.execute("SELECT DISTINCT amount + 0.1 FROM decimals");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          selected));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(selected).rows;
+  ASSERT_EQ(rows.size(), 3U);
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[0][0])),
+            "0.2");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[1][0])),
+            "0.3");
+  EXPECT_EQ(QueryExecutionService::domain::formatSqlNumericValue(
+                std::get<SqlNumericValue>(rows[2][0])),
+            "0.4");
+}
