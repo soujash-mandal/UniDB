@@ -105,3 +105,48 @@ TEST(ExecuteQueryActionTest, RejectsDistinctOrderByColumnOutsideProjection) {
             std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+TEST(ExecuteQueryActionTest, DistinctUsesCharBlankPaddedEquality) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Char, {4}}}};
+  port.rows = {
+      SqlTupleCodec::encode(port.schema, {std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::string("a  ")}),
+      SqlTupleCodec::encode(port.schema, {std::string("b")}),
+  };
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute("SELECT DISTINCT name FROM people;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "a");
+  EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "b");
+}
+
+TEST(ExecuteQueryActionTest, DistinctKeepsVarcharTrailingSpacesSignificant) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar, {8}}}};
+  port.rows = {
+      SqlTupleCodec::encode(port.schema, {std::string("a")}),
+      SqlTupleCodec::encode(port.schema, {std::string("a ")}),
+  };
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute("SELECT DISTINCT name FROM people;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+}
