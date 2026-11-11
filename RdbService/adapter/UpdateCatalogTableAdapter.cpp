@@ -27,6 +27,18 @@ DataType toCatalogType(RdbDataType type) {
     return DataType::CHAR;
   case RdbDataType::TEXT:
     return DataType::TEXT;
+  case RdbDataType::DATE:
+    return DataType::DATE;
+  case RdbDataType::TIME:
+    return DataType::TIME;
+  case RdbDataType::TIME_WITH_TIME_ZONE:
+    return DataType::TIME_WITH_TIME_ZONE;
+  case RdbDataType::TIMESTAMP:
+    return DataType::TIMESTAMP;
+  case RdbDataType::TIMESTAMP_WITH_TIME_ZONE:
+    return DataType::TIMESTAMP_WITH_TIME_ZONE;
+  case RdbDataType::INTERVAL:
+    return DataType::INTERVAL;
   }
   throw std::invalid_argument("Unsupported RDB column type");
 }
@@ -40,7 +52,8 @@ Table toCatalogTable(const RdbTableDefinition &table,
   for (const auto &column : table.columns) {
     result.columns.push_back(Column{
         column.name, toCatalogType(column.type), column.size, column.nullable,
-        column.numericPrecision, column.numericScale, column.characterLength});
+        column.numericPrecision, column.numericScale, column.characterLength,
+        column.temporalPrecision});
   }
   return result;
 }
