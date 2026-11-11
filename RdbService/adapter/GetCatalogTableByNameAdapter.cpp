@@ -49,10 +49,10 @@ RdbTableDefinition fromCatalogTable(const Table &table) {
   result.firstSpaceMapPageId = table.firstFreeSpaceMapPageId;
   result.columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
-    result.columns.push_back(RdbColumn{
-        column.name, fromCatalogType(column.type), column.size, column.nullable,
-        column.numericPrecision, column.numericScale, column.characterLength,
-        column.temporalPrecision});
+    result.columns.push_back(
+        RdbColumn{column.name, fromCatalogType(column.type), column.size,
+                  column.nullable, column.numericPrecision, column.numericScale,
+                  column.characterLength, column.temporalPrecision});
   }
   return result;
 }

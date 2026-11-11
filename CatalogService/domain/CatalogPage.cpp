@@ -59,15 +59,14 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument("VARCHAR length must be positive");
     if (!characterType && column.characterLength)
       throw std::invalid_argument("Character length requires CHAR or VARCHAR");
-    const bool temporalType =
-        column.type == DataType::TIME ||
-        column.type == DataType::TIME_WITH_TIME_ZONE ||
-        column.type == DataType::TIMESTAMP ||
-        column.type == DataType::TIMESTAMP_WITH_TIME_ZONE;
+    const bool temporalType = column.type == DataType::TIME ||
+                              column.type == DataType::TIME_WITH_TIME_ZONE ||
+                              column.type == DataType::TIMESTAMP ||
+                              column.type == DataType::TIMESTAMP_WITH_TIME_ZONE;
     if (!temporalType && column.temporalPrecision.has_value())
-      throw std::invalid_argument("Temporal precision requires a TIME or TIMESTAMP column");
-    if (column.temporalPrecision.has_value() &&
-        *column.temporalPrecision > 6)
+      throw std::invalid_argument(
+          "Temporal precision requires a TIME or TIMESTAMP column");
+    if (column.temporalPrecision.has_value() && *column.temporalPrecision > 6)
       throw std::invalid_argument("Temporal precision must be between 0 and 6");
     if (column.numericPrecision.has_value() ||
         column.numericScale.has_value() || column.characterLength.has_value() ||

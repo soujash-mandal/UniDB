@@ -12,12 +12,12 @@ TEST(CatalogPage, RoundTripsDateTimeTypeIdentityAndTemporalPrecision) {
   Table table = makeCatalogPageTestTable(42, "datetime_types");
   table.columns = {
       Column{"date_value", DataType::DATE},
-      Column{"time_value", DataType::TIME, 0, false, std::nullopt,
-             std::nullopt, std::nullopt, std::uint32_t{0}},
+      Column{"time_value", DataType::TIME, 0, false, std::nullopt, std::nullopt,
+             std::nullopt, std::uint32_t{0}},
       Column{"timetz_value", DataType::TIME_WITH_TIME_ZONE, 0, false,
              std::nullopt, std::nullopt, std::nullopt, std::uint32_t{3}},
-      Column{"timestamp_value", DataType::TIMESTAMP, 0, false,
-             std::nullopt, std::nullopt, std::nullopt, std::uint32_t{6}},
+      Column{"timestamp_value", DataType::TIMESTAMP, 0, false, std::nullopt,
+             std::nullopt, std::nullopt, std::uint32_t{6}},
       Column{"timestamptz_value", DataType::TIMESTAMP_WITH_TIME_ZONE, 0, false,
              std::nullopt, std::nullopt, std::nullopt, std::uint32_t{2}},
       Column{"interval_value", DataType::INTERVAL},
@@ -46,8 +46,8 @@ TEST(CatalogPage, RejectsTemporalPrecisionOnNonTemporalTypes) {
   CatalogPage page;
   Table table = makeCatalogPageTestTable(43, "invalid_datetime_modifier");
   table.columns = {
-      Column{"date_value", DataType::DATE, 0, false, std::nullopt,
-             std::nullopt, std::nullopt, std::uint32_t{3}},
+      Column{"date_value", DataType::DATE, 0, false, std::nullopt, std::nullopt,
+             std::nullopt, std::uint32_t{3}},
   };
 
   EXPECT_THROW(page.insert(table), std::invalid_argument);
@@ -57,8 +57,8 @@ TEST(CatalogPage, RejectsTemporalPrecisionAbovePostgresMaximum) {
   CatalogPage page;
   Table table = makeCatalogPageTestTable(44, "invalid_datetime_precision");
   table.columns = {
-      Column{"time_value", DataType::TIME, 0, false, std::nullopt,
-             std::nullopt, std::nullopt, std::uint32_t{7}},
+      Column{"time_value", DataType::TIME, 0, false, std::nullopt, std::nullopt,
+             std::nullopt, std::uint32_t{7}},
   };
 
   EXPECT_THROW(page.insert(table), std::invalid_argument);
