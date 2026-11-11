@@ -22,8 +22,8 @@ struct CivilDate {
   std::int32_t day;
 };
 
-constexpr std::array<std::int32_t, 12> kDaysInMonth{
-    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+constexpr std::array<std::int32_t, 12> kDaysInMonth{31, 28, 31, 30, 31, 30,
+                                                    31, 31, 30, 31, 30, 31};
 
 bool isLeapYear(std::int64_t year) {
   return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
@@ -45,8 +45,7 @@ CivilDate civilDateFromPostgresDays(std::int64_t days) {
   const auto era = floorDivide(z, 146'097);
   const auto dayOfEra = z - era * 146'097;
   const auto yearOfEra =
-      (dayOfEra - dayOfEra / 1'460 + dayOfEra / 36'524 -
-       dayOfEra / 146'096) /
+      (dayOfEra - dayOfEra / 1'460 + dayOfEra / 36'524 - dayOfEra / 146'096) /
       365;
   auto year = yearOfEra + era * 400;
   const auto dayOfYear =
@@ -76,8 +75,7 @@ std::int64_t timestampToMicroseconds(const SqlTimestamp &timestamp) {
   }
 
   const auto minimumDay = floorDivide(kMinimumTimestamp, kMicrosecondsPerDay);
-  const auto maximumDay =
-      floorDivide(kEndTimestamp - 1, kMicrosecondsPerDay);
+  const auto maximumDay = floorDivide(kEndTimestamp - 1, kMicrosecondsPerDay);
   if (day < minimumDay || day > maximumDay) {
     throw std::out_of_range("SQL timestamp is outside PostgreSQL's range");
   }
@@ -103,19 +101,16 @@ SqlTimestamp timestampFromMicroseconds(std::int64_t value) {
       day > std::numeric_limits<std::int32_t>::max()) {
     throw std::out_of_range("SQL timestamp date is outside its representation");
   }
-  return SqlTimestamp{SqlDate{static_cast<std::int32_t>(day)},
-                      SqlTime{time}};
+  return SqlTimestamp{SqlDate{static_cast<std::int32_t>(day)}, SqlTime{time}};
 }
 
 SqlDate addCalendarMonths(SqlDate date, std::int32_t months) {
   const auto civil = civilDateFromPostgresDays(date.daysSinceEpoch);
   const auto currentMonthIndex = civil.year * 12 + civil.month - 1;
   if ((months > 0 &&
-       currentMonthIndex >
-           std::numeric_limits<std::int64_t>::max() - months) ||
+       currentMonthIndex > std::numeric_limits<std::int64_t>::max() - months) ||
       (months < 0 &&
-       currentMonthIndex <
-           std::numeric_limits<std::int64_t>::min() - months)) {
+       currentMonthIndex < std::numeric_limits<std::int64_t>::min() - months)) {
     throw std::out_of_range("SQL timestamp month arithmetic overflow");
   }
 
@@ -126,8 +121,7 @@ SqlDate addCalendarMonths(SqlDate date, std::int32_t months) {
   const auto targetDay =
       std::min(civil.day, daysInMonth(targetYear, targetMonth));
 
-  const auto sqlYear =
-      targetYear <= 0 ? targetYear - 1 : targetYear;
+  const auto sqlYear = targetYear <= 0 ? targetYear - 1 : targetYear;
   if (sqlYear < std::numeric_limits<std::int32_t>::min() ||
       sqlYear > std::numeric_limits<std::int32_t>::max()) {
     throw std::out_of_range("SQL timestamp year is outside its representation");
