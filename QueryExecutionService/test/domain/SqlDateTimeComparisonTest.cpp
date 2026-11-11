@@ -8,18 +8,18 @@
 namespace domain = QueryExecutionService::domain;
 
 TEST(SqlDateTimeComparisonTest, ComparesDatesByPostgresEpochDay) {
-  EXPECT_EQ(domain::compareSqlTemporalValues(domain::SqlDate{-1},
-                                              domain::SqlDate{0}),
-            std::strong_ordering::less);
+  EXPECT_EQ(
+      domain::compareSqlTemporalValues(domain::SqlDate{-1}, domain::SqlDate{0}),
+      std::strong_ordering::less);
   EXPECT_EQ(domain::compareSqlTemporalValues(domain::SqlDate{42},
-                                              domain::SqlDate{42}),
+                                             domain::SqlDate{42}),
             std::strong_ordering::equal);
 }
 
 TEST(SqlDateTimeComparisonTest, ComparesLocalTimesWithoutTimezoneConversion) {
-  EXPECT_EQ(domain::compareSqlTemporalValues(domain::SqlTime{1},
-                                              domain::SqlTime{2}),
-            std::strong_ordering::less);
+  EXPECT_EQ(
+      domain::compareSqlTemporalValues(domain::SqlTime{1}, domain::SqlTime{2}),
+      std::strong_ordering::less);
 }
 
 TEST(SqlDateTimeComparisonTest, ComparesTimeWithTimeZoneAsUtcClockTime) {
@@ -37,7 +37,7 @@ TEST(SqlDateTimeComparisonTest, WrapsTimeWithTimeZoneAcrossMidnight) {
   const domain::SqlTimeWithTimeZone quarterToMidnightUtc{
       domain::SqlTime{23LL * 3600 * 1'000'000 + 45LL * 60 * 1'000'000}, 0};
   EXPECT_EQ(domain::compareSqlTemporalValues(halfPastMidnightPlusOne,
-                                              quarterToMidnightUtc),
+                                             quarterToMidnightUtc),
             std::strong_ordering::less);
 }
 
@@ -67,7 +67,7 @@ TEST(SqlDateTimeComparisonTest, ComparesTimestampWithTimeZoneAsAnInstant) {
 
 TEST(SqlDateTimeComparisonTest, UsesThirtyDayMonthsForIntervalComparison) {
   EXPECT_EQ(domain::compareSqlTemporalValues(domain::SqlInterval{1, 0, 0},
-                                              domain::SqlInterval{0, 30, 0}),
+                                             domain::SqlInterval{0, 30, 0}),
             std::strong_ordering::equal);
   EXPECT_EQ(domain::compareSqlTemporalValues(
                 domain::SqlInterval{0, 1, 86'400LL * 1'000'000},
@@ -83,7 +83,7 @@ TEST(SqlDateTimeComparisonTest, NormalizesNegativeIntervalRemainders) {
 }
 
 TEST(SqlDateTimeComparisonTest, RejectsCrossTypeComparisons) {
-  EXPECT_THROW(domain::compareSqlTemporalValues(domain::SqlDate{0},
-                                                 domain::SqlTime{0}),
-               std::invalid_argument);
+  EXPECT_THROW(
+      domain::compareSqlTemporalValues(domain::SqlDate{0}, domain::SqlTime{0}),
+      std::invalid_argument);
 }
