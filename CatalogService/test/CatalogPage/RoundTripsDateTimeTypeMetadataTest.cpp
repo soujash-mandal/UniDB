@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <cstring>
 #include <optional>
 #include <stdexcept>
 
@@ -23,7 +24,9 @@ TEST(CatalogPage, RoundTripsDateTimeTypeIdentityAndTemporalPrecision) {
   };
 
   page.insert(table);
-  const Table restored = page.get(42);
+  CatalogPage reloadedPage;
+  std::memcpy(reloadedPage.data(), page.data(), CatalogPage::PAGE_SIZE);
+  const Table restored = reloadedPage.get(42);
 
   ASSERT_EQ(restored.columns.size(), 6);
   EXPECT_EQ(restored.columns[0].type, DataType::DATE);
@@ -59,4 +62,23 @@ TEST(CatalogPage, RejectsTemporalPrecisionAbovePostgresMaximum) {
   };
 
   EXPECT_THROW(page.insert(table), std::invalid_argument);
+}
+
+TEST(CatalogPage, UpdatesDateTimeMetadataWithoutLosingTypeOrPrecision) {
+  CatalogPage page;
+  Table table = makeCatalogPageTestTable(45, "datetime_update");
+  table.columns = {
+      Column{"event_time", DataType::TIMESTAMP_WITH_TIME_ZONE, 0, false,
+             std::nullopt, std::nullopt, std::nullopt, std::uint32_t{3}},
+  };
+  page.insert(table);
+
+  Table updated = page.get(45);
+  updated.columns[0].temporalPrecision = 6;
+  page.update(updated);
+
+  const Table restored = page.get(45);
+  ASSERT_EQ(restored.columns.size(), 1);
+  EXPECT_EQ(restored.columns[0].type, DataType::TIMESTAMP_WITH_TIME_ZONE);
+  EXPECT_EQ(restored.columns[0].temporalPrecision, 6);
 }
