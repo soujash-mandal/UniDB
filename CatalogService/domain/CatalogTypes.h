@@ -20,7 +20,13 @@ enum class DataType {
   SMALLINT,
   NUMERIC,
   CHAR,
-  TEXT
+  TEXT,
+  DATE,
+  TIME,
+  TIME_WITH_TIME_ZONE,
+  TIMESTAMP,
+  TIMESTAMP_WITH_TIME_ZONE,
+  INTERVAL
 };
 
 struct Column {
@@ -31,6 +37,7 @@ struct Column {
   std::optional<std::uint32_t> numericPrecision;
   std::optional<std::int32_t> numericScale;
   std::optional<std::uint32_t> characterLength;
+  std::optional<std::uint32_t> temporalPrecision;
 };
 
 // Logical catalog metadata, independent of page layout.
