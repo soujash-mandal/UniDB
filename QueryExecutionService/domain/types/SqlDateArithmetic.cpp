@@ -13,7 +13,8 @@ constexpr std::int64_t maximumPostgresDate = 2'145'031'948;
 SqlDate checkedSqlDate(std::int64_t daysSinceEpoch) {
   if (daysSinceEpoch < minimumPostgresDate ||
       daysSinceEpoch > maximumPostgresDate) {
-    throw std::out_of_range("DATE arithmetic result is outside PostgreSQL's supported range");
+    throw std::out_of_range(
+        "DATE arithmetic result is outside PostgreSQL's supported range");
   }
   return SqlDate{static_cast<std::int32_t>(daysSinceEpoch)};
 }
@@ -37,7 +38,8 @@ std::int32_t differenceSqlDates(SqlDate lhs, SqlDate rhs) {
                           static_cast<std::int64_t>(rhs.daysSinceEpoch);
   if (difference < std::numeric_limits<std::int32_t>::min() ||
       difference > std::numeric_limits<std::int32_t>::max()) {
-    throw std::out_of_range("DATE difference exceeds PostgreSQL's integer range");
+    throw std::out_of_range(
+        "DATE difference exceeds PostgreSQL's integer range");
   }
   return static_cast<std::int32_t>(difference);
 }

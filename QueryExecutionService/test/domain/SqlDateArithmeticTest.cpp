@@ -25,15 +25,12 @@ TEST(SqlDateArithmeticTest, SubtractsCalendarDaysIncludingNegativeOffsets) {
 }
 
 TEST(SqlDateArithmeticTest, DateDifferenceIsSignedAndUsesCalendarDays) {
-  EXPECT_EQ(domain::differenceSqlDates(domain::SqlDate{10},
-                                       domain::SqlDate{3}),
+  EXPECT_EQ(domain::differenceSqlDates(domain::SqlDate{10}, domain::SqlDate{3}),
             7);
-  EXPECT_EQ(domain::differenceSqlDates(domain::SqlDate{3},
-                                       domain::SqlDate{10}),
+  EXPECT_EQ(domain::differenceSqlDates(domain::SqlDate{3}, domain::SqlDate{10}),
             -7);
-  EXPECT_EQ(domain::differenceSqlDates(domain::SqlDate{42},
-                                       domain::SqlDate{42}),
-            0);
+  EXPECT_EQ(
+      domain::differenceSqlDates(domain::SqlDate{42}, domain::SqlDate{42}), 0);
 }
 
 TEST(SqlDateArithmeticTest, ArithmeticCrossesLeapDayAndPostgresEpoch) {
@@ -62,12 +59,12 @@ TEST(SqlDateArithmeticTest, RejectsResultsOutsidePostgresDateRange) {
 TEST(SqlDateArithmeticTest, HandlesExtremeIntegerOffsetsWithoutOverflow) {
   constexpr domain::SqlDate epoch{0};
 
-  EXPECT_THROW(domain::addSqlDateDays(
-                   epoch, std::numeric_limits<std::int32_t>::min()),
-               std::out_of_range);
-  EXPECT_THROW(domain::addSqlDateDays(
-                   epoch, std::numeric_limits<std::int32_t>::max()),
-               std::out_of_range);
+  EXPECT_THROW(
+      domain::addSqlDateDays(epoch, std::numeric_limits<std::int32_t>::min()),
+      std::out_of_range);
+  EXPECT_THROW(
+      domain::addSqlDateDays(epoch, std::numeric_limits<std::int32_t>::max()),
+      std::out_of_range);
   EXPECT_THROW(domain::subtractSqlDateDays(
                    epoch, std::numeric_limits<std::int32_t>::min()),
                std::out_of_range);
@@ -76,7 +73,8 @@ TEST(SqlDateArithmeticTest, HandlesExtremeIntegerOffsetsWithoutOverflow) {
                std::out_of_range);
 }
 
-TEST(SqlDateArithmeticTest, DateDifferenceFitsPostgresIntegerAtFiniteBoundaries) {
+TEST(SqlDateArithmeticTest,
+     DateDifferenceFitsPostgresIntegerAtFiniteBoundaries) {
   constexpr domain::SqlDate minimum{-2'451'545};
   constexpr domain::SqlDate maximum{2'145'031'948};
 
