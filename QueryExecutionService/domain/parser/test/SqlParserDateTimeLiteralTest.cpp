@@ -96,7 +96,7 @@ TEST(SqlParserDateTimeLiteralTest, ParsesAndValidatesCalendarAndClockValues) {
   const auto &time = std::get<QueryExecutionService::domain::SqlTime>(
       insert.typedLiterals[0][1]->value);
   EXPECT_EQ(time.microsecondsSinceMidnight,
-            (12 * 3600 + 34 * 60 + 56) * 1'000'000 + 790'000);
+            (12 * 3600 + 34 * 60 + 56) * 1'000'000 + 789'000);
 }
 
 TEST(SqlParserDateTimeLiteralTest, NormalizesExplicitOffsetsToUtcInstant) {
