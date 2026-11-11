@@ -83,3 +83,19 @@ TEST(SqlIntervalArithmeticTest, RejectsNegatingMinimumComponentValues) {
   EXPECT_THROW(domain::negateSqlInterval(domain::SqlInterval{0, 0, int64Min}),
                std::out_of_range);
 }
+
+TEST(SqlIntervalArithmeticTest,
+     RejectsSubtractionOverflowForNegativeRightHandComponents) {
+  constexpr auto int32Max = std::numeric_limits<std::int32_t>::max();
+  constexpr auto int64Max = std::numeric_limits<std::int64_t>::max();
+
+  EXPECT_THROW(domain::subtractSqlIntervals(domain::SqlInterval{int32Max, 0, 0},
+                                            domain::SqlInterval{-1, 0, 0}),
+               std::out_of_range);
+  EXPECT_THROW(domain::subtractSqlIntervals(domain::SqlInterval{0, int32Max, 0},
+                                            domain::SqlInterval{0, -1, 0}),
+               std::out_of_range);
+  EXPECT_THROW(domain::subtractSqlIntervals(domain::SqlInterval{0, 0, int64Max},
+                                            domain::SqlInterval{0, 0, -1}),
+               std::out_of_range);
+}
