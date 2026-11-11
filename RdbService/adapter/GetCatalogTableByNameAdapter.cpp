@@ -47,6 +47,7 @@ RdbTableDefinition fromCatalogTable(const Table &table) {
   result.tableId = table.tableId;
   result.name = table.name;
   result.firstSpaceMapPageId = table.firstFreeSpaceMapPageId;
+  result.rowFormatVersion = table.rowFormatVersion;
   result.columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
     result.columns.push_back(
