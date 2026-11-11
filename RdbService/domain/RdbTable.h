@@ -44,4 +44,5 @@ struct RdbTableDefinition {
   std::string name;
   std::vector<RdbColumn> columns;
   uint32_t firstSpaceMapPageId = UINT32_MAX;
+  uint16_t rowFormatVersion = 1;
 };
