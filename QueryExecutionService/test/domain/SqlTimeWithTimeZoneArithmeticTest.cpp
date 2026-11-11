@@ -32,12 +32,12 @@ TEST(SqlTimeWithTimeZoneArithmeticTest,
   const domain::SqlTimeWithTimeZone time{
       domain::SqlTime{30 * kMicrosecondsPerMinute}, -4 * 60 * 60};
 
-  EXPECT_EQ(domain::subtractSqlTimeWithTimeZoneInterval(
-                time, domain::SqlInterval{0, 0, kMicrosecondsPerHour}),
-            (domain::SqlTimeWithTimeZone{
-                domain::SqlTime{23 * kMicrosecondsPerHour +
-                                30 * kMicrosecondsPerMinute},
-                -4 * 60 * 60}));
+  EXPECT_EQ(
+      domain::subtractSqlTimeWithTimeZoneInterval(
+          time, domain::SqlInterval{0, 0, kMicrosecondsPerHour}),
+      (domain::SqlTimeWithTimeZone{domain::SqlTime{23 * kMicrosecondsPerHour +
+                                                   30 * kMicrosecondsPerMinute},
+                                   -4 * 60 * 60}));
 }
 
 TEST(SqlTimeWithTimeZoneArithmeticTest,
@@ -45,10 +45,9 @@ TEST(SqlTimeWithTimeZoneArithmeticTest,
   const domain::SqlTimeWithTimeZone time{
       domain::SqlTime{4 * kMicrosecondsPerHour + 17}, 5 * 60 * 30};
 
-  EXPECT_EQ(
-      domain::addSqlTimeWithTimeZoneInterval(
-          time, domain::SqlInterval{12, 7, 0}),
-      time);
+  EXPECT_EQ(domain::addSqlTimeWithTimeZoneInterval(
+                time, domain::SqlInterval{12, 7, 0}),
+            time);
   EXPECT_EQ(domain::subtractSqlTimeWithTimeZoneInterval(
                 time, domain::SqlInterval{-3, -9, 0}),
             time);
@@ -70,9 +69,9 @@ TEST(SqlTimeWithTimeZoneArithmeticTest, WrapsTwentyFourHourEndpoint) {
   const domain::SqlTimeWithTimeZone endOfDay{
       domain::SqlTime{kMicrosecondsPerDay}, 0};
 
-  EXPECT_EQ(domain::addSqlTimeWithTimeZoneInterval(
-                endOfDay, domain::SqlInterval{}),
-            (domain::SqlTimeWithTimeZone{domain::SqlTime{0}, 0}));
+  EXPECT_EQ(
+      domain::addSqlTimeWithTimeZoneInterval(endOfDay, domain::SqlInterval{}),
+      (domain::SqlTimeWithTimeZone{domain::SqlTime{0}, 0}));
 }
 
 TEST(SqlTimeWithTimeZoneArithmeticTest,
@@ -89,18 +88,17 @@ TEST(SqlTimeWithTimeZoneArithmeticTest,
   const auto subtractMinimumExpected =
       (kMicrosecondsPerDay - negativeExpected) % kMicrosecondsPerDay;
 
-  EXPECT_EQ(domain::addSqlTimeWithTimeZoneInterval(
-                midnight,
-                domain::SqlInterval{
-                    0, 0, std::numeric_limits<std::int64_t>::max()}),
-            (domain::SqlTimeWithTimeZone{
-                domain::SqlTime{positiveExpected}, 19'800}));
-  EXPECT_EQ(domain::subtractSqlTimeWithTimeZoneInterval(
-                midnight,
-                domain::SqlInterval{
-                    0, 0, std::numeric_limits<std::int64_t>::min()}),
-            (domain::SqlTimeWithTimeZone{
-                domain::SqlTime{subtractMinimumExpected}, 19'800}));
+  EXPECT_EQ(
+      domain::addSqlTimeWithTimeZoneInterval(
+          midnight,
+          domain::SqlInterval{0, 0, std::numeric_limits<std::int64_t>::max()}),
+      (domain::SqlTimeWithTimeZone{domain::SqlTime{positiveExpected}, 19'800}));
+  EXPECT_EQ(
+      domain::subtractSqlTimeWithTimeZoneInterval(
+          midnight,
+          domain::SqlInterval{0, 0, std::numeric_limits<std::int64_t>::min()}),
+      (domain::SqlTimeWithTimeZone{domain::SqlTime{subtractMinimumExpected},
+                                   19'800}));
 }
 
 TEST(SqlTimeWithTimeZoneArithmeticTest, RejectsInvalidTimeAndOffsetValues) {
@@ -108,9 +106,10 @@ TEST(SqlTimeWithTimeZoneArithmeticTest, RejectsInvalidTimeAndOffsetValues) {
                    domain::SqlTimeWithTimeZone{domain::SqlTime{-1}, 0},
                    domain::SqlInterval{}),
                std::out_of_range);
-  EXPECT_THROW(domain::subtractSqlTimeWithTimeZoneInterval(
-                   domain::SqlTimeWithTimeZone{
-                       domain::SqlTime{0}, std::numeric_limits<std::int32_t>::max()},
-                   domain::SqlInterval{}),
-               std::out_of_range);
+  EXPECT_THROW(
+      domain::subtractSqlTimeWithTimeZoneInterval(
+          domain::SqlTimeWithTimeZone{domain::SqlTime{0},
+                                      std::numeric_limits<std::int32_t>::max()},
+          domain::SqlInterval{}),
+      std::out_of_range);
 }
