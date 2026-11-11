@@ -1308,10 +1308,10 @@ private:
             typeId != SqlTypeId::Timestamp &&
             typeId != SqlTypeId::TimestampWithTimeZone &&
             typeId != SqlTypeId::Interval) {
-          return syntaxError("Expected a supported date/time literal type");
+          return SqlParseError{SqlParseErrorCode::SyntaxError,\n                               "Expected a supported date/time literal type"};
         }
         if (current().kind != TokenKind::String) {
-          return syntaxError("Expected a quoted string after date/time type");
+          return SqlParseError{SqlParseErrorCode::SyntaxError,\n                               "Expected a quoted string after date/time type"};
         }
         SqlTypedLiteral typed{descriptor, current().text};
         ++position_;
