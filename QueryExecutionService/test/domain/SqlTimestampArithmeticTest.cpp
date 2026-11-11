@@ -56,9 +56,9 @@ TEST(SqlTimestampArithmeticTest, PreservesLocalTimeWhenAddingCalendarDays) {
 
 TEST(SqlTimestampArithmeticTest, MicrosecondsCarryAndBorrowAcrossMidnight) {
   const auto start = timestamp(2024, 3, 1, 30 * kMicrosecondsPerSecond);
-  const auto expectedAfterBorrow =
-      23 * kMicrosecondsPerHour + 59 * 60 * kMicrosecondsPerSecond +
-      30 * kMicrosecondsPerSecond;
+  const auto expectedAfterBorrow = 23 * kMicrosecondsPerHour +
+                                   59 * 60 * kMicrosecondsPerSecond +
+                                   30 * kMicrosecondsPerSecond;
 
   EXPECT_EQ(domain::addSqlTimestampInterval(
                 start, domain::SqlInterval{0, 0, -60 * kMicrosecondsPerSecond}),
