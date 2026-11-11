@@ -1267,7 +1267,32 @@ private:
     return value;
   }
 
-  std::variant<SqlValue, SqlParseError> parseLiteral() {
+  std::variant<ParsedSqlLiteral, SqlParseError> parseLiteral() {
+    if (current().kind == TokenKind::Identifier) {
+      const auto typeName = upper(current().text);
+      if (typeName == "DATE" || typeName == "TIME" ||
+          typeName == "TIMESTAMP" || typeName == "INTERVAL") {
+        auto declaredType = parseDeclaredType();
+        if (const auto *error = std::get_if<SqlParseError>(&declaredType)) {
+          return *error;
+        }
+        const auto descriptor = std::get<SqlTypeDescriptor>(declaredType);
+        const auto typeId = descriptor.id;
+        if (typeId != SqlTypeId::Date && typeId != SqlTypeId::Time &&
+            typeId != SqlTypeId::TimeWithTimeZone &&
+            typeId != SqlTypeId::Timestamp &&
+            typeId != SqlTypeId::TimestampWithTimeZone &&
+            typeId != SqlTypeId::Interval) {
+          return syntaxError("Expected a supported date/time literal type");
+        }
+        if (current().kind != TokenKind::String) {
+          return syntaxError("Expected a quoted string after date/time type");
+        }
+        SqlTypedLiteral typed{descriptor, current().text};
+        ++position_;
+        return ParsedSqlLiteral{SqlValue{typed.literal}, std::move(typed)};
+      }
+    }
     const bool negative = match(TokenKind::Minus);
     const bool explicitPlus = !negative && match(TokenKind::Plus);
     if (current().kind == TokenKind::Floating) {
@@ -1277,8 +1302,8 @@ private:
       }
       ++position_;
       try {
-        return SqlValue{
-            QueryExecutionService::domain::parseSqlNumericLiteral(text)};
+        return ParsedSqlLiteral{SqlValue{
+            QueryExecutionService::domain::parseSqlNumericLiteral(text)}, std::nullopt};
       } catch (const std::exception &error) {
         return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
       }
@@ -1309,7 +1334,7 @@ private:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Integer literal is out of range"};
       }
-      return SqlValue{value};
+      return ParsedSqlLiteral{SqlValue{value}, std::nullopt};
     }
     if (explicitPlus && current().kind != TokenKind::Integer) {
       return SqlParseError{SqlParseErrorCode::SyntaxError,
