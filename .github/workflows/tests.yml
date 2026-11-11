@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
 
@@ -25,15 +25,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Verify preinstalled build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            build-essential \
-            ccache \
-            cmake \
-            libgtest-dev \
-            libssl-dev
+          command -v cmake
+          command -v ccache
+          command -v clang++
+          command -v clang-tidy
+          test -f /usr/include/gtest/gtest.h
+          test -f /usr/include/openssl/ssl.h
 
       - name: Restore compiler cache
         uses: actions/cache/restore@v4
