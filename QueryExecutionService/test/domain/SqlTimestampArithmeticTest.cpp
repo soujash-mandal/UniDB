@@ -60,7 +60,8 @@ TEST(SqlTimestampArithmeticTest, MicrosecondsCarryAndBorrowAcrossMidnight) {
   EXPECT_EQ(domain::addSqlTimestampInterval(
                 start, domain::SqlInterval{0, 0, -60 * kMicrosecondsPerSecond}),
             timestamp(2024, 2, 29,
-                      23 * kMicrosecondsPerHour + 30 * kMicrosecondsPerSecond));
+                      23 * kMicrosecondsPerHour + 59 * kMicrosecondsPerSecond +
+                          30 * kMicrosecondsPerSecond));
   EXPECT_EQ(
       domain::subtractSqlTimestampInterval(
           timestamp(2024, 3, 1, 0),
