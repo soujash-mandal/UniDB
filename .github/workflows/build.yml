@@ -19,6 +19,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,10 +28,19 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30
-          sudo apt-get install -y --no-install-recommends libgtest-dev libssl-dev
+          sudo apt-get install -y --no-install-recommends ccache libgtest-dev libssl-dev
+
+      - name: Restore compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.ref }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-
+            ccache-${{ runner.os }}-
 
       - name: Configure
-        run: cmake -S . -B build -DUNIDB_ENABLE_STRICT_WARNINGS=ON
+        run: cmake -S . -B build -DUNIDB_ENABLE_STRICT_WARNINGS=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --parallel 3
