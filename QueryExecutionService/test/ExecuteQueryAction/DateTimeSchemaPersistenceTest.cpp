@@ -4,8 +4,11 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <filesystem>
 #include <variant>
+
+using unidb::sql::SqlTypeId;
 
 TEST(ExecuteQueryActionIntegrationTest,
      PersistsPostgreSqlDateTimeColumnDescriptorsAcrossRestart) {
@@ -48,35 +51,32 @@ TEST(ExecuteQueryActionIntegrationTest,
     EXPECT_TRUE(result.rows.empty());
     ASSERT_EQ(result.columns.size(), 6U);
 
-    ASSERT_TRUE(result.columns[0].declaredType.has_value());
-    EXPECT_EQ(result.columns[0].declaredType->id, unidb::sql::SqlTypeId::Date);
+    const auto &columns = result.columns;
+    ASSERT_TRUE(columns[0].declaredType.has_value());
+    EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Date);
     EXPECT_FALSE(
-        result.columns[0].declaredType->modifier.temporalPrecision.has_value());
+        columns[0].declaredType->modifier.temporalPrecision.has_value());
 
-    ASSERT_TRUE(result.columns[1].declaredType.has_value());
-    EXPECT_EQ(result.columns[1].declaredType->id, unidb::sql::SqlTypeId::Time);
-    EXPECT_EQ(result.columns[1].declaredType->modifier.temporalPrecision, 3U);
+    ASSERT_TRUE(columns[1].declaredType.has_value());
+    EXPECT_EQ(columns[1].declaredType->id, SqlTypeId::Time);
+    EXPECT_EQ(columns[1].declaredType->modifier.temporalPrecision, 3U);
 
-    ASSERT_TRUE(result.columns[2].declaredType.has_value());
-    EXPECT_EQ(result.columns[2].declaredType->id,
-              unidb::sql::SqlTypeId::TimeWithTimeZone);
-    EXPECT_EQ(result.columns[2].declaredType->modifier.temporalPrecision, 4U);
+    ASSERT_TRUE(columns[2].declaredType.has_value());
+    EXPECT_EQ(columns[2].declaredType->id, SqlTypeId::TimeWithTimeZone);
+    EXPECT_EQ(columns[2].declaredType->modifier.temporalPrecision, 4U);
 
-    ASSERT_TRUE(result.columns[3].declaredType.has_value());
-    EXPECT_EQ(result.columns[3].declaredType->id,
-              unidb::sql::SqlTypeId::Timestamp);
-    EXPECT_EQ(result.columns[3].declaredType->modifier.temporalPrecision, 5U);
+    ASSERT_TRUE(columns[3].declaredType.has_value());
+    EXPECT_EQ(columns[3].declaredType->id, SqlTypeId::Timestamp);
+    EXPECT_EQ(columns[3].declaredType->modifier.temporalPrecision, 5U);
 
-    ASSERT_TRUE(result.columns[4].declaredType.has_value());
-    EXPECT_EQ(result.columns[4].declaredType->id,
-              unidb::sql::SqlTypeId::TimestampWithTimeZone);
-    EXPECT_EQ(result.columns[4].declaredType->modifier.temporalPrecision, 6U);
+    ASSERT_TRUE(columns[4].declaredType.has_value());
+    EXPECT_EQ(columns[4].declaredType->id, SqlTypeId::TimestampWithTimeZone);
+    EXPECT_EQ(columns[4].declaredType->modifier.temporalPrecision, 6U);
 
-    ASSERT_TRUE(result.columns[5].declaredType.has_value());
-    EXPECT_EQ(result.columns[5].declaredType->id,
-              unidb::sql::SqlTypeId::Interval);
+    ASSERT_TRUE(columns[5].declaredType.has_value());
+    EXPECT_EQ(columns[5].declaredType->id, SqlTypeId::Interval);
     EXPECT_FALSE(
-        result.columns[5].declaredType->modifier.temporalPrecision.has_value());
+        columns[5].declaredType->modifier.temporalPrecision.has_value());
   }
 
   std::filesystem::remove(databaseFile);
@@ -84,10 +84,11 @@ TEST(ExecuteQueryActionIntegrationTest,
 
 TEST(SqlDateTimeDeclarationTest, RejectsPrecisionForDateAndInterval) {
   unidb::sql::SqlParserImpl parser;
+  const std::array<const char *, 2> invalidDeclarations{
+      "CREATE TABLE invalid_date (value DATE(2));",
+      "CREATE TABLE invalid_interval (value INTERVAL(2));"};
 
-  for (const auto *sql :
-       {"CREATE TABLE invalid_date (value DATE(2));",
-        "CREATE TABLE invalid_interval (value INTERVAL(2));"}) {
+  for (const auto *sql : invalidDeclarations) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<unidb::sql::SqlParseError>(result))
         << sql;
