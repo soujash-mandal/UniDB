@@ -149,7 +149,10 @@ void validateCreateTable(const CreateTableStatement &statement) {
           id != SqlTypeId::BigInt && id != SqlTypeId::Real &&
           id != SqlTypeId::DoublePrecision && id != SqlTypeId::Numeric &&
           id != SqlTypeId::Boolean && id != SqlTypeId::Char &&
-          id != SqlTypeId::Varchar && id != SqlTypeId::Text) {
+          id != SqlTypeId::Varchar && id != SqlTypeId::Text &&
+          id != SqlTypeId::Date && id != SqlTypeId::Time &&
+          id != SqlTypeId::TimeWithTimeZone && id != SqlTypeId::Timestamp &&
+          id != SqlTypeId::TimestampWithTimeZone && id != SqlTypeId::Interval) {
         throw std::invalid_argument(
             "CREATE TABLE type is recognized but not yet supported");
       }

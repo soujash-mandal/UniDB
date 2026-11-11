@@ -46,9 +46,21 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
     return RdbDataType::TEXT;
   case unidb::sql::SqlTypeId::Numeric:
     return RdbDataType::NUMERIC;
+  case unidb::sql::SqlTypeId::Date:
+    return RdbDataType::DATE;
+  case unidb::sql::SqlTypeId::Time:
+    return RdbDataType::TIME;
+  case unidb::sql::SqlTypeId::TimeWithTimeZone:
+    return RdbDataType::TIME_WITH_TIME_ZONE;
+  case unidb::sql::SqlTypeId::Timestamp:
+    return RdbDataType::TIMESTAMP;
+  case unidb::sql::SqlTypeId::TimestampWithTimeZone:
+    return RdbDataType::TIMESTAMP_WITH_TIME_ZONE;
+  case unidb::sql::SqlTypeId::Interval:
+    return RdbDataType::INTERVAL;
   default:
-    throw std::invalid_argument(
-        "CREATE TABLE type is recognized but not yet supported by storage");
+    throw std::invalid_argument("CREATE TABLE type is recognized but not yet "
+                                "supported by SQL row storage");
   }
 }
 
@@ -73,6 +85,15 @@ unidb::sql::SqlType fromRdbType(RdbDataType type) {
   case RdbDataType::CHAR:
   case RdbDataType::TEXT:
     return unidb::sql::SqlType::Text;
+  case RdbDataType::DATE:
+  case RdbDataType::TIME:
+  case RdbDataType::TIME_WITH_TIME_ZONE:
+  case RdbDataType::TIMESTAMP:
+  case RdbDataType::TIMESTAMP_WITH_TIME_ZONE:
+  case RdbDataType::INTERVAL:
+    // The canonical descriptor is authoritative until date/time values gain
+    // their own execution and row-codec representation.
+    return unidb::sql::SqlType::Int;
   default:
     throw std::invalid_argument(
         "Table schema contains a type outside the V1 SQL subset");
@@ -114,6 +135,33 @@ unidb::sql::SqlTypeDescriptor descriptorFromRdbType(const RdbColumn &column) {
     modifier.scale = column.numericScale;
     return SqlTypeDescriptor{SqlTypeId::Numeric, modifier};
   }
+  case RdbDataType::DATE:
+    return SqlTypeDescriptor{SqlTypeId::Date, {}};
+  case RdbDataType::TIME:
+  case RdbDataType::TIME_WITH_TIME_ZONE:
+  case RdbDataType::TIMESTAMP:
+  case RdbDataType::TIMESTAMP_WITH_TIME_ZONE: {
+    unidb::sql::SqlTypeModifier modifier;
+    modifier.temporalPrecision = column.temporalPrecision;
+    SqlTypeId id;
+    switch (type) {
+    case RdbDataType::TIME:
+      id = SqlTypeId::Time;
+      break;
+    case RdbDataType::TIME_WITH_TIME_ZONE:
+      id = SqlTypeId::TimeWithTimeZone;
+      break;
+    case RdbDataType::TIMESTAMP:
+      id = SqlTypeId::Timestamp;
+      break;
+    default:
+      id = SqlTypeId::TimestampWithTimeZone;
+      break;
+    }
+    return SqlTypeDescriptor{id, modifier};
+  }
+  case RdbDataType::INTERVAL:
+    return SqlTypeDescriptor{SqlTypeId::Interval, {}};
   default:
     throw std::invalid_argument(
         "Table schema contains a type outside the V1 SQL subset");
@@ -157,9 +205,22 @@ uint32_t RdbServiceAdapter::createTable(
          column.declaredType->id == unidb::sql::SqlTypeId::Varchar)) {
       characterLength = column.declaredType->modifier.length;
     }
+    std::optional<std::uint32_t> temporalPrecision;
+    if (column.declaredType.has_value()) {
+      switch (column.declaredType->id) {
+      case unidb::sql::SqlTypeId::Time:
+      case unidb::sql::SqlTypeId::TimeWithTimeZone:
+      case unidb::sql::SqlTypeId::Timestamp:
+      case unidb::sql::SqlTypeId::TimestampWithTimeZone:
+        temporalPrecision = column.declaredType->modifier.temporalPrecision;
+        break;
+      default:
+        break;
+      }
+    }
     table.columns.push_back(RdbColumn{column.name, type, size, false,
                                       numericPrecision, numericScale,
-                                      characterLength});
+                                      characterLength, temporalPrecision});
   }
   return createTableAction.execute(metadataPageId, std::move(table));
 }
