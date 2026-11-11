@@ -86,6 +86,8 @@ TEST(SqlTimeWithTimeZoneArithmeticTest,
       maxRemainder < 0 ? maxRemainder + kMicrosecondsPerDay : maxRemainder;
   const auto negativeExpected =
       minRemainder < 0 ? minRemainder + kMicrosecondsPerDay : minRemainder;
+  const auto subtractMinimumExpected =
+      (kMicrosecondsPerDay - negativeExpected) % kMicrosecondsPerDay;
 
   EXPECT_EQ(domain::addSqlTimeWithTimeZoneInterval(
                 midnight,
@@ -98,7 +100,7 @@ TEST(SqlTimeWithTimeZoneArithmeticTest,
                 domain::SqlInterval{
                     0, 0, std::numeric_limits<std::int64_t>::min()}),
             (domain::SqlTimeWithTimeZone{
-                domain::SqlTime{negativeExpected}, 19'800}));
+                domain::SqlTime{subtractMinimumExpected}, 19'800}));
 }
 
 TEST(SqlTimeWithTimeZoneArithmeticTest, RejectsInvalidTimeAndOffsetValues) {
