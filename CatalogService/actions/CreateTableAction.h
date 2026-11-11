@@ -17,7 +17,8 @@ public:
                     CatalogUnpinPagePort &unpinPagePort);
 
   CatalogTableId execute(CatalogPageId rootPageId, CatalogTableId tableId,
-                         std::string name, std::vector<Column> columns);
+                         std::string name, std::vector<Column> columns,
+                         uint16_t rowFormatVersion = 1);
 
 private:
   CatalogFetchPagePort &fetchPagePort;
