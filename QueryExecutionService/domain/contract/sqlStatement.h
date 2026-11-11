@@ -11,6 +11,14 @@
 
 namespace unidb::sql {
 
+// A typed temporal literal is kept separate from SqlValue until the execution
+// and row-codec layers gain date/time support. The original literal text and
+// canonical SQL type are retained by the parser without changing runtime values.
+struct SqlTypedLiteral {
+  SqlTypeDescriptor declaredType;
+  std::string literal;
+};
+
 struct CreateTableStatement {
   std::string tableName;
   std::vector<ColumnDefinition> columns;
@@ -19,7 +27,7 @@ struct CreateTableStatement {
 struct InsertStatement {
   std::string tableName;
   std::vector<std::string> columnNames;
-  std::vector<std::vector<SqlValue>> rows;
+  std::vector<std::vector<SqlValue>> rows;\n  // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.\n  std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
 };
 
 enum class ComparisonOperator {
