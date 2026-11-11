@@ -30,8 +30,6 @@ jobs:
         run: |
           command -v cmake
           command -v ccache
-          command -v clang++
-          command -v clang-tidy
           test -f /usr/include/gtest/gtest.h
           test -f /usr/include/openssl/ssl.h
 
@@ -66,15 +64,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Clang and build dependencies
+      - name: Verify preinstalled Clang dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            clang \
-            clang-tidy \
-            cmake \
-            libgtest-dev \
-            libssl-dev
+          command -v clang
+          command -v clang++
+          command -v clang-tidy
+          command -v cmake
+          test -f /usr/include/gtest/gtest.h
+          test -f /usr/include/openssl/ssl.h
 
       - name: Configure with Clang
         run: CC=clang CXX=clang++ cmake -S . -B build-clang
