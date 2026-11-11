@@ -479,7 +479,7 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
     }
     const auto firstNonZero = remainder.find_first_not_of('0');
     if (firstNonZero == std::string::npos) {
-      remainder = "0";
+      remainder.assign(1, '0');
     } else if (firstNonZero > 0) {
       remainder.erase(0, firstNonZero);
     }
