@@ -22,6 +22,15 @@ std::vector<SqlType> schemaTypes(const std::vector<ColumnDefinition> &schema) {
       case SqlTypeId::DoublePrecision:
       case SqlTypeId::Boolean:
       case SqlTypeId::Numeric:
+      case SqlTypeId::Date:
+      case SqlTypeId::Time:
+      case SqlTypeId::TimeWithTimeZone:
+      case SqlTypeId::Timestamp:
+      case SqlTypeId::TimestampWithTimeZone:
+      case SqlTypeId::Interval:
+        // Date/time values are not executable yet. Keep the legacy physical
+        // type tag only so schema discovery can expose their canonical
+        // declaredType metadata without rejecting SELECT *.
         types.push_back(SqlType::Int);
         continue;
       case SqlTypeId::Char:
