@@ -64,5 +64,5 @@ CreateCatalogTableAdapter::createTable(uint32_t catalogRootPageId,
                                        uint32_t tableId,
                                        const RdbTableDefinition &table) {
   return action.execute(catalogRootPageId, tableId, table.name,
-                        toCatalogColumns(table.columns));
+                        toCatalogColumns(table.columns), table.rowFormatVersion);
 }
