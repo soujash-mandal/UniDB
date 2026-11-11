@@ -11,15 +11,10 @@ namespace {
 constexpr std::int64_t microsecondsPerSecond = 1'000'000;
 constexpr std::int64_t microsecondsPerDay = 86'400 * microsecondsPerSecond;
 
-std::int64_t utcTimeOfDay(const SqlTimeWithTimeZone &value) {
-  const auto local = value.time.microsecondsSinceMidnight;
+std::int64_t utcAdjustedTime(const SqlTimeWithTimeZone &value) {
   const auto offset = static_cast<std::int64_t>(value.offsetSecondsEastOfUtc) *
                       microsecondsPerSecond;
-  auto utc = (local - offset) % microsecondsPerDay;
-  if (utc < 0) {
-    utc += microsecondsPerDay;
-  }
-  return utc;
+  return value.time.microsecondsSinceMidnight - offset;
 }
 
 std::pair<std::int64_t, std::int64_t>
@@ -63,7 +58,13 @@ std::strong_ordering compare(const SqlTimestampWithTimeZone &left,
 
 std::strong_ordering compare(const SqlTimeWithTimeZone &left,
                              const SqlTimeWithTimeZone &right) {
-  return compare(utcTimeOfDay(left), utcTimeOfDay(right));
+  if (const auto timeOrder =
+          compare(utcAdjustedTime(left), utcAdjustedTime(right));
+      timeOrder != std::strong_ordering::equal) {
+    return timeOrder;
+  }
+  // PostgreSQL breaks equal GMT-equivalent times by the stored zone offset.
+  return compare(right.offsetSecondsEastOfUtc, left.offsetSecondsEastOfUtc);
 }
 
 std::strong_ordering compare(const SqlTimestamp &left,
