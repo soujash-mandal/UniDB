@@ -162,8 +162,7 @@ std::int32_t checkedNegate(std::int32_t value) {
 
 SqlTimestamp applyInterval(const SqlTimestamp &timestamp,
                            const SqlInterval &interval, bool subtract) {
-  auto result = timestamp;
-  timestampToMicroseconds(result);
+  auto result = timestampFromMicroseconds(timestampToMicroseconds(timestamp));
 
   const auto months =
       subtract ? checkedNegate(interval.months) : interval.months;
