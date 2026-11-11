@@ -47,17 +47,16 @@ TEST(SqlTimeArithmeticTest, IgnoresIntervalMonthsAndDays) {
 
   EXPECT_EQ(domain::addSqlTimeInterval(time, domain::SqlInterval{12, 7, 0}),
             time);
-  EXPECT_EQ(domain::subtractSqlTimeInterval(time,
-                                            domain::SqlInterval{-3, -9, 0}),
-            time);
+  EXPECT_EQ(
+      domain::subtractSqlTimeInterval(time, domain::SqlInterval{-3, -9, 0}),
+      time);
 }
 
 TEST(SqlTimeArithmeticTest, PreservesSubsecondPrecision) {
   const domain::SqlTime time{123};
   const domain::SqlInterval interval{0, 0, 456};
 
-  EXPECT_EQ(domain::addSqlTimeInterval(time, interval),
-            (domain::SqlTime{579}));
+  EXPECT_EQ(domain::addSqlTimeInterval(time, interval), (domain::SqlTime{579}));
   EXPECT_EQ(domain::subtractSqlTimeInterval(time, interval),
             (domain::SqlTime{kMicrosecondsPerDay - 333}));
 }
@@ -66,8 +65,7 @@ TEST(SqlTimeArithmeticTest, HandlesZeroInterval) {
   const domain::SqlTime time{12 * kMicrosecondsPerHour + 34};
 
   EXPECT_EQ(domain::addSqlTimeInterval(time, domain::SqlInterval{}), time);
-  EXPECT_EQ(domain::subtractSqlTimeInterval(time, domain::SqlInterval{}),
-            time);
+  EXPECT_EQ(domain::subtractSqlTimeInterval(time, domain::SqlInterval{}), time);
 }
 
 TEST(SqlTimeArithmeticTest, IgnoresLargePositiveAndNegativeIntervalDays) {
@@ -92,14 +90,16 @@ TEST(SqlTimeArithmeticTest, HandlesExtremeIntervalMicrosecondsWithoutOverflow) {
   const auto negativeExpected =
       minRemainder < 0 ? minRemainder + kMicrosecondsPerDay : minRemainder;
 
-  EXPECT_EQ(domain::addSqlTimeInterval(
-                midnight, domain::SqlInterval{0, 0,
-                                              std::numeric_limits<std::int64_t>::max()}),
-            (domain::SqlTime{positiveExpected}));
-  EXPECT_EQ(domain::addSqlTimeInterval(
-                midnight, domain::SqlInterval{0, 0,
-                                              std::numeric_limits<std::int64_t>::min()}),
-            (domain::SqlTime{negativeExpected}));
+  EXPECT_EQ(
+      domain::addSqlTimeInterval(
+          midnight,
+          domain::SqlInterval{0, 0, std::numeric_limits<std::int64_t>::max()}),
+      (domain::SqlTime{positiveExpected}));
+  EXPECT_EQ(
+      domain::addSqlTimeInterval(
+          midnight,
+          domain::SqlInterval{0, 0, std::numeric_limits<std::int64_t>::min()}),
+      (domain::SqlTime{negativeExpected}));
 }
 
 TEST(SqlTimeArithmeticTest, TimeDifferenceReturnsSignedTimeOnlyInterval) {
@@ -119,14 +119,14 @@ TEST(SqlTimeArithmeticTest, TimeDifferenceAllowsTwentyFourHourEndpoint) {
 }
 
 TEST(SqlTimeArithmeticTest, RejectsInvalidTimeValues) {
-  EXPECT_THROW(domain::addSqlTimeInterval(
-                   domain::SqlTime{-1}, domain::SqlInterval{}),
-               std::out_of_range);
-  EXPECT_THROW(domain::subtractSqlTimeInterval(
-                   domain::SqlTime{kMicrosecondsPerDay + 1},
-                   domain::SqlInterval{}),
-               std::out_of_range);
-  EXPECT_THROW(domain::differenceSqlTimes(domain::SqlTime{-1},
-                                          domain::SqlTime{0}),
-               std::out_of_range);
+  EXPECT_THROW(
+      domain::addSqlTimeInterval(domain::SqlTime{-1}, domain::SqlInterval{}),
+      std::out_of_range);
+  EXPECT_THROW(
+      domain::subtractSqlTimeInterval(domain::SqlTime{kMicrosecondsPerDay + 1},
+                                      domain::SqlInterval{}),
+      std::out_of_range);
+  EXPECT_THROW(
+      domain::differenceSqlTimes(domain::SqlTime{-1}, domain::SqlTime{0}),
+      std::out_of_range);
 }

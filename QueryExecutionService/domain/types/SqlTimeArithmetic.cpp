@@ -16,8 +16,7 @@ std::int64_t wrapTimeOfDay(std::int64_t microseconds) {
 
 } // namespace
 
-SqlTime addSqlTimeInterval(const SqlTime &time,
-                           const SqlInterval &interval) {
+SqlTime addSqlTimeInterval(const SqlTime &time, const SqlInterval &interval) {
   validateSqlTime(time);
   const auto clock = wrapTimeOfDay(time.microsecondsSinceMidnight);
   const auto offset = wrapTimeOfDay(interval.microseconds);
@@ -39,8 +38,8 @@ SqlTime subtractSqlTimeInterval(const SqlTime &time,
 SqlInterval differenceSqlTimes(const SqlTime &left, const SqlTime &right) {
   validateSqlTime(left);
   validateSqlTime(right);
-  return SqlInterval{0, 0, left.microsecondsSinceMidnight -
-                               right.microsecondsSinceMidnight};
+  return SqlInterval{
+      0, 0, left.microsecondsSinceMidnight - right.microsecondsSinceMidnight};
 }
 
 } // namespace QueryExecutionService::domain
