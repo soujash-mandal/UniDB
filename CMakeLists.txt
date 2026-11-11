@@ -103,6 +103,7 @@ set(UNIDB_SOURCES
     QueryExecutionService/domain/types/SqlNumericSemantics.cpp
     QueryExecutionService/domain/types/SqlCharacterSemantics.cpp
     QueryExecutionService/domain/types/SqlDateTimeSemantics.cpp
+    QueryExecutionService/domain/types/SqlDateArithmetic.cpp
     QueryExecutionService/domain/types/SqlDateTimeComparison.cpp
     QueryExecutionService/domain/types/SqlIntervalArithmetic.cpp
     QueryExecutionService/domain/codec/SqlNumericRowCodec.cpp
@@ -255,6 +256,7 @@ add_executable(tests
     QueryExecutionService/test/domain/SqlCharacterSemanticsTest.cpp
     QueryExecutionService/test/domain/SqlDateTimeValueTest.cpp
     QueryExecutionService/test/domain/SqlDateTimeSemanticsTest.cpp
+    QueryExecutionService/test/domain/SqlDateArithmeticTest.cpp
     QueryExecutionService/test/domain/SqlDateTimeComparisonTest.cpp
     QueryExecutionService/test/domain/SqlIntervalArithmeticTest.cpp
     QueryExecutionService/test/SqlTupleCodec/SqlNumericRowCodecTest.cpp
