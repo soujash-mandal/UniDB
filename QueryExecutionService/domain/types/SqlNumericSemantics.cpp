@@ -470,7 +470,7 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
 
   std::string quotient;
   quotient.reserve(numerator.size());
-  std::string remainder.assign(1, '0');
+  std::string remainder(1, '0');
   for (const char digit : numerator) {
     if (remainder == "0") {
       remainder.assign(1, digit);
