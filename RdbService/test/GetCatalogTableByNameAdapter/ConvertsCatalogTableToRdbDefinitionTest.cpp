@@ -11,6 +11,7 @@ TEST(GetCatalogTableByNameAdapterTest,
   table.tableId = 42;
   table.name = "items";
   table.firstFreeSpaceMapPageId = 91;
+  table.rowFormatVersion = 1;
   table.columns = {
       Column{"id", DataType::BIGINT, 8, false},
       Column{"name", DataType::VARCHAR, 80, true},
@@ -28,6 +29,7 @@ TEST(GetCatalogTableByNameAdapterTest,
   EXPECT_EQ(result.tableId, 42U);
   EXPECT_EQ(result.name, "items");
   EXPECT_EQ(result.firstSpaceMapPageId, 91U);
+  EXPECT_EQ(result.rowFormatVersion, 1U);
   ASSERT_EQ(result.columns.size(), 4U);
   EXPECT_EQ(result.columns[0].type, RdbDataType::BIGINT);
   EXPECT_EQ(result.columns[1].type, RdbDataType::VARCHAR);
