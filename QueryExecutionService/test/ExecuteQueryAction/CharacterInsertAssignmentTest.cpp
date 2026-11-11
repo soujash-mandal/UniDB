@@ -69,8 +69,6 @@ TEST(ExecuteQueryActionCharacterTest, RejectsMalformedUtf8BeforeWriting) {
                   unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar,
                                                 modifier}}};
   unidb::sql::SqlParserImpl parser;
-  auto action = makeQesAction(port, parser);
-
   // SQL literals are valid UTF-8 by construction; exercise the domain
   // assignment boundary directly for malformed byte sequences instead.
   unidb::sql::InsertStatement statement;
