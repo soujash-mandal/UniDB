@@ -1,4 +1,5 @@
 #include "../../domain/types/SqlDateArithmetic.h"
+#include "../../domain/types/SqlDateTimeSemantics.h"
 
 #include <gtest/gtest.h>
 
