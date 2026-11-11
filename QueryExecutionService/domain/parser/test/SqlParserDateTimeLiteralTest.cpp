@@ -9,16 +9,17 @@ namespace {
 
 TEST(SqlParserDateTimeLiteralTest, PreservesAllSixTemporalLiteralTypes) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO events (d, t, tz, ts, tstz, duration) VALUES "
-      "(DATE '2026-11-11', TIME '12:34:56', "
-      "TIME WITH TIME ZONE '12:34:56+05:30', "
-      "TIMESTAMP '2026-11-11 12:34:56', "
-      "TIMESTAMP WITH TIME ZONE '2026-11-11 12:34:56+05:30', "
-      "INTERVAL '1 day 2 hours')");
+  const auto result =
+      parser.parse("INSERT INTO events (d, t, tz, ts, tstz, duration) VALUES "
+                   "(DATE '2026-11-11', TIME '12:34:56', "
+                   "TIME WITH TIME ZONE '12:34:56+05:30', "
+                   "TIMESTAMP '2026-11-11 12:34:56', "
+                   "TIMESTAMP WITH TIME ZONE '2026-11-11 12:34:56+05:30', "
+                   "INTERVAL '1 day 2 hours')");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &statement = std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &statement =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
   ASSERT_EQ(statement.rows.size(), 1U);
   ASSERT_EQ(statement.typedLiterals.size(), 1U);
   ASSERT_EQ(statement.typedLiterals[0].size(), 6U);
@@ -39,32 +40,34 @@ TEST(SqlParserDateTimeLiteralTest, PreservesAllSixTemporalLiteralTypes) {
 
 TEST(SqlParserDateTimeLiteralTest, KeepsLocalAndInstantTimestampsDistinct) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT * FROM events WHERE local_time = "
-      "TIMESTAMP '2026-11-11 12:34:56'");
+  const auto result = parser.parse("SELECT * FROM events WHERE local_time = "
+                                   "TIMESTAMP '2026-11-11 12:34:56'");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &select = std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
   ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
-  const auto &predicate =
-      std::get<WhereExpression>(select.where).predicate;
+  const auto &predicate = std::get<WhereExpression>(select.where).predicate;
   ASSERT_TRUE(predicate.typedLiteral.has_value());
   EXPECT_EQ(predicate.typedLiteral->declaredType.id, SqlTypeId::Timestamp);
   EXPECT_EQ(predicate.typedLiteral->literal, "2026-11-11 12:34:56");
 }
 
-TEST(SqlParserDateTimeLiteralTest, RetainsTypedLiteralMetadataAlongsideRuntimeValue) {
+TEST(SqlParserDateTimeLiteralTest,
+     RetainsTypedLiteralMetadataAlongsideRuntimeValue) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO events (created_at, label) VALUES "
-      "(TIMESTAMPTZ '2026-11-11 12:34:56+00:00', 'launch')");
+  const auto result =
+      parser.parse("INSERT INTO events (created_at, label) VALUES "
+                   "(TIMESTAMPTZ '2026-11-11 12:34:56+00:00', 'launch')");
 
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &statement = std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &statement =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
   ASSERT_EQ(statement.typedLiterals[0].size(), 2U);
   EXPECT_TRUE(statement.typedLiterals[0][0].has_value());
   EXPECT_FALSE(statement.typedLiterals[0][1].has_value());
-  EXPECT_EQ(statement.rows[0][0], SqlValue{std::string("2026-11-11 12:34:56+00:00")});
+  EXPECT_EQ(statement.rows[0][0],
+            SqlValue{std::string("2026-11-11 12:34:56+00:00")});
 }
 
 TEST(SqlParserDateTimeLiteralTest, RejectsTypedLiteralWithoutQuotedValue) {

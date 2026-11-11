@@ -1289,9 +1289,9 @@ private:
   std::variant<ParsedSqlLiteral, SqlParseError> parseLiteral() {
     if (current().kind == TokenKind::Identifier) {
       const auto typeName = upper(current().text);
-      if (typeName == "DATE" || typeName == "TIME" ||
-          typeName == "TIMESTAMP" || typeName == "TIMETZ" ||
-          typeName == "TIMESTAMPTZ" || typeName == "INTERVAL") {
+      if (typeName == "DATE" || typeName == "TIME" || typeName == "TIMESTAMP" ||
+          typeName == "TIMETZ" || typeName == "TIMESTAMPTZ" ||
+          typeName == "INTERVAL") {
         auto declaredType = parseDeclaredType();
         if (const auto *error = std::get_if<SqlParseError>(&declaredType)) {
           return *error;
@@ -1322,8 +1322,10 @@ private:
       }
       ++position_;
       try {
-        return ParsedSqlLiteral{SqlValue{
-            QueryExecutionService::domain::parseSqlNumericLiteral(text)}, std::nullopt};
+        return ParsedSqlLiteral{
+            SqlValue{
+                QueryExecutionService::domain::parseSqlNumericLiteral(text)},
+            std::nullopt};
       } catch (const std::exception &error) {
         return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
       }
