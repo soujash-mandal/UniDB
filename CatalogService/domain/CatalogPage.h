@@ -14,6 +14,7 @@ struct Table {
   std::string name;
   std::vector<Column> columns;
   FSMPageId firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
+  uint16_t rowFormatVersion = 1;
 };
 
 namespace {
