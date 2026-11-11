@@ -20,7 +20,9 @@ function(unidb_enable_strict_warnings target)
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wextra>
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wpedantic>
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Werror>
         $<$<CXX_COMPILER_ID:MSVC>:/W4>
+        $<$<CXX_COMPILER_ID:MSVC>:/WX>
     )
 endfunction()
 
@@ -404,8 +406,8 @@ gtest_discover_tests(tests
 )
 
 # Keep warning checks enabled for production code, the CLI, and test code.
-# Warnings are reported but are not errors yet; this allows the existing
-# codebase to adopt the warning baseline without blocking unrelated changes.
+# Treat every enabled compiler warning as an error so CI cannot introduce
+# warning regressions silently.
 unidb_enable_strict_warnings(unidb_core)
 unidb_enable_strict_warnings(unidb)
 unidb_enable_strict_warnings(tests)
