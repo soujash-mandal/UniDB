@@ -94,9 +94,10 @@ TEST(SqlParserDateTimeLiteralTest, ParsesAndValidatesCalendarAndClockValues) {
       insert.typedLiterals[0][0]->value));
   const auto &time = std::get<QueryExecutionService::domain::SqlTime>(
       insert.typedLiterals[0][1]->value);
-  EXPECT_EQ(time.microsecondsSinceMidnight,
-            static_cast<std::int64_t>(12 * 3600 + 34 * 60 + 56) * 1'000'000 +
-                789'000);
+  const auto expectedMicroseconds =
+      static_cast<std::int64_t>(12 * 3600 + 34 * 60 + 56) * 1'000'000 +
+      789'000;
+  EXPECT_EQ(time.microsecondsSinceMidnight, expectedMicroseconds);
 }
 
 TEST(SqlParserDateTimeLiteralTest, NormalizesExplicitOffsetsToUtcInstant) {
@@ -162,9 +163,10 @@ TEST(SqlParserDateTimeLiteralTest, RoundsToDeclaredTemporalPrecision) {
       std::get<InsertStatement>(std::get<SqlStatement>(result));
   const auto &time = std::get<QueryExecutionService::domain::SqlTime>(
       insert.typedLiterals[0][0]->value);
-  EXPECT_EQ(time.microsecondsSinceMidnight,
-            static_cast<std::int64_t>(12 * 3600 + 34 * 60 + 56) * 1'000'000 +
-                790'000);
+  const auto expectedMicroseconds =
+      static_cast<std::int64_t>(12 * 3600 + 34 * 60 + 56) * 1'000'000 +
+      790'000;
+  EXPECT_EQ(time.microsecondsSinceMidnight, expectedMicroseconds);
 }
 
 } // namespace
