@@ -470,7 +470,7 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
 
   std::string quotient;
   quotient.reserve(numerator.size());
-  std::string remainder = "0";
+  std::string remainder(1, '0');
   for (const char digit : numerator) {
     if (remainder == "0") {
       remainder.assign(1, digit);
@@ -479,7 +479,7 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
     }
     const auto firstNonZero = remainder.find_first_not_of('0');
     if (firstNonZero == std::string::npos) {
-      remainder = "0";
+      remainder.assign(1, '0');
     } else if (firstNonZero > 0) {
       remainder.erase(0, firstNonZero);
     }
@@ -494,7 +494,7 @@ divideSqlNumericValues(const unidb::sql::SqlNumericValue &left,
 
   const auto firstNonZero = quotient.find_first_not_of('0');
   if (firstNonZero == std::string::npos) {
-    quotient = "0";
+    quotient.assign(1, '0');
   } else if (firstNonZero > 0) {
     quotient.erase(0, firstNonZero);
   }

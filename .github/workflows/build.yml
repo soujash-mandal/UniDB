@@ -18,9 +18,36 @@ concurrency:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          sudo apt-get install -y --no-install-recommends ccache libgtest-dev libssl-dev
+
+      - name: Restore compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-
+            ccache-${{ runner.os }}-
+
+      - name: Configure
+        run: cmake -S . -B build -DUNIDB_ENABLE_STRICT_WARNINGS=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --parallel 3
+
+  clang-unused-using:
+    name: Clang unused-using check
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
@@ -28,54 +55,8 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            build-essential \
-            ccache \
-            cmake \
-            libgtest-dev \
-            libssl-dev
-
-      - name: Restore compiler cache
-        uses: actions/cache/restore@v4
-        with:
-          path: .ccache
-          key: ${{ runner.os }}-ccache-build-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-ccache-
-
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-
-      - name: Build
-        run: cmake --build build --parallel 3
-
-      - name: Save compiler cache
-        uses: actions/cache/save@v4
-        with:
-          path: .ccache
-          key: ${{ runner.os }}-ccache-build-${{ github.sha }}
-
-      - name: Show compiler cache statistics
-        run: ccache --show-stats
-
-  clang-unused-using:
-    name: Clang unused-using check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Clang and build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y \
-            clang \
-            clang-tidy \
-            cmake \
-            libgtest-dev \
-            libssl-dev
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          sudo apt-get install -y --no-install-recommends libgtest-dev libssl-dev
 
       - name: Configure with Clang
         run: CC=clang CXX=clang++ cmake -S . -B build-clang

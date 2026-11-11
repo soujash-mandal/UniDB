@@ -34,10 +34,10 @@ struct Column {
   DataType type;
   uint16_t size = 0;
   bool nullable = false;
-  std::optional<std::uint32_t> numericPrecision;
-  std::optional<std::int32_t> numericScale;
-  std::optional<std::uint32_t> characterLength;
-  std::optional<std::uint32_t> temporalPrecision;
+  std::optional<std::uint32_t> numericPrecision = std::nullopt;
+  std::optional<std::int32_t> numericScale = std::nullopt;
+  std::optional<std::uint32_t> characterLength = std::nullopt;
+  std::optional<std::uint32_t> temporalPrecision = std::nullopt;
 };
 
 // Logical catalog metadata, independent of page layout.

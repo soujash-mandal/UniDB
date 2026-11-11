@@ -101,7 +101,7 @@ sumNumericValues(const std::vector<SqlValue> &values) {
             ? total.compare(value.coefficient)
             : (total.size() < value.coefficient.size() ? -1 : 1);
     if (magnitudeOrder == 0) {
-      total = "0";
+      total.assign(1, '0');
       totalNegative = false;
     } else if (magnitudeOrder > 0) {
       total = subtractMagnitude(total, value.coefficient);
