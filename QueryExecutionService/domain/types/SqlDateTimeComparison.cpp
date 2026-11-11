@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 namespace QueryExecutionService::domain {
 namespace {
