@@ -68,7 +68,6 @@ TEST(ExecuteQueryActionCharacterTest, RejectsMalformedUtf8BeforeWriting) {
   port.schema = {{"value", unidb::sql::SqlType::Text,
                   unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Varchar,
                                                 modifier}}};
-  unidb::sql::SqlParserImpl parser;
   // SQL literals are valid UTF-8 by construction; exercise the domain
   // assignment boundary directly for malformed byte sequences instead.
   unidb::sql::InsertStatement statement;
