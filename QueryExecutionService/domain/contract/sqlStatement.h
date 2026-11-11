@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../type/type.h"
+#include "../types/SqlDateTimeSemantics.h"
 
 #include <cstdint>
 #include <memory>
@@ -11,6 +12,15 @@
 
 namespace unidb::sql {
 
+// A typed temporal literal is kept separate from SqlValue until the execution
+// and row-codec layers gain date/time support. The original literal text and
+// canonical type are retained without changing runtime values.
+struct SqlTypedLiteral {
+  SqlTypeDescriptor declaredType;
+  std::string literal;
+  QueryExecutionService::domain::SqlTemporalValue value;
+};
+
 struct CreateTableStatement {
   std::string tableName;
   std::vector<ColumnDefinition> columns;
@@ -20,6 +30,8 @@ struct InsertStatement {
   std::string tableName;
   std::vector<std::string> columnNames;
   std::vector<std::vector<SqlValue>> rows;
+  // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.
+  std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
 };
 
 enum class ComparisonOperator {
@@ -43,6 +55,9 @@ struct WhereEquals {
   std::optional<SqlValue> upperBound;
   std::vector<SqlValue> values;
   ComparisonOperator comparison{ComparisonOperator::Equal};
+  std::optional<SqlTypedLiteral> typedLiteral;
+  std::optional<SqlTypedLiteral> typedUpperBound;
+  std::vector<std::optional<SqlTypedLiteral>> typedValues;
 };
 
 struct WhereExpression {
@@ -70,6 +85,7 @@ struct HavingExpression {
   AggregateExpression aggregate;
   ComparisonOperator comparison{ComparisonOperator::Equal};
   SqlValue value;
+  std::optional<SqlTypedLiteral> typedLiteral;
 };
 
 struct ColumnReference {
@@ -93,11 +109,13 @@ struct CrossJoinClause {
 struct CaseWhenClause {
   WhereExpression condition;
   SqlValue result;
+  std::optional<SqlTypedLiteral> typedLiteral;
 };
 
 struct CaseExpression {
   std::vector<CaseWhenClause> branches;
   SqlValue elseResult;
+  std::optional<SqlTypedLiteral> typedElseResult;
 };
 
 enum class IntegerBinaryOperator { Add, Subtract, Multiply, Divide };
