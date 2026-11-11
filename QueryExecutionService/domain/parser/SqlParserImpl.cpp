@@ -1290,7 +1290,8 @@ private:
     if (current().kind == TokenKind::Identifier) {
       const auto typeName = upper(current().text);
       if (typeName == "DATE" || typeName == "TIME" ||
-          typeName == "TIMESTAMP" || typeName == "INTERVAL") {
+          typeName == "TIMESTAMP" || typeName == "TIMETZ" ||
+          typeName == "TIMESTAMPTZ" || typeName == "INTERVAL") {
         auto declaredType = parseDeclaredType();
         if (const auto *error = std::get_if<SqlParseError>(&declaredType)) {
           return *error;
