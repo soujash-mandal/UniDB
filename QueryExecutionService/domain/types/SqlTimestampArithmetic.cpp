@@ -2,6 +2,7 @@
 
 #include "SqlDateTimeSemantics.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <limits>
