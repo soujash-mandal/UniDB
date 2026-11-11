@@ -17,6 +17,11 @@ namespace {
 using implementation::Token;
 using implementation::TokenKind;
 
+struct ParsedSqlLiteral {
+  SqlValue value;
+  std::optional<SqlTypedLiteral> typed;
+};
+
 SqlParseResult syntaxError(std::string message) {
   return SqlParseError{SqlParseErrorCode::SyntaxError, std::move(message)};
 }
