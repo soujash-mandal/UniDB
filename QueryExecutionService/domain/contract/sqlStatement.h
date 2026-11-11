@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../type/type.h"
+#include "../types/SqlDateTimeSemantics.h"
 
 #include <cstdint>
 #include <memory>
@@ -17,6 +18,7 @@ namespace unidb::sql {
 struct SqlTypedLiteral {
   SqlTypeDescriptor declaredType;
   std::string literal;
+  QueryExecutionService::domain::SqlTemporalValue value;
 };
 
 struct CreateTableStatement {
