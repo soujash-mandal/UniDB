@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.ref }}
+          key: ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-${{ github.ref }}-${{ github.sha }}
           restore-keys: |
             ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}-
             ccache-${{ runner.os }}-
