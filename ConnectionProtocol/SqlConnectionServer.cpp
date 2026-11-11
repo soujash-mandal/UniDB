@@ -328,12 +328,11 @@ void acceptAndAuthenticateClients(int listener, SSL_CTX *tlsContext,
       } else if (tlsContext == nullptr) {
         (void)queueSession(ClientConnection{client, nullptr});
       } else {
-        const auto pendingFromAddress = static_cast<std::size_t>(
-            std::count_if(
-                pendingHandshakes.begin(), pendingHandshakes.end(),
-                [&](const PendingTlsHandshake &handshake) {
-                  return handshake.peerAddress == peerAddress.sin_addr.s_addr;
-                }));
+        const auto pendingFromAddress = static_cast<std::size_t>(std::count_if(
+            pendingHandshakes.begin(), pendingHandshakes.end(),
+            [&](const PendingTlsHandshake &handshake) {
+              return handshake.peerAddress == peerAddress.sin_addr.s_addr;
+            }));
         if (pendingHandshakes.size() >= maximumPendingHandshakes) {
           std::cerr
               << "Rejected SQL client: too many TLS handshakes are pending.\n";
