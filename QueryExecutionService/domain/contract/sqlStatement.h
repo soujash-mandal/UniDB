@@ -57,7 +57,7 @@ struct WhereEquals {
   ComparisonOperator comparison{ComparisonOperator::Equal};
   std::optional<SqlTypedLiteral> typedLiteral = std::nullopt;
   std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt;
-  std::vector<std::optional<SqlTypedLiteral>> typedValues;
+  std::vector<std::optional<SqlTypedLiteral>> typedValues = {};
 };
 
 struct WhereExpression {
