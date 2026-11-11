@@ -351,7 +351,9 @@ private:
         if (std::holds_alternative<SqlParseError>(value)) {
           return std::get<SqlParseError>(std::move(value));
         }
-        auto parsed = std::get<ParsedSqlLiteral>(std::move(value));\n        row.push_back(std::move(parsed.value));\n        typedRow.push_back(std::move(parsed.typed));
+        auto parsed = std::get<ParsedSqlLiteral>(std::move(value));
+        row.push_back(std::move(parsed.value));
+        typedRow.push_back(std::move(parsed.typed));
         if (!match(TokenKind::Comma)) {
           break;
         }
@@ -362,7 +364,8 @@ private:
       if (statement.columnNames.size() != row.size()) {
         return syntaxError("INSERT column and value counts must match");
       }
-      statement.rows.push_back(std::move(row));\n      statement.typedLiterals.push_back(std::move(typedRow));
+      statement.rows.push_back(std::move(row));
+      statement.typedLiterals.push_back(std::move(typedRow));
       if (!match(TokenKind::Comma)) {
         break;
       }
@@ -509,7 +512,8 @@ private:
       }
       expression.branches.push_back(
           {std::get<WhereExpression>(std::move(condition)),
-           std::get<ParsedSqlLiteral>(std::move(value)).value,\n           std::get<ParsedSqlLiteral>(value).typed});
+           std::get<ParsedSqlLiteral>(std::move(value)).value,
+           std::get<ParsedSqlLiteral>(value).typed});
     }
     if (expression.branches.empty()) {
       return SqlParseError{SqlParseErrorCode::SyntaxError,
@@ -524,7 +528,9 @@ private:
     if (std::holds_alternative<SqlParseError>(elseValue)) {
       return std::get<SqlParseError>(std::move(elseValue));
     }
-    auto parsedElse = std::get<ParsedSqlLiteral>(std::move(elseValue));\n    expression.elseResult = std::move(parsedElse.value);\n    expression.typedElseResult = std::move(parsedElse.typed);
+    auto parsedElse = std::get<ParsedSqlLiteral>(std::move(elseValue));
+    expression.elseResult = std::move(parsedElse.value);
+    expression.typedElseResult = std::move(parsedElse.typed);
     if (!expectKeyword("END")) {
       return SqlParseError{SqlParseErrorCode::SyntaxError,
                            "Expected END after CASE expression"};
@@ -980,7 +986,9 @@ private:
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
-      auto parsed = std::get<ParsedSqlLiteral>(std::move(value));\n      having.value = std::move(parsed.value);\n      having.typedLiteral = std::move(parsed.typed);
+      auto parsed = std::get<ParsedSqlLiteral>(std::move(value));
+      having.value = std::move(parsed.value);
+      having.typedLiteral = std::move(parsed.typed);
       statement.having = std::move(having);
     }
 
@@ -1166,7 +1174,9 @@ private:
       if (std::holds_alternative<SqlParseError>(pattern)) {
         return std::get<SqlParseError>(std::move(pattern));
       }
-      auto parsed = std::get<ParsedSqlLiteral>(std::move(pattern));\n      predicate.value = std::move(parsed.value);\n      predicate.typedLiteral = std::move(parsed.typed);
+      auto parsed = std::get<ParsedSqlLiteral>(std::move(pattern));
+      predicate.value = std::move(parsed.value);
+      predicate.typedLiteral = std::move(parsed.typed);
     } else if (isRange) {
       predicate.comparison = isNegatedRange ? ComparisonOperator::NotBetween
                                             : ComparisonOperator::Between;
@@ -1174,7 +1184,9 @@ private:
       if (std::holds_alternative<SqlParseError>(lowerBound)) {
         return std::get<SqlParseError>(std::move(lowerBound));
       }
-      auto parsedLower = std::get<ParsedSqlLiteral>(std::move(lowerBound));\n      predicate.value = std::move(parsedLower.value);\n      predicate.typedLiteral = std::move(parsedLower.typed);
+      auto parsedLower = std::get<ParsedSqlLiteral>(std::move(lowerBound));
+      predicate.value = std::move(parsedLower.value);
+      predicate.typedLiteral = std::move(parsedLower.typed);
       if (!matchKeyword("AND")) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected AND between BETWEEN range bounds"};
@@ -1183,7 +1195,9 @@ private:
       if (std::holds_alternative<SqlParseError>(upperBound)) {
         return std::get<SqlParseError>(std::move(upperBound));
       }
-      auto parsedUpper = std::get<ParsedSqlLiteral>(std::move(upperBound));\n      predicate.upperBound = std::move(parsedUpper.value);\n      predicate.typedUpperBound = std::move(parsedUpper.typed);
+      auto parsedUpper = std::get<ParsedSqlLiteral>(std::move(upperBound));
+      predicate.upperBound = std::move(parsedUpper.value);
+      predicate.typedUpperBound = std::move(parsedUpper.typed);
     } else if (isMembership) {
       predicate.comparison = isNegatedMembership ? ComparisonOperator::NotIn
                                                  : ComparisonOperator::In;
@@ -1200,7 +1214,9 @@ private:
         if (std::holds_alternative<SqlParseError>(value)) {
           return std::get<SqlParseError>(std::move(value));
         }
-        auto parsed = std::get<ParsedSqlLiteral>(std::move(value));\n        predicate.values.push_back(std::move(parsed.value));\n        predicate.typedValues.push_back(std::move(parsed.typed));
+        auto parsed = std::get<ParsedSqlLiteral>(std::move(value));
+        predicate.values.push_back(std::move(parsed.value));
+        predicate.typedValues.push_back(std::move(parsed.typed));
         if (!match(TokenKind::Comma)) {
           break;
         }
@@ -1240,7 +1256,9 @@ private:
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
-      auto parsed = std::get<ParsedSqlLiteral>(std::move(value));\n      predicate.value = std::move(parsed.value);\n      predicate.typedLiteral = std::move(parsed.typed);
+      auto parsed = std::get<ParsedSqlLiteral>(std::move(value));
+      predicate.value = std::move(parsed.value);
+      predicate.typedLiteral = std::move(parsed.typed);
     }
 
     WhereExpression expression;
