@@ -18,6 +18,7 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
 
   Table loaded = page.getByName("users");
   EXPECT_EQ(loaded.tableId, 11U);
+  EXPECT_EQ(loaded.rowFormatVersion, 1U);
   ASSERT_EQ(loaded.columns.size(), 4U);
   EXPECT_EQ(loaded.columns[1].name, "name");
   EXPECT_EQ(loaded.columns[2].type, DataType::SMALLINT);
@@ -28,6 +29,7 @@ TEST(CatalogPageTest, LooksUpAndUpdatesTableMetadataByName) {
 
   const Table updated = page.getByName("users");
   EXPECT_EQ(updated.name, "users");
+  EXPECT_EQ(updated.rowFormatVersion, 1U);
   ASSERT_EQ(updated.columns.size(), 4U);
   EXPECT_EQ(updated.columns[3].numericPrecision, 12U);
   EXPECT_EQ(updated.columns[3].numericScale, 4);
@@ -80,4 +82,16 @@ TEST(CatalogPageTest, PreservesUnmodifiedNumericWithoutMetadataExtension) {
   EXPECT_EQ(loaded.columns[0].type, DataType::NUMERIC);
   EXPECT_FALSE(loaded.columns[0].numericPrecision.has_value());
   EXPECT_FALSE(loaded.columns[0].numericScale.has_value());
+}
+
+TEST(CatalogPageTest, RejectsUnsupportedRowFormatVersion) {
+  CatalogPage page;
+  Table table{};
+  table.tableId = 15;
+  table.name = "unsupported_format";
+  table.rowFormatVersion = 2;
+  table.columns = {Column{"id", DataType::INT, 0, false}};
+
+  EXPECT_THROW(page.insert(table), std::invalid_argument);
+  EXPECT_FALSE(page.containsTableId(15));
 }
