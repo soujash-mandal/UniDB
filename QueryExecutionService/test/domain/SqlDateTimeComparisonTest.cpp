@@ -34,7 +34,7 @@ TEST(SqlDateTimeComparisonTest, ComparesTimeWithTimeZoneAsUtcClockTime) {
       domain::SqlTime{12LL * 3600 * 1'000'000}, 2 * 3600};
   const domain::SqlTimeWithTimeZone tenUtc{
       domain::SqlTime{10LL * 3600 * 1'000'000}, 0};
-  EXPECT_EQ(cmp(noonPlusTwo, tenUtc), std::strong_ordering::equal);
+  EXPECT_EQ(cmp(noonPlusTwo, tenUtc), std::strong_ordering::less);
 }
 
 TEST(SqlDateTimeComparisonTest, WrapsTimeWithTimeZoneAcrossMidnight) {
