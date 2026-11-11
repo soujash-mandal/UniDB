@@ -82,12 +82,11 @@ TEST(SqlParserDateTimeLiteralTest, RejectsTypedLiteralWithoutQuotedValue) {
   }
 }
 
-
 TEST(SqlParserDateTimeLiteralTest, ParsesAndValidatesCalendarAndClockValues) {
   SqlParserImpl parser;
-  const auto valid = parser.parse(
-      "INSERT INTO events (d, t) VALUES "
-      "(DATE '2024-02-29', TIME(3) '12:34:56.789')");
+  const auto valid =
+      parser.parse("INSERT INTO events (d, t) VALUES "
+                   "(DATE '2024-02-29', TIME(3) '12:34:56.789')");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(valid));
   const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(valid));
   ASSERT_EQ(insert.typedLiterals[0].size(), 2U);
@@ -101,11 +100,11 @@ TEST(SqlParserDateTimeLiteralTest, ParsesAndValidatesCalendarAndClockValues) {
 
 TEST(SqlParserDateTimeLiteralTest, NormalizesExplicitOffsetsToUtcInstant) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO events (instant) VALUES "
-      "(TIMESTAMPTZ '2026-11-11 12:34:56+05:30')");
+  const auto result = parser.parse("INSERT INTO events (instant) VALUES "
+                                   "(TIMESTAMPTZ '2026-11-11 12:34:56+05:30')");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
   const auto &instant =
       std::get<QueryExecutionService::domain::SqlTimestampWithTimeZone>(
           insert.typedLiterals[0][0]->value);
@@ -118,13 +117,14 @@ TEST(SqlParserDateTimeLiteralTest, NormalizesExplicitOffsetsToUtcInstant) {
 
 TEST(SqlParserDateTimeLiteralTest, ParsesIntervalCalendarAndClockFields) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO events (duration) VALUES (INTERVAL '1 year 2 months 3 days 4 hours 5 minutes 6.5 seconds')");
+  const auto result =
+      parser.parse("INSERT INTO events (duration) VALUES (INTERVAL '1 year 2 "
+                   "months 3 days 4 hours 5 minutes 6.5 seconds')");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(result));
-  const auto &interval =
-      std::get<QueryExecutionService::domain::SqlInterval>(
-          insert.typedLiterals[0][0]->value);
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &interval = std::get<QueryExecutionService::domain::SqlInterval>(
+      insert.typedLiterals[0][0]->value);
   EXPECT_EQ(interval.months, 14);
   EXPECT_EQ(interval.days, 3);
   EXPECT_EQ(interval.microseconds,
@@ -140,9 +140,11 @@ TEST(SqlParserDateTimeLiteralTest, RejectsInvalidTemporalValues) {
            "INSERT INTO events (t) VALUES (TIME '12:61:00')",
            "INSERT INTO events (tz) VALUES (TIMETZ '12:00:00')",
            "INSERT INTO events (tz) VALUES (TIMETZ '12:00:00+16:00')",
-           "INSERT INTO events (ts) VALUES (TIMESTAMP '2026-11-11 12:00:00+00:00')",
+           "INSERT INTO events (ts) VALUES (TIMESTAMP '2026-11-11 "
+           "12:00:00+00:00')",
            "INSERT INTO events (ts) VALUES (TIMESTAMP '2026-02-30 12:00:00')",
-           "INSERT INTO events (tstz) VALUES (TIMESTAMPTZ '2026-11-11 12:00:00')",
+           "INSERT INTO events (tstz) VALUES (TIMESTAMPTZ '2026-11-11 "
+           "12:00:00')",
            "INSERT INTO events (duration) VALUES (INTERVAL '3 fortnights')",
        }) {
     const auto result = parser.parse(sql);
@@ -152,13 +154,13 @@ TEST(SqlParserDateTimeLiteralTest, RejectsInvalidTemporalValues) {
 
 TEST(SqlParserDateTimeLiteralTest, RoundsToDeclaredTemporalPrecision) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "INSERT INTO events (t) VALUES (TIME(2) '12:34:56.789')");
+  const auto result =
+      parser.parse("INSERT INTO events (t) VALUES (TIME(2) '12:34:56.789')");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
-  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(result));
-  const auto &time =
-      std::get<QueryExecutionService::domain::SqlTime>(
-          insert.typedLiterals[0][0]->value);
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &time = std::get<QueryExecutionService::domain::SqlTime>(
+      insert.typedLiterals[0][0]->value);
   EXPECT_EQ(time.microsecondsSinceMidnight,
             (12 * 3600 + 34 * 60 + 56) * 1'000'000 + 790'000);
 }

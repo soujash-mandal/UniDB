@@ -1,13 +1,12 @@
 #include "SqlDateTimeSemantics.h"
 
 #include <array>
-#include <cmath>
 #include <cctype>
+#include <cmath>
 #include <limits>
 #include <sstream>
-#include <string>
-#include <limits>
 #include <stdexcept>
+#include <string>
 
 namespace QueryExecutionService::domain {
 namespace {
@@ -99,7 +98,6 @@ std::int64_t roundSqlFractionalSeconds(std::int64_t microseconds,
   }
   return ((microseconds + scale / 2) / scale) * scale;
 }
-
 
 namespace {
 
@@ -198,12 +196,12 @@ ParsedClock parseClock(std::string_view value, std::uint8_t precision,
     }
     const auto digits = clock.substr(9);
     fractionalMicroseconds =
-        parseDigits(digits, 0, digits.size()) *
-        (digits.size() == 1 ? 100000 :
-         digits.size() == 2 ? 10000 :
-         digits.size() == 3 ? 1000 :
-         digits.size() == 4 ? 100 :
-         digits.size() == 5 ? 10 : 1);
+        parseDigits(digits, 0, digits.size()) * (digits.size() == 1   ? 100000
+                                                 : digits.size() == 2 ? 10000
+                                                 : digits.size() == 3 ? 1000
+                                                 : digits.size() == 4 ? 100
+                                                 : digits.size() == 5 ? 10
+                                                                      : 1);
   }
   if (hours == 24 && fractionalMicroseconds != 0) {
     throw std::invalid_argument("24:00:00 cannot have fractional seconds");
@@ -230,15 +228,14 @@ SqlDate incrementDate(SqlDate date) {
 }
 
 SqlTimestamp parseTimestampLiteral(std::string_view value,
-                                   std::uint8_t precision,
-                                   bool withTimeZone) {
+                                   std::uint8_t precision, bool withTimeZone) {
   if (value.size() < 19 || (value[10] != ' ' && value[10] != 'T')) {
     throw std::invalid_argument(
         "TIMESTAMP literal must use YYYY-MM-DD HH:MM:SS");
   }
   auto date = parseDateLiteral(value.substr(0, 10));
-  auto clock = parseClock(value.substr(11), precision, withTimeZone,
-                          withTimeZone);
+  auto clock =
+      parseClock(value.substr(11), precision, withTimeZone, withTimeZone);
   if (clock.time.microsecondsSinceMidnight == microsecondsPerDay) {
     date = incrementDate(date);
     clock.time.microsecondsSinceMidnight = 0;
@@ -261,8 +258,7 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
       character = static_cast<char>(
           std::tolower(static_cast<unsigned char>(character)));
     }
-    if (unit == "year" || unit == "years" || unit == "yr" ||
-        unit == "yrs") {
+    if (unit == "year" || unit == "years" || unit == "yr" || unit == "yrs") {
       if (std::floor(amount) != amount) {
         throw std::invalid_argument("INTERVAL years must be whole numbers");
       }
@@ -303,10 +299,10 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
         "INTERVAL literal must contain number/unit field pairs");
   }
   if (!std::isfinite(microseconds) ||
-      microseconds < static_cast<long double>(
-                         std::numeric_limits<std::int64_t>::min()) ||
-      microseconds > static_cast<long double>(
-                         std::numeric_limits<std::int64_t>::max()) ||
+      microseconds <
+          static_cast<long double>(std::numeric_limits<std::int64_t>::min()) ||
+      microseconds >
+          static_cast<long double>(std::numeric_limits<std::int64_t>::max()) ||
       !std::isfinite(months) || !std::isfinite(days) ||
       months < std::numeric_limits<std::int32_t>::min() ||
       months > std::numeric_limits<std::int32_t>::max() ||
@@ -324,8 +320,8 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
 SqlTemporalValue
 parseSqlDateTimeLiteral(const unidb::sql::SqlTypeDescriptor &type,
                         std::string_view literal) {
-  const auto precision = static_cast<std::uint8_t>(
-      type.modifier.temporalPrecision.value_or(6));
+  const auto precision =
+      static_cast<std::uint8_t>(type.modifier.temporalPrecision.value_or(6));
   switch (type.id) {
   case unidb::sql::SqlTypeId::Date:
     return parseDateLiteral(literal);
@@ -343,14 +339,13 @@ parseSqlDateTimeLiteral(const unidb::sql::SqlTypeDescriptor &type,
     const auto local = parseTimestampLiteral(literal, precision, true);
     const auto offsetPosition = literal.find_last_of("+-");
     if (offsetPosition == std::string_view::npos || offsetPosition < 19) {
-      throw std::invalid_argument("TIMESTAMPTZ requires an explicit UTC offset");
+      throw std::invalid_argument(
+          "TIMESTAMPTZ requires an explicit UTC offset");
     }
     const auto offset = parseOffset(literal.substr(offsetPosition));
     const auto days = static_cast<std::int64_t>(local.date.daysSinceEpoch);
-    if (days > std::numeric_limits<std::int64_t>::max() /
-                   microsecondsPerDay ||
-        days < std::numeric_limits<std::int64_t>::min() /
-                   microsecondsPerDay) {
+    if (days > std::numeric_limits<std::int64_t>::max() / microsecondsPerDay ||
+        days < std::numeric_limits<std::int64_t>::min() / microsecondsPerDay) {
       throw std::out_of_range("TIMESTAMPTZ is outside the supported range");
     }
     const auto dayMicros = days * microsecondsPerDay;
@@ -358,21 +353,18 @@ parseSqlDateTimeLiteral(const unidb::sql::SqlTypeDescriptor &type,
                         local.time.microsecondsSinceMidnight) {
       throw std::out_of_range("TIMESTAMPTZ is outside the supported range");
     }
-    const auto localMicros =
-        dayMicros + local.time.microsecondsSinceMidnight;
-    if ((offset > 0 && localMicros <
-                           std::numeric_limits<std::int64_t>::min() +
-                               static_cast<std::int64_t>(offset) *
-                                   microsecondsPerSecond) ||
-        (offset < 0 && localMicros >
-                           std::numeric_limits<std::int64_t>::max() +
-                               static_cast<std::int64_t>(offset) *
-                                   microsecondsPerSecond)) {
+    const auto localMicros = dayMicros + local.time.microsecondsSinceMidnight;
+    if ((offset > 0 && localMicros < std::numeric_limits<std::int64_t>::min() +
+                                         static_cast<std::int64_t>(offset) *
+                                             microsecondsPerSecond) ||
+        (offset < 0 && localMicros > std::numeric_limits<std::int64_t>::max() +
+                                         static_cast<std::int64_t>(offset) *
+                                             microsecondsPerSecond)) {
       throw std::out_of_range("TIMESTAMPTZ is outside the supported range");
     }
-    return SqlTimestampWithTimeZone{
-        localMicros - static_cast<std::int64_t>(offset) *
-                          microsecondsPerSecond};
+    return SqlTimestampWithTimeZone{localMicros -
+                                    static_cast<std::int64_t>(offset) *
+                                        microsecondsPerSecond};
   }
   case unidb::sql::SqlTypeId::Interval:
     return parseIntervalLiteral(literal);
