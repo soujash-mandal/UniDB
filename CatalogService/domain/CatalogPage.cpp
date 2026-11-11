@@ -29,6 +29,9 @@ std::vector<char> serializeTable(Table table) {
     append(&nullable, sizeof(nullable));
   }
   bool hasNumericModifiers = false;
+  if (table.rowFormatVersion != 1) {
+    throw std::invalid_argument("Unsupported table row format version");
+  }
   for (const Column &column : table.columns) {
     if (column.type != DataType::NUMERIC &&
         (column.numericPrecision.has_value() ||
@@ -76,11 +79,12 @@ std::vector<char> serializeTable(Table table) {
 
   // Keep the legacy payload size unchanged unless a column has modifiers.
   // This avoids reducing catalog page capacity for ordinary tables.
-  if (hasNumericModifiers) {
+  {
     constexpr uint32_t extensionMagic = 0x32444F4D; // "MOD2" in little endian.
-    constexpr uint8_t extensionVersion = 3;
+    constexpr uint8_t extensionVersion = 4;
     append(&extensionMagic, sizeof(extensionMagic));
     append(&extensionVersion, sizeof(extensionVersion));
+    append(&table.rowFormatVersion, sizeof(table.rowFormatVersion));
     append(&columnCount, sizeof(columnCount));
     for (const Column &column : table.columns) {
       uint8_t flags =
@@ -164,8 +168,15 @@ Table deserializeTable(std::vector<char> data) {
     }
     read(&version, sizeof(version));
     if ((actualMagic == legacyExtensionMagic && version != 1) ||
-        (actualMagic == extensionMagic && version != 2 && version != 3)) {
+        (actualMagic == extensionMagic && version != 2 && version != 3 &&
+         version != 4)) {
       throw std::runtime_error("Unsupported catalog table metadata version");
+    }
+    if (version == 4) {
+      read(&table.rowFormatVersion, sizeof(table.rowFormatVersion));
+      if (table.rowFormatVersion != 1) {
+        throw std::runtime_error("Unsupported table row format version");
+      }
     }
     read(&modifierCount, sizeof(modifierCount));
     if (modifierCount != columnCount) {
