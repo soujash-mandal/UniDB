@@ -14,7 +14,8 @@ CreateTableAction::CreateTableAction(CatalogFetchPagePort &fetchPagePort,
 CatalogTableId CreateTableAction::execute(CatalogPageId rootPageId,
                                           CatalogTableId tableId,
                                           std::string name,
-                                          std::vector<Column> columns) {
+                                          std::vector<Column> columns,
+                                          uint16_t rowFormatVersion) {
   if (name.empty()) {
     throw std::invalid_argument("Table name cannot be empty");
   }
@@ -22,7 +23,11 @@ CatalogTableId CreateTableAction::execute(CatalogPageId rootPageId,
   Table table;
   table.tableId = tableId;
   table.name = name;
+  if (rowFormatVersion != 1) {
+    throw std::invalid_argument("Unsupported table row format version");
+  }
   table.columns = columns;
+  table.rowFormatVersion = rowFormatVersion;
   table.firstFreeSpaceMapPageId = CATALOG_INVALID_PAGE_ID;
 
   CatalogPage emptyPage;
