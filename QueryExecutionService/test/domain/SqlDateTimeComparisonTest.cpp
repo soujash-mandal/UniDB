@@ -37,7 +37,7 @@ TEST(SqlDateTimeComparisonTest, ComparesTimeWithTimeZoneAsUtcClockTime) {
   EXPECT_EQ(cmp(noonPlusTwo, tenUtc), std::strong_ordering::less);
 }
 
-TEST(SqlDateTimeComparisonTest, WrapsTimeWithTimeZoneAcrossMidnight) {
+TEST(SqlDateTimeComparisonTest, ComparesUtcAdjustedTimeAcrossMidnight) {
   const domain::SqlTimeWithTimeZone halfPastMidnightPlusOne{
       domain::SqlTime{30LL * 60 * 1'000'000}, 3600};
   const domain::SqlTimeWithTimeZone quarterToMidnightUtc{
