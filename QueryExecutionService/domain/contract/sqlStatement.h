@@ -52,10 +52,10 @@ struct WhereEquals {
   SqlValue value;
   std::optional<SqlValue> upperBound;
   std::vector<SqlValue> values;
+  ComparisonOperator comparison{ComparisonOperator::Equal};
   std::optional<SqlTypedLiteral> typedLiteral;
   std::optional<SqlTypedLiteral> typedUpperBound;
   std::vector<std::optional<SqlTypedLiteral>> typedValues;
-  ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
 struct WhereExpression {
