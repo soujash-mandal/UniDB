@@ -346,6 +346,7 @@ private:
         return syntaxError("Expected '(' before INSERT values");
       }
       std::vector<SqlValue> row;
+      std::vector<std::optional<SqlTypedLiteral>> typedRow;
       while (true) {
         auto value = parseLiteral();
         if (std::holds_alternative<SqlParseError>(value)) {
@@ -510,10 +511,10 @@ private:
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
+      auto parsedValue = std::get<ParsedSqlLiteral>(std::move(value));
       expression.branches.push_back(
           {std::get<WhereExpression>(std::move(condition)),
-           std::get<ParsedSqlLiteral>(std::move(value)).value,
-           std::get<ParsedSqlLiteral>(value).typed});
+           std::move(parsedValue.value), std::move(parsedValue.typed)});
     }
     if (expression.branches.empty()) {
       return SqlParseError{SqlParseErrorCode::SyntaxError,
