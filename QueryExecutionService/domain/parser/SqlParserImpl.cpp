@@ -1,6 +1,7 @@
 #include "SqlParserImpl.h"
 
 #include "../types/SqlNumericSemantics.h"
+#include "../types/SqlDateTimeSemantics.h"
 #include "../types/SqlTypeRegistry.h"
 
 #include <cctype>
@@ -1315,9 +1316,16 @@ private:
           return SqlParseError{SqlParseErrorCode::SyntaxError,
                                "Expected a quoted string after date/time type"};
         }
-        SqlTypedLiteral typed{descriptor, current().text};
-        ++position_;
-        return ParsedSqlLiteral{SqlValue{typed.literal}, std::move(typed)};
+        try {
+          SqlTypedLiteral typed{
+              descriptor, current().text,
+              QueryExecutionService::domain::parseSqlDateTimeLiteral(
+                  descriptor, current().text)};
+          ++position_;
+          return ParsedSqlLiteral{SqlValue{typed.literal}, std::move(typed)};
+        } catch (const std::exception &error) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
+        }
       }
     }
     const bool negative = match(TokenKind::Minus);
