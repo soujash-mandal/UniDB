@@ -72,7 +72,8 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument("Temporal precision must be between 0 and 6");
   }
 
-  // Every new table payload carries an explicit row format version.  {
+  // Every new table payload carries an explicit row format version.
+  {
     constexpr uint32_t extensionMagic = 0x32444F4D; // "MOD2" in little endian.
     constexpr uint8_t extensionVersion = 4;
     append(&extensionMagic, sizeof(extensionMagic));
