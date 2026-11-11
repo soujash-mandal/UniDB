@@ -9,9 +9,8 @@
 
 TEST(ExecuteQueryActionIntegrationTest,
      PersistsPostgreSqlDateTimeColumnDescriptorsAcrossRestart) {
-  const auto databaseFile =
-      std::filesystem::temp_directory_path() /
-      "unidb_datetime_schema_integration_test.db";
+  const auto databaseFile = std::filesystem::temp_directory_path() /
+                            "unidb_datetime_schema_integration_test.db";
   std::filesystem::remove(databaseFile);
 
   {
@@ -50,14 +49,12 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_EQ(result.columns.size(), 6U);
 
     ASSERT_TRUE(result.columns[0].declaredType.has_value());
-    EXPECT_EQ(result.columns[0].declaredType->id,
-              unidb::sql::SqlTypeId::Date);
-    EXPECT_FALSE(result.columns[0]
-                     .declaredType->modifier.temporalPrecision.has_value());
+    EXPECT_EQ(result.columns[0].declaredType->id, unidb::sql::SqlTypeId::Date);
+    EXPECT_FALSE(
+        result.columns[0].declaredType->modifier.temporalPrecision.has_value());
 
     ASSERT_TRUE(result.columns[1].declaredType.has_value());
-    EXPECT_EQ(result.columns[1].declaredType->id,
-              unidb::sql::SqlTypeId::Time);
+    EXPECT_EQ(result.columns[1].declaredType->id, unidb::sql::SqlTypeId::Time);
     EXPECT_EQ(result.columns[1].declaredType->modifier.temporalPrecision, 3U);
 
     ASSERT_TRUE(result.columns[2].declaredType.has_value());
@@ -78,8 +75,8 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_TRUE(result.columns[5].declaredType.has_value());
     EXPECT_EQ(result.columns[5].declaredType->id,
               unidb::sql::SqlTypeId::Interval);
-    EXPECT_FALSE(result.columns[5]
-                     .declaredType->modifier.temporalPrecision.has_value());
+    EXPECT_FALSE(
+        result.columns[5].declaredType->modifier.temporalPrecision.has_value());
   }
 
   std::filesystem::remove(databaseFile);
@@ -88,8 +85,9 @@ TEST(ExecuteQueryActionIntegrationTest,
 TEST(SqlDateTimeDeclarationTest, RejectsPrecisionForDateAndInterval) {
   unidb::sql::SqlParserImpl parser;
 
-  for (const auto *sql : {"CREATE TABLE invalid_date (value DATE(2));",
-                          "CREATE TABLE invalid_interval (value INTERVAL(2));"}) {
+  for (const auto *sql :
+       {"CREATE TABLE invalid_date (value DATE(2));",
+        "CREATE TABLE invalid_interval (value INTERVAL(2));"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<unidb::sql::SqlParseError>(result))
         << sql;

@@ -59,8 +59,8 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
   case unidb::sql::SqlTypeId::Interval:
     return RdbDataType::INTERVAL;
   default:
-    throw std::invalid_argument(
-        "CREATE TABLE type is recognized but not yet supported by SQL row storage");
+    throw std::invalid_argument("CREATE TABLE type is recognized but not yet "
+                                "supported by SQL row storage");
   }
 }
 
