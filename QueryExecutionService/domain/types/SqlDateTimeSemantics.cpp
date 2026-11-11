@@ -253,8 +253,8 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
   std::istringstream input{std::string(value)};
   long double amount = 0;
   std::string unit;
-  std::int64_t months = 0;
-  std::int64_t days = 0;
+  long double months = 0;
+  long double days = 0;
   long double microseconds = 0;
   bool found = false;
 
@@ -269,18 +269,18 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
       if (std::floor(amount) != amount) {
         throw std::invalid_argument("INTERVAL years must be whole numbers");
       }
-      months += static_cast<std::int64_t>(amount) * 12;
+      months += amount * 12;
     } else if (unit == "mon" || unit == "mons" || unit == "month" ||
                unit == "months") {
       if (std::floor(amount) != amount) {
         throw std::invalid_argument("INTERVAL months must be whole numbers");
       }
-      months += static_cast<std::int64_t>(amount);
+      months += amount;
     } else if (unit == "day" || unit == "days") {
       if (std::floor(amount) != amount) {
         throw std::invalid_argument("INTERVAL days must be whole numbers");
       }
-      days += static_cast<std::int64_t>(amount);
+      days += amount;
     } else if (unit == "hour" || unit == "hours" || unit == "hr" ||
                unit == "hrs") {
       microseconds += amount * 3'600 * microsecondsPerSecond;
@@ -310,6 +310,7 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
                          std::numeric_limits<std::int64_t>::min()) ||
       microseconds > static_cast<long double>(
                          std::numeric_limits<std::int64_t>::max()) ||
+      !std::isfinite(months) || !std::isfinite(days) ||
       months < std::numeric_limits<std::int32_t>::min() ||
       months > std::numeric_limits<std::int32_t>::max() ||
       days < std::numeric_limits<std::int32_t>::min() ||
