@@ -30,8 +30,6 @@ struct InsertStatement {
   std::vector<std::vector<SqlValue>> rows;
   // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.
   std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
-  // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.
-  std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
 };
 
 enum class ComparisonOperator {
