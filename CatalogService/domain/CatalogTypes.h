@@ -45,4 +45,5 @@ struct CatalogTableDefinition {
   CatalogTableId tableId{};
   std::string name;
   std::vector<Column> columns;
+  uint16_t rowFormatVersion = 1;
 };
