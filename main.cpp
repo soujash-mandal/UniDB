@@ -197,22 +197,6 @@ std::string processIdentity(pid_t pid) {
 #endif
 }
 
-bool sendAll(int socket, const char *data, std::size_t size) {
-  while (size > 0) {
-    const auto sent = ::send(socket, data, size, 0);
-    if (sent < 0) {
-      if (errno == EINTR)
-        continue;
-      return false;
-    }
-    if (sent == 0)
-      return false;
-    data += sent;
-    size -= static_cast<std::size_t>(sent);
-  }
-  return true;
-}
-
 std::string serverBindAddress() {
   const char *configuredAddress = std::getenv("UNIDB_BIND_ADDRESS");
   if (configuredAddress == nullptr || configuredAddress[0] == '\0')
