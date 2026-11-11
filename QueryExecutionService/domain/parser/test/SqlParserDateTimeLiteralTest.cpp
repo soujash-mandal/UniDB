@@ -82,5 +82,86 @@ TEST(SqlParserDateTimeLiteralTest, RejectsTypedLiteralWithoutQuotedValue) {
   }
 }
 
+
+TEST(SqlParserDateTimeLiteralTest, ParsesAndValidatesCalendarAndClockValues) {
+  SqlParserImpl parser;
+  const auto valid = parser.parse(
+      "INSERT INTO events (d, t) VALUES "
+      "(DATE '2024-02-29', TIME(3) '12:34:56.789')");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(valid));
+  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(valid));
+  ASSERT_EQ(insert.typedLiterals[0].size(), 2U);
+  EXPECT_TRUE(std::holds_alternative<QueryExecutionService::domain::SqlDate>(
+      insert.typedLiterals[0][0]->value));
+  const auto &time = std::get<QueryExecutionService::domain::SqlTime>(
+      insert.typedLiterals[0][1]->value);
+  EXPECT_EQ(time.microsecondsSinceMidnight,
+            (12 * 3600 + 34 * 60 + 56) * 1'000'000 + 790'000);
+}
+
+TEST(SqlParserDateTimeLiteralTest, NormalizesExplicitOffsetsToUtcInstant) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO events (instant) VALUES "
+      "(TIMESTAMPTZ '2026-11-11 12:34:56+05:30')");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &instant =
+      std::get<QueryExecutionService::domain::SqlTimestampWithTimeZone>(
+          insert.typedLiterals[0][0]->value);
+  const auto date = QueryExecutionService::domain::makeSqlDate(2026, 11, 11);
+  const auto expected =
+      static_cast<std::int64_t>(date.daysSinceEpoch) * 86'400'000'000LL +
+      (12 * 3600 + 34 * 60 + 56 - 5 * 3600 - 30 * 60) * 1'000'000LL;
+  EXPECT_EQ(instant.microsecondsSinceEpoch, expected);
+}
+
+TEST(SqlParserDateTimeLiteralTest, ParsesIntervalCalendarAndClockFields) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO events (duration) VALUES (INTERVAL '1 year 2 months 3 days 4 hours 5 minutes 6.5 seconds')");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &interval =
+      std::get<QueryExecutionService::domain::SqlInterval>(
+          insert.typedLiterals[0][0]->value);
+  EXPECT_EQ(interval.months, 14);
+  EXPECT_EQ(interval.days, 3);
+  EXPECT_EQ(interval.microseconds,
+            (4 * 3600 + 5 * 60) * 1'000'000LL + 6'500'000LL);
+}
+
+TEST(SqlParserDateTimeLiteralTest, RejectsInvalidTemporalValues) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "INSERT INTO events (d) VALUES (DATE '2025-02-29')",
+           "INSERT INTO events (d) VALUES (DATE '2026-13-01')",
+           "INSERT INTO events (t) VALUES (TIME '25:00:00')",
+           "INSERT INTO events (t) VALUES (TIME '12:61:00')",
+           "INSERT INTO events (tz) VALUES (TIMETZ '12:00:00')",
+           "INSERT INTO events (tz) VALUES (TIMETZ '12:00:00+16:00')",
+           "INSERT INTO events (ts) VALUES (TIMESTAMP '2026-11-11 12:00:00+00:00')",
+           "INSERT INTO events (ts) VALUES (TIMESTAMP '2026-02-30 12:00:00')",
+           "INSERT INTO events (tstz) VALUES (TIMESTAMPTZ '2026-11-11 12:00:00')",
+           "INSERT INTO events (duration) VALUES (INTERVAL '3 fortnights')",
+       }) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
+  }
+}
+
+TEST(SqlParserDateTimeLiteralTest, RoundsToDeclaredTemporalPrecision) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "INSERT INTO events (t) VALUES (TIME(2) '12:34:56.789')");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert = std::get<InsertStatement>(std::get<SqlStatement>(result));
+  const auto &time =
+      std::get<QueryExecutionService::domain::SqlTime>(
+          insert.typedLiterals[0][0]->value);
+  EXPECT_EQ(time.microsecondsSinceMidnight,
+            (12 * 3600 + 34 * 60 + 56) * 1'000'000 + 790'000);
+}
+
 } // namespace
 } // namespace unidb::sql
