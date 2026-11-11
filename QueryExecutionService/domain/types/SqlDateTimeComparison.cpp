@@ -12,9 +12,8 @@ constexpr std::int64_t microsecondsPerDay = 86'400 * microsecondsPerSecond;
 
 std::int64_t utcTimeOfDay(const SqlTimeWithTimeZone &value) {
   const auto local = value.time.microsecondsSinceMidnight;
-  const auto offset =
-      static_cast<std::int64_t>(value.offsetSecondsEastOfUtc) *
-      microsecondsPerSecond;
+  const auto offset = static_cast<std::int64_t>(value.offsetSecondsEastOfUtc) *
+                      microsecondsPerSecond;
   auto utc = (local - offset) % microsecondsPerDay;
   if (utc < 0) {
     utc += microsecondsPerDay;
@@ -56,9 +55,8 @@ std::strong_ordering compare(const SqlTime &left, const SqlTime &right) {
                  right.microsecondsSinceMidnight);
 }
 
-std::strong_ordering
-compare(const SqlTimestampWithTimeZone &left,
-        const SqlTimestampWithTimeZone &right) {
+std::strong_ordering compare(const SqlTimestampWithTimeZone &left,
+                             const SqlTimestampWithTimeZone &right) {
   return compare(left.microsecondsSinceEpoch, right.microsecondsSinceEpoch);
 }
 
@@ -85,16 +83,16 @@ std::strong_ordering compare(const SqlInterval &left,
 
 } // namespace
 
-std::strong_ordering
-compareSqlTemporalValues(const SqlTemporalValue &left,
-                         const SqlTemporalValue &right) {
+std::strong_ordering compareSqlTemporalValues(const SqlTemporalValue &left,
+                                              const SqlTemporalValue &right) {
   if (left.index() != right.index()) {
     throw std::invalid_argument(
         "Cannot compare values with different temporal SQL types");
   }
 
   return std::visit(
-      [](const auto &leftValue, const auto &rightValue) -> std::strong_ordering {
+      [](const auto &leftValue,
+         const auto &rightValue) -> std::strong_ordering {
         using Left = std::decay_t<decltype(leftValue)>;
         using Right = std::decay_t<decltype(rightValue)>;
         if constexpr (!std::is_same_v<Left, Right>) {
