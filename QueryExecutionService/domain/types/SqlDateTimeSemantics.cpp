@@ -103,9 +103,6 @@ std::int64_t roundSqlFractionalSeconds(std::int64_t microseconds,
 
 namespace {
 
-constexpr std::int64_t microsecondsPerSecond = 1'000'000;
-constexpr std::int64_t microsecondsPerDay = 86'400 * microsecondsPerSecond;
-
 int parseDigits(std::string_view value, std::size_t position,
                 std::size_t count) {
   if (position + count > value.size()) {
