@@ -60,7 +60,7 @@ RdbDataType toRdbType(const unidb::sql::ColumnDefinition &column) {
     return RdbDataType::INTERVAL;
   default:
     throw std::invalid_argument(
-        "CREATE TABLE type is recognized but not yet supported by storage");
+        "CREATE TABLE type is recognized but not yet supported by SQL row storage");
   }
 }
 
@@ -143,13 +143,21 @@ unidb::sql::SqlTypeDescriptor descriptorFromRdbType(const RdbColumn &column) {
   case RdbDataType::TIMESTAMP_WITH_TIME_ZONE: {
     unidb::sql::SqlTypeModifier modifier;
     modifier.temporalPrecision = column.temporalPrecision;
-    const auto id = type == RdbDataType::TIME
-                        ? SqlTypeId::Time
-                    : type == RdbDataType::TIME_WITH_TIME_ZONE
-                        ? SqlTypeId::TimeWithTimeZone
-                    : type == RdbDataType::TIMESTAMP
-                        ? SqlTypeId::Timestamp
-                        : SqlTypeId::TimestampWithTimeZone;
+    SqlTypeId id;
+    switch (type) {
+    case RdbDataType::TIME:
+      id = SqlTypeId::Time;
+      break;
+    case RdbDataType::TIME_WITH_TIME_ZONE:
+      id = SqlTypeId::TimeWithTimeZone;
+      break;
+    case RdbDataType::TIMESTAMP:
+      id = SqlTypeId::Timestamp;
+      break;
+    default:
+      id = SqlTypeId::TimestampWithTimeZone;
+      break;
+    }
     return SqlTypeDescriptor{id, modifier};
   }
   case RdbDataType::INTERVAL:
