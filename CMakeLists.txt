@@ -291,6 +291,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/CharacterTypesPersistAcrossRestartTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/NumericAggregateTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserTypeDeclarationTest.cpp
+    QueryExecutionService/domain/parser/test/SqlParserDateTimeLiteralTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserWhereTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserSelectClauseTest.cpp
     QueryExecutionService/domain/parser/test/SqlParserAggregateTest.cpp
