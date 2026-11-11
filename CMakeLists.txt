@@ -190,6 +190,7 @@ add_executable(tests
     CatalogService/test/CatalogPage/RepeatedGrowingUpdatesReuseCompactedPayloadSpaceTest.cpp
     CatalogService/test/CatalogPage/ReadsLegacyTablePayloadWithoutFreeSpaceMapPageIdTest.cpp
     CatalogService/test/CatalogPage/RoundTripsCharacterTypeMetadataTest.cpp
+    CatalogService/test/CatalogPage/RoundTripsDateTimeTypeMetadataTest.cpp
     CatalogService/test/CatalogPage/CatalogPageTestSupport.h
     TupleService/test/TuplePage/UsesFullPageCapacityAndSkipsDeletedSlotsTest.cpp
     TupleService/test/TuplePage/RejectsCorruptSlotBoundsDuringScanTest.cpp

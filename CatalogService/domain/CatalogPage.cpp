@@ -59,8 +59,18 @@ std::vector<char> serializeTable(Table table) {
       throw std::invalid_argument("VARCHAR length must be positive");
     if (!characterType && column.characterLength)
       throw std::invalid_argument("Character length requires CHAR or VARCHAR");
+    const bool temporalType = column.type == DataType::TIME ||
+                              column.type == DataType::TIME_WITH_TIME_ZONE ||
+                              column.type == DataType::TIMESTAMP ||
+                              column.type == DataType::TIMESTAMP_WITH_TIME_ZONE;
+    if (!temporalType && column.temporalPrecision.has_value())
+      throw std::invalid_argument(
+          "Temporal precision requires a TIME or TIMESTAMP column");
+    if (column.temporalPrecision.has_value() && *column.temporalPrecision > 6)
+      throw std::invalid_argument("Temporal precision must be between 0 and 6");
     if (column.numericPrecision.has_value() ||
-        column.numericScale.has_value() || column.characterLength.has_value())
+        column.numericScale.has_value() || column.characterLength.has_value() ||
+        column.temporalPrecision.has_value())
       hasNumericModifiers = true;
   }
 
@@ -68,7 +78,7 @@ std::vector<char> serializeTable(Table table) {
   // This avoids reducing catalog page capacity for ordinary tables.
   if (hasNumericModifiers) {
     constexpr uint32_t extensionMagic = 0x32444F4D; // "MOD2" in little endian.
-    constexpr uint8_t extensionVersion = 2;
+    constexpr uint8_t extensionVersion = 3;
     append(&extensionMagic, sizeof(extensionMagic));
     append(&extensionVersion, sizeof(extensionVersion));
     append(&columnCount, sizeof(columnCount));
@@ -76,7 +86,8 @@ std::vector<char> serializeTable(Table table) {
       uint8_t flags =
           static_cast<uint8_t>((column.numericPrecision.has_value() ? 1 : 0) |
                                (column.numericScale.has_value() ? 2 : 0) |
-                               (column.characterLength.has_value() ? 4 : 0));
+                               (column.characterLength.has_value() ? 4 : 0) |
+                               (column.temporalPrecision.has_value() ? 8 : 0));
       append(&flags, sizeof(flags));
       if (column.numericPrecision.has_value()) {
         append(&*column.numericPrecision, sizeof(*column.numericPrecision));
@@ -86,6 +97,9 @@ std::vector<char> serializeTable(Table table) {
       }
       if (column.characterLength.has_value()) {
         append(&*column.characterLength, sizeof(*column.characterLength));
+      }
+      if (column.temporalPrecision.has_value()) {
+        append(&*column.temporalPrecision, sizeof(*column.temporalPrecision));
       }
     }
   }
@@ -150,7 +164,7 @@ Table deserializeTable(std::vector<char> data) {
     }
     read(&version, sizeof(version));
     if ((actualMagic == legacyExtensionMagic && version != 1) ||
-        (actualMagic == extensionMagic && version != 2)) {
+        (actualMagic == extensionMagic && version != 2 && version != 3)) {
       throw std::runtime_error("Unsupported catalog table metadata version");
     }
     read(&modifierCount, sizeof(modifierCount));
@@ -160,7 +174,7 @@ Table deserializeTable(std::vector<char> data) {
     for (auto &column : table.columns) {
       uint8_t flags = 0;
       read(&flags, sizeof(flags));
-      const uint8_t allowedFlags = version == 1 ? 3 : 7;
+      const uint8_t allowedFlags = version == 1 ? 3 : (version == 2 ? 7 : 15);
       if ((flags & static_cast<uint8_t>(~allowedFlags)) != 0) {
         throw std::runtime_error("Invalid catalog column modifier flags");
       }
@@ -178,6 +192,11 @@ Table deserializeTable(std::vector<char> data) {
         uint32_t length = 0;
         read(&length, sizeof(length));
         column.characterLength = length;
+      }
+      if ((flags & 8) != 0) {
+        uint32_t precision = 0;
+        read(&precision, sizeof(precision));
+        column.temporalPrecision = precision;
       }
       if (column.type != DataType::NUMERIC &&
           (column.numericPrecision.has_value() ||
@@ -210,6 +229,19 @@ Table deserializeTable(std::vector<char> data) {
           column.characterLength.has_value()) {
         throw std::runtime_error(
             "Character length found on non-character column");
+      }
+      const bool temporalType =
+          column.type == DataType::TIME ||
+          column.type == DataType::TIME_WITH_TIME_ZONE ||
+          column.type == DataType::TIMESTAMP ||
+          column.type == DataType::TIMESTAMP_WITH_TIME_ZONE;
+      if (!temporalType && column.temporalPrecision.has_value()) {
+        throw std::runtime_error(
+            "Temporal precision found on a non-TIME/TIMESTAMP column");
+      }
+      if (column.temporalPrecision.has_value() &&
+          *column.temporalPrecision > 6) {
+        throw std::runtime_error("Invalid catalog temporal precision");
       }
     }
     if (offset != data.size() &&

@@ -27,6 +27,18 @@ RdbDataType fromCatalogType(DataType type) {
     return RdbDataType::CHAR;
   case DataType::TEXT:
     return RdbDataType::TEXT;
+  case DataType::DATE:
+    return RdbDataType::DATE;
+  case DataType::TIME:
+    return RdbDataType::TIME;
+  case DataType::TIME_WITH_TIME_ZONE:
+    return RdbDataType::TIME_WITH_TIME_ZONE;
+  case DataType::TIMESTAMP:
+    return RdbDataType::TIMESTAMP;
+  case DataType::TIMESTAMP_WITH_TIME_ZONE:
+    return RdbDataType::TIMESTAMP_WITH_TIME_ZONE;
+  case DataType::INTERVAL:
+    return RdbDataType::INTERVAL;
   }
   throw std::invalid_argument("Unsupported catalog column type");
 }
@@ -37,9 +49,10 @@ RdbTableDefinition fromCatalogTable(const Table &table) {
   result.firstSpaceMapPageId = table.firstFreeSpaceMapPageId;
   result.columns.reserve(table.columns.size());
   for (const auto &column : table.columns) {
-    result.columns.push_back(RdbColumn{
-        column.name, fromCatalogType(column.type), column.size, column.nullable,
-        column.numericPrecision, column.numericScale, column.characterLength});
+    result.columns.push_back(
+        RdbColumn{column.name, fromCatalogType(column.type), column.size,
+                  column.nullable, column.numericPrecision, column.numericScale,
+                  column.characterLength, column.temporalPrecision});
   }
   return result;
 }
