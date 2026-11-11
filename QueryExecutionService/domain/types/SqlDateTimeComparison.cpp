@@ -47,6 +47,21 @@ std::strong_ordering compare(const T &left, const T &right) {
   return std::strong_ordering::equal;
 }
 
+std::strong_ordering compare(const SqlDate &left, const SqlDate &right) {
+  return compare(left.daysSinceEpoch, right.daysSinceEpoch);
+}
+
+std::strong_ordering compare(const SqlTime &left, const SqlTime &right) {
+  return compare(left.microsecondsSinceMidnight,
+                 right.microsecondsSinceMidnight);
+}
+
+std::strong_ordering
+compare(const SqlTimestampWithTimeZone &left,
+        const SqlTimestampWithTimeZone &right) {
+  return compare(left.microsecondsSinceEpoch, right.microsecondsSinceEpoch);
+}
+
 std::strong_ordering compare(const SqlTimeWithTimeZone &left,
                              const SqlTimeWithTimeZone &right) {
   return compare(utcTimeOfDay(left), utcTimeOfDay(right));
