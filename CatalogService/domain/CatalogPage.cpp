@@ -71,8 +71,8 @@ std::vector<char> serializeTable(Table table) {
           "Temporal precision requires a TIME or TIMESTAMP column");
     if (column.temporalPrecision.has_value() && *column.temporalPrecision > 6)
       throw std::invalid_argument("Temporal precision must be between 0 and 6");
-    if (column.numericPrecision.has_value() || column.numericScale.has_value() ||
-        column.characterLength.has_value() ||
+    if (column.numericPrecision.has_value() ||
+        column.numericScale.has_value() || column.characterLength.has_value() ||
         column.temporalPrecision.has_value()) {
       hasColumnModifiers = true;
     }
