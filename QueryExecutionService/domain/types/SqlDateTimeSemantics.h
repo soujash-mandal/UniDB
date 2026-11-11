@@ -2,9 +2,17 @@
 
 #include "SqlDateTimeValue.h"
 
+#include "../../type/type.h"
+
 #include <cstdint>
+#include <string_view>
+#include <variant>
 
 namespace QueryExecutionService::domain {
+
+using SqlTemporalValue = std::variant<SqlDate, SqlTime, SqlTimeWithTimeZone,
+                                      SqlTimestamp, SqlTimestampWithTimeZone,
+                                      SqlInterval>;
 
 /**
  * Convert a SQL Gregorian date to days relative to the PostgreSQL epoch.
@@ -41,5 +49,9 @@ void validateSqlTimestamp(const SqlTimestamp &timestamp);
  */
 std::int64_t roundSqlFractionalSeconds(std::int64_t microseconds,
                                        std::uint8_t precision);
+
+/** Parse and validate a typed SQL temporal literal using its declared precision. */
+SqlTemporalValue parseSqlDateTimeLiteral(const unidb::sql::SqlTypeDescriptor &type,
+                                         std::string_view literal);
 
 } // namespace QueryExecutionService::domain
