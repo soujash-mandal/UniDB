@@ -24,6 +24,7 @@ TEST(CreateCatalogTableAdapterTest,
 
   EXPECT_EQ(tableId, 7U);
   EXPECT_EQ(stored.tableId, 7U);
+  EXPECT_EQ(stored.rowFormatVersion, 1U);
   ASSERT_EQ(stored.columns.size(), 3U);
   EXPECT_EQ(stored.columns[0].type, DataType::INT);
   EXPECT_EQ(stored.columns[1].type, DataType::VARCHAR);
