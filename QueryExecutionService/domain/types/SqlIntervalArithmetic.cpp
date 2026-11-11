@@ -37,8 +37,7 @@ template <typename T> T checkedNegate(T value) {
 
 } // namespace
 
-SqlInterval addSqlIntervals(const SqlInterval &left,
-                            const SqlInterval &right) {
+SqlInterval addSqlIntervals(const SqlInterval &left, const SqlInterval &right) {
   return SqlInterval{checkedAdd(left.months, right.months),
                      checkedAdd(left.days, right.days),
                      checkedAdd(left.microseconds, right.microseconds)};

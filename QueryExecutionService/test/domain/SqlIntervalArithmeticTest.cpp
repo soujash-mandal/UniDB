@@ -9,25 +9,22 @@
 namespace domain = QueryExecutionService::domain;
 
 TEST(SqlIntervalArithmeticTest, AddsComponentsWithoutConvertingMonthsToDays) {
-  const auto result =
-      domain::addSqlIntervals(domain::SqlInterval{2, 3, 4},
-                              domain::SqlInterval{5, 7, 11});
+  const auto result = domain::addSqlIntervals(domain::SqlInterval{2, 3, 4},
+                                              domain::SqlInterval{5, 7, 11});
 
   EXPECT_EQ(result, (domain::SqlInterval{7, 10, 15}));
 }
 
 TEST(SqlIntervalArithmeticTest, PreservesMixedSignComponents) {
-  const auto result =
-      domain::addSqlIntervals(domain::SqlInterval{2, -3, 4},
-                              domain::SqlInterval{-5, 7, -11});
+  const auto result = domain::addSqlIntervals(domain::SqlInterval{2, -3, 4},
+                                              domain::SqlInterval{-5, 7, -11});
 
   EXPECT_EQ(result, (domain::SqlInterval{-3, 4, -7}));
 }
 
 TEST(SqlIntervalArithmeticTest, SubtractsComponentsIndependently) {
-  const auto result =
-      domain::subtractSqlIntervals(domain::SqlInterval{8, 3, -4},
-                                   domain::SqlInterval{5, -7, -11});
+  const auto result = domain::subtractSqlIntervals(
+      domain::SqlInterval{8, 3, -4}, domain::SqlInterval{5, -7, -11});
 
   EXPECT_EQ(result, (domain::SqlInterval{3, 10, 7}));
 }
