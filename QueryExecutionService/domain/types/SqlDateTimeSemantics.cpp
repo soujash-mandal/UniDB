@@ -305,13 +305,18 @@ SqlInterval parseIntervalLiteral(std::string_view value) {
     throw std::invalid_argument(
         "INTERVAL literal must contain number/unit field pairs");
   }
-  const auto roundedMicros = std::llround(microseconds);
-  if (months < std::numeric_limits<std::int32_t>::min() ||
+  if (!std::isfinite(microseconds) ||
+      microseconds < static_cast<long double>(
+                         std::numeric_limits<std::int64_t>::min()) ||
+      microseconds > static_cast<long double>(
+                         std::numeric_limits<std::int64_t>::max()) ||
+      months < std::numeric_limits<std::int32_t>::min() ||
       months > std::numeric_limits<std::int32_t>::max() ||
       days < std::numeric_limits<std::int32_t>::min() ||
       days > std::numeric_limits<std::int32_t>::max()) {
     throw std::out_of_range("INTERVAL is outside the supported range");
   }
+  const auto roundedMicros = std::llround(microseconds);
   return SqlInterval{static_cast<std::int32_t>(months),
                      static_cast<std::int32_t>(days), roundedMicros};
 }
@@ -343,11 +348,20 @@ parseSqlDateTimeLiteral(const unidb::sql::SqlTypeDescriptor &type,
       throw std::invalid_argument("TIMESTAMPTZ requires an explicit UTC offset");
     }
     const auto offset = parseOffset(literal.substr(offsetPosition));
-    const auto dayMicros =
-        static_cast<std::int64_t>(local.date.daysSinceEpoch) *
-        microsecondsPerDay;
-    const auto localMicros = dayMicros +
-                             local.time.microsecondsSinceMidnight;
+    const auto days = static_cast<std::int64_t>(local.date.daysSinceEpoch);
+    if (days > std::numeric_limits<std::int64_t>::max() /
+                   microsecondsPerDay ||
+        days < std::numeric_limits<std::int64_t>::min() /
+                   microsecondsPerDay) {
+      throw std::out_of_range("TIMESTAMPTZ is outside the supported range");
+    }
+    const auto dayMicros = days * microsecondsPerDay;
+    if (dayMicros > std::numeric_limits<std::int64_t>::max() -
+                        local.time.microsecondsSinceMidnight) {
+      throw std::out_of_range("TIMESTAMPTZ is outside the supported range");
+    }
+    const auto localMicros =
+        dayMicros + local.time.microsecondsSinceMidnight;
     if ((offset > 0 && localMicros <
                            std::numeric_limits<std::int64_t>::min() +
                                static_cast<std::int64_t>(offset) *
