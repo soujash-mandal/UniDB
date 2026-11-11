@@ -31,6 +31,7 @@ std::vector<char> serializeTable(Table table) {
   if (table.rowFormatVersion != 1) {
     throw std::invalid_argument("Unsupported table row format version");
   }
+  bool hasColumnModifiers = false;
   for (const Column &column : table.columns) {
     if (column.type != DataType::NUMERIC &&
         (column.numericPrecision.has_value() ||
@@ -70,10 +71,16 @@ std::vector<char> serializeTable(Table table) {
           "Temporal precision requires a TIME or TIMESTAMP column");
     if (column.temporalPrecision.has_value() && *column.temporalPrecision > 6)
       throw std::invalid_argument("Temporal precision must be between 0 and 6");
+    if (column.numericPrecision.has_value() || column.numericScale.has_value() ||
+        column.characterLength.has_value() ||
+        column.temporalPrecision.has_value()) {
+      hasColumnModifiers = true;
+    }
   }
 
-  // Every new table payload carries an explicit row format version.
-  {
+  // Version 1 is the legacy default. Persist an explicit version alongside
+  // the modifier extension when one is needed; otherwise keep compact payloads.
+  if (hasColumnModifiers) {
     constexpr uint32_t extensionMagic = 0x32444F4D; // "MOD2" in little endian.
     constexpr uint8_t extensionVersion = 4;
     append(&extensionMagic, sizeof(extensionMagic));
