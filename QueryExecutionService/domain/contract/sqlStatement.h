@@ -27,7 +27,11 @@ struct CreateTableStatement {
 struct InsertStatement {
   std::string tableName;
   std::vector<std::string> columnNames;
-  std::vector<std::vector<SqlValue>> rows;\n  // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.\n  std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
+  std::vector<std::vector<SqlValue>> rows;
+  // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.
+  std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
+  // Mirrors rows; nullopt entries are ordinary, untyped SqlValue literals.
+  std::vector<std::vector<std::optional<SqlTypedLiteral>>> typedLiterals;
 };
 
 enum class ComparisonOperator {
@@ -50,6 +54,9 @@ struct WhereEquals {
   SqlValue value;
   std::optional<SqlValue> upperBound;
   std::vector<SqlValue> values;
+  std::optional<SqlTypedLiteral> typedLiteral;
+  std::optional<SqlTypedLiteral> typedUpperBound;
+  std::vector<std::optional<SqlTypedLiteral>> typedValues;
   ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
@@ -78,6 +85,7 @@ struct HavingExpression {
   AggregateExpression aggregate;
   ComparisonOperator comparison{ComparisonOperator::Equal};
   SqlValue value;
+  std::optional<SqlTypedLiteral> typedLiteral;
 };
 
 struct ColumnReference {
@@ -101,11 +109,13 @@ struct CrossJoinClause {
 struct CaseWhenClause {
   WhereExpression condition;
   SqlValue result;
+  std::optional<SqlTypedLiteral> typedLiteral;
 };
 
 struct CaseExpression {
   std::vector<CaseWhenClause> branches;
   SqlValue elseResult;
+  std::optional<SqlTypedLiteral> typedElseResult;
 };
 
 enum class IntegerBinaryOperator { Add, Subtract, Multiply, Divide };
