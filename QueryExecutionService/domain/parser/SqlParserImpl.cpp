@@ -301,6 +301,14 @@ private:
       // an INT/TEXT column by accident.
       column.type = column.declaredType->id == SqlTypeId::Text ? SqlType::Text
                                                                : SqlType::Int;
+      if (matchKeyword("NOT")) {
+        if (!expectKeyword("NULL")) {
+          return syntaxError("Expected NULL after NOT");
+        }
+        column.nullable = false;
+      } else {
+        (void)matchKeyword("NULL");
+      }
       statement.columns.push_back(std::move(column));
 
       if (!match(TokenKind::Comma)) {
@@ -354,7 +362,7 @@ private:
       std::vector<SqlValue> row;
       std::vector<std::optional<SqlTypedLiteral>> typedRow;
       while (true) {
-        auto value = parseLiteral();
+        auto value = parseInsertLiteral();
         if (std::holds_alternative<SqlParseError>(value)) {
           return std::get<SqlParseError>(std::move(value));
         }
@@ -378,6 +386,13 @@ private:
       }
     }
     return SqlStatement{std::move(statement)};
+  }
+
+  std::variant<ParsedSqlLiteral, SqlParseError> parseInsertLiteral() {
+    if (matchKeyword("NULL")) {
+      return ParsedSqlLiteral{SqlValue{SqlNullValue{}}, std::nullopt};
+    }
+    return parseLiteral();
   }
 
   bool isTextFunctionStart() const {

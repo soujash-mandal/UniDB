@@ -294,6 +294,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/ExecutesCreateInsertSelectThroughContainerTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/DateTimeSchemaPersistenceTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/BooleanSchemaAndInsertTest.cpp
+    QueryExecutionService/test/ExecuteQueryAction/NullInsertTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/BooleanQueryExecutionTest.cpp
     cli/test/SqlShellCommandTest.cpp
     cli/test/SqlShellResultTableTest.cpp
