@@ -528,7 +528,7 @@ private:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected THEN after CASE WHEN condition"};
       }
-      auto value = parseLiteral();
+      auto value = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
@@ -541,29 +541,45 @@ private:
       return SqlParseError{SqlParseErrorCode::SyntaxError,
                            "CASE requires at least one WHEN branch"};
     }
-    if (!expectKeyword("ELSE")) {
-      return SqlParseError{
-          SqlParseErrorCode::SyntaxError,
-          "CASE requires ELSE because SQL NULL is unsupported"};
+    expression.elseResult = SqlNullValue{};
+    if (matchKeyword("ELSE")) {
+      auto elseValue = parseWhereLiteral();
+      if (std::holds_alternative<SqlParseError>(elseValue)) {
+        return std::get<SqlParseError>(std::move(elseValue));
+      }
+      auto parsedElse = std::get<ParsedSqlLiteral>(std::move(elseValue));
+      expression.elseResult = std::move(parsedElse.value);
+      expression.typedElseResult = std::move(parsedElse.typed);
     }
-    auto elseValue = parseLiteral();
-    if (std::holds_alternative<SqlParseError>(elseValue)) {
-      return std::get<SqlParseError>(std::move(elseValue));
-    }
-    auto parsedElse = std::get<ParsedSqlLiteral>(std::move(elseValue));
-    expression.elseResult = std::move(parsedElse.value);
-    expression.typedElseResult = std::move(parsedElse.typed);
     if (!expectKeyword("END")) {
       return SqlParseError{SqlParseErrorCode::SyntaxError,
                            "Expected END after CASE expression"};
     }
-    const bool resultIsInt =
-        std::holds_alternative<std::int64_t>(expression.elseResult);
+    std::optional<bool> resultIsInt;
+    const auto validateResultType = [&resultIsInt](const SqlValue &value) {
+      if (std::holds_alternative<SqlNullValue>(value)) {
+        return true;
+      }
+      const bool isInt = std::holds_alternative<std::int64_t>(value);
+      if (resultIsInt.has_value() && *resultIsInt != isInt) {
+        return false;
+      }
+      resultIsInt = isInt;
+      return true;
+    };
+    if (!validateResultType(expression.elseResult)) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "CASE result values must have the same type"};
+    }
     for (const auto &branch : expression.branches) {
-      if (std::holds_alternative<std::int64_t>(branch.result) != resultIsInt) {
+      if (!validateResultType(branch.result)) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "CASE result values must have the same type"};
       }
+    }
+    if (!resultIsInt.has_value()) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "CASE requires at least one non-NULL result"};
     }
     return expression;
   }

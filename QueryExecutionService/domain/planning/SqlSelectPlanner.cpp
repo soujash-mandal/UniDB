@@ -123,14 +123,26 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
               "CASE expressions are not yet supported with JOIN");
         }
         const auto &caseExpression = *select.caseExpressions[itemIndex];
-        const SqlValue &elseValue = caseExpression.elseResult;
-        const bool resultIsInt =
-            std::holds_alternative<std::int64_t>(elseValue);
+        std::optional<bool> resultIsInt;
+        const auto validateResultType = [&resultIsInt](const SqlValue &value) {
+          if (std::holds_alternative<unidb::sql::SqlNullValue>(value)) {
+            return true;
+          }
+          const bool isInt = std::holds_alternative<std::int64_t>(value);
+          if (resultIsInt.has_value() && *resultIsInt != isInt) {
+            return false;
+          }
+          resultIsInt = isInt;
+          return true;
+        };
+        if (!validateResultType(caseExpression.elseResult)) {
+          throw std::invalid_argument(
+              "CASE result values must have the same type");
+        }
         std::vector<CompiledWhereExpression> branches;
         branches.reserve(caseExpression.branches.size());
         for (const auto &branch : caseExpression.branches) {
-          if (std::holds_alternative<std::int64_t>(branch.result) !=
-              resultIsInt) {
+          if (!validateResultType(branch.result)) {
             throw std::invalid_argument(
                 "CASE result values must have the same type");
           }
@@ -138,10 +150,14 @@ buildSelectPlan(const unidb::sql::SelectStatement &select,
               branch.condition, tableQualifier);
           branches.push_back(compileWhereExpression(normalized, schema, types));
         }
+        if (!resultIsInt.has_value()) {
+          throw std::invalid_argument(
+              "CASE requires at least one non-NULL result");
+        }
         plan.selectedIndexes.push_back(schema.size());
         plan.selectedColumns.push_back(
             {select.columnAliases[itemIndex].value_or("CASE"),
-             resultIsInt ? SqlType::Int : SqlType::Text});
+             *resultIsInt ? SqlType::Int : SqlType::Text});
         plan.compiledCases.push_back(std::move(branches));
         plan.compiledIntegers.push_back(std::nullopt);
         plan.compiledTextFunctions.push_back(std::nullopt);
