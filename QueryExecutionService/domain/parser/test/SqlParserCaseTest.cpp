@@ -34,13 +34,34 @@ TEST(SqlParserCaseTest, RejectsCaseWithoutWhenOrElse) {
   SqlParserImpl parser;
   for (const auto *sql : {
            "SELECT CASE ELSE 1 END FROM users",
-           "SELECT CASE WHEN id = 1 THEN 1 END FROM users",
            "SELECT CASE WHEN id = 1 THEN 1 ELSE 2 FROM users",
            "SELECT CASE WHEN id = 1 THEN 1 ELSE 'two' END FROM users",
        }) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlParseError>(result)) << sql;
   }
+}
+
+TEST(SqlParserCaseTest, ParsesNullResultsAndImplicitElseNull) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT CASE WHEN id = 1 THEN NULL ELSE 2 END FROM users",
+           "SELECT CASE WHEN id = 1 THEN 1 ELSE NULL END FROM users",
+           "SELECT CASE WHEN id = 1 THEN 1 END FROM users",
+       }) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(select.caseExpressions[0].has_value());
+  }
+}
+
+TEST(SqlParserCaseTest, RejectsCaseWhenEveryResultIsNull) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT CASE WHEN id = 1 THEN NULL ELSE NULL END FROM users");
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
 }
 
 TEST(SqlParserCaseTest, RejectsMalformedCaseConditionsAndResults) {

@@ -528,7 +528,7 @@ private:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected THEN after CASE WHEN condition"};
       }
-      auto value = parseLiteral();
+      auto value = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
@@ -541,29 +541,45 @@ private:
       return SqlParseError{SqlParseErrorCode::SyntaxError,
                            "CASE requires at least one WHEN branch"};
     }
-    if (!expectKeyword("ELSE")) {
-      return SqlParseError{
-          SqlParseErrorCode::SyntaxError,
-          "CASE requires ELSE because SQL NULL is unsupported"};
+    expression.elseResult = SqlNullValue{};
+    if (matchKeyword("ELSE")) {
+      auto elseValue = parseWhereLiteral();
+      if (std::holds_alternative<SqlParseError>(elseValue)) {
+        return std::get<SqlParseError>(std::move(elseValue));
+      }
+      auto parsedElse = std::get<ParsedSqlLiteral>(std::move(elseValue));
+      expression.elseResult = std::move(parsedElse.value);
+      expression.typedElseResult = std::move(parsedElse.typed);
     }
-    auto elseValue = parseLiteral();
-    if (std::holds_alternative<SqlParseError>(elseValue)) {
-      return std::get<SqlParseError>(std::move(elseValue));
-    }
-    auto parsedElse = std::get<ParsedSqlLiteral>(std::move(elseValue));
-    expression.elseResult = std::move(parsedElse.value);
-    expression.typedElseResult = std::move(parsedElse.typed);
     if (!expectKeyword("END")) {
       return SqlParseError{SqlParseErrorCode::SyntaxError,
                            "Expected END after CASE expression"};
     }
-    const bool resultIsInt =
-        std::holds_alternative<std::int64_t>(expression.elseResult);
+    std::optional<bool> resultIsInt;
+    const auto validateResultType = [&resultIsInt](const SqlValue &value) {
+      if (std::holds_alternative<SqlNullValue>(value)) {
+        return true;
+      }
+      const bool isInt = std::holds_alternative<std::int64_t>(value);
+      if (resultIsInt.has_value() && *resultIsInt != isInt) {
+        return false;
+      }
+      resultIsInt = isInt;
+      return true;
+    };
+    if (!validateResultType(expression.elseResult)) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "CASE result values must have the same type"};
+    }
     for (const auto &branch : expression.branches) {
-      if (std::holds_alternative<std::int64_t>(branch.result) != resultIsInt) {
+      if (!validateResultType(branch.result)) {
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "CASE result values must have the same type"};
       }
+    }
+    if (!resultIsInt.has_value()) {
+      return SqlParseError{SqlParseErrorCode::SyntaxError,
+                           "CASE requires at least one non-NULL result"};
     }
     return expression;
   }
@@ -1160,6 +1176,20 @@ private:
       ++position_;
     }
 
+    if (matchKeyword("IS")) {
+      const bool negated = matchKeyword("NOT");
+      if (!matchKeyword("NULL")) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected NULL after IS or IS NOT"};
+      }
+      predicate.comparison =
+          negated ? ComparisonOperator::IsNotNull : ComparisonOperator::IsNull;
+      WhereExpression expression;
+      expression.kind = WhereExpression::Kind::Predicate;
+      expression.predicate = std::move(predicate);
+      return expression;
+    }
+
     bool isMembership = false;
     bool isNegatedMembership = false;
     bool isRange = false;
@@ -1192,7 +1222,7 @@ private:
     if (isLike) {
       predicate.comparison = isNegatedLike ? ComparisonOperator::NotLike
                                            : ComparisonOperator::Like;
-      auto pattern = parseLiteral();
+      auto pattern = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(pattern)) {
         return std::get<SqlParseError>(std::move(pattern));
       }
@@ -1202,7 +1232,7 @@ private:
     } else if (isRange) {
       predicate.comparison = isNegatedRange ? ComparisonOperator::NotBetween
                                             : ComparisonOperator::Between;
-      auto lowerBound = parseLiteral();
+      auto lowerBound = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(lowerBound)) {
         return std::get<SqlParseError>(std::move(lowerBound));
       }
@@ -1213,7 +1243,7 @@ private:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected AND between BETWEEN range bounds"};
       }
-      auto upperBound = parseLiteral();
+      auto upperBound = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(upperBound)) {
         return std::get<SqlParseError>(std::move(upperBound));
       }
@@ -1232,7 +1262,7 @@ private:
                              "IN list must contain at least one value"};
       }
       while (true) {
-        auto value = parseLiteral();
+        auto value = parseWhereLiteral();
         if (std::holds_alternative<SqlParseError>(value)) {
           return std::get<SqlParseError>(std::move(value));
         }
@@ -1274,7 +1304,7 @@ private:
             "in WHERE predicate"};
       }
       ++position_;
-      auto value = parseLiteral();
+      auto value = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
@@ -1305,6 +1335,13 @@ private:
                            "LIMIT or OFFSET value is out of range"};
     }
     return value;
+  }
+
+  std::variant<ParsedSqlLiteral, SqlParseError> parseWhereLiteral() {
+    if (matchKeyword("NULL")) {
+      return ParsedSqlLiteral{SqlValue{SqlNullValue{}}, std::nullopt};
+    }
+    return parseLiteral();
   }
 
   std::variant<ParsedSqlLiteral, SqlParseError> parseLiteral() {

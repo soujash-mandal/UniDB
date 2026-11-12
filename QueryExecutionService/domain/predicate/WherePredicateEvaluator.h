@@ -8,6 +8,8 @@
 
 namespace QueryExecutionService::domain {
 
+enum class SqlTruthValue { False, True, Unknown };
+
 struct CompiledWhereExpression {
   unidb::sql::WhereExpression::Kind kind{
       unidb::sql::WhereExpression::Kind::Predicate};
@@ -24,6 +26,10 @@ CompiledWhereExpression
 compileWhereExpression(const unidb::sql::WhereExpression &expression,
                        const std::vector<unidb::sql::ColumnDefinition> &schema,
                        const std::vector<unidb::sql::SqlType> &types);
+
+SqlTruthValue
+evaluateWhereExpression(const std::vector<unidb::sql::SqlValue> &row,
+                        const CompiledWhereExpression &expression);
 
 bool matchesWhereExpression(const std::vector<unidb::sql::SqlValue> &row,
                             const CompiledWhereExpression &expression);
