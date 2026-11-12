@@ -709,8 +709,11 @@ TEST(ExecuteQueryActionTest, RejectsNonTextLikePatternBeforeReadingRows) {
 
 TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
   FakeQesRdbServicePort port;
-  port.schema = {{"id", unidb::sql::SqlType::Int},
-                 {"name", unidb::sql::SqlType::Text}};
+  port.schema = {
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::BigInt, {}}},
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}}};
   port.rows.push_back(SqlTupleCodec::encode(
       port.schema, {unidb::sql::SqlNullValue{}, std::string("missing id")}));
   port.rows.push_back(SqlTupleCodec::encode(
