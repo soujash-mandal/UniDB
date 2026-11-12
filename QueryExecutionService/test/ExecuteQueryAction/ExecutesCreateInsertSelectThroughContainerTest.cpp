@@ -348,9 +348,8 @@ TEST(ExecuteQueryActionIntegrationTest,
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             created));
 
-    const auto selected =
-        container.executeQueryAction().execute(
-            "SELECT * FROM nullable_values;");
+    const auto selected = container.executeQueryAction().execute(
+        "SELECT * FROM nullable_values;");
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             selected));
@@ -367,8 +366,7 @@ TEST(ExecuteQueryActionIntegrationTest,
     ASSERT_FALSE(DatabaseStartup::execute(reopened));
 
     const auto selected =
-        reopened.executeQueryAction().execute(
-            "SELECT * FROM nullable_values;");
+        reopened.executeQueryAction().execute("SELECT * FROM nullable_values;");
     ASSERT_TRUE(
         std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             selected));
