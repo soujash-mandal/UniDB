@@ -37,10 +37,10 @@ enum class SqlTypeId : std::uint8_t {
 // Type-specific declaration modifiers. The type-domain validator determines
 // which fields are valid for each SqlTypeId and checks their PostgreSQL ranges.
 struct SqlTypeModifier {
-  std::optional<std::uint32_t> length;
-  std::optional<std::uint32_t> precision;
-  std::optional<std::int32_t> scale;
-  std::optional<std::uint32_t> temporalPrecision;
+  std::optional<std::uint32_t> length = std::nullopt;
+  std::optional<std::uint32_t> precision = std::nullopt;
+  std::optional<std::int32_t> scale = std::nullopt;
+  std::optional<std::uint32_t> temporalPrecision = std::nullopt;
 
   bool operator==(const SqlTypeModifier &) const = default;
 };
@@ -88,7 +88,7 @@ using SqlValue =
 struct ColumnDefinition {
   std::string name;
   SqlType type;
-  std::optional<SqlTypeDescriptor> declaredType;
+  std::optional<SqlTypeDescriptor> declaredType = std::nullopt;
 };
 
 } // namespace unidb::sql

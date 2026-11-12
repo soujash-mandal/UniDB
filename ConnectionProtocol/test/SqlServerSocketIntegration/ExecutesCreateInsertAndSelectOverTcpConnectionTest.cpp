@@ -191,8 +191,9 @@ protected:
         }
       } else {
         EXPECT_TRUE(WIFEXITED(status));
-        if (WIFEXITED(status))
+        if (WIFEXITED(status)) {
           EXPECT_EQ(WEXITSTATUS(status), 0);
+        }
       }
     }
     std::error_code error;

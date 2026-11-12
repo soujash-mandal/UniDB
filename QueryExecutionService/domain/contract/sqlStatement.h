@@ -52,12 +52,12 @@ enum class ComparisonOperator {
 struct WhereEquals {
   std::string columnName;
   SqlValue value;
-  std::optional<SqlValue> upperBound;
+  std::optional<SqlValue> upperBound = std::nullopt;
   std::vector<SqlValue> values;
   ComparisonOperator comparison{ComparisonOperator::Equal};
-  std::optional<SqlTypedLiteral> typedLiteral;
-  std::optional<SqlTypedLiteral> typedUpperBound;
-  std::vector<std::optional<SqlTypedLiteral>> typedValues;
+  std::optional<SqlTypedLiteral> typedLiteral = std::nullopt;
+  std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt;
+  std::vector<std::optional<SqlTypedLiteral>> typedValues = {};
 };
 
 struct WhereExpression {
@@ -85,7 +85,7 @@ struct HavingExpression {
   AggregateExpression aggregate;
   ComparisonOperator comparison{ComparisonOperator::Equal};
   SqlValue value;
-  std::optional<SqlTypedLiteral> typedLiteral;
+  std::optional<SqlTypedLiteral> typedLiteral = std::nullopt;
 };
 
 struct ColumnReference {
