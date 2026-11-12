@@ -185,6 +185,9 @@ TEST(SqlParserTest, ParsesLeadingAndTrailingDecimalPointForms) {
 } // namespace unidb::sql
 
 
+namespace unidb::sql {
+namespace {
+
 TEST(SqlParserTest, ParsesNullInsertValuesCaseInsensitively) {
   SqlParserImpl parser;
   const auto result =
@@ -221,3 +224,6 @@ TEST(SqlParserTest, RejectsMalformedNotNullConstraint) {
   EXPECT_EQ(std::get<SqlParseError>(result).code,
             SqlParseErrorCode::SyntaxError);
 }
+
+} // namespace
+} // namespace unidb::sql
