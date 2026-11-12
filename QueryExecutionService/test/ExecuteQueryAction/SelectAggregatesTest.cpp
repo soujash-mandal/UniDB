@@ -121,9 +121,14 @@ TEST(ExecuteQueryActionTest,
        {"SELECT MIN(id) FROM people;", "SELECT MAX(id) FROM people;",
         "SELECT SUM(id) FROM people;", "SELECT AVG(id) FROM people;"}) {
     const auto outcome = action.execute(sql);
-    EXPECT_TRUE(
-        std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             outcome))
+        << sql;
+    const auto &rows =
+        std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
+    ASSERT_EQ(rows.size(), 1U) << sql;
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(rows[0][0]))
         << sql;
   }
 }

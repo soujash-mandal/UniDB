@@ -183,15 +183,14 @@ processSelectRows(const unidb::sql::SelectStatement &select,
         }
         const bool aggregateIsNull =
             std::holds_alternative<SqlNullValue>(aggregateValue);
-        const int comparison =
-            aggregateIsNull
-                ? 0
-                : compareSqlValues(aggregateValue, *plan.havingValue);
-        bool matches = false;
-        if (aggregateIsNull ||
-            std::holds_alternative<SqlNullValue>(*plan.havingValue)) {
+        const bool havingValueIsNull =
+            std::holds_alternative<SqlNullValue>(*plan.havingValue);
+        if (aggregateIsNull || havingValueIsNull) {
           continue;
         }
+        const int comparison =
+            compareSqlValues(aggregateValue, *plan.havingValue);
+        bool matches = false;
         switch (select.having->comparison) {
         case ComparisonOperator::Equal:
           matches = comparison == 0;
