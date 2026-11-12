@@ -121,7 +121,6 @@ averageNumericValues(const std::vector<SqlValue> &values) {
   return divideSqlNumericValues(sum, count, resultScale);
 }
 
-
 } // namespace
 
 SqlValue calculateAggregate(AggregateFunction function,
@@ -131,8 +130,8 @@ SqlValue calculateAggregate(AggregateFunction function,
     if (countAllRows) {
       return static_cast<std::int64_t>(inputRowCount);
     }
-    return static_cast<std::int64_t>(std::count_if(
-        values.begin(), values.end(), [](const auto &value) {
+    return static_cast<std::int64_t>(
+        std::count_if(values.begin(), values.end(), [](const auto &value) {
           return !std::holds_alternative<unidb::sql::SqlNullValue>(value);
         }));
   }
@@ -162,7 +161,8 @@ SqlValue calculateAggregate(AggregateFunction function,
     return result;
   }
 
-  if (std::holds_alternative<unidb::sql::SqlNumericValue>(aggregateInputs.front())) {
+  if (std::holds_alternative<unidb::sql::SqlNumericValue>(
+          aggregateInputs.front())) {
     if (function == AggregateFunction::Sum) {
       return sumNumericValues(aggregateInputs);
     }

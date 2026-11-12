@@ -173,9 +173,9 @@ processSelectRows(const unidb::sql::SelectStatement &select,
           aggregateValues.push_back((*row)[*plan.aggregateIndex]);
         }
       }
-      SqlValue aggregateValue = calculateAggregate(
-          aggregate.function, aggregateValues, rows.size(),
-          !aggregate.columnName.has_value());
+      SqlValue aggregateValue =
+          calculateAggregate(aggregate.function, aggregateValues, rows.size(),
+                             !aggregate.columnName.has_value());
 
       if (select.having.has_value()) {
         if (std::holds_alternative<SqlNullValue>(aggregateValue)) {

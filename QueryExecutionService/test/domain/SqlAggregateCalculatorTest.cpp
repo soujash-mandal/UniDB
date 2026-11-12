@@ -147,8 +147,8 @@ TEST(SqlAggregateCalculatorTest, IgnoresNullValuesForEveryAggregate) {
 }
 
 TEST(SqlAggregateCalculatorTest, ReturnsNullWhenAllAggregateInputsAreNull) {
-  const std::vector<SqlValue> values{
-      unidb::sql::SqlNullValue{}, unidb::sql::SqlNullValue{}};
+  const std::vector<SqlValue> values{unidb::sql::SqlNullValue{},
+                                     unidb::sql::SqlNullValue{}};
   for (const auto function : {AggregateFunction::Min, AggregateFunction::Max,
                               AggregateFunction::Sum, AggregateFunction::Avg}) {
     EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
