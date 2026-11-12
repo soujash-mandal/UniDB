@@ -331,3 +331,51 @@ TEST(ExecuteQueryActionIntegrationTest,
 
   std::filesystem::remove(databaseFile);
 }
+
+TEST(ExecuteQueryActionIntegrationTest,
+     PersistsDefaultNullableColumnMetadataAcrossContainerRestart) {
+  const auto databaseFile =
+      std::filesystem::temp_directory_path() / "unidb_nullable_schema_test.db";
+  std::filesystem::remove(databaseFile);
+
+  {
+    Container container(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_TRUE(DatabaseStartup::execute(container));
+
+    const auto created = container.executeQueryAction().execute(
+        "CREATE TABLE nullable_values (id INTEGER, label TEXT);");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            created));
+
+    const auto selected =
+        container.executeQueryAction().execute("SELECT * FROM nullable_values;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    ASSERT_EQ(result.columns.size(), 2U);
+    EXPECT_TRUE(result.columns[0].nullable);
+    EXPECT_TRUE(result.columns[1].nullable);
+    container.flushDirtyPages();
+  }
+
+  {
+    Container reopened(databaseFile.string(), 4, EvictionPolicyType::FIFO);
+    ASSERT_FALSE(DatabaseStartup::execute(reopened));
+
+    const auto selected =
+        reopened.executeQueryAction().execute("SELECT * FROM nullable_values;");
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            selected));
+    const auto &result =
+        std::get<QueryExecutionService::QueryExecutionResult>(selected);
+    ASSERT_EQ(result.columns.size(), 2U);
+    EXPECT_TRUE(result.columns[0].nullable);
+    EXPECT_TRUE(result.columns[1].nullable);
+  }
+
+  std::filesystem::remove(databaseFile);
+}
