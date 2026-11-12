@@ -295,6 +295,9 @@ TEST(SqlParserTest, RejectsMalformedLikePredicates) {
 } // namespace
 } // namespace unidb::sql
 
+namespace unidb::sql {
+namespace {
+
 TEST(SqlParserWhereTest, ParsesIsNullAndIsNotNullPredicates) {
   SqlParserImpl parser;
   for (const auto &[sql, expected] :
@@ -323,3 +326,6 @@ TEST(SqlParserWhereTest, ParsesNullComparisonLiteral) {
   const auto &predicate = std::get<WhereExpression>(select.where).predicate;
   EXPECT_TRUE(std::holds_alternative<SqlNullValue>(predicate.value));
 }
+
+} // namespace
+} // namespace unidb::sql
