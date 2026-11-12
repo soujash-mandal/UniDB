@@ -51,7 +51,7 @@ TEST(SqlTupleCodecTest, RoundTripsPostgreSqlIntegerWidthsUsingDeclaredSchema) {
       std::numeric_limits<std::int64_t>::min()};
 
   const auto bytes = SqlTupleCodec::encode(schema, values);
-  EXPECT_EQ(bytes.size(), 15U);
+  EXPECT_EQ(bytes.size(), 24U);
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
 
@@ -73,7 +73,7 @@ TEST(SqlTupleCodecTest, RejectsIntegerOverflowForDeclaredWidth) {
       std::out_of_range);
 }
 
-TEST(SqlTupleCodecTest, RejectsTruncatedAndUnknownVersionDeclaredRows) {
+TEST(SqlTupleCodecTest, RejectsTruncatedAndInvalidDeclaredRowHeaders) {
   using unidb::sql::ColumnDefinition;
   using unidb::sql::SqlType;
   using unidb::sql::SqlTypeDescriptor;
@@ -83,13 +83,9 @@ TEST(SqlTupleCodecTest, RejectsTruncatedAndUnknownVersionDeclaredRows) {
       {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::SmallInt, {}}}};
   EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{}),
                std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x01}),
-               std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x02}),
-               std::runtime_error);
-  EXPECT_THROW(
-      SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x01, 0x00, 0x02}),
-      std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'B','A','D','!','\0','\0','\0','\0'}), std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x02','\0','\x01','\0'}), std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x01','\0','\x02','\0'}), std::runtime_error);
 }
 
 TEST(SqlTupleCodecTest, RoundTripsBooleanValuesUsingDeclaredSchema) {
@@ -104,10 +100,11 @@ TEST(SqlTupleCodecTest, RoundTripsBooleanValuesUsingDeclaredSchema) {
   const std::vector<unidb::sql::SqlValue> values{false, true};
 
   const auto bytes = SqlTupleCodec::encode(schema, values);
-  ASSERT_EQ(bytes.size(), 3U);
-  EXPECT_EQ(static_cast<unsigned char>(bytes[0]), 1U);
-  EXPECT_EQ(static_cast<unsigned char>(bytes[1]), 0U);
-  EXPECT_EQ(static_cast<unsigned char>(bytes[2]), 1U);
+  ASSERT_EQ(bytes.size(), 11U);
+  EXPECT_EQ(std::string(bytes.begin(), bytes.begin() + 4), "UDBR");
+  EXPECT_EQ(static_cast<unsigned char>(bytes[8]), 0U);
+  EXPECT_EQ(static_cast<unsigned char>(bytes[9]), 0U);
+  EXPECT_EQ(static_cast<unsigned char>(bytes[10]), 1U);
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
 
@@ -133,12 +130,12 @@ TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
 
   const std::vector<ColumnDefinition> schema{
       {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01}),
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x01','\0','\x01','\0'}),
                std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{0x01, 0x02}),
+  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x01','\0','\x01','\0','\x02'}),
                std::runtime_error);
   EXPECT_THROW(SqlTupleCodec::decode(
-                   schema, std::vector<char>{0x01, static_cast<char>(0xff)}),
+                   schema, std::vector<char>{'U','D','B','R','\x01','\0','\x01','\0', static_cast<char>(0xff)}),
                std::runtime_error);
 }
 
@@ -155,7 +152,7 @@ TEST(SqlTupleCodecTest, RoundTripsRealAndDoublePrecisionUsingDeclaredSchema) {
   const std::vector<unidb::sql::SqlValue> values{1.25F, -123.5};
 
   const auto bytes = SqlTupleCodec::encode(schema, values);
-  EXPECT_EQ(bytes.size(), 13U);
+  EXPECT_EQ(bytes.size(), 21U);
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
 
@@ -265,7 +262,7 @@ TEST(SqlTupleCodecTest, RejectsMalformedNumericPayloadInsideDeclaredRow) {
   auto encoded =
       SqlTupleCodec::encode(schema, {SqlNumericValue{false, "12345", 2}});
   ASSERT_GT(encoded.size(), 5U);
-  encoded[5] = static_cast<char>(0x7f);
+  encoded[13] = static_cast<char>(0x7f);
   EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
 
   encoded = SqlTupleCodec::encode(schema, {SqlNumericValue{false, "12345", 2}});
@@ -286,4 +283,38 @@ TEST(SqlTupleCodecTest, RejectsTrailingBytesAfterNumericDeclaredRow) {
       SqlTupleCodec::encode(schema, {SqlNumericValue{false, "123", 1}});
   encoded.push_back('\0');
   EXPECT_THROW(SqlTupleCodec::decode(schema, encoded), std::runtime_error);
+}
+
+TEST(SqlTupleCodecTest, RoundTripsNullValuesInDeclaredRows) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlNullValue;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  const std::vector<ColumnDefinition> schema{
+      {"id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Integer, {}}},
+      {"label", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}},
+      {"active", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{
+      std::int64_t{7}, SqlNullValue{}, true};
+  const auto bytes = SqlTupleCodec::encode(schema, values);
+  ASSERT_EQ(std::string(bytes.begin(), bytes.begin() + 4), "UDBR");
+  EXPECT_EQ(static_cast<unsigned char>(bytes[8]), 0x02U);
+  EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
+}
+
+TEST(SqlTupleCodecTest, SupportsAllNullDeclaredRows) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlNullValue;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  const std::vector<ColumnDefinition> schema{
+      {"first", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Integer, {}}},
+      {"second", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{SqlNullValue{}, SqlNullValue{}};
+  const auto bytes = SqlTupleCodec::encode(schema, values);
+  EXPECT_EQ(bytes.size(), 9U);
+  EXPECT_EQ(static_cast<unsigned char>(bytes[8]), 0x03U);
+  EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
