@@ -294,3 +294,32 @@ TEST(SqlParserTest, RejectsMalformedLikePredicates) {
 
 } // namespace
 } // namespace unidb::sql
+
+TEST(SqlParserWhereTest, ParsesIsNullAndIsNotNullPredicates) {
+  SqlParserImpl parser;
+  for (const auto &[sql, expected] :
+       std::vector<std::pair<std::string, ComparisonOperator>>{
+           {"SELECT id FROM people WHERE id IS NULL",
+            ComparisonOperator::IsNull},
+           {"SELECT id FROM people WHERE id IS NOT NULL",
+            ComparisonOperator::IsNotNull}}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+    EXPECT_EQ(std::get<WhereExpression>(select.where).predicate.comparison,
+              expected);
+  }
+}
+
+TEST(SqlParserWhereTest, ParsesNullComparisonLiteral) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("SELECT id FROM people WHERE id = NULL");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &predicate = std::get<WhereExpression>(select.where).predicate;
+  EXPECT_TRUE(std::holds_alternative<SqlNullValue>(predicate.value));
+}
