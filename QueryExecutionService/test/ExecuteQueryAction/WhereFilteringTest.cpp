@@ -706,3 +706,42 @@ TEST(ExecuteQueryActionTest, RejectsNonTextLikePatternBeforeReadingRows) {
             std::string::npos);
   EXPECT_EQ(port.selectCalls, 0U);
 }
+
+TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
+  FakeQesRdbServicePort port;
+  port.schema = {{"id", unidb::sql::SqlType::Int},
+                 {"name", unidb::sql::SqlType::Text}};
+  port.rows.push_back(SqlTupleCodec::encode(
+      port.schema, {unidb::sql::SqlNullValue{}, std::string("missing id")}));
+  port.rows.push_back(SqlTupleCodec::encode(
+      port.schema, {std::int64_t{2}, std::string("Ada")}));
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto nullRows =
+      action.execute("SELECT name FROM people WHERE id IS NULL;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(nullRows));
+  const auto &nullResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(nullRows);
+  ASSERT_EQ(nullResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(nullResult.rows[0][0]), "missing id");
+
+  const auto nonNullRows =
+      action.execute("SELECT name FROM people WHERE id IS NOT NULL;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(nonNullRows));
+  const auto &nonNullResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(nonNullRows);
+  ASSERT_EQ(nonNullResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(nonNullResult.rows[0][0]), "Ada");
+
+  const auto comparison =
+      action.execute("SELECT name FROM people WHERE id = 2;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(comparison));
+  const auto &comparisonResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(comparison);
+  ASSERT_EQ(comparisonResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(comparisonResult.rows[0][0]), "Ada");
+}
