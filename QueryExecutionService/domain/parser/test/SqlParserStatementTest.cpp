@@ -183,3 +183,41 @@ TEST(SqlParserTest, ParsesLeadingAndTrailingDecimalPointForms) {
 
 } // namespace
 } // namespace unidb::sql
+
+
+TEST(SqlParserTest, ParsesNullInsertValuesCaseInsensitively) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("INSERT INTO users (id, name) VALUES (1, NULL), (2, null)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 2U);
+  EXPECT_TRUE(std::holds_alternative<SqlNullValue>(insert.rows[0][1]));
+  EXPECT_TRUE(std::holds_alternative<SqlNullValue>(insert.rows[1][1]));
+}
+
+TEST(SqlParserTest, ParsesNullableAndNotNullColumnConstraints) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("CREATE TABLE users (id INT NOT NULL, name TEXT NULL, "
+                   "nickname TEXT)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &create =
+      std::get<CreateTableStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(create.columns.size(), 3U);
+  EXPECT_FALSE(create.columns[0].nullable);
+  EXPECT_TRUE(create.columns[1].nullable);
+  EXPECT_TRUE(create.columns[2].nullable);
+}
+
+TEST(SqlParserTest, RejectsMalformedNotNullConstraint) {
+  SqlParserImpl parser;
+  const auto result = parser.parse("CREATE TABLE users (id INT NOT)");
+
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
+}
