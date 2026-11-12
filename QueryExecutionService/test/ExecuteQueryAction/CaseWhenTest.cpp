@@ -122,8 +122,8 @@ TEST(ExecuteQueryActionCaseWhenTest,
   const auto &explicitRows =
       std::get<QueryExecutionService::QueryExecutionResult>(explicitNull).rows;
   ASSERT_EQ(explicitRows.size(), 3U);
-  EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(explicitRows[0][0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+                  explicitRows[0][0]));
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[1][0]), 5);
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[2][0]), 5);
 
@@ -136,10 +136,10 @@ TEST(ExecuteQueryActionCaseWhenTest,
       std::get<QueryExecutionService::QueryExecutionResult>(implicitNull).rows;
   ASSERT_EQ(implicitRows.size(), 3U);
   EXPECT_EQ(std::get<std::int64_t>(implicitRows[0][0]), 1);
-  EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[1][0]));
-  EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[2][0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+                  implicitRows[1][0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+                  implicitRows[2][0]));
 }
 
 TEST(ExecuteQueryActionCaseWhenTest, UnknownWhenConditionFallsThrough) {
