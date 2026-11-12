@@ -130,8 +130,8 @@ SqlValue calculateAggregate(AggregateFunction function,
     if (values.empty()) {
       return static_cast<std::int64_t>(inputRowCount);
     }
-    return static_cast<std::int64_t>(std::count_if(
-        values.begin(), values.end(), [](const SqlValue &value) {
+    return static_cast<std::int64_t>(
+        std::count_if(values.begin(), values.end(), [](const SqlValue &value) {
           return !std::holds_alternative<unidb::sql::SqlNullValue>(value);
         }));
   }

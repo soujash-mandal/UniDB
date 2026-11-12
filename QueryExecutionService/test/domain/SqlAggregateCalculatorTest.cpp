@@ -116,8 +116,8 @@ TEST(SqlAggregateCalculatorTest, ReturnsNullForNonCountAggregatesOnEmptyInput) {
 
 TEST(SqlAggregateCalculatorTest, IgnoresNullValuesForEveryAggregate) {
   const std::vector<SqlValue> values{
-      unidb::sql::SqlNullValue{}, std::int64_t{4},
-      unidb::sql::SqlNullValue{}, std::int64_t{8}};
+      unidb::sql::SqlNullValue{}, std::int64_t{4}, unidb::sql::SqlNullValue{},
+      std::int64_t{8}};
 
   EXPECT_EQ(std::get<std::int64_t>(
                 calculateAggregate(AggregateFunction::Count, values, 4)),
