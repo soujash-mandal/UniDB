@@ -156,7 +156,8 @@ std::string formatValue(const unidb::sql::SqlValue &value) {
         using ValueType = std::decay_t<decltype(item)>;
         if constexpr (std::is_same_v<ValueType, unidb::sql::SqlNullValue>) {
           formatted << "NULL";
-        } else if constexpr (std::is_same_v<ValueType, unidb::sql::SqlNumericValue>) {
+        } else if constexpr (std::is_same_v<ValueType,
+                                            unidb::sql::SqlNumericValue>) {
           formatted << QueryExecutionService::domain::formatSqlNumericValue(
               item);
         } else {

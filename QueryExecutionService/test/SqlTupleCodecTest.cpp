@@ -83,9 +83,18 @@ TEST(SqlTupleCodecTest, RejectsTruncatedAndInvalidDeclaredRowHeaders) {
       {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::SmallInt, {}}}};
   EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{}),
                std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'B','A','D','!','\0','\0','\0','\0'}), std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x02','\0','\x01','\0'}), std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x01','\0','\x02','\0'}), std::runtime_error);
+  EXPECT_THROW(
+      SqlTupleCodec::decode(schema, std::vector<char>{'B', 'A', 'D', '!', '\0',
+                                                      '\0', '\0', '\0'}),
+      std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(
+                   schema, std::vector<char>{'U', 'D', 'B', 'R', '\x02', '\0',
+                                             '\x01', '\0'}),
+               std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(
+                   schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0',
+                                             '\x02', '\0'}),
+               std::runtime_error);
 }
 
 TEST(SqlTupleCodecTest, RoundTripsBooleanValuesUsingDeclaredSchema) {
@@ -130,13 +139,19 @@ TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
 
   const std::vector<ColumnDefinition> schema{
       {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x01','\0','\x01','\0'}),
-               std::runtime_error);
-  EXPECT_THROW(SqlTupleCodec::decode(schema, std::vector<char>{'U','D','B','R','\x01','\0','\x01','\0','\x02'}),
+  EXPECT_THROW(SqlTupleCodec::decode(
+                   schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0',
+                                             '\x01', '\0'}),
                std::runtime_error);
   EXPECT_THROW(SqlTupleCodec::decode(
-                   schema, std::vector<char>{'U','D','B','R','\x01','\0','\x01','\0', static_cast<char>(0xff)}),
+                   schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0',
+                                             '\x01', '\0', '\x02'}),
                std::runtime_error);
+  EXPECT_THROW(
+      SqlTupleCodec::decode(
+          schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0', '\x01',
+                                    '\0', static_cast<char>(0xff)}),
+      std::runtime_error);
 }
 
 TEST(SqlTupleCodecTest, RoundTripsRealAndDoublePrecisionUsingDeclaredSchema) {
@@ -295,8 +310,8 @@ TEST(SqlTupleCodecTest, RoundTripsNullValuesInDeclaredRows) {
       {"id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Integer, {}}},
       {"label", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}},
       {"active", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
-  const std::vector<unidb::sql::SqlValue> values{
-      std::int64_t{7}, SqlNullValue{}, true};
+  const std::vector<unidb::sql::SqlValue> values{std::int64_t{7},
+                                                 SqlNullValue{}, true};
   const auto bytes = SqlTupleCodec::encode(schema, values);
   ASSERT_EQ(std::string(bytes.begin(), bytes.begin() + 4), "UDBR");
   EXPECT_EQ(static_cast<unsigned char>(bytes[8]), 0x02U);
@@ -312,7 +327,8 @@ TEST(SqlTupleCodecTest, SupportsAllNullDeclaredRows) {
   const std::vector<ColumnDefinition> schema{
       {"first", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Integer, {}}},
       {"second", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
-  const std::vector<unidb::sql::SqlValue> values{SqlNullValue{}, SqlNullValue{}};
+  const std::vector<unidb::sql::SqlValue> values{SqlNullValue{},
+                                                 SqlNullValue{}};
   const auto bytes = SqlTupleCodec::encode(schema, values);
   EXPECT_EQ(bytes.size(), 9U);
   EXPECT_EQ(static_cast<unsigned char>(bytes[8]), 0x03U);

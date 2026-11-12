@@ -203,7 +203,8 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
   std::vector<char> payload;
   std::vector<std::uint8_t> nullBitmap((schema.size() + 7U) / 8U, 0);
   for (std::size_t index = 0; index < schema.size(); ++index) {
-    if (declaredRow && std::holds_alternative<unidb::sql::SqlNullValue>(values[index])) {
+    if (declaredRow &&
+        std::holds_alternative<unidb::sql::SqlNullValue>(values[index])) {
       nullBitmap[index / 8U] |= static_cast<std::uint8_t>(1U << (index % 8U));
       continue;
     }
@@ -259,13 +260,15 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
         throw std::invalid_argument("Expected DOUBLE PRECISION value");
       }
       appendFloatingPoint<double, std::uint64_t>(
-          encoded, std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
+          encoded,
+          std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
       break;
     case SqlTypeId::Numeric:
       if (!std::holds_alternative<unidb::sql::SqlNumericValue>(values[index])) {
         throw std::invalid_argument("Expected NUMERIC value");
       }
-      appendNumeric(encoded, std::get<unidb::sql::SqlNumericValue>(values[index]));
+      appendNumeric(encoded,
+                    std::get<unidb::sql::SqlNumericValue>(values[index]));
       break;
     case SqlTypeId::Char:
     case SqlTypeId::Varchar:
@@ -280,13 +283,15 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
                                   "floating-point, and TEXT columns");
     }
   }
-  if (!declaredRow) return out;
+  if (!declaredRow)
+    return out;
   if (schema.size() > std::numeric_limits<std::uint16_t>::max())
     throw std::invalid_argument("Tuple column count exceeds row header limit");
   out.insert(out.end(), {'U', 'D', 'B', 'R'});
   appendLittleEndian(out, static_cast<std::uint16_t>(schema.size()));
   appendLittleEndian(out, static_cast<std::uint16_t>(nullBitmap.size()));
-  for (const auto byte : nullBitmap) out.push_back(static_cast<char>(byte));
+  for (const auto byte : nullBitmap)
+    out.push_back(static_cast<char>(byte));
   out.insert(out.end(), payload.begin(), payload.end());
   return out;
 }
@@ -298,18 +303,21 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
   std::size_t offset = 0;
   std::vector<std::uint8_t> nullBitmap;
   if (declaredRow) {
-    if (bytes.size() < 8U || bytes[0] != 'U' || bytes[1] != 'D' || bytes[2] != 'B' || bytes[3] != 'R')
+    if (bytes.size() < 8U || bytes[0] != 'U' || bytes[1] != 'D' ||
+        bytes[2] != 'B' || bytes[3] != 'R')
       throw std::runtime_error("Tuple row header is invalid or truncated");
     offset = 4;
     const auto columnCount = readLittleEndian<std::uint16_t>(bytes, offset);
     const auto bitmapLength = readLittleEndian<std::uint16_t>(bytes, offset);
     const auto expectedBitmapLength = (schema.size() + 7U) / 8U;
-    if (columnCount != schema.size() || bitmapLength != expectedBitmapLength || bitmapLength > bytes.size() - offset)
+    if (columnCount != schema.size() || bitmapLength != expectedBitmapLength ||
+        bitmapLength > bytes.size() - offset)
       throw std::runtime_error("Tuple row header does not match schema");
     for (std::size_t index = 0; index < bitmapLength; ++index)
       nullBitmap.push_back(static_cast<std::uint8_t>(bytes[offset++]));
     if (!nullBitmap.empty() && schema.size() % 8U != 0U) {
-      const auto unusedMask = static_cast<std::uint8_t>(0xffU << (schema.size() % 8U));
+      const auto unusedMask =
+          static_cast<std::uint8_t>(0xffU << (schema.size() % 8U));
       if ((nullBitmap.back() & unusedMask) != 0U)
         throw std::runtime_error("Tuple NULL bitmap has invalid unused bits");
     }
@@ -317,9 +325,11 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
 
   std::vector<unidb::sql::SqlValue> values;
   values.reserve(schema.size());
-  for (std::size_t columnIndex = 0; columnIndex < schema.size(); ++columnIndex) {
+  for (std::size_t columnIndex = 0; columnIndex < schema.size();
+       ++columnIndex) {
     const auto &column = schema[columnIndex];
-    if (declaredRow && (nullBitmap[columnIndex / 8U] & (1U << (columnIndex % 8U))) != 0U) {
+    if (declaredRow &&
+        (nullBitmap[columnIndex / 8U] & (1U << (columnIndex % 8U))) != 0U) {
       values.emplace_back(unidb::sql::SqlNullValue{});
       continue;
     }
