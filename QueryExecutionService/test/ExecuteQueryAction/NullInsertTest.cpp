@@ -35,7 +35,8 @@ TEST(ExecuteQueryActionNullTest, RejectsNullForNotNullColumnBeforeAnyInsert) {
   FakeQesRdbServicePort port;
   port.schema = {
       {"id", unidb::sql::SqlType::Int,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}, false},
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}},
+       false},
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}, false}};
   unidb::sql::SqlParserImpl parser;

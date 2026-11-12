@@ -196,8 +196,8 @@ prepareInsertRows(const InsertStatement &statement,
       bool valueWasNormalized = false;
       if (std::holds_alternative<SqlNullValue>(values[inputIndex])) {
         if (!found->nullable) {
-          throw std::invalid_argument("NULL value is not allowed for NOT NULL column: " +
-                                      found->name);
+          throw std::invalid_argument(
+              "NULL value is not allowed for NOT NULL column: " + found->name);
         }
         orderedValues[schemaIndex] = SqlNullValue{};
         assigned[schemaIndex] = true;

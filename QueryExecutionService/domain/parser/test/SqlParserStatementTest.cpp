@@ -184,7 +184,6 @@ TEST(SqlParserTest, ParsesLeadingAndTrailingDecimalPointForms) {
 } // namespace
 } // namespace unidb::sql
 
-
 namespace unidb::sql {
 namespace {
 
