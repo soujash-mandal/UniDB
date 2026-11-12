@@ -106,11 +106,47 @@ TEST(SqlAggregateCalculatorTest, RejectsSumOverflow) {
                std::invalid_argument);
 }
 
-TEST(SqlAggregateCalculatorTest, RejectsNonCountAggregatesOnEmptyInput) {
+TEST(SqlAggregateCalculatorTest, ReturnsNullForNonCountAggregatesOnEmptyInput) {
   for (const auto function : {AggregateFunction::Min, AggregateFunction::Max,
                               AggregateFunction::Sum, AggregateFunction::Avg}) {
-    EXPECT_THROW(calculateAggregate(function, {}, 0), std::invalid_argument);
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+        calculateAggregate(function, {}, 0)));
   }
+}
+
+TEST(SqlAggregateCalculatorTest, IgnoresNullValuesForEveryAggregate) {
+  const std::vector<SqlValue> values{
+      unidb::sql::SqlNullValue{}, std::int64_t{4},
+      unidb::sql::SqlNullValue{}, std::int64_t{8}};
+
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, values, 4)),
+            2);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Min, values, 4)),
+            4);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Max, values, 4)),
+            8);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Sum, values, 4)),
+            12);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Avg, values, 4)),
+            6);
+}
+
+TEST(SqlAggregateCalculatorTest, ReturnsNullWhenAllAggregateInputsAreNull) {
+  const std::vector<SqlValue> values{unidb::sql::SqlNullValue{},
+                                     unidb::sql::SqlNullValue{}};
+  for (const auto function : {AggregateFunction::Min, AggregateFunction::Max,
+                              AggregateFunction::Sum, AggregateFunction::Avg}) {
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+        calculateAggregate(function, values, 2)));
+  }
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, values, 2)),
+            0);
 }
 
 TEST(SqlAggregateCalculatorTest, CalculatesExactNumericSumAcrossScales) {

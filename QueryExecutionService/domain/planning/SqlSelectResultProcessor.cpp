@@ -167,7 +167,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
         SqlValueVectorLess{groupedOutputTypes}};
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
-      if (aggregate.function != AggregateFunction::Count) {
+      if (aggregate.function != AggregateFunction::Count ||
+          aggregate.columnName.has_value()) {
         aggregateValues.reserve(rows.size());
         for (const auto *row : rows) {
           aggregateValues.push_back((*row)[*plan.aggregateIndex]);
@@ -180,9 +181,17 @@ processSelectRows(const unidb::sql::SelectStatement &select,
         if (!plan.havingValue.has_value()) {
           throw std::logic_error("HAVING value was not planned");
         }
+        const bool aggregateIsNull =
+            std::holds_alternative<SqlNullValue>(aggregateValue);
         const int comparison =
-            compareSqlValues(aggregateValue, *plan.havingValue);
+            aggregateIsNull
+                ? 0
+                : compareSqlValues(aggregateValue, *plan.havingValue);
         bool matches = false;
+        if (aggregateIsNull ||
+            std::holds_alternative<SqlNullValue>(*plan.havingValue)) {
+          continue;
+        }
         switch (select.having->comparison) {
         case ComparisonOperator::Equal:
           matches = comparison == 0;
@@ -272,7 +281,8 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     result.columns.push_back({outputName, outputType, aggregateDescriptor});
 
     std::vector<SqlValue> aggregateValues;
-    if (aggregate.function != AggregateFunction::Count) {
+    if (aggregate.function != AggregateFunction::Count ||
+        aggregate.columnName.has_value()) {
       aggregateValues.reserve(matchedRows.size());
       for (const auto &row : matchedRows) {
         aggregateValues.push_back(row[*plan.aggregateIndex]);
