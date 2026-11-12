@@ -505,7 +505,7 @@ bool readInteractiveLine(std::string &line,
         }
         if (useColors)
           output << kResetColor;
-        output << '\\n';
+        output << '\n';
         redraw();
       }
       continue;
