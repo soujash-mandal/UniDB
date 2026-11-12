@@ -103,12 +103,19 @@ TEST(ExecuteQueryActionNullAggregateTest,
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
+  port.rows = {
+      SqlTupleCodec::encode(port.schema,
+                            {std::string("eng"), unidb::sql::SqlNullValue{}}),
+      SqlTupleCodec::encode(port.schema,
+                            {std::string("sales"), unidb::sql::SqlNullValue{}})};
   const auto grouped =
       action.execute("SELECT department, SUM(amount) FROM people "
                      "GROUP BY department ORDER BY department ASC;");
   ASSERT_EQ(expectResult(grouped).rows.size(), 2U);
-  EXPECT_EQ(std::get<std::int64_t>(expectResult(grouped).rows[0][1]), 10);
-  EXPECT_EQ(std::get<std::int64_t>(expectResult(grouped).rows[1][1]), 20);
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      expectResult(grouped).rows[0][1]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      expectResult(grouped).rows[1][1]));
 
   port.rows = {
       SqlTupleCodec::encode(port.schema,
