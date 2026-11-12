@@ -303,7 +303,8 @@ TEST(WherePredicateEvaluatorTest, AppliesSqlThreeValuedAndOrTruthTables) {
       "id", std::int64_t{1}, std::nullopt, {}, ComparisonOperator::Equal};
   WhereExpression falsePredicate;
   falsePredicate.predicate = WhereEquals{
-      "id", std::int64_t{2}, std::nullopt, {}, ComparisonOperator::Equal};
+      "id", unidb::sql::SqlNullValue{}, std::nullopt, {},
+      ComparisonOperator::IsNotNull};
   WhereExpression truePredicate;
   truePredicate.predicate = WhereEquals{"id",
                                         unidb::sql::SqlNullValue{},
