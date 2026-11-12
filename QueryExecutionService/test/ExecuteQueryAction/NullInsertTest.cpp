@@ -38,8 +38,7 @@ TEST(ExecuteQueryActionNullTest, RejectsNullForNotNullColumnBeforeAnyInsert) {
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}},
        false},
       {"name", unidb::sql::SqlType::Text,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}},
-       false}};
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}, false}};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
