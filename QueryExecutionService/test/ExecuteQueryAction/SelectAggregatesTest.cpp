@@ -121,9 +121,66 @@ TEST(ExecuteQueryActionTest,
        {"SELECT MIN(id) FROM people;", "SELECT MAX(id) FROM people;",
         "SELECT SUM(id) FROM people;", "SELECT AVG(id) FROM people;"}) {
     const auto outcome = action.execute(sql);
-    EXPECT_TRUE(
-        std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             outcome))
         << sql;
+    const auto &rows =
+        std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
+    ASSERT_EQ(rows.size(), 1U) << sql;
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(rows[0][0]))
+        << sql;
   }
+}
+
+TEST(ExecuteQueryActionNullAggregateTest,
+     IgnoresNullInputsAndReturnsNullForAllNullAggregateInputs) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}},
+       true}};
+  port.rows = {
+      SqlTupleCodec::encode(port.schema, {std::int64_t{4}}),
+      SqlTupleCodec::encode(port.schema, {unidb::sql::SqlNullValue{}}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{8}}),
+      SqlTupleCodec::encode(port.schema, {unidb::sql::SqlNullValue{}})};
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto countRows = action.execute("SELECT COUNT(*) FROM people;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          countRows));
+  EXPECT_EQ(std::get<std::int64_t>(
+                std::get<QueryExecutionService::QueryExecutionResult>(countRows)
+                    .rows[0][0]),
+            4);
+
+  const auto countValues = action.execute("SELECT COUNT(id) FROM people;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          countValues));
+  EXPECT_EQ(
+      std::get<std::int64_t>(
+          std::get<QueryExecutionService::QueryExecutionResult>(countValues)
+              .rows[0][0]),
+      2);
+
+  const auto sum = action.execute("SELECT SUM(id) FROM people;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(sum));
+  EXPECT_EQ(std::get<std::int64_t>(
+                std::get<QueryExecutionService::QueryExecutionResult>(sum)
+                    .rows[0][0]),
+            12);
+
+  const auto allNull =
+      action.execute("SELECT AVG(id) FROM people WHERE id IS NULL;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          allNull));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      std::get<QueryExecutionService::QueryExecutionResult>(allNull)
+          .rows[0][0]));
 }
