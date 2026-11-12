@@ -36,7 +36,7 @@ inline bool equalsIgnoringCase(std::string_view left,
 inline std::vector<std::string>
 suggestionsFor(std::string_view prefix) {
   static constexpr std::string_view words[] = {
-      "ADD",       "ALL",       "AND",       "AS",        "ASC",
+      "ALL",       "AND",       "AS",        "ASC",
       "AVG",       "BETWEEN",   "BIGINT",    "BOOLEAN",   "BY",
       "CASE",      "CHAR",      "CHARACTER", "CROSS",     "COUNT",
       "CREATE",    "DATE",      "DECIMAL",   "DESC",      "DISTINCT",
@@ -47,7 +47,7 @@ suggestionsFor(std::string_view prefix) {
       "NULL",      "NUMERIC",   "OFFSET",    "ON",        "OR",
       "ORDER",     "PRECISION", "REAL",      "SELECT",    "SMALLINT",
       "SUM",       "TABLE",     "TEXT",      "THEN",      "TIME",
-      "TIMESTAMP", "TRUE",      "UNION",     "UPDATE",    "VALUES",
+      "TIMESTAMP", "TRUE",      "UNION",     "VALUES",
       "VARCHAR",   "VARYING",   "WHEN",      "WHERE"};
 
   std::vector<std::string> matches;
@@ -61,6 +61,22 @@ suggestionsFor(std::string_view prefix) {
     }
   }
   return matches;
+}
+
+inline bool isInsideStringLiteral(const std::string &line,
+                                  std::size_t cursor) {
+  bool inside = false;
+  for (std::size_t index = 0; index < cursor && index < line.size(); ++index) {
+    if (line[index] != '\'') {
+      continue;
+    }
+    if (inside && index + 1 < cursor && line[index + 1] == '\'') {
+      ++index;
+    } else {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 inline std::string prefixAtCursor(const std::string &line,
