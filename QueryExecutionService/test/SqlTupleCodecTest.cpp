@@ -152,11 +152,10 @@ TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
           schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0', '\x01',
                                     '\0', '\0', static_cast<char>(0xff)}),
       std::runtime_error);
-  EXPECT_THROW(
-      SqlTupleCodec::decode(
-          schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0', '\x01',
-                                    '\0', '\0', '\x01', '\0'}),
-      std::runtime_error);
+  EXPECT_THROW(SqlTupleCodec::decode(
+                   schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0',
+                                             '\x01', '\0', '\0', '\x01', '\0'}),
+               std::runtime_error);
 }
 
 TEST(SqlTupleCodecTest, RoundTripsRealAndDoublePrecisionUsingDeclaredSchema) {
