@@ -22,13 +22,16 @@ TEST(SqlParserBooleanTest, ParsesTrueAndFalseAsDistinctBooleanValues) {
   EXPECT_FALSE(std::get<bool>(insert.rows[1][0]));
 }
 
-TEST(SqlParserBooleanTest, KeepsNullOutsideTheSupportedLiteralSubset) {
+TEST(SqlParserBooleanTest, ParsesNullAsANullValue) {
   SqlParserImpl parser;
   const auto result = parser.parse("INSERT INTO flags (enabled) VALUES (NULL)");
 
-  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
-  EXPECT_EQ(std::get<SqlParseError>(result).code,
-            SqlParseErrorCode::UnsupportedStatement);
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &insert =
+      std::get<InsertStatement>(std::get<SqlStatement>(result));
+  ASSERT_EQ(insert.rows.size(), 1U);
+  ASSERT_EQ(insert.rows[0].size(), 1U);
+  EXPECT_TRUE(std::holds_alternative<SqlNullValue>(insert.rows[0][0]));
 }
 
 } // namespace
