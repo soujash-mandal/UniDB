@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -18,6 +19,13 @@
 #include <unistd.h>
 
 namespace {
+
+constexpr const char *kResetColor = "\033[0m";
+constexpr const char *kCyan = "\033[36m";
+constexpr const char *kBoldCyan = "\033[1;36m";
+constexpr const char *kGreen = "\033[32m";
+constexpr const char *kRed = "\033[31m";
+constexpr const char *kMagenta = "\033[35m";
 
 std::string trim(std::string value) {
   const auto first =
@@ -278,18 +286,21 @@ void printPadded(const std::string &value, std::size_t width, bool leftAligned,
   }
 }
 
-void printBorder(const std::vector<std::size_t> &widths, std::ostream &output) {
+void printBorder(const std::vector<std::size_t> &widths, std::ostream &output,
+                 bool useColors) {
+  if (useColors) output << kCyan;
   output << '+';
   for (const auto width : widths) {
     output << std::string(width + 2, '-') << '+';
   }
   output << '\n';
+  if (useColors) output << kResetColor;
 }
 
 // Prints a bordered result table using terminal display widths rather than byte
 // counts.
 void printRows(const QueryExecutionService::QueryExecutionResult &result,
-               std::ostream &output) {
+               std::ostream &output, bool useColors) {
   std::vector<std::size_t> widths;
   widths.reserve(result.columns.size());
   for (const auto &column : result.columns) {
@@ -312,8 +323,9 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
   }
 
   if (!widths.empty()) {
-    printBorder(widths, output);
+    printBorder(widths, output, useColors);
 
+    if (useColors) output << kBoldCyan;
     output << '|';
     for (std::size_t index = 0; index < result.columns.size(); ++index) {
       output << ' ';
@@ -322,7 +334,8 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
       output << " |";
     }
     output << '\n';
-    printBorder(widths, output);
+    if (useColors) output << kResetColor;
+    printBorder(widths, output, useColors);
 
     for (std::size_t rowIndex = 0; rowIndex < result.rows.size(); ++rowIndex) {
       output << '|';
@@ -333,7 +346,11 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
           const auto &value = formattedRows[rowIndex][columnIndex];
           const bool isText = std::holds_alternative<std::string>(
               result.rows[rowIndex][columnIndex]);
+          const bool isNull = std::holds_alternative<unidb::sql::SqlNullValue>(
+              result.rows[rowIndex][columnIndex]);
+          if (useColors && isNull) output << kMagenta;
           printPadded(value, widths[columnIndex], isText, output);
+          if (useColors && isNull) output << kResetColor;
         } else {
           output << std::string(widths[columnIndex], ' ');
         }
@@ -342,16 +359,18 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
       output << '\n';
     }
 
-    printBorder(widths, output);
+    printBorder(widths, output, useColors);
   }
 
+  if (useColors) output << kGreen;
   output << result.rows.size() << " row(s)\n";
+  if (useColors) output << kResetColor;
 }
 
 bool readInteractiveLine(std::string &line,
                          const std::vector<std::string> &history,
                          std::size_t &historyIndex, std::string &historyDraft,
-                         std::ostream &output) {
+                         std::ostream &output, bool useColors) {
   termios original{};
   if (tcgetattr(STDIN_FILENO, &original) != 0)
     return false;
@@ -369,7 +388,11 @@ bool readInteractiveLine(std::string &line,
   line.clear();
   std::size_t cursor = 0;
   const auto redraw = [&]() {
-    output << "\r\033[2Kunidb> " << line;
+    output << "\r\033[2K";
+    if (useColors) output << kCyan;
+    output << "unidb> ";
+    if (useColors) output << kResetColor;
+    output << line;
     const auto right = displayWidth(line.substr(cursor));
     if (right != 0)
       output << "\033[" << right << 'D';
@@ -413,7 +436,11 @@ bool readInteractiveLine(std::string &line,
       return !line.empty();
     }
     if (key == '\r' || key == '\n') {
-      output << "\r\033[2Kunidb> " << line << '\n';
+      output << "\r\033[2K";
+      if (useColors) output << kCyan;
+      output << "unidb> ";
+      if (useColors) output << kResetColor;
+      output << line << '\n';
       output.flush();
       return true;
     }
@@ -504,13 +531,15 @@ void SqlShell::run() {
   const bool interactiveTerminal = (&input == &std::cin) &&
                                    isatty(STDIN_FILENO) != 0 &&
                                    isatty(STDOUT_FILENO) != 0;
+  const bool useColors =
+      interactiveTerminal && std::getenv("NO_COLOR") == nullptr;
   while (true) {
     bool hasLine = false;
     if (interactiveTerminal) {
       historyIndex = history.size();
       historyDraft.clear();
       hasLine = readInteractiveLine(line, history, historyIndex, historyDraft,
-                                    output);
+                                    output, useColors);
     } else {
       output << "unidb> " << std::flush;
       hasLine = static_cast<bool>(std::getline(input, line));
@@ -539,16 +568,20 @@ void SqlShell::run() {
     const auto outcome = executeQueryAction.execute(statement);
     if (const auto *failure =
             std::get_if<QueryExecutionService::QueryExecutionError>(&outcome)) {
+      if (useColors) error << kRed;
       error << "Error: " << failure->message << '\n';
+      if (useColors) error << kResetColor;
       continue;
     }
 
     const auto &result =
         std::get<QueryExecutionService::QueryExecutionResult>(outcome);
     if (result.kind == QueryExecutionService::QueryExecutionResultKind::Rows) {
-      printRows(result, output);
+      printRows(result, output, useColors);
     } else {
+      if (useColors) output << kGreen;
       output << result.message << '\n';
+      if (useColors) output << kResetColor;
     }
   }
 }
