@@ -22,11 +22,10 @@ unidb::sql::ColumnDefinition makeColumn(const std::string &name,
 
 TEST(ExecuteQueryActionNullTest, InsertsAndReadsBackNullForNullableColumn) {
   FakeQesRdbServicePort port;
-  port.schema = {
-      makeColumn("id", unidb::sql::SqlType::Int,
-                 unidb::sql::SqlTypeId::Integer, false),
-      makeColumn("name", unidb::sql::SqlType::Text,
-                 unidb::sql::SqlTypeId::Text, true)};
+  port.schema = {makeColumn("id", unidb::sql::SqlType::Int,
+                            unidb::sql::SqlTypeId::Integer, false),
+                 makeColumn("name", unidb::sql::SqlType::Text,
+                            unidb::sql::SqlTypeId::Text, true)};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -46,11 +45,10 @@ TEST(ExecuteQueryActionNullTest, InsertsAndReadsBackNullForNullableColumn) {
 
 TEST(ExecuteQueryActionNullTest, RejectsNullForNotNullColumnBeforeAnyInsert) {
   FakeQesRdbServicePort port;
-  port.schema = {
-      makeColumn("id", unidb::sql::SqlType::Int,
-                 unidb::sql::SqlTypeId::Integer, false),
-      makeColumn("name", unidb::sql::SqlType::Text,
-                 unidb::sql::SqlTypeId::Text, false)};
+  port.schema = {makeColumn("id", unidb::sql::SqlType::Int,
+                            unidb::sql::SqlTypeId::Integer, false),
+                 makeColumn("name", unidb::sql::SqlType::Text,
+                            unidb::sql::SqlTypeId::Text, false)};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
