@@ -27,6 +27,7 @@ constexpr const char *kBoldCyan = "\033[1;36m";
 constexpr const char *kGreen = "\033[32m";
 constexpr const char *kRed = "\033[31m";
 constexpr const char *kMagenta = "\033[35m";
+constexpr const char *kDim = "\033[2m";
 
 std::string trim(std::string value) {
   const auto first =
@@ -404,7 +405,16 @@ bool readInteractiveLine(std::string &line,
     if (useColors)
       output << kResetColor;
     output << line;
-    const auto right = displayWidth(line.substr(cursor));
+    const auto suggestion = SqlAutocomplete::inlineSuggestion(line, cursor);
+    if (!suggestion.empty()) {
+      if (useColors)
+        output << kDim;
+      output << suggestion;
+      if (useColors)
+        output << kResetColor;
+    }
+    const auto right =
+        displayWidth(line.substr(cursor)) + displayWidth(suggestion);
     if (right != 0)
       output << "\033[" << right << 'D';
     output.flush();
