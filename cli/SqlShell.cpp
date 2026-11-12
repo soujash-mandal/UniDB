@@ -495,7 +495,7 @@ bool readInteractiveLine(std::string &line,
           redraw();
         }
       } else if (matches.size() > 1) {
-        output << "\\r\\n";
+        output << "\r\n";
         if (useColors)
           output << kCyan;
         for (std::size_t index = 0; index < matches.size(); ++index) {
