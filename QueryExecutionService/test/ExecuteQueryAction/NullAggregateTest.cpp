@@ -118,6 +118,13 @@ TEST(ExecuteQueryActionNullAggregateTest,
   EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
       expectResult(grouped).rows[1][1]));
 
+  const auto groupedCount =
+      action.execute("SELECT department, COUNT(amount) FROM people "
+                     "GROUP BY department ORDER BY department ASC;");
+  ASSERT_EQ(expectResult(groupedCount).rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(expectResult(groupedCount).rows[0][1]), 0);
+  EXPECT_EQ(std::get<std::int64_t>(expectResult(groupedCount).rows[1][1]), 0);
+
   port.rows = {SqlTupleCodec::encode(port.schema, {std::string("eng"),
                                                    unidb::sql::SqlNullValue{}}),
                SqlTupleCodec::encode(port.schema,
