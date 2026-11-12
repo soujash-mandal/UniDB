@@ -140,21 +140,21 @@ std::string aggregateFunctionName(AggregateFunction function) {
 } // namespace
 
 SqlValue calculateAggregate(AggregateFunction function,
-                            const std::vector<SqlValue> &aggregateValues,
-                            std::size_t inputRowCount) {
+                            const std::vector<SqlValue> &values,
+                            std::size_t inputRowCount, bool countAllRows) {
   if (function == AggregateFunction::Count) {
     if (countAllRows) {
       return static_cast<std::int64_t>(inputRowCount);
     }
     return static_cast<std::int64_t>(std::count_if(
-        aggregateValues.begin(), aggregateValues.end(), [](const auto &value) {
+        values.begin(), values.end(), [](const auto &value) {
           return !std::holds_alternative<unidb::sql::SqlNullValue>(value);
         }));
   }
 
   std::vector<SqlValue> nonNullValues;
-  nonNullValues.reserve(aggregateValues.size());
-  for (const auto &value : aggregateValues) {
+  nonNullValues.reserve(values.size());
+  for (const auto &value : values) {
     if (!std::holds_alternative<unidb::sql::SqlNullValue>(value)) {
       nonNullValues.push_back(value);
     }
@@ -162,12 +162,12 @@ SqlValue calculateAggregate(AggregateFunction function,
   if (nonNullValues.empty()) {
     return unidb::sql::SqlNullValue{};
   }
-  const auto &aggregateValues = nonNullValues;
+  const auto &aggregateInputs = nonNullValues;
 
   if (function == AggregateFunction::Min ||
       function == AggregateFunction::Max) {
-    SqlValue result = aggregateValues.front();
-    for (const auto &value : aggregateValues) {
+    SqlValue result = aggregateInputs.front();
+    for (const auto &value : aggregateInputs) {
       const int comparison = compareSqlValues(value, result);
       if ((function == AggregateFunction::Min && comparison < 0) ||
           (function == AggregateFunction::Max && comparison > 0)) {
@@ -177,45 +177,45 @@ SqlValue calculateAggregate(AggregateFunction function,
     return result;
   }
 
-  if (std::holds_alternative<unidb::sql::SqlNumericValue>(aggregateValues.front())) {
+  if (std::holds_alternative<unidb::sql::SqlNumericValue>(aggregateInputs.front())) {
     if (function == AggregateFunction::Sum) {
-      return sumNumericValues(aggregateValues);
+      return sumNumericValues(aggregateInputs);
     }
     if (function == AggregateFunction::Avg) {
-      return averageNumericValues(aggregateValues);
+      return averageNumericValues(aggregateInputs);
     }
     throw std::invalid_argument("Unsupported NUMERIC aggregate");
   }
 
-  if (std::holds_alternative<float>(aggregateValues.front())) {
+  if (std::holds_alternative<float>(aggregateInputs.front())) {
     if (function == AggregateFunction::Sum) {
       float sum = 0.0F;
-      for (const auto &value : aggregateValues) {
+      for (const auto &value : aggregateInputs) {
         sum += std::get<float>(value);
       }
       return sum;
     }
 
     double sum = 0.0;
-    for (const auto &value : aggregateValues) {
+    for (const auto &value : aggregateInputs) {
       sum += static_cast<double>(std::get<float>(value));
     }
-    return sum / static_cast<double>(aggregateValues.size());
+    return sum / static_cast<double>(aggregateInputs.size());
   }
 
-  if (std::holds_alternative<double>(aggregateValues.front())) {
+  if (std::holds_alternative<double>(aggregateInputs.front())) {
     double sum = 0.0;
-    for (const auto &value : aggregateValues) {
+    for (const auto &value : aggregateInputs) {
       sum += std::get<double>(value);
     }
     if (function == AggregateFunction::Avg) {
-      sum /= static_cast<double>(aggregateValues.size());
+      sum /= static_cast<double>(aggregateInputs.size());
     }
     return sum;
   }
 
   std::int64_t sum = 0;
-  for (const auto &value : aggregateValues) {
+  for (const auto &value : aggregateInputs) {
     const auto integer = std::get<std::int64_t>(value);
     if ((integer > 0 &&
          sum > std::numeric_limits<std::int64_t>::max() - integer) ||
@@ -226,7 +226,7 @@ SqlValue calculateAggregate(AggregateFunction function,
     sum += integer;
   }
   if (function == AggregateFunction::Avg) {
-    sum /= static_cast<std::int64_t>(aggregateValues.size());
+    sum /= static_cast<std::int64_t>(aggregateInputs.size());
   }
   return sum;
 }
