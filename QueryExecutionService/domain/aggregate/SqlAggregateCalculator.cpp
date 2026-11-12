@@ -140,20 +140,34 @@ std::string aggregateFunctionName(AggregateFunction function) {
 } // namespace
 
 SqlValue calculateAggregate(AggregateFunction function,
-                            const std::vector<SqlValue> &values,
+                            const std::vector<SqlValue> &aggregateValues,
                             std::size_t inputRowCount) {
   if (function == AggregateFunction::Count) {
-    return static_cast<std::int64_t>(inputRowCount);
+    if (countAllRows) {
+      return static_cast<std::int64_t>(inputRowCount);
+    }
+    return static_cast<std::int64_t>(std::count_if(
+        aggregateValues.begin(), aggregateValues.end(), [](const auto &value) {
+          return !std::holds_alternative<unidb::sql::SqlNullValue>(value);
+        }));
   }
-  if (values.empty()) {
-    throw std::invalid_argument(aggregateFunctionName(function) +
-                                " cannot be evaluated on an empty result set");
+
+  std::vector<SqlValue> nonNullValues;
+  nonNullValues.reserve(aggregateValues.size());
+  for (const auto &value : aggregateValues) {
+    if (!std::holds_alternative<unidb::sql::SqlNullValue>(value)) {
+      nonNullValues.push_back(value);
+    }
   }
+  if (nonNullValues.empty()) {
+    return unidb::sql::SqlNullValue{};
+  }
+  const auto &aggregateValues = nonNullValues;
 
   if (function == AggregateFunction::Min ||
       function == AggregateFunction::Max) {
-    SqlValue result = values.front();
-    for (const auto &value : values) {
+    SqlValue result = aggregateValues.front();
+    for (const auto &value : aggregateValues) {
       const int comparison = compareSqlValues(value, result);
       if ((function == AggregateFunction::Min && comparison < 0) ||
           (function == AggregateFunction::Max && comparison > 0)) {
@@ -163,45 +177,45 @@ SqlValue calculateAggregate(AggregateFunction function,
     return result;
   }
 
-  if (std::holds_alternative<unidb::sql::SqlNumericValue>(values.front())) {
+  if (std::holds_alternative<unidb::sql::SqlNumericValue>(aggregateValues.front())) {
     if (function == AggregateFunction::Sum) {
-      return sumNumericValues(values);
+      return sumNumericValues(aggregateValues);
     }
     if (function == AggregateFunction::Avg) {
-      return averageNumericValues(values);
+      return averageNumericValues(aggregateValues);
     }
     throw std::invalid_argument("Unsupported NUMERIC aggregate");
   }
 
-  if (std::holds_alternative<float>(values.front())) {
+  if (std::holds_alternative<float>(aggregateValues.front())) {
     if (function == AggregateFunction::Sum) {
       float sum = 0.0F;
-      for (const auto &value : values) {
+      for (const auto &value : aggregateValues) {
         sum += std::get<float>(value);
       }
       return sum;
     }
 
     double sum = 0.0;
-    for (const auto &value : values) {
+    for (const auto &value : aggregateValues) {
       sum += static_cast<double>(std::get<float>(value));
     }
-    return sum / static_cast<double>(values.size());
+    return sum / static_cast<double>(aggregateValues.size());
   }
 
-  if (std::holds_alternative<double>(values.front())) {
+  if (std::holds_alternative<double>(aggregateValues.front())) {
     double sum = 0.0;
-    for (const auto &value : values) {
+    for (const auto &value : aggregateValues) {
       sum += std::get<double>(value);
     }
     if (function == AggregateFunction::Avg) {
-      sum /= static_cast<double>(values.size());
+      sum /= static_cast<double>(aggregateValues.size());
     }
     return sum;
   }
 
   std::int64_t sum = 0;
-  for (const auto &value : values) {
+  for (const auto &value : aggregateValues) {
     const auto integer = std::get<std::int64_t>(value);
     if ((integer > 0 &&
          sum > std::numeric_limits<std::int64_t>::max() - integer) ||
@@ -212,7 +226,7 @@ SqlValue calculateAggregate(AggregateFunction function,
     sum += integer;
   }
   if (function == AggregateFunction::Avg) {
-    sum /= static_cast<std::int64_t>(values.size());
+    sum /= static_cast<std::int64_t>(aggregateValues.size());
   }
   return sum;
 }
