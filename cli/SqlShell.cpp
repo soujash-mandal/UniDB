@@ -288,13 +288,15 @@ void printPadded(const std::string &value, std::size_t width, bool leftAligned,
 
 void printBorder(const std::vector<std::size_t> &widths, std::ostream &output,
                  bool useColors) {
-  if (useColors) output << kCyan;
+  if (useColors)
+    output << kCyan;
   output << '+';
   for (const auto width : widths) {
     output << std::string(width + 2, '-') << '+';
   }
   output << '\n';
-  if (useColors) output << kResetColor;
+  if (useColors)
+    output << kResetColor;
 }
 
 // Prints a bordered result table using terminal display widths rather than byte
@@ -325,7 +327,8 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
   if (!widths.empty()) {
     printBorder(widths, output, useColors);
 
-    if (useColors) output << kBoldCyan;
+    if (useColors)
+      output << kBoldCyan;
     output << '|';
     for (std::size_t index = 0; index < result.columns.size(); ++index) {
       output << ' ';
@@ -334,7 +337,8 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
       output << " |";
     }
     output << '\n';
-    if (useColors) output << kResetColor;
+    if (useColors)
+      output << kResetColor;
     printBorder(widths, output, useColors);
 
     for (std::size_t rowIndex = 0; rowIndex < result.rows.size(); ++rowIndex) {
@@ -348,9 +352,11 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
               result.rows[rowIndex][columnIndex]);
           const bool isNull = std::holds_alternative<unidb::sql::SqlNullValue>(
               result.rows[rowIndex][columnIndex]);
-          if (useColors && isNull) output << kMagenta;
+          if (useColors && isNull)
+            output << kMagenta;
           printPadded(value, widths[columnIndex], isText, output);
-          if (useColors && isNull) output << kResetColor;
+          if (useColors && isNull)
+            output << kResetColor;
         } else {
           output << std::string(widths[columnIndex], ' ');
         }
@@ -362,9 +368,11 @@ void printRows(const QueryExecutionService::QueryExecutionResult &result,
     printBorder(widths, output, useColors);
   }
 
-  if (useColors) output << kGreen;
+  if (useColors)
+    output << kGreen;
   output << result.rows.size() << " row(s)\n";
-  if (useColors) output << kResetColor;
+  if (useColors)
+    output << kResetColor;
 }
 
 bool readInteractiveLine(std::string &line,
@@ -389,9 +397,11 @@ bool readInteractiveLine(std::string &line,
   std::size_t cursor = 0;
   const auto redraw = [&]() {
     output << "\r\033[2K";
-    if (useColors) output << kCyan;
+    if (useColors)
+      output << kCyan;
     output << "unidb> ";
-    if (useColors) output << kResetColor;
+    if (useColors)
+      output << kResetColor;
     output << line;
     const auto right = displayWidth(line.substr(cursor));
     if (right != 0)
@@ -437,9 +447,11 @@ bool readInteractiveLine(std::string &line,
     }
     if (key == '\r' || key == '\n') {
       output << "\r\033[2K";
-      if (useColors) output << kCyan;
+      if (useColors)
+        output << kCyan;
       output << "unidb> ";
-      if (useColors) output << kResetColor;
+      if (useColors)
+        output << kResetColor;
       output << line << '\n';
       output.flush();
       return true;
@@ -568,9 +580,11 @@ void SqlShell::run() {
     const auto outcome = executeQueryAction.execute(statement);
     if (const auto *failure =
             std::get_if<QueryExecutionService::QueryExecutionError>(&outcome)) {
-      if (useColors) error << kRed;
+      if (useColors)
+        error << kRed;
       error << "Error: " << failure->message << '\n';
-      if (useColors) error << kResetColor;
+      if (useColors)
+        error << kResetColor;
       continue;
     }
 
@@ -579,9 +593,11 @@ void SqlShell::run() {
     if (result.kind == QueryExecutionService::QueryExecutionResultKind::Rows) {
       printRows(result, output, useColors);
     } else {
-      if (useColors) output << kGreen;
+      if (useColors)
+        output << kGreen;
       output << result.message << '\n';
-      if (useColors) output << kResetColor;
+      if (useColors)
+        output << kResetColor;
     }
   }
 }
