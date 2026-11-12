@@ -10,7 +10,8 @@ TEST(ExecuteQueryActionNullTest, InsertsAndReadsBackNullForNullableColumn) {
   FakeQesRdbServicePort port;
   port.schema = {
       {"id", unidb::sql::SqlType::Int,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}, false},
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}},
+       false},
       {"name", unidb::sql::SqlType::Text,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}, true}};
   unidb::sql::SqlParserImpl parser;
@@ -19,8 +20,9 @@ TEST(ExecuteQueryActionNullTest, InsertsAndReadsBackNullForNullableColumn) {
   const auto outcome = action.execute(
       "INSERT INTO users (id, name) VALUES (1, NULL), (2, 'Ada')");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   ASSERT_EQ(port.insertedRows.size(), 2U);
   const auto first = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
   const auto second = SqlTupleCodec::decode(port.schema, port.insertedRows[1]);
@@ -42,7 +44,8 @@ TEST(ExecuteQueryActionNullTest, RejectsNullForNotNullColumnBeforeAnyInsert) {
   const auto outcome = action.execute(
       "INSERT INTO users (id, name) VALUES (1, 'Ada'), (2, NULL)");
 
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
   EXPECT_EQ(port.insertCalls, 0U);
 }
