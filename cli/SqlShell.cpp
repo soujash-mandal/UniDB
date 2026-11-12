@@ -485,6 +485,9 @@ bool readInteractiveLine(std::string &line,
       continue;
     }
     if (key == '\t') {
+      if (SqlAutocomplete::isInsideStringLiteral(line, cursor)) {
+        continue;
+      }
       const auto prefix = SqlAutocomplete::prefixAtCursor(line, cursor);
       const auto matches = SqlAutocomplete::suggestionsFor(prefix);
       if (matches.size() == 1) {
