@@ -84,6 +84,19 @@ inline std::string prefixAtCursor(const std::string &line, std::size_t cursor) {
   return line.substr(start, cursor - start);
 }
 
+inline std::string inlineSuggestion(const std::string &line,
+                                    std::size_t cursor) {
+  if (cursor != line.size() || isInsideStringLiteral(line, cursor)) {
+    return {};
+  }
+  const auto prefix = prefixAtCursor(line, cursor);
+  const auto matches = suggestionsFor(prefix);
+  if (matches.size() != 1) {
+    return {};
+  }
+  return matches.front().substr(prefix.size());
+}
+
 inline bool replaceToken(std::string &line, std::size_t &cursor,
                          std::string_view completion) {
   if (cursor > line.size() || completion.empty()) {
