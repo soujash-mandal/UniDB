@@ -218,7 +218,7 @@ uint32_t RdbServiceAdapter::createTable(
         break;
       }
     }
-    table.columns.push_back(RdbColumn{column.name, type, size, false,
+    table.columns.push_back(RdbColumn{column.name, type, size, column.nullable,
                                       numericPrecision, numericScale,
                                       characterLength, temporalPrecision});
   }
@@ -235,6 +235,7 @@ RdbServiceAdapter::getTableDefinition(const std::string &tableName) {
     unidb::sql::ColumnDefinition definition{column.name,
                                             fromRdbType(column.type)};
     definition.declaredType = descriptorFromRdbType(column);
+    definition.nullable = column.nullable;
     columns.push_back(std::move(definition));
   }
   return columns;

@@ -89,6 +89,8 @@ struct ColumnDefinition {
   std::string name;
   SqlType type;
   std::optional<SqlTypeDescriptor> declaredType = std::nullopt;
+  // SQL columns are nullable unless the declaration explicitly says NOT NULL.
+  bool nullable = true;
 };
 
 } // namespace unidb::sql
