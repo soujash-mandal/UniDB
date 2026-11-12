@@ -46,8 +46,8 @@ TEST(SqlTupleCodec, RejectsMalformedUtf8InCharacterRows) {
   EXPECT_THROW(SqlTupleCodec::encode(schema, values), std::invalid_argument);
 
   const std::vector<char> malformedRow{
-      'U', 'D', 'B',  'R', 1, 0, 1,
-      0,   0,\n 1, 0,   0, 0, static_cast<char>(0xc0)};
+      'U', 'D', 'B', 'R', 1, 0, 1, 0, 0,
+      1, 0, 0, 0, static_cast<char>(0xc0)};
   EXPECT_THROW(SqlTupleCodec::decode(schema, malformedRow),
                std::invalid_argument);
 }
