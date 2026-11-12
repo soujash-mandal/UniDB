@@ -63,6 +63,18 @@ suggestionsFor(std::string_view prefix) {
   return matches;
 }
 
+inline std::string prefixAtCursor(const std::string &line,
+                                  std::size_t cursor) {
+  if (cursor > line.size()) {
+    return {};
+  }
+  std::size_t start = cursor;
+  while (start > 0 && isIdentifierCharacter(line[start - 1])) {
+    --start;
+  }
+  return line.substr(start, cursor - start);
+}
+
 inline bool replaceToken(std::string &line, std::size_t &cursor,
                          std::string_view completion) {
   if (cursor > line.size() || completion.empty()) {
