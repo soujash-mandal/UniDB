@@ -121,21 +121,6 @@ averageNumericValues(const std::vector<SqlValue> &values) {
   return divideSqlNumericValues(sum, count, resultScale);
 }
 
-std::string aggregateFunctionName(AggregateFunction function) {
-  switch (function) {
-  case AggregateFunction::Count:
-    return "COUNT";
-  case AggregateFunction::Min:
-    return "MIN";
-  case AggregateFunction::Max:
-    return "MAX";
-  case AggregateFunction::Sum:
-    return "SUM";
-  case AggregateFunction::Avg:
-    return "AVG";
-  }
-  throw std::invalid_argument("Unknown aggregate function");
-}
 
 } // namespace
 
