@@ -1160,6 +1160,20 @@ private:
       ++position_;
     }
 
+    if (matchKeyword("IS")) {
+      const bool negated = matchKeyword("NOT");
+      if (!matchKeyword("NULL")) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError,
+                             "Expected NULL after IS or IS NOT"};
+      }
+      predicate.comparison =
+          negated ? ComparisonOperator::IsNotNull : ComparisonOperator::IsNull;
+      WhereExpression expression;
+      expression.kind = WhereExpression::Kind::Predicate;
+      expression.predicate = std::move(predicate);
+      return expression;
+    }
+
     bool isMembership = false;
     bool isNegatedMembership = false;
     bool isRange = false;
@@ -1192,7 +1206,7 @@ private:
     if (isLike) {
       predicate.comparison = isNegatedLike ? ComparisonOperator::NotLike
                                            : ComparisonOperator::Like;
-      auto pattern = parseLiteral();
+      auto pattern = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(pattern)) {
         return std::get<SqlParseError>(std::move(pattern));
       }
@@ -1202,7 +1216,7 @@ private:
     } else if (isRange) {
       predicate.comparison = isNegatedRange ? ComparisonOperator::NotBetween
                                             : ComparisonOperator::Between;
-      auto lowerBound = parseLiteral();
+      auto lowerBound = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(lowerBound)) {
         return std::get<SqlParseError>(std::move(lowerBound));
       }
@@ -1213,7 +1227,7 @@ private:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected AND between BETWEEN range bounds"};
       }
-      auto upperBound = parseLiteral();
+      auto upperBound = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(upperBound)) {
         return std::get<SqlParseError>(std::move(upperBound));
       }
@@ -1232,7 +1246,7 @@ private:
                              "IN list must contain at least one value"};
       }
       while (true) {
-        auto value = parseLiteral();
+        auto value = parseWhereLiteral();
         if (std::holds_alternative<SqlParseError>(value)) {
           return std::get<SqlParseError>(std::move(value));
         }
@@ -1274,7 +1288,7 @@ private:
             "in WHERE predicate"};
       }
       ++position_;
-      auto value = parseLiteral();
+      auto value = parseWhereLiteral();
       if (std::holds_alternative<SqlParseError>(value)) {
         return std::get<SqlParseError>(std::move(value));
       }
@@ -1305,6 +1319,13 @@ private:
                            "LIMIT or OFFSET value is out of range"};
     }
     return value;
+  }
+
+  std::variant<ParsedSqlLiteral, SqlParseError> parseWhereLiteral() {
+    if (matchKeyword("NULL")) {
+      return ParsedSqlLiteral{SqlValue{SqlNullValue{}}, std::nullopt};
+    }
+    return parseLiteral();
   }
 
   std::variant<ParsedSqlLiteral, SqlParseError> parseLiteral() {
