@@ -318,8 +318,7 @@ TEST(SqlParserWhereTest, ParsesIsNullAndIsNotNullPredicates) {
 
 TEST(SqlParserWhereTest, ParsesNullComparisonLiteral) {
   SqlParserImpl parser;
-  const auto result =
-      parser.parse("SELECT id FROM people WHERE id = NULL");
+  const auto result = parser.parse("SELECT id FROM people WHERE id = NULL");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &select =
       std::get<SelectStatement>(std::get<SqlStatement>(result));

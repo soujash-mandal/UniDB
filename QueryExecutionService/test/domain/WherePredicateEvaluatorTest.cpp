@@ -274,8 +274,7 @@ TEST(WherePredicateEvaluatorTest, AppliesIsNullAndIsNotNullPredicates) {
 
   WhereExpression isNotNull = isNull;
   isNotNull.predicate.comparison = ComparisonOperator::IsNotNull;
-  const auto compiledNotNull =
-      compileWhereExpression(isNotNull, schema, types);
+  const auto compiledNotNull = compileWhereExpression(isNotNull, schema, types);
   EXPECT_EQ(evaluateWhereExpression(nullRow, compiledNotNull),
             QueryExecutionService::domain::SqlTruthValue::False);
   EXPECT_EQ(evaluateWhereExpression(valueRow, compiledNotNull),
@@ -287,8 +286,8 @@ TEST(WherePredicateEvaluatorTest, ComparisonsWithNullProduceUnknown) {
   const std::vector<SqlType> types{SqlType::Int};
   const std::vector<SqlValue> row{unidb::sql::SqlNullValue{}};
   WhereExpression equals;
-  equals.predicate = WhereEquals{"id", std::int64_t{7}, std::nullopt, {},
-                                 ComparisonOperator::Equal};
+  equals.predicate = WhereEquals{
+      "id", std::int64_t{7}, std::nullopt, {}, ComparisonOperator::Equal};
   const auto compiled = compileWhereExpression(equals, schema, types);
   EXPECT_EQ(evaluateWhereExpression(row, compiled),
             QueryExecutionService::domain::SqlTruthValue::Unknown);
@@ -300,32 +299,34 @@ TEST(WherePredicateEvaluatorTest, AppliesSqlThreeValuedAndOrTruthTables) {
   const std::vector<SqlType> types{SqlType::Int};
   const std::vector<SqlValue> row{unidb::sql::SqlNullValue{}};
   WhereExpression unknown;
-  unknown.predicate = WhereEquals{"id", std::int64_t{1}, std::nullopt, {},
-                                  ComparisonOperator::Equal};
+  unknown.predicate = WhereEquals{
+      "id", std::int64_t{1}, std::nullopt, {}, ComparisonOperator::Equal};
   WhereExpression falsePredicate;
-  falsePredicate.predicate = WhereEquals{"id", std::int64_t{2}, std::nullopt, {},
-                                         ComparisonOperator::Equal};
+  falsePredicate.predicate = WhereEquals{
+      "id", std::int64_t{2}, std::nullopt, {}, ComparisonOperator::Equal};
   WhereExpression truePredicate;
-  truePredicate.predicate = WhereEquals{"id", unidb::sql::SqlNullValue{},
-                                        std::nullopt, {},
+  truePredicate.predicate = WhereEquals{"id",
+                                        unidb::sql::SqlNullValue{},
+                                        std::nullopt,
+                                        {},
                                         ComparisonOperator::IsNull};
 
   WhereExpression conjunction;
   conjunction.kind = WhereExpression::Kind::And;
   conjunction.children = {unknown, falsePredicate};
-  EXPECT_EQ(evaluateWhereExpression(row,
-                                    compileWhereExpression(conjunction, schema, types)),
+  EXPECT_EQ(evaluateWhereExpression(
+                row, compileWhereExpression(conjunction, schema, types)),
             QueryExecutionService::domain::SqlTruthValue::False);
 
   WhereExpression disjunction;
   disjunction.kind = WhereExpression::Kind::Or;
   disjunction.children = {unknown, truePredicate};
-  EXPECT_EQ(evaluateWhereExpression(row,
-                                    compileWhereExpression(disjunction, schema, types)),
+  EXPECT_EQ(evaluateWhereExpression(
+                row, compileWhereExpression(disjunction, schema, types)),
             QueryExecutionService::domain::SqlTruthValue::True);
 
   disjunction.children = {unknown, falsePredicate};
-  EXPECT_EQ(evaluateWhereExpression(row,
-                                    compileWhereExpression(disjunction, schema, types)),
+  EXPECT_EQ(evaluateWhereExpression(
+                row, compileWhereExpression(disjunction, schema, types)),
             QueryExecutionService::domain::SqlTruthValue::Unknown);
 }

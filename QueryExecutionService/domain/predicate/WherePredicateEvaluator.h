@@ -27,9 +27,9 @@ compileWhereExpression(const unidb::sql::WhereExpression &expression,
                        const std::vector<unidb::sql::ColumnDefinition> &schema,
                        const std::vector<unidb::sql::SqlType> &types);
 
-SqlTruthValue evaluateWhereExpression(
-    const std::vector<unidb::sql::SqlValue> &row,
-    const CompiledWhereExpression &expression);
+SqlTruthValue
+evaluateWhereExpression(const std::vector<unidb::sql::SqlValue> &row,
+                        const CompiledWhereExpression &expression);
 
 bool matchesWhereExpression(const std::vector<unidb::sql::SqlValue> &row,
                             const CompiledWhereExpression &expression);

@@ -720,8 +720,9 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
 
   const auto nullRows =
       action.execute("SELECT name FROM people WHERE id IS NULL;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(nullRows));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          nullRows));
   const auto &nullResult =
       std::get<QueryExecutionService::QueryExecutionResult>(nullRows);
   ASSERT_EQ(nullResult.rows.size(), 1U);
@@ -729,8 +730,9 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
 
   const auto nonNullRows =
       action.execute("SELECT name FROM people WHERE id IS NOT NULL;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(nonNullRows));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          nonNullRows));
   const auto &nonNullResult =
       std::get<QueryExecutionService::QueryExecutionResult>(nonNullRows);
   ASSERT_EQ(nonNullResult.rows.size(), 1U);
@@ -738,8 +740,9 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
 
   const auto comparison =
       action.execute("SELECT name FROM people WHERE id = 2;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(comparison));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          comparison));
   const auto &comparisonResult =
       std::get<QueryExecutionService::QueryExecutionResult>(comparison);
   ASSERT_EQ(comparisonResult.rows.size(), 1U);
@@ -747,15 +750,18 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
 
   const auto nullComparison =
       action.execute("SELECT name FROM people WHERE id = NULL;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(nullComparison));
-  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(
-                  nullComparison).rows.empty());
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          nullComparison));
+  EXPECT_TRUE(
+      std::get<QueryExecutionService::QueryExecutionResult>(nullComparison)
+          .rows.empty());
 
-  const auto unknownOrTrue = action.execute(
-      "SELECT name FROM people WHERE id = NULL OR id IS NULL;");
-  ASSERT_TRUE(std::holds_alternative<
-              QueryExecutionService::QueryExecutionResult>(unknownOrTrue));
+  const auto unknownOrTrue =
+      action.execute("SELECT name FROM people WHERE id = NULL OR id IS NULL;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          unknownOrTrue));
   const auto &unknownOrTrueResult =
       std::get<QueryExecutionService::QueryExecutionResult>(unknownOrTrue);
   ASSERT_EQ(unknownOrTrueResult.rows.size(), 1U);

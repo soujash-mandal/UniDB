@@ -193,16 +193,18 @@ bool matchesLikePattern(const std::string &value, const std::string &pattern) {
   return patternIndex == pattern.size();
 }
 
-SqlTruthValue matchesWhere(
-    const SqlValue &rowValue, const WhereEquals &predicate,
-    const std::optional<unidb::sql::SqlTypeDescriptor> &declaredType) {
+SqlTruthValue
+matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate,
+             const std::optional<unidb::sql::SqlTypeDescriptor> &declaredType) {
   if (predicate.comparison == ComparisonOperator::IsNull) {
     return std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)
-               ? SqlTruthValue::True : SqlTruthValue::False;
+               ? SqlTruthValue::True
+               : SqlTruthValue::False;
   }
   if (predicate.comparison == ComparisonOperator::IsNotNull) {
     return std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)
-               ? SqlTruthValue::False : SqlTruthValue::True;
+               ? SqlTruthValue::False
+               : SqlTruthValue::True;
   }
   if (std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)) {
     return SqlTruthValue::Unknown;
@@ -212,7 +214,8 @@ SqlTruthValue matchesWhere(
   };
   if (predicate.comparison == ComparisonOperator::Like ||
       predicate.comparison == ComparisonOperator::NotLike) {
-    if (isNull(predicate.value)) return SqlTruthValue::Unknown;
+    if (isNull(predicate.value))
+      return SqlTruthValue::Unknown;
     const auto *textValue = std::get_if<std::string>(&rowValue);
     const auto *pattern = std::get_if<std::string>(&predicate.value);
     if (textValue == nullptr || pattern == nullptr) {
@@ -220,21 +223,25 @@ SqlTruthValue matchesWhere(
     }
     const bool matched = matchesLikePattern(*textValue, *pattern);
     return (predicate.comparison == ComparisonOperator::Like) == matched
-               ? SqlTruthValue::True : SqlTruthValue::False;
+               ? SqlTruthValue::True
+               : SqlTruthValue::False;
   }
   if (predicate.comparison == ComparisonOperator::Between ||
       predicate.comparison == ComparisonOperator::NotBetween) {
     if (!predicate.upperBound.has_value()) {
-      throw std::invalid_argument("BETWEEN predicates require two range bounds");
+      throw std::invalid_argument(
+          "BETWEEN predicates require two range bounds");
     }
     if (isNull(predicate.value) || isNull(*predicate.upperBound)) {
       return SqlTruthValue::Unknown;
     }
     const bool withinRange =
         compareValuesForColumn(rowValue, predicate.value, declaredType) >= 0 &&
-        compareValuesForColumn(rowValue, *predicate.upperBound, declaredType) <= 0;
+        compareValuesForColumn(rowValue, *predicate.upperBound, declaredType) <=
+            0;
     return (predicate.comparison == ComparisonOperator::Between) == withinRange
-               ? SqlTruthValue::True : SqlTruthValue::False;
+               ? SqlTruthValue::True
+               : SqlTruthValue::False;
   }
   if (predicate.comparison == ComparisonOperator::In ||
       predicate.comparison == ComparisonOperator::NotIn) {
@@ -250,24 +257,39 @@ SqlTruthValue matchesWhere(
     }
     if (found) {
       return predicate.comparison == ComparisonOperator::In
-                 ? SqlTruthValue::True : SqlTruthValue::False;
+                 ? SqlTruthValue::True
+                 : SqlTruthValue::False;
     }
-    if (hasNull) return SqlTruthValue::Unknown;
-    return predicate.comparison == ComparisonOperator::In
-               ? SqlTruthValue::False : SqlTruthValue::True;
+    if (hasNull)
+      return SqlTruthValue::Unknown;
+    return predicate.comparison == ComparisonOperator::In ? SqlTruthValue::False
+                                                          : SqlTruthValue::True;
   }
-  if (isNull(predicate.value)) return SqlTruthValue::Unknown;
+  if (isNull(predicate.value))
+    return SqlTruthValue::Unknown;
 
   const int comparison =
       compareValuesForColumn(rowValue, predicate.value, declaredType);
   bool matched = false;
   switch (predicate.comparison) {
-  case ComparisonOperator::Equal: matched = comparison == 0; break;
-  case ComparisonOperator::NotEqual: matched = comparison != 0; break;
-  case ComparisonOperator::GreaterThan: matched = comparison > 0; break;
-  case ComparisonOperator::LessThan: matched = comparison < 0; break;
-  case ComparisonOperator::GreaterThanOrEqual: matched = comparison >= 0; break;
-  case ComparisonOperator::LessThanOrEqual: matched = comparison <= 0; break;
+  case ComparisonOperator::Equal:
+    matched = comparison == 0;
+    break;
+  case ComparisonOperator::NotEqual:
+    matched = comparison != 0;
+    break;
+  case ComparisonOperator::GreaterThan:
+    matched = comparison > 0;
+    break;
+  case ComparisonOperator::LessThan:
+    matched = comparison < 0;
+    break;
+  case ComparisonOperator::GreaterThanOrEqual:
+    matched = comparison >= 0;
+    break;
+  case ComparisonOperator::LessThanOrEqual:
+    matched = comparison <= 0;
+    break;
   case ComparisonOperator::In:
   case ComparisonOperator::NotIn:
     throw std::invalid_argument("IN predicates require a value list");
@@ -278,7 +300,8 @@ SqlTruthValue matchesWhere(
   case ComparisonOperator::NotLike:
     throw std::invalid_argument("LIKE predicates require a text pattern");
   case ComparisonOperator::IsNull:
-  case ComparisonOperator::IsNotNull: break;
+  case ComparisonOperator::IsNotNull:
+    break;
   }
   return matched ? SqlTruthValue::True : SqlTruthValue::False;
 }
@@ -366,9 +389,9 @@ compileWhereExpression(const WhereExpression &expression,
   return compiled;
 }
 
-SqlTruthValue evaluateWhereExpression(
-    const std::vector<SqlValue> &row,
-    const CompiledWhereExpression &expression) {
+SqlTruthValue
+evaluateWhereExpression(const std::vector<SqlValue> &row,
+                        const CompiledWhereExpression &expression) {
   if (expression.kind == WhereExpression::Kind::Predicate) {
     return matchesWhere(row[expression.columnIndex], expression.predicate,
                         expression.declaredType);
@@ -377,14 +400,17 @@ SqlTruthValue evaluateWhereExpression(
   for (const auto &child : expression.children) {
     const auto value = evaluateWhereExpression(row, child);
     if (expression.kind == WhereExpression::Kind::And &&
-        value == SqlTruthValue::False) return SqlTruthValue::False;
+        value == SqlTruthValue::False)
+      return SqlTruthValue::False;
     if (expression.kind == WhereExpression::Kind::Or &&
-        value == SqlTruthValue::True) return SqlTruthValue::True;
+        value == SqlTruthValue::True)
+      return SqlTruthValue::True;
     hasUnknown = hasUnknown || value == SqlTruthValue::Unknown;
   }
-  if (hasUnknown) return SqlTruthValue::Unknown;
-  return expression.kind == WhereExpression::Kind::And
-             ? SqlTruthValue::True : SqlTruthValue::False;
+  if (hasUnknown)
+    return SqlTruthValue::Unknown;
+  return expression.kind == WhereExpression::Kind::And ? SqlTruthValue::True
+                                                       : SqlTruthValue::False;
 }
 
 bool matchesWhereExpression(const std::vector<SqlValue> &row,
