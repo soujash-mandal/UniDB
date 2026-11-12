@@ -11,6 +11,7 @@
 namespace {
 using QueryExecutionService::domain::compareSqlValues;
 using QueryExecutionService::domain::compileWhereExpression;
+using QueryExecutionService::domain::evaluateWhereExpression;
 using QueryExecutionService::domain::matchesWhereExpression;
 using unidb::sql::ColumnDefinition;
 using unidb::sql::ComparisonOperator;
