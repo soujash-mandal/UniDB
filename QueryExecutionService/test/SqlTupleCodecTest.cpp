@@ -141,16 +141,21 @@ TEST(SqlTupleCodecTest, RejectsInvalidBooleanByteAndTruncatedBooleanRows) {
       {"value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Boolean, {}}}};
   EXPECT_THROW(SqlTupleCodec::decode(
                    schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0',
-                                             '\x01', '\0'}),
+                                             '\x01', '\0', '\0'}),
                std::runtime_error);
   EXPECT_THROW(SqlTupleCodec::decode(
                    schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0',
-                                             '\x01', '\0', '\x02'}),
+                                             '\x01', '\0', '\0', '\x02'}),
                std::runtime_error);
   EXPECT_THROW(
       SqlTupleCodec::decode(
           schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0', '\x01',
-                                    '\0', static_cast<char>(0xff)}),
+                                    '\0', '\0', static_cast<char>(0xff)}),
+      std::runtime_error);
+  EXPECT_THROW(
+      SqlTupleCodec::decode(
+          schema, std::vector<char>{'U', 'D', 'B', 'R', '\x01', '\0', '\x01',
+                                    '\0', '\0', '\x01', '\0'}),
       std::runtime_error);
 }
 
