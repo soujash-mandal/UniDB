@@ -744,4 +744,21 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
       std::get<QueryExecutionService::QueryExecutionResult>(comparison);
   ASSERT_EQ(comparisonResult.rows.size(), 1U);
   EXPECT_EQ(std::get<std::string>(comparisonResult.rows[0][0]), "Ada");
+
+  const auto nullComparison =
+      action.execute("SELECT name FROM people WHERE id = NULL;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(nullComparison));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(
+                  nullComparison).rows.empty());
+
+  const auto unknownOrTrue = action.execute(
+      "SELECT name FROM people WHERE id = NULL OR id IS NULL;");
+  ASSERT_TRUE(std::holds_alternative<
+              QueryExecutionService::QueryExecutionResult>(unknownOrTrue));
+  const auto &unknownOrTrueResult =
+      std::get<QueryExecutionService::QueryExecutionResult>(unknownOrTrue);
+  ASSERT_EQ(unknownOrTrueResult.rows.size(), 1U);
+  EXPECT_EQ(std::get<std::string>(unknownOrTrueResult.rows[0][0]),
+            "missing id");
 }
