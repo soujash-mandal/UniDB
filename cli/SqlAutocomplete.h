@@ -27,28 +27,23 @@ inline bool startsWithIgnoringCase(std::string_view value,
   return true;
 }
 
-inline bool equalsIgnoringCase(std::string_view left,
-                               std::string_view right) {
-  return left.size() == right.size() &&
-         startsWithIgnoringCase(left, right);
+inline bool equalsIgnoringCase(std::string_view left, std::string_view right) {
+  return left.size() == right.size() && startsWithIgnoringCase(left, right);
 }
 
-inline std::vector<std::string>
-suggestionsFor(std::string_view prefix) {
+inline std::vector<std::string> suggestionsFor(std::string_view prefix) {
   static constexpr std::string_view words[] = {
-      "ALL",       "AND",       "AS",        "ASC",
-      "AVG",       "BETWEEN",   "BIGINT",    "BOOLEAN",   "BY",
-      "CASE",      "CHAR",      "CHARACTER", "CROSS",     "COUNT",
-      "CREATE",    "DATE",      "DECIMAL",   "DESC",      "DISTINCT",
-      "DOUBLE",    "ELSE",      "END",       "FALSE",     "FROM",
-      "GROUP",     "HAVING",    "INNER",     "INSERT",    "INT",
-      "INTEGER",   "INTERVAL",  "INTO",      "IS",        "JOIN",
-      "LIKE",      "LIMIT",     "MAX",       "MIN",       "NOT",
-      "NULL",      "NUMERIC",   "OFFSET",    "ON",        "OR",
-      "ORDER",     "PRECISION", "REAL",      "SELECT",    "SMALLINT",
-      "SUM",       "TABLE",     "TEXT",      "THEN",      "TIME",
-      "TIMESTAMP", "TRUE",      "UNION",     "VALUES",
-      "VARCHAR",   "VARYING",   "WHEN",      "WHERE"};
+      "ALL",       "AND",     "AS",     "ASC",       "AVG",     "BETWEEN",
+      "BIGINT",    "BOOLEAN", "BY",     "CASE",      "CHAR",    "CHARACTER",
+      "CROSS",     "COUNT",   "CREATE", "DATE",      "DECIMAL", "DESC",
+      "DISTINCT",  "DOUBLE",  "ELSE",   "END",       "FALSE",   "FROM",
+      "GROUP",     "HAVING",  "INNER",  "INSERT",    "INT",     "INTEGER",
+      "INTERVAL",  "INTO",    "IS",     "JOIN",      "LIKE",    "LIMIT",
+      "MAX",       "MIN",     "NOT",    "NULL",      "NUMERIC", "OFFSET",
+      "ON",        "OR",      "ORDER",  "PRECISION", "REAL",    "SELECT",
+      "SMALLINT",  "SUM",     "TABLE",  "TEXT",      "THEN",    "TIME",
+      "TIMESTAMP", "TRUE",    "UNION",  "VALUES",    "VARCHAR", "VARYING",
+      "WHEN",      "WHERE"};
 
   std::vector<std::string> matches;
   if (prefix.empty()) {
@@ -63,8 +58,7 @@ suggestionsFor(std::string_view prefix) {
   return matches;
 }
 
-inline bool isInsideStringLiteral(const std::string &line,
-                                  std::size_t cursor) {
+inline bool isInsideStringLiteral(const std::string &line, std::size_t cursor) {
   bool inside = false;
   for (std::size_t index = 0; index < cursor && index < line.size(); ++index) {
     if (line[index] != '\'') {
@@ -79,8 +73,7 @@ inline bool isInsideStringLiteral(const std::string &line,
   return inside;
 }
 
-inline std::string prefixAtCursor(const std::string &line,
-                                  std::size_t cursor) {
+inline std::string prefixAtCursor(const std::string &line, std::size_t cursor) {
   if (cursor > line.size()) {
     return {};
   }
