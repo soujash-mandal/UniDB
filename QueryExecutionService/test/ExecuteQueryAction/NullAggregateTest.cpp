@@ -9,7 +9,6 @@ using unidb::sql::ColumnDefinition;
 using unidb::sql::SqlType;
 using unidb::sql::SqlTypeDescriptor;
 using unidb::sql::SqlTypeId;
-using unidb::sql::SqlValue;
 
 ColumnDefinition nullableColumn(const std::string &name, SqlType type,
                                 SqlTypeId declaredType) {
@@ -36,8 +35,9 @@ FakeQesRdbServicePort makeNullableAggregatePort() {
   return port;
 }
 
+template <typename Outcome>
 const QueryExecutionService::QueryExecutionResult &
-expectResult(const QueryExecutionService::QueryExecutionOutcome &outcome) {
+expectResult(const Outcome &outcome) {
   EXPECT_TRUE(std::holds_alternative<
               QueryExecutionService::QueryExecutionResult>(outcome));
   return std::get<QueryExecutionService::QueryExecutionResult>(outcome);
