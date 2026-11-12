@@ -123,7 +123,8 @@ TEST(ExecuteQueryActionCaseWhenTest,
       std::get<QueryExecutionService::QueryExecutionResult>(explicitNull).rows;
   ASSERT_EQ(explicitRows.size(), 3U);
   EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(explicitRows[0][0]));
+      std::holds_alternative<unidb::sql::SqlNullValue>(
+          explicitRows[0][0]));
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[1][0]), 5);
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[2][0]), 5);
 
@@ -150,7 +151,8 @@ TEST(ExecuteQueryActionCaseWhenTest,
   ASSERT_EQ(explicitElseRows.size(), 3U);
   EXPECT_EQ(std::get<std::int64_t>(explicitElseRows[0][0]), 1);
   EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(explicitElseRows[1][0]));
+      std::holds_alternative<unidb::sql::SqlNullValue>(
+          explicitElseRows[1][0]));
 
   const auto implicitNull = action.execute(
       "SELECT CASE WHEN id = 1 THEN 1 END AS value FROM people;");
@@ -162,9 +164,11 @@ TEST(ExecuteQueryActionCaseWhenTest,
   ASSERT_EQ(implicitRows.size(), 3U);
   EXPECT_EQ(std::get<std::int64_t>(implicitRows[0][0]), 1);
   EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[1][0]));
+      std::holds_alternative<unidb::sql::SqlNullValue>(
+          implicitRows[1][0]));
   EXPECT_TRUE(
-      std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[2][0]));
+      std::holds_alternative<unidb::sql::SqlNullValue>(
+          implicitRows[2][0]));
 }
 
 TEST(ExecuteQueryActionCaseWhenTest, UnknownWhenConditionFallsThrough) {
