@@ -193,12 +193,6 @@ bool matchesLikePattern(const std::string &value, const std::string &pattern) {
   return patternIndex == pattern.size();
 }
 
-SqlTruthValue negateTruth(SqlTruthValue value) {
-  if (value == SqlTruthValue::Unknown) return SqlTruthValue::Unknown;
-  return value == SqlTruthValue::True ? SqlTruthValue::False
-                                      : SqlTruthValue::True;
-}
-
 SqlTruthValue matchesWhere(
     const SqlValue &rowValue, const WhereEquals &predicate,
     const std::optional<unidb::sql::SqlTypeDescriptor> &declaredType) {
@@ -343,7 +337,8 @@ compileWhereExpression(const WhereExpression &expression,
                                     found->name);
       }
     }
-    if (isLike && !std::holds_alternative<std::string>(predicate.value)) {
+    if (isLike && !std::holds_alternative<std::string>(predicate.value) &&
+        !std::holds_alternative<unidb::sql::SqlNullValue>(predicate.value)) {
       throw std::invalid_argument("LIKE pattern must be TEXT");
     }
     if (isMembership) {
