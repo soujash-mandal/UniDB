@@ -115,25 +115,30 @@ TEST(ExecuteQueryActionCaseWhenTest, ReturnsNullForNullBranchesAndImplicitElse) 
 
   const auto explicitNull = action.execute(
       "SELECT CASE WHEN id = 1 THEN NULL ELSE 5 END AS value FROM people;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      explicitNull));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          explicitNull));
   const auto &explicitRows =
       std::get<QueryExecutionService::QueryExecutionResult>(explicitNull).rows;
   ASSERT_EQ(explicitRows.size(), 3U);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(explicitRows[0][0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      explicitRows[0][0]));
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[1][0]), 5);
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[2][0]), 5);
 
   const auto implicitNull = action.execute(
       "SELECT CASE WHEN id = 1 THEN 1 END AS value FROM people;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      implicitNull));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          implicitNull));
   const auto &implicitRows =
       std::get<QueryExecutionService::QueryExecutionResult>(implicitNull).rows;
   ASSERT_EQ(implicitRows.size(), 3U);
   EXPECT_EQ(std::get<std::int64_t>(implicitRows[0][0]), 1);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[1][0]));
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[2][0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      implicitRows[1][0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      implicitRows[2][0]));
 }
 
 TEST(ExecuteQueryActionCaseWhenTest, UnknownWhenConditionFallsThrough) {
@@ -146,8 +151,9 @@ TEST(ExecuteQueryActionCaseWhenTest, UnknownWhenConditionFallsThrough) {
 
   const auto outcome = action.execute(
       "SELECT CASE WHEN id = NULL THEN 1 ELSE 2 END AS value FROM people;");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 1U);
