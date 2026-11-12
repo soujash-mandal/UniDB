@@ -280,7 +280,6 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
                                   "floating-point, and TEXT columns");
     }
   }
-  return out;
   if (!declaredRow) return out;
   if (schema.size() > std::numeric_limits<std::uint16_t>::max())
     throw std::invalid_argument("Tuple column count exceeds row header limit");
