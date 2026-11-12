@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include <string>
 
 TEST(SqlShellAutocompleteTest, CompletesUniqueKeywordPrefixIgnoringCase) {
@@ -36,4 +38,15 @@ TEST(SqlShellAutocompleteTest, ReplacesOnlyTheTokenAtTheCursor) {
 TEST(SqlShellAutocompleteTest, DoesNotSuggestAnExactKeywordAgain) {
   EXPECT_TRUE(SqlAutocomplete::suggestionsFor("SELECT").empty());
   EXPECT_TRUE(SqlAutocomplete::suggestionsFor("").empty());
+}
+
+TEST(SqlShellAutocompleteTest, DoesNotCompleteInsideStringLiterals) {
+  const std::string line = "SELECT 'sel";
+  EXPECT_TRUE(SqlAutocomplete::isInsideStringLiteral(line, line.size()));
+  EXPECT_FALSE(SqlAutocomplete::isInsideStringLiteral("SELECT sel", 10));
+}
+
+TEST(SqlShellAutocompleteTest, HandlesEscapedQuotesInStringLiterals) {
+  const std::string line = "SELECT 'it''s sel";
+  EXPECT_TRUE(SqlAutocomplete::isInsideStringLiteral(line, line.size()));
 }
