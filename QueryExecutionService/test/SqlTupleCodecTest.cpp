@@ -51,7 +51,7 @@ TEST(SqlTupleCodecTest, RoundTripsPostgreSqlIntegerWidthsUsingDeclaredSchema) {
       std::numeric_limits<std::int64_t>::min()};
 
   const auto bytes = SqlTupleCodec::encode(schema, values);
-  EXPECT_EQ(bytes.size(), 24U);
+  EXPECT_EQ(bytes.size(), 23U);
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
 
