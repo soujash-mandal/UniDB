@@ -6,14 +6,27 @@
 
 #include <variant>
 
+namespace {
+
+unidb::sql::ColumnDefinition makeColumn(const std::string &name,
+                                        unidb::sql::SqlType type,
+                                        unidb::sql::SqlTypeId declaredType,
+                                        bool nullable) {
+  unidb::sql::ColumnDefinition column;
+  column.name = name;
+  column.type = type;
+  column.declaredType = unidb::sql::SqlTypeDescriptor{declaredType, {}};
+  column.nullable = nullable;
+  return column;
+}
+
 TEST(ExecuteQueryActionNullTest, InsertsAndReadsBackNullForNullableColumn) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"id", unidb::sql::SqlType::Int,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}},
-       false},
-      {"name", unidb::sql::SqlType::Text,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}, true}};
+      makeColumn("id", unidb::sql::SqlType::Int,
+                 unidb::sql::SqlTypeId::Integer, false),
+      makeColumn("name", unidb::sql::SqlType::Text,
+                 unidb::sql::SqlTypeId::Text, true)};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -34,11 +47,10 @@ TEST(ExecuteQueryActionNullTest, InsertsAndReadsBackNullForNullableColumn) {
 TEST(ExecuteQueryActionNullTest, RejectsNullForNotNullColumnBeforeAnyInsert) {
   FakeQesRdbServicePort port;
   port.schema = {
-      {"id", unidb::sql::SqlType::Int,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}},
-       false},
-      {"name", unidb::sql::SqlType::Text,
-       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}, false}};
+      makeColumn("id", unidb::sql::SqlType::Int,
+                 unidb::sql::SqlTypeId::Integer, false),
+      makeColumn("name", unidb::sql::SqlType::Text,
+                 unidb::sql::SqlTypeId::Text, false)};
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
@@ -50,3 +62,5 @@ TEST(ExecuteQueryActionNullTest, RejectsNullForNotNullColumnBeforeAnyInsert) {
           outcome));
   EXPECT_EQ(port.insertCalls, 0U);
 }
+
+} // namespace
