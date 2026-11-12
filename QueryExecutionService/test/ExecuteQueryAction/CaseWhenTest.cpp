@@ -103,7 +103,8 @@ TEST(ExecuteQueryActionCaseWhenTest,
   EXPECT_EQ(port.selectCalls, 0U);
 }
 
-TEST(ExecuteQueryActionCaseWhenTest, ReturnsNullForNullBranchesAndImplicitElse) {
+TEST(ExecuteQueryActionCaseWhenTest,
+     ReturnsNullForNullBranchesAndImplicitElse) {
   FakeQesRdbServicePort port;
   for (const std::int64_t id : {1, 2, 3}) {
     port.rows.push_back(SqlTupleCodec::encode(
@@ -121,8 +122,8 @@ TEST(ExecuteQueryActionCaseWhenTest, ReturnsNullForNullBranchesAndImplicitElse) 
   const auto &explicitRows =
       std::get<QueryExecutionService::QueryExecutionResult>(explicitNull).rows;
   ASSERT_EQ(explicitRows.size(), 3U);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      explicitRows[0][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(explicitRows[0][0]));
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[1][0]), 5);
   EXPECT_EQ(std::get<std::int64_t>(explicitRows[2][0]), 5);
 
@@ -135,10 +136,10 @@ TEST(ExecuteQueryActionCaseWhenTest, ReturnsNullForNullBranchesAndImplicitElse) 
       std::get<QueryExecutionService::QueryExecutionResult>(implicitNull).rows;
   ASSERT_EQ(implicitRows.size(), 3U);
   EXPECT_EQ(std::get<std::int64_t>(implicitRows[0][0]), 1);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      implicitRows[1][0]));
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      implicitRows[2][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[1][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(implicitRows[2][0]));
 }
 
 TEST(ExecuteQueryActionCaseWhenTest, UnknownWhenConditionFallsThrough) {
@@ -159,4 +160,3 @@ TEST(ExecuteQueryActionCaseWhenTest, UnknownWhenConditionFallsThrough) {
   ASSERT_EQ(rows.size(), 1U);
   EXPECT_EQ(std::get<std::int64_t>(rows[0][0]), 2);
 }
-
