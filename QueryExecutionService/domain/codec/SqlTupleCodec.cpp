@@ -193,18 +193,21 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::SqlType> &schema,
 std::vector<char>
 SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
                       const std::vector<unidb::sql::SqlValue> &values) {
-  constexpr std::uint8_t rowFormatVersion = 1;
-  const bool versioned = usesDeclaredRowFormat(schema);
+  const bool declaredRow = usesDeclaredRowFormat(schema);
   if (schema.size() != values.size()) {
     throw std::invalid_argument(
         "Tuple value count does not match table schema");
   }
 
   std::vector<char> out;
-  if (versioned) {
-    appendLittleEndian(out, rowFormatVersion);
-  }
+  std::vector<char> payload;
+  std::vector<std::uint8_t> nullBitmap((schema.size() + 7U) / 8U, 0);
   for (std::size_t index = 0; index < schema.size(); ++index) {
+    if (declaredRow && std::holds_alternative<unidb::sql::SqlNullValue>(values[index])) {
+      nullBitmap[index / 8U] |= static_cast<std::uint8_t>(1U << (index % 8U));
+      continue;
+    }
+    auto &encoded = declaredRow ? payload : out;
     const auto &column = schema[index];
     if (!column.declaredType.has_value()) {
       if (column.type == unidb::sql::SqlType::Int) {
@@ -231,7 +234,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       if (!std::holds_alternative<std::int64_t>(values[index])) {
         throw std::invalid_argument("Expected integer value");
       }
-      appendDeclaredInteger(out, column.declaredType->id,
+      appendDeclaredInteger(encoded, column.declaredType->id,
                             std::get<std::int64_t>(values[index]));
       break;
     case SqlTypeId::Boolean:
@@ -239,7 +242,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
         throw std::invalid_argument("Expected BOOLEAN value");
       }
       appendLittleEndian(
-          out,
+          encoded,
           static_cast<std::uint8_t>(
               std::get<unidb::sql::SqlBooleanValue>(values[index]) ? 1 : 0));
       break;
@@ -248,7 +251,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
         throw std::invalid_argument("Expected REAL value");
       }
       appendFloatingPoint<float, std::uint32_t>(
-          out, std::get<unidb::sql::SqlRealValue>(values[index]));
+          encoded, std::get<unidb::sql::SqlRealValue>(values[index]));
       break;
     case SqlTypeId::DoublePrecision:
       if (!std::holds_alternative<unidb::sql::SqlDoublePrecisionValue>(
@@ -256,13 +259,13 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
         throw std::invalid_argument("Expected DOUBLE PRECISION value");
       }
       appendFloatingPoint<double, std::uint64_t>(
-          out, std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
+          encoded, std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
       break;
     case SqlTypeId::Numeric:
       if (!std::holds_alternative<unidb::sql::SqlNumericValue>(values[index])) {
         throw std::invalid_argument("Expected NUMERIC value");
       }
-      appendNumeric(out, std::get<unidb::sql::SqlNumericValue>(values[index]));
+      appendNumeric(encoded, std::get<unidb::sql::SqlNumericValue>(values[index]));
       break;
     case SqlTypeId::Char:
     case SqlTypeId::Varchar:
@@ -270,7 +273,7 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
       if (!std::holds_alternative<std::string>(values[index])) {
         throw std::invalid_argument("Expected TEXT value");
       }
-      appendText(out, std::get<std::string>(values[index]), true);
+      appendText(encoded, std::get<std::string>(values[index]), true);
       break;
     default:
       throw std::invalid_argument("Tuple codec supports only integer, BOOLEAN, "
@@ -278,22 +281,49 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
     }
   }
   return out;
+  if (!declaredRow) return out;
+  if (schema.size() > std::numeric_limits<std::uint16_t>::max())
+    throw std::invalid_argument("Tuple column count exceeds row header limit");
+  out.insert(out.end(), {'U', 'D', 'B', 'R'});
+  appendLittleEndian(out, static_cast<std::uint16_t>(schema.size()));
+  appendLittleEndian(out, static_cast<std::uint16_t>(nullBitmap.size()));
+  for (const auto byte : nullBitmap) out.push_back(static_cast<char>(byte));
+  out.insert(out.end(), payload.begin(), payload.end());
+  return out;
 }
 
 std::vector<unidb::sql::SqlValue>
 SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
                       const std::vector<char> &bytes) {
-  constexpr std::uint8_t rowFormatVersion = 1;
-  const bool versioned = usesDeclaredRowFormat(schema);
+  const bool declaredRow = usesDeclaredRowFormat(schema);
   std::size_t offset = 0;
-  if (versioned &&
-      readLittleEndian<std::uint8_t>(bytes, offset) != rowFormatVersion) {
-    throw std::runtime_error("Unsupported SQL tuple row format version");
+  std::vector<std::uint8_t> nullBitmap;
+  if (declaredRow) {
+    if (bytes.size() < 8U || bytes[0] != 'U' || bytes[1] != 'D' || bytes[2] != 'B' || bytes[3] != 'R')
+      throw std::runtime_error("Tuple row header is invalid or truncated");
+    offset = 4;
+    const auto columnCount = readLittleEndian<std::uint16_t>(bytes, offset);
+    const auto bitmapLength = readLittleEndian<std::uint16_t>(bytes, offset);
+    const auto expectedBitmapLength = (schema.size() + 7U) / 8U;
+    if (columnCount != schema.size() || bitmapLength != expectedBitmapLength || bitmapLength > bytes.size() - offset)
+      throw std::runtime_error("Tuple row header does not match schema");
+    for (std::size_t index = 0; index < bitmapLength; ++index)
+      nullBitmap.push_back(static_cast<std::uint8_t>(bytes[offset++]));
+    if (!nullBitmap.empty() && schema.size() % 8U != 0U) {
+      const auto unusedMask = static_cast<std::uint8_t>(0xffU << (schema.size() % 8U));
+      if ((nullBitmap.back() & unusedMask) != 0U)
+        throw std::runtime_error("Tuple NULL bitmap has invalid unused bits");
+    }
   }
 
   std::vector<unidb::sql::SqlValue> values;
   values.reserve(schema.size());
-  for (const auto &column : schema) {
+  for (std::size_t columnIndex = 0; columnIndex < schema.size(); ++columnIndex) {
+    const auto &column = schema[columnIndex];
+    if (declaredRow && (nullBitmap[columnIndex / 8U] & (1U << (columnIndex % 8U))) != 0U) {
+      values.emplace_back(unidb::sql::SqlNullValue{});
+      continue;
+    }
     if (!column.declaredType.has_value()) {
       if (column.type == unidb::sql::SqlType::Int) {
         values.emplace_back(readLittleEndian<std::int64_t>(bytes, offset));
