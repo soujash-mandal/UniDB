@@ -31,9 +31,9 @@ semicolon is optional.
   precedence than OR).
 
 Supported column types are INT and TEXT. Supported literals are signed
-integer values and single-quoted text values. V1 does not define NULL, floating
-point values, boolean values, or subqueries. A single equality-based INNER JOIN
-is supported. Table aliases may be written with or without AS in FROM and INNER
+integer values and single-quoted text values. A single equality-based INNER JOIN
+is supported. Subqueries are limited to the IN / NOT IN WHERE form described
+below. Table aliases may be written with or without AS in FROM and INNER
 JOIN clauses; when an alias is present, qualified references use that alias.
 
 The parser describes statement syntax; table existence, column existence, type
@@ -271,3 +271,57 @@ For an unmatched row, the columns from the missing side contain a real `SqlNullV
 The current FULL OUTER JOIN implementation supports one FULL OUTER JOIN per SELECT, simple column projections, and an optional WHERE clause. It cannot be mixed with another JOIN type or combined with DISTINCT, aggregates, GROUP BY, ORDER BY, LIMIT, OFFSET, or computed projections. LEFT and RIGHT OUTER JOIN retain their existing restricted query shapes; do not assume all JOIN forms can be chained together.
 
 All outer-join inputs are read through the existing public RDB Action-backed port and joined in QES memory. FULL OUTER JOIN uses a nested-loop comparison (O(N × M)) and holds both decoded inputs, right-side match tracking, and output rows in memory. It is a full-scan implementation, not an index-backed join. The generated NULLs are result-level values; this does not introduce general NULL literals or nullable-column storage.
+
+
+## Uncorrelated IN / NOT IN SELECT subqueries
+
+A WHERE membership predicate may use either a non-empty literal list or one
+SELECT subquery:
+
+```sql
+SELECT id
+FROM people
+WHERE id IN (SELECT person_id FROM orders WHERE status = 'paid');
+
+SELECT id
+FROM people
+WHERE id NOT IN (SELECT person_id FROM orders WHERE status = 'paid');
+```
+
+The subquery must be an ordinary SELECT that returns exactly one output column.
+The output column's SQL type must match the outer predicate column, even when
+the subquery returns zero rows. The output column name does not need to match.
+The inner SELECT may use query forms already supported by QES as a standalone
+SELECT; this feature does not add new inner-query clauses.
+
+Each subquery occurrence is executed once per outer statement execution through
+the existing QES SELECT path and public RDB Action-backed port. Its one-column
+result is materialized in memory and reused while filtering outer rows. Multiple
+independent IN / NOT IN subquery predicates may appear in the same WHERE
+expression, including with AND, OR, and parentheses.
+
+The supported outer query is single-table. Correlated references, nested
+subqueries, subqueries in CASE conditions, JOIN predicates, HAVING, and other
+non-WHERE positions are rejected. UNION / UNION ALL subqueries and outer JOIN
+queries are not part of this first implementation.
+
+SQL three-valued behavior follows these rules (WHERE keeps only TRUE):
+
+| Outer value | Inner result | IN | NOT IN |
+|---|---|---|---|
+| Any value, including NULL | Empty result | FALSE | TRUE |
+| Non-NULL value | Contains a match | TRUE | FALSE |
+| Non-NULL value | No match and no NULL | FALSE | TRUE |
+| Non-NULL value | No match and at least one NULL | UNKNOWN | UNKNOWN |
+| NULL | Non-empty result | UNKNOWN | UNKNOWN |
+
+A match wins even if the inner result also contains NULL. An empty subquery is
+the exception to the usual NULL propagation: IN is FALSE and NOT IN is TRUE
+even for a NULL outer value.
+
+Execution materializes the full inner result. With O outer rows and I inner
+rows, the initial evaluator performs O(O × I) comparisons and uses O(I)
+additional memory for the materialized membership values. UniDB does not yet
+have a general SELECT-result row budget; this implementation deliberately does
+not introduce an arbitrary feature-specific cap. Large subquery results
+therefore carry the same full-result memory risk as existing SELECT execution.
