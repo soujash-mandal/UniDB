@@ -18,8 +18,23 @@ using unidb::sql::SqlValue;
 
 TEST(SqlAggregateCalculatorTest, CountsRowsIncludingEmptyInput) {
   EXPECT_EQ(std::get<std::int64_t>(
-                calculateAggregate(AggregateFunction::Count, {}, 7)),
+                calculateAggregate(AggregateFunction::Count, {}, 7, true)),
             7);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, {}, 0, true)),
+            0);
+}
+
+TEST(SqlAggregateCalculatorTest, CountsOnlyNonNullValuesForCountColumn) {
+  const std::vector<SqlValue> values{
+      std::int64_t{4}, unidb::sql::SqlNullValue{}, std::int64_t{9},
+      unidb::sql::SqlNullValue{}};
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, values, 4)),
+            2);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Count, values, 4, true)),
+            4);
   EXPECT_EQ(std::get<std::int64_t>(
                 calculateAggregate(AggregateFunction::Count, {}, 0)),
             0);
@@ -106,10 +121,38 @@ TEST(SqlAggregateCalculatorTest, RejectsSumOverflow) {
                std::invalid_argument);
 }
 
-TEST(SqlAggregateCalculatorTest, RejectsNonCountAggregatesOnEmptyInput) {
+TEST(SqlAggregateCalculatorTest, ReturnsNullForNonCountAggregatesOnEmptyInput) {
   for (const auto function : {AggregateFunction::Min, AggregateFunction::Max,
                               AggregateFunction::Sum, AggregateFunction::Avg}) {
-    EXPECT_THROW(calculateAggregate(function, {}, 0), std::invalid_argument);
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+        calculateAggregate(function, {}, 0)));
+  }
+}
+
+TEST(SqlAggregateCalculatorTest, IgnoresNullValuesForEveryAggregate) {
+  const std::vector<SqlValue> values{
+      std::int64_t{8}, unidb::sql::SqlNullValue{}, std::int64_t{2}};
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Sum, values, 3)),
+            10);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Avg, values, 3)),
+            5);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Min, values, 3)),
+            2);
+  EXPECT_EQ(std::get<std::int64_t>(
+                calculateAggregate(AggregateFunction::Max, values, 3)),
+            8);
+}
+
+TEST(SqlAggregateCalculatorTest, ReturnsNullWhenAllAggregateInputsAreNull) {
+  const std::vector<SqlValue> values{unidb::sql::SqlNullValue{},
+                                     unidb::sql::SqlNullValue{}};
+  for (const auto function : {AggregateFunction::Min, AggregateFunction::Max,
+                              AggregateFunction::Sum, AggregateFunction::Avg}) {
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+        calculateAggregate(function, values, 2)));
   }
 }
 

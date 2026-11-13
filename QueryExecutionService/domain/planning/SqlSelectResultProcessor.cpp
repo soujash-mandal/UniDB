@@ -167,16 +167,20 @@ processSelectRows(const unidb::sql::SelectStatement &select,
         SqlValueVectorLess{groupedOutputTypes}};
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
-      if (aggregate.function != AggregateFunction::Count) {
+      if (aggregate.columnName.has_value()) {
         aggregateValues.reserve(rows.size());
         for (const auto *row : rows) {
           aggregateValues.push_back((*row)[*plan.aggregateIndex]);
         }
       }
       SqlValue aggregateValue =
-          calculateAggregate(aggregate.function, aggregateValues, rows.size());
+          calculateAggregate(aggregate.function, aggregateValues, rows.size(),
+                             !aggregate.columnName.has_value());
 
       if (select.having.has_value()) {
+        if (std::holds_alternative<SqlNullValue>(aggregateValue)) {
+          continue;
+        }
         if (!plan.havingValue.has_value()) {
           throw std::logic_error("HAVING value was not planned");
         }
@@ -272,14 +276,15 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     result.columns.push_back({outputName, outputType, aggregateDescriptor});
 
     std::vector<SqlValue> aggregateValues;
-    if (aggregate.function != AggregateFunction::Count) {
+    if (aggregate.columnName.has_value()) {
       aggregateValues.reserve(matchedRows.size());
       for (const auto &row : matchedRows) {
         aggregateValues.push_back(row[*plan.aggregateIndex]);
       }
     }
     result.rows.push_back({calculateAggregate(
-        aggregate.function, aggregateValues, matchedRows.size())});
+        aggregate.function, aggregateValues, matchedRows.size(),
+        !aggregate.columnName.has_value())});
     return result;
   }
 
