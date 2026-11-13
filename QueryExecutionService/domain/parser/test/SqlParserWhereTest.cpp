@@ -329,7 +329,6 @@ TEST(SqlParserWhereTest, ParsesNullComparisonLiteral) {
 } // namespace
 } // namespace unidb::sql
 
-
 namespace unidb::sql {
 namespace {
 
@@ -339,15 +338,15 @@ TEST(SqlParserWhereTest, ParsesInAndNotInSelectSubqueries) {
        std::vector<std::pair<std::string, ComparisonOperator>>{
            {"SELECT id FROM people WHERE id IN (SELECT person_id FROM orders)",
             ComparisonOperator::In},
-           {"SELECT id FROM people WHERE id NOT IN (SELECT person_id FROM orders)",
+           {"SELECT id FROM people WHERE id NOT IN (SELECT person_id FROM "
+            "orders)",
             ComparisonOperator::NotIn}}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
     const auto &select =
         std::get<SelectStatement>(std::get<SqlStatement>(result));
     ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
-    const auto &predicate =
-        std::get<WhereExpression>(select.where).predicate;
+    const auto &predicate = std::get<WhereExpression>(select.where).predicate;
     EXPECT_EQ(predicate.comparison, expected);
     EXPECT_TRUE(predicate.isSubquery);
     ASSERT_NE(predicate.subquery, nullptr);

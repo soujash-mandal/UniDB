@@ -1469,9 +1469,8 @@ private:
       }
       if (isKeyword("SELECT")) {
         if (parsingSubquery_) {
-          return SqlParseError{
-              SqlParseErrorCode::UnsupportedStatement,
-              "Nested subqueries are not supported"};
+          return SqlParseError{SqlParseErrorCode::UnsupportedStatement,
+                               "Nested subqueries are not supported"};
         }
         parsingSubquery_ = true;
         auto subqueryResult = parseSelect();
@@ -1479,19 +1478,17 @@ private:
         if (const auto *error = std::get_if<SqlParseError>(&subqueryResult)) {
           return *error;
         }
-        const auto *subquerySelect =
-            std::get_if<SelectStatement>(&std::get<SqlStatement>(subqueryResult));
+        const auto *subquerySelect = std::get_if<SelectStatement>(
+            &std::get<SqlStatement>(subqueryResult));
         if (subquerySelect == nullptr) {
           return SqlParseError{SqlParseErrorCode::SyntaxError,
                                "IN subquery must be a SELECT statement"};
         }
         predicate.isSubquery = true;
-        predicate.subquery =
-            std::make_shared<SelectStatement>(*subquerySelect);
+        predicate.subquery = std::make_shared<SelectStatement>(*subquerySelect);
         if (!expect(TokenKind::RightParen)) {
-          return SqlParseError{
-              SqlParseErrorCode::SyntaxError,
-              "Expected ')' after IN subquery"};
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected ')' after IN subquery"};
         }
       } else {
         if (current().kind == TokenKind::RightParen) {
