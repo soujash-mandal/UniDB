@@ -864,15 +864,15 @@ TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
   const auto multiColumn =
       action.execute("SELECT id FROM people WHERE id IN (SELECT person_id, "
                      "status FROM orders)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(multiColumn));
-  EXPECT_NE(std::get<QueryExecutionError>(multiColumn)
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(multiColumn));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(multiColumn)
                 .message.find("exactly one column"),
             std::string::npos);
 
   const auto mismatch = action.execute(
       "SELECT id FROM people WHERE id IN (SELECT status FROM orders)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(mismatch));
-  EXPECT_NE(std::get<QueryExecutionError>(mismatch).message.find(
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(mismatch));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(mismatch).message.find(
                 "type does not match"),
             std::string::npos);
 
@@ -880,8 +880,8 @@ TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
       action.execute("SELECT id FROM people WHERE id IN "
                      "(SELECT status FROM orders WHERE person_id = 999)");
   ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionError>(mismatchWithEmptyResult));
-  EXPECT_NE(std::get<QueryExecutionError>(mismatchWithEmptyResult)
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(mismatchWithEmptyResult));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(mismatchWithEmptyResult)
                 .message.find("type does not match"),
             std::string::npos);
 }
@@ -893,8 +893,8 @@ TEST(ExecuteQueryActionTest, RejectsInSubqueriesForOuterJoinQueries) {
   const auto outcome = action.execute(
       "SELECT people.id FROM people INNER JOIN orders ON people.id = "
       "orders.person_id WHERE people.id IN (SELECT person_id FROM orders)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(outcome));
-  EXPECT_NE(std::get<QueryExecutionError>(outcome).message.find(
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome).message.find(
                 "single-table SELECT"),
             std::string::npos);
 }
@@ -912,8 +912,8 @@ TEST(ExecuteQueryActionTest, RejectsCorrelatedSubqueryColumnReferences) {
   const auto outcome =
       action.execute("SELECT id FROM people p WHERE id IN "
                      "(SELECT person_id FROM orders o WHERE p.id = 1)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(outcome));
-  EXPECT_NE(std::get<QueryExecutionError>(outcome).message.find(
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(outcome));
+  EXPECT_NE(std::get<QueryExecutionService::QueryExecutionError>(outcome).message.find(
                 "Unknown WHERE table reference"),
             std::string::npos);
 }
