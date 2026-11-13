@@ -241,8 +241,6 @@ TEST(SqlParserJoinTest, RejectsMalformedOrMixedLeftJoinClauses) {
   }
 }
 
-} // namespace
-
 TEST(SqlParserJoinTest, ParsesFullJoinAndFullOuterJoin) {
   SqlParserImpl parser;
   for (const auto *sql :
@@ -284,5 +282,7 @@ TEST(SqlParserJoinTest, RejectsMalformedOrMixedFullJoinClauses) {
         << sql;
   }
 }
+
+} // namespace
 
 } // namespace unidb::sql
