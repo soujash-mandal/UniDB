@@ -82,12 +82,12 @@ TEST(ExecuteQueryActionRightJoinTest,
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
-  EXPECT_EQ(result.rows[0],
-            (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
-                                   std::int64_t{250}}));
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 1);
+  EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "Ada");
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][2]), 250);
   EXPECT_TRUE(std::holds_alternative<SqlNullValue>(result.rows[1][0]));
   EXPECT_TRUE(std::holds_alternative<SqlNullValue>(result.rows[1][1]));
-  EXPECT_EQ(result.rows[1][2], std::int64_t{400});
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][2]), 400);
 }
 
 TEST(ExecuteQueryActionRightJoinTest,
@@ -107,10 +107,10 @@ TEST(ExecuteQueryActionRightJoinTest,
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 2U);
-  EXPECT_EQ(rows[0],
-            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
-  EXPECT_EQ(rows[1],
-            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{300}}));
+  EXPECT_EQ(std::get<std::string>(rows[0][0]), "Ada");
+  EXPECT_EQ(std::get<std::int64_t>(rows[0][1]), 250);
+  EXPECT_EQ(std::get<std::string>(rows[1][0]), "Ada");
+  EXPECT_EQ(std::get<std::int64_t>(rows[1][1]), 300);
 }
 
 TEST(ExecuteQueryActionRightJoinTest,
@@ -130,7 +130,7 @@ TEST(ExecuteQueryActionRightJoinTest,
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 1U);
   EXPECT_TRUE(std::holds_alternative<SqlNullValue>(rows[0][0]));
-  EXPECT_EQ(rows[0][1], std::int64_t{250});
+  EXPECT_EQ(std::get<std::int64_t>(rows[0][1]), 250);
 }
 
 TEST(ExecuteQueryActionRightJoinTest, EmptyLeftTableNullExtendsEveryRightRow) {
@@ -149,7 +149,7 @@ TEST(ExecuteQueryActionRightJoinTest, EmptyLeftTableNullExtendsEveryRightRow) {
   ASSERT_EQ(rows[0].size(), 5U);
   EXPECT_TRUE(std::holds_alternative<SqlNullValue>(rows[0][0]));
   EXPECT_TRUE(std::holds_alternative<SqlNullValue>(rows[0][1]));
-  EXPECT_EQ(rows[0][2], std::int64_t{10});
+  EXPECT_EQ(std::get<std::int64_t>(rows[0][2]), 10);
 }
 
 } // namespace
