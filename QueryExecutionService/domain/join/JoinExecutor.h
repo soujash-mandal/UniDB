@@ -28,6 +28,13 @@ QueryExecutionResult executeRightJoin(
     const std::vector<std::vector<unidb::sql::SqlValue>> &leftRows,
     const std::vector<std::vector<unidb::sql::SqlValue>> &rightRows);
 
+QueryExecutionResult executeFullJoin(
+    const unidb::sql::SelectStatement &select,
+    const std::vector<unidb::sql::ColumnDefinition> &leftSchema,
+    const std::vector<unidb::sql::ColumnDefinition> &rightSchema,
+    const std::vector<std::vector<unidb::sql::SqlValue>> &leftRows,
+    const std::vector<std::vector<unidb::sql::SqlValue>> &rightRows);
+
 QueryExecutionResult executeCrossJoin(
     const unidb::sql::SelectStatement &select,
     const std::vector<unidb::sql::ColumnDefinition> &leftSchema,
