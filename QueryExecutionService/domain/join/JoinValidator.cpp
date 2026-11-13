@@ -96,7 +96,6 @@ void validateLeftJoinColumns(const SelectStatement &select,
                                 {leftQualifier, rightQualifier});
 }
 
-
 void validateFullJoinColumns(const SelectStatement &select,
                              const std::vector<ColumnDefinition> &leftSchema,
                              const std::vector<ColumnDefinition> &rightSchema) {
@@ -137,7 +136,7 @@ void validateFullJoinColumns(const SelectStatement &select,
         "FULL JOIN currently supports simple SELECT projections and WHERE");
   }
   (void)buildJoinProjectionPlan(select, {leftSchema, rightSchema},
-                               {leftQualifier, rightQualifier});
+                                {leftQualifier, rightQualifier});
 }
 
 void validateRightJoinColumns(

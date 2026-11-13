@@ -74,17 +74,20 @@ TEST(ExecuteQueryActionFullJoinTest,
   const auto outcome = fixture.execute(
       "SELECT users.id, users.name, orders.id, orders.amount FROM users "
       "FULL OUTER JOIN orders ON users.id = orders.user_id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 3U);
-  EXPECT_EQ(rows[0], (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
-      std::int64_t{10}, std::int64_t{250}}));
+  EXPECT_EQ(rows[0],
+            (std::vector<SqlValue>{std::int64_t{1}, std::string{"Ada"},
+                                   std::int64_t{10}, std::int64_t{250}}));
   EXPECT_EQ(rows[1], (std::vector<SqlValue>{std::int64_t{2}, std::string{"Lin"},
-      SqlNullValue{}, SqlNullValue{}}));
-  EXPECT_EQ(rows[2], (std::vector<SqlValue>{SqlNullValue{}, SqlNullValue{},
-      std::int64_t{11}, std::int64_t{400}}));
+                                            SqlNullValue{}, SqlNullValue{}}));
+  EXPECT_EQ(rows[2],
+            (std::vector<SqlValue>{SqlNullValue{}, SqlNullValue{},
+                                   std::int64_t{11}, std::int64_t{400}}));
 }
 
 TEST(ExecuteQueryActionFullJoinTest, EmitsEveryDuplicateMatch) {
@@ -92,16 +95,19 @@ TEST(ExecuteQueryActionFullJoinTest, EmitsEveryDuplicateMatch) {
   fixture.addUser(std::int64_t{1}, "Ada");
   fixture.addOrder(10, std::int64_t{1}, 250);
   fixture.addOrder(11, std::int64_t{1}, 300);
-  const auto outcome = fixture.execute(
-      "SELECT u.name, o.amount FROM users u FULL JOIN orders o "
-      "ON u.id = o.user_id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  const auto outcome =
+      fixture.execute("SELECT u.name, o.amount FROM users u FULL JOIN orders o "
+                      "ON u.id = o.user_id");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 2U);
-  EXPECT_EQ(rows[0], (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
-  EXPECT_EQ(rows[1], (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{300}}));
+  EXPECT_EQ(rows[0],
+            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
+  EXPECT_EQ(rows[1],
+            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{300}}));
 }
 
 TEST(ExecuteQueryActionFullJoinTest, NullJoinKeysNeverMatch) {
@@ -111,13 +117,16 @@ TEST(ExecuteQueryActionFullJoinTest, NullJoinKeysNeverMatch) {
   const auto outcome = fixture.execute(
       "SELECT users.name, orders.amount FROM users FULL JOIN orders "
       "ON users.id = orders.user_id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   const auto &rows =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 2U);
-  EXPECT_EQ(rows[0], (std::vector<SqlValue>{std::string{"Unknown"}, SqlNullValue{}}));
-  EXPECT_EQ(rows[1], (std::vector<SqlValue>{SqlNullValue{}, std::int64_t{250}}));
+  EXPECT_EQ(rows[0],
+            (std::vector<SqlValue>{std::string{"Unknown"}, SqlNullValue{}}));
+  EXPECT_EQ(rows[1],
+            (std::vector<SqlValue>{SqlNullValue{}, std::int64_t{250}}));
 }
 
 TEST(ExecuteQueryActionFullJoinTest,
@@ -128,8 +137,9 @@ TEST(ExecuteQueryActionFullJoinTest,
   const auto outcome = fixture.execute(
       "SELECT users.name, orders.amount FROM users FULL JOIN orders "
       "ON users.id = orders.user_id WHERE orders.amount > 500");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      outcome));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
   EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(outcome)
                   .rows.empty());
 }
@@ -140,34 +150,40 @@ TEST(ExecuteQueryActionFullJoinTest, HandlesEitherTableBeingEmpty) {
   const auto rightOnly = leftEmpty.execute(
       "SELECT users.id, orders.amount FROM users FULL JOIN orders "
       "ON users.id = orders.user_id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      rightOnly));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          rightOnly));
   const auto &rightRows =
       std::get<QueryExecutionService::QueryExecutionResult>(rightOnly).rows;
   ASSERT_EQ(rightRows.size(), 1U);
-  EXPECT_EQ(rightRows[0], (std::vector<SqlValue>{SqlNullValue{}, std::int64_t{250}}));
+  EXPECT_EQ(rightRows[0],
+            (std::vector<SqlValue>{SqlNullValue{}, std::int64_t{250}}));
 
   FullJoinFixture rightEmpty;
   rightEmpty.addUser(std::int64_t{1}, "Ada");
   const auto leftOnly = rightEmpty.execute(
       "SELECT users.id, orders.amount FROM users FULL JOIN orders "
       "ON users.id = orders.user_id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-      leftOnly));
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          leftOnly));
   const auto &leftRows =
       std::get<QueryExecutionService::QueryExecutionResult>(leftOnly).rows;
   ASSERT_EQ(leftRows.size(), 1U);
-  EXPECT_EQ(leftRows[0], (std::vector<SqlValue>{std::int64_t{1}, SqlNullValue{}}));
+  EXPECT_EQ(leftRows[0],
+            (std::vector<SqlValue>{std::int64_t{1}, SqlNullValue{}}));
 }
 
 TEST(ExecuteQueryActionFullJoinTest, RejectsJoinKeysFromTheSameTable) {
   FullJoinFixture fixture;
   const auto outcome = fixture.execute(
       "SELECT * FROM users FULL JOIN orders ON users.id = users.id");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionError>(
-      outcome));
-  EXPECT_EQ(std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
-            "FULL JOIN ON must compare columns from both tables");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          outcome));
+  EXPECT_EQ(
+      std::get<QueryExecutionService::QueryExecutionError>(outcome).message,
+      "FULL JOIN ON must compare columns from both tables");
 }
 
 } // namespace

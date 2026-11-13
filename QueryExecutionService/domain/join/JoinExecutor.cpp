@@ -392,7 +392,6 @@ executeRightJoin(const SelectStatement &select,
   return result;
 }
 
-
 QueryExecutionResult
 executeFullJoin(const SelectStatement &select,
                 const std::vector<ColumnDefinition> &leftSchema,
@@ -408,7 +407,7 @@ executeFullJoin(const SelectStatement &select,
   const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
                                          rightQualifier, rightSchema);
   const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
-                                           rightQualifier, rightSchema);
+                                          rightQualifier, rightSchema);
   if (leftKey.tableName == rightKey.tableName) {
     throw std::invalid_argument(
         "FULL JOIN ON must compare columns from both tables");
@@ -527,7 +526,8 @@ executeFullJoin(const SelectStatement &select,
     }
   }
 
-  for (std::size_t rightIndex = 0; rightIndex < rightRows.size(); ++rightIndex) {
+  for (std::size_t rightIndex = 0; rightIndex < rightRows.size();
+       ++rightIndex) {
     if (matchedRightRows[rightIndex]) {
       continue;
     }
