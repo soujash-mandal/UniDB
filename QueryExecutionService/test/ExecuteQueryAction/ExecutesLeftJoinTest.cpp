@@ -137,9 +137,9 @@ TEST(ExecuteQueryActionLeftJoinTest, EmptyRightTableNullExtendsEveryLeftRow) {
   fixture.addUser(std::int64_t{1}, "Ada");
   fixture.addUser(std::int64_t{2}, "Lin");
 
-  const auto outcome = fixture.execute(
-      "SELECT * FROM users LEFT OUTER JOIN orders "
-      "ON users.id = orders.user_id");
+  const auto outcome =
+      fixture.execute("SELECT * FROM users LEFT OUTER JOIN orders "
+                      "ON users.id = orders.user_id");
 
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
@@ -169,20 +169,18 @@ TEST(ExecuteQueryActionLeftJoinTest, AppliesWhereAfterNullExtension) {
   const auto &unmatchedRows =
       std::get<QueryExecutionService::QueryExecutionResult>(unmatched).rows;
   ASSERT_EQ(unmatchedRows.size(), 1U);
-  EXPECT_EQ(unmatchedRows[0],
-            (std::vector<SqlValue>{std::string{"Lin"}}));
+  EXPECT_EQ(unmatchedRows[0], (std::vector<SqlValue>{std::string{"Lin"}}));
 
-  const auto filtered = fixture.execute(
-      "SELECT users.name FROM users LEFT JOIN orders "
-      "ON users.id = orders.user_id WHERE orders.amount > 100");
+  const auto filtered =
+      fixture.execute("SELECT users.name FROM users LEFT JOIN orders "
+                      "ON users.id = orders.user_id WHERE orders.amount > 100");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           filtered));
   const auto &filteredRows =
       std::get<QueryExecutionService::QueryExecutionResult>(filtered).rows;
   ASSERT_EQ(filteredRows.size(), 1U);
-  EXPECT_EQ(filteredRows[0],
-            (std::vector<SqlValue>{std::string{"Ada"}}));
+  EXPECT_EQ(filteredRows[0], (std::vector<SqlValue>{std::string{"Ada"}}));
 }
 
 TEST(ExecuteQueryActionLeftJoinTest, SupportsAliasesAndRejectsInvalidJoinKeys) {
@@ -190,9 +188,9 @@ TEST(ExecuteQueryActionLeftJoinTest, SupportsAliasesAndRejectsInvalidJoinKeys) {
   fixture.addUser(std::int64_t{1}, "Ada");
   fixture.addOrder(10, 1, 250);
 
-  const auto aliased = fixture.execute(
-      "SELECT u.name, o.amount FROM users u LEFT JOIN orders o "
-      "ON u.id = o.user_id");
+  const auto aliased =
+      fixture.execute("SELECT u.name, o.amount FROM users u LEFT JOIN orders o "
+                      "ON u.id = o.user_id");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           aliased));
@@ -202,9 +200,8 @@ TEST(ExecuteQueryActionLeftJoinTest, SupportsAliasesAndRejectsInvalidJoinKeys) {
   EXPECT_EQ(rows[0],
             (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
 
-  const auto invalid = fixture.execute(
-      "SELECT * FROM users LEFT JOIN orders "
-      "ON users.id = users.id");
+  const auto invalid = fixture.execute("SELECT * FROM users LEFT JOIN orders "
+                                       "ON users.id = users.id");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           invalid));

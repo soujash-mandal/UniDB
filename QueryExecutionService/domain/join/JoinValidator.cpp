@@ -53,10 +53,9 @@ void validateInnerJoinColumns(
                                 {leftQualifier, rightQualifier});
 }
 
-void validateLeftJoinColumns(
-    const SelectStatement &select,
-    const std::vector<ColumnDefinition> &leftSchema,
-    const std::vector<ColumnDefinition> &rightSchema) {
+void validateLeftJoinColumns(const SelectStatement &select,
+                             const std::vector<ColumnDefinition> &leftSchema,
+                             const std::vector<ColumnDefinition> &rightSchema) {
   const auto &join = *select.leftJoin;
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);
@@ -94,7 +93,7 @@ void validateLeftJoinColumns(
         "LEFT JOIN currently supports simple SELECT projections and WHERE");
   }
   (void)buildJoinProjectionPlan(select, {leftSchema, rightSchema},
-                               {leftQualifier, rightQualifier});
+                                {leftQualifier, rightQualifier});
 }
 
 } // namespace QueryExecutionService::domain
