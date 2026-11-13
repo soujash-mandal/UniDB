@@ -841,8 +841,9 @@ TEST(ExecuteQueryActionTest, ExecutesEachSubqueryPredicateOncePerStatement) {
   ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(outcome));
   EXPECT_EQ(port.selectCalls, 3U);
   const auto &rows = std::get<QueryExecutionResult>(outcome).rows;
-  ASSERT_EQ(rows.size(), 1U);
-  EXPECT_EQ(std::get<std::int64_t>(rows.front().front()), 2);
+  ASSERT_EQ(rows.size(), 2U);
+  EXPECT_EQ(std::get<std::int64_t>(rows[0].front()), 1);
+  EXPECT_EQ(std::get<std::int64_t>(rows[1].front()), 2);
 }
 
 TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
