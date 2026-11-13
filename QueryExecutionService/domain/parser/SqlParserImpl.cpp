@@ -521,7 +521,9 @@ private:
     ++position_; // CASE
     CaseExpression expression;
     while (matchKeyword("WHEN")) {
+      parsingCaseCondition_ = true;
       auto condition = parseWhereOrExpression();
+      parsingCaseCondition_ = false;
       if (std::holds_alternative<SqlParseError>(condition)) {
         return std::get<SqlParseError>(std::move(condition));
       }
@@ -1467,25 +1469,55 @@ private:
         return SqlParseError{SqlParseErrorCode::SyntaxError,
                              "Expected '(' after IN"};
       }
-      if (current().kind == TokenKind::RightParen) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "IN list must contain at least one value"};
-      }
-      while (true) {
-        auto value = parseWhereLiteral();
-        if (std::holds_alternative<SqlParseError>(value)) {
-          return std::get<SqlParseError>(std::move(value));
+      if (isKeyword("SELECT")) {
+        if (parsingCaseCondition_) {
+          return SqlParseError{
+              SqlParseErrorCode::UnsupportedStatement,
+              "Subqueries in CASE expressions are not supported"};
         }
-        auto parsed = std::get<ParsedSqlLiteral>(std::move(value));
-        predicate.values.push_back(std::move(parsed.value));
-        predicate.typedValues.push_back(std::move(parsed.typed));
-        if (!match(TokenKind::Comma)) {
-          break;
+        if (parsingSubquery_) {
+          return SqlParseError{SqlParseErrorCode::UnsupportedStatement,
+                               "Nested subqueries are not supported"};
         }
-      }
-      if (!expect(TokenKind::RightParen)) {
-        return SqlParseError{SqlParseErrorCode::SyntaxError,
-                             "Expected ')' after IN list"};
+        parsingSubquery_ = true;
+        auto subqueryResult = parseSelect();
+        parsingSubquery_ = false;
+        if (const auto *error = std::get_if<SqlParseError>(&subqueryResult)) {
+          return *error;
+        }
+        const auto *subquerySelect = std::get_if<SelectStatement>(
+            &std::get<SqlStatement>(subqueryResult));
+        if (subquerySelect == nullptr) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "IN subquery must be a SELECT statement"};
+        }
+        predicate.isSubquery = true;
+        predicate.subquery = std::make_shared<SelectStatement>(*subquerySelect);
+        if (!expect(TokenKind::RightParen)) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected ')' after IN subquery"};
+        }
+      } else {
+        if (current().kind == TokenKind::RightParen) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "IN list must contain at least one value"};
+        }
+        while (true) {
+          auto value = parseWhereLiteral();
+          if (std::holds_alternative<SqlParseError>(value)) {
+            return std::get<SqlParseError>(std::move(value));
+          }
+          auto parsed = std::get<ParsedSqlLiteral>(std::move(value));
+          predicate.values.push_back(std::move(parsed.value));
+          predicate.typedValues.push_back(std::move(parsed.typed));
+          if (!match(TokenKind::Comma)) {
+            break;
+          }
+        }
+        if (!expect(TokenKind::RightParen)) {
+          return SqlParseError{SqlParseErrorCode::SyntaxError,
+                               "Expected ')' after IN list"};
+        }
       }
     } else {
       switch (current().kind) {
@@ -1663,6 +1695,8 @@ private:
   std::size_t whereNestingDepth_{0};
   std::size_t expressionNestingDepth_{0};
   std::size_t unaryNestingDepth_{0};
+  bool parsingSubquery_{false};
+  bool parsingCaseCondition_{false};
 };
 
 } // namespace

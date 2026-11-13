@@ -328,3 +328,58 @@ TEST(SqlParserWhereTest, ParsesNullComparisonLiteral) {
 
 } // namespace
 } // namespace unidb::sql
+
+namespace unidb::sql {
+namespace {
+
+TEST(SqlParserWhereTest, ParsesInAndNotInSelectSubqueries) {
+  SqlParserImpl parser;
+  for (const auto &[sql, expected] :
+       std::vector<std::pair<std::string, ComparisonOperator>>{
+           {"SELECT id FROM people WHERE id IN (SELECT person_id FROM orders)",
+            ComparisonOperator::In},
+           {"SELECT id FROM people WHERE id NOT IN (SELECT person_id FROM "
+            "orders)",
+            ComparisonOperator::NotIn}}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(std::holds_alternative<WhereExpression>(select.where));
+    const auto &predicate = std::get<WhereExpression>(select.where).predicate;
+    EXPECT_EQ(predicate.comparison, expected);
+    EXPECT_TRUE(predicate.isSubquery);
+    ASSERT_NE(predicate.subquery, nullptr);
+    EXPECT_EQ(predicate.subquery->tableName, "orders");
+    ASSERT_EQ(predicate.subquery->columnNames.size(), 1U);
+    EXPECT_EQ(predicate.subquery->columnNames.front(), "person_id");
+  }
+}
+
+TEST(SqlParserWhereTest, PreservesSubqueriesInsideBooleanWhereExpressions) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM people WHERE (id IN (SELECT person_id FROM orders) "
+      "OR id = 7) AND id > 1");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &select =
+      std::get<SelectStatement>(std::get<SqlStatement>(result));
+  const auto &where = std::get<WhereExpression>(select.where);
+  ASSERT_EQ(where.kind, WhereExpression::Kind::And);
+  ASSERT_EQ(where.children.size(), 2U);
+  ASSERT_EQ(where.children[0].kind, WhereExpression::Kind::Or);
+  EXPECT_TRUE(where.children[0].children[0].predicate.isSubquery);
+}
+
+TEST(SqlParserWhereTest, RejectsNestedSelectSubqueries) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "SELECT id FROM people WHERE id IN (SELECT person_id FROM orders "
+      "WHERE person_id IN (SELECT id FROM archived))");
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::UnsupportedStatement);
+}
+
+} // namespace
+} // namespace unidb::sql
