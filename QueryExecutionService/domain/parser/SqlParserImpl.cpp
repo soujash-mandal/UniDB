@@ -521,7 +521,9 @@ private:
     ++position_; // CASE
     CaseExpression expression;
     while (matchKeyword("WHEN")) {
+      parsingCaseCondition_ = true;
       auto condition = parseWhereOrExpression();
+      parsingCaseCondition_ = false;
       if (std::holds_alternative<SqlParseError>(condition)) {
         return std::get<SqlParseError>(std::move(condition));
       }
@@ -1468,6 +1470,11 @@ private:
                              "Expected '(' after IN"};
       }
       if (isKeyword("SELECT")) {
+        if (parsingCaseCondition_) {
+          return SqlParseError{
+              SqlParseErrorCode::UnsupportedStatement,
+              "Subqueries in CASE expressions are not supported"};
+        }
         if (parsingSubquery_) {
           return SqlParseError{SqlParseErrorCode::UnsupportedStatement,
                                "Nested subqueries are not supported"};
@@ -1689,6 +1696,7 @@ private:
   std::size_t expressionNestingDepth_{0};
   std::size_t unaryNestingDepth_{0};
   bool parsingSubquery_{false};
+  bool parsingCaseCondition_{false};
 };
 
 } // namespace
