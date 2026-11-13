@@ -209,9 +209,8 @@ matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate,
   const auto isNull = [](const SqlValue &value) {
     return std::holds_alternative<unidb::sql::SqlNullValue>(value);
   };
-  const bool isMembership =
-      predicate.comparison == ComparisonOperator::In ||
-      predicate.comparison == ComparisonOperator::NotIn;
+  const bool isMembership = predicate.comparison == ComparisonOperator::In ||
+                            predicate.comparison == ComparisonOperator::NotIn;
   if (isMembership &&
       std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)) {
     if (predicate.isSubquery && predicate.values.empty()) {

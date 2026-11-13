@@ -139,10 +139,10 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
     SelectStatement executableSelect = *select;
     std::optional<std::vector<ColumnDefinition>> subqueryOuterSchema;
-    if (auto *where = std::get_if<unidb::sql::WhereExpression>(
-            &executableSelect.where)) {
-      std::function<bool(const unidb::sql::WhereExpression &)> containsSubquery =
-          [&](const auto &expression) {
+    if (auto *where =
+            std::get_if<unidb::sql::WhereExpression>(&executableSelect.where)) {
+      std::function<bool(const unidb::sql::WhereExpression &)>
+          containsSubquery = [&](const auto &expression) {
             if (expression.kind ==
                     unidb::sql::WhereExpression::Kind::Predicate &&
                 expression.predicate.subquery != nullptr) {
@@ -155,8 +155,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
         if (!select->innerJoins.empty() || select->leftJoin.has_value() ||
             select->rightJoin.has_value() || select->fullJoin.has_value() ||
             select->crossJoin.has_value()) {
-          throw std::invalid_argument(
-              "IN subqueries are supported only in single-table SELECT queries");
+          throw std::invalid_argument("IN subqueries are supported only in "
+                                      "single-table SELECT queries");
         }
         subqueryOuterSchema =
             rdbServicePort.getTableDefinition(select->tableName);
@@ -226,8 +226,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
               predicate.values.reserve(subqueryResult.rows.size());
               for (const auto &row : subqueryResult.rows) {
                 if (row.size() != 1U) {
-                  throw std::invalid_argument(
-                      "IN subquery returned a row with an invalid column count");
+                  throw std::invalid_argument("IN subquery returned a row with "
+                                              "an invalid column count");
                 }
                 predicate.values.push_back(row.front());
               }

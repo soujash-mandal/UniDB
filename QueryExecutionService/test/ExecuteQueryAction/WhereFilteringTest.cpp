@@ -772,7 +772,6 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
             "missing id");
 }
 
-
 TEST(ExecuteQueryActionTest, ExecutesInAndNotInSubqueriesWithSqlNullSemantics) {
   FakeQesRdbServicePort port;
   using namespace unidb::sql;
@@ -805,17 +804,18 @@ TEST(ExecuteQueryActionTest, ExecutesInAndNotInSubqueriesWithSqlNullSemantics) {
   ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(notIn));
   EXPECT_TRUE(std::get<QueryExecutionResult>(notIn).rows.empty());
 
-  const auto emptyNotIn = action.execute(
-      "SELECT id FROM people WHERE id NOT IN "
-      "(SELECT person_id FROM orders WHERE person_id = 999)");
+  const auto emptyNotIn =
+      action.execute("SELECT id FROM people WHERE id NOT IN "
+                     "(SELECT person_id FROM orders WHERE person_id = 999)");
   ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(emptyNotIn));
   const auto &emptyNotInRows = std::get<QueryExecutionResult>(emptyNotIn).rows;
   ASSERT_EQ(emptyNotInRows.size(), 3U);
-  EXPECT_TRUE(std::holds_alternative<SqlNullValue>(emptyNotInRows.back().front()));
+  EXPECT_TRUE(
+      std::holds_alternative<SqlNullValue>(emptyNotInRows.back().front()));
 
-  const auto emptyIn = action.execute(
-      "SELECT id FROM people WHERE id IN "
-      "(SELECT person_id FROM orders WHERE person_id = 999)");
+  const auto emptyIn =
+      action.execute("SELECT id FROM people WHERE id IN "
+                     "(SELECT person_id FROM orders WHERE person_id = 999)");
   ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(emptyIn));
   EXPECT_TRUE(std::get<QueryExecutionResult>(emptyIn).rows.empty());
 }
@@ -849,23 +849,23 @@ TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
   FakeQesRdbServicePort port;
   using namespace unidb::sql;
   const std::vector<ColumnDefinition> peopleSchema{{"id", SqlType::Int}};
-  const std::vector<ColumnDefinition> ordersSchema{
-      {"person_id", SqlType::Int}, {"status", SqlType::Text}};
+  const std::vector<ColumnDefinition> ordersSchema{{"person_id", SqlType::Int},
+                                                   {"status", SqlType::Text}};
   port.schemasByTable["people"] = peopleSchema;
   port.schemasByTable["orders"] = ordersSchema;
   port.rowsByTable["people"] = {
       SqlTupleCodec::encode(peopleSchema, {std::int64_t{1}})};
-  port.rowsByTable["orders"] = {
-      SqlTupleCodec::encode(ordersSchema,
-                            {std::int64_t{1}, std::string("paid")})};
+  port.rowsByTable["orders"] = {SqlTupleCodec::encode(
+      ordersSchema, {std::int64_t{1}, std::string("paid")})};
   SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto multiColumn = action.execute(
-      "SELECT id FROM people WHERE id IN (SELECT person_id, status FROM orders)");
+  const auto multiColumn =
+      action.execute("SELECT id FROM people WHERE id IN (SELECT person_id, "
+                     "status FROM orders)");
   ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(multiColumn));
-  EXPECT_NE(std::get<QueryExecutionError>(multiColumn).message.find(
-                "exactly one column"),
+  EXPECT_NE(std::get<QueryExecutionError>(multiColumn)
+                .message.find("exactly one column"),
             std::string::npos);
 
   const auto mismatch = action.execute(
