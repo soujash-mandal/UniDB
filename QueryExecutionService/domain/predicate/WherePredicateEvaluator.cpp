@@ -206,12 +206,24 @@ matchesWhere(const SqlValue &rowValue, const WhereEquals &predicate,
                ? SqlTruthValue::False
                : SqlTruthValue::True;
   }
-  if (std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)) {
-    return SqlTruthValue::Unknown;
-  }
   const auto isNull = [](const SqlValue &value) {
     return std::holds_alternative<unidb::sql::SqlNullValue>(value);
   };
+  const bool isMembership =
+      predicate.comparison == ComparisonOperator::In ||
+      predicate.comparison == ComparisonOperator::NotIn;
+  if (isMembership &&
+      std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)) {
+    if (predicate.isSubquery && predicate.values.empty()) {
+      return predicate.comparison == ComparisonOperator::In
+                 ? SqlTruthValue::False
+                 : SqlTruthValue::True;
+    }
+    return SqlTruthValue::Unknown;
+  }
+  if (std::holds_alternative<unidb::sql::SqlNullValue>(rowValue)) {
+    return SqlTruthValue::Unknown;
+  }
   if (predicate.comparison == ComparisonOperator::Like ||
       predicate.comparison == ComparisonOperator::NotLike) {
     if (isNull(predicate.value))
@@ -365,7 +377,7 @@ compileWhereExpression(const WhereExpression &expression,
       throw std::invalid_argument("LIKE pattern must be TEXT");
     }
     if (isMembership) {
-      if (predicate.values.empty()) {
+      if (predicate.values.empty() && !predicate.isSubquery) {
         throw std::invalid_argument("IN list must contain at least one value");
       }
       for (const auto &value : predicate.values) {

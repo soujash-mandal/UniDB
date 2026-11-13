@@ -771,3 +771,120 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
   EXPECT_EQ(std::get<std::string>(unknownOrTrueResult.rows[0][0]),
             "missing id");
 }
+
+
+TEST(ExecuteQueryActionTest, ExecutesInAndNotInSubqueriesWithSqlNullSemantics) {
+  FakeQesRdbServicePort port;
+  using namespace unidb::sql;
+  const std::vector<ColumnDefinition> peopleSchema{
+      {"id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::BigInt, {}}},
+      {"name", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
+  const std::vector<ColumnDefinition> ordersSchema{
+      {"person_id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::BigInt, {}}}};
+  port.schemasByTable["people"] = peopleSchema;
+  port.schemasByTable["orders"] = ordersSchema;
+  port.rowsByTable["people"] = {
+      SqlTupleCodec::encode(peopleSchema, {std::int64_t{1}, std::string("A")}),
+      SqlTupleCodec::encode(peopleSchema, {std::int64_t{2}, std::string("B")}),
+      SqlTupleCodec::encode(peopleSchema, {SqlNullValue{}, std::string("C")})};
+  port.rowsByTable["orders"] = {
+      SqlTupleCodec::encode(ordersSchema, {std::int64_t{2}}),
+      SqlTupleCodec::encode(ordersSchema, {SqlNullValue{}})};
+  SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto in = action.execute(
+      "SELECT id FROM people WHERE id IN (SELECT person_id FROM orders)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(in));
+  const auto &inRows = std::get<QueryExecutionResult>(in).rows;
+  ASSERT_EQ(inRows.size(), 1U);
+  EXPECT_EQ(std::get<std::int64_t>(inRows.front().front()), 2);
+
+  const auto notIn = action.execute(
+      "SELECT id FROM people WHERE id NOT IN (SELECT person_id FROM orders)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(notIn));
+  EXPECT_TRUE(std::get<QueryExecutionResult>(notIn).rows.empty());
+
+  const auto emptyNotIn = action.execute(
+      "SELECT id FROM people WHERE id NOT IN "
+      "(SELECT person_id FROM orders WHERE person_id = 999)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(emptyNotIn));
+  const auto &emptyNotInRows = std::get<QueryExecutionResult>(emptyNotIn).rows;
+  ASSERT_EQ(emptyNotInRows.size(), 3U);
+  EXPECT_TRUE(std::holds_alternative<SqlNullValue>(emptyNotInRows.back().front()));
+
+  const auto emptyIn = action.execute(
+      "SELECT id FROM people WHERE id IN "
+      "(SELECT person_id FROM orders WHERE person_id = 999)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(emptyIn));
+  EXPECT_TRUE(std::get<QueryExecutionResult>(emptyIn).rows.empty());
+}
+
+TEST(ExecuteQueryActionTest, ExecutesEachSubqueryPredicateOncePerStatement) {
+  FakeQesRdbServicePort port;
+  using namespace unidb::sql;
+  const std::vector<ColumnDefinition> peopleSchema{{"id", SqlType::Int}};
+  const std::vector<ColumnDefinition> ordersSchema{{"person_id", SqlType::Int}};
+  port.schemasByTable["people"] = peopleSchema;
+  port.schemasByTable["orders"] = ordersSchema;
+  port.rowsByTable["people"] = {
+      SqlTupleCodec::encode(peopleSchema, {std::int64_t{1}}),
+      SqlTupleCodec::encode(peopleSchema, {std::int64_t{2}})};
+  port.rowsByTable["orders"] = {
+      SqlTupleCodec::encode(ordersSchema, {std::int64_t{2}})};
+  SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT id FROM people WHERE id IN (SELECT person_id FROM orders) "
+      "OR id NOT IN (SELECT person_id FROM orders)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(outcome));
+  EXPECT_EQ(port.selectCalls, 3U);
+  const auto &rows = std::get<QueryExecutionResult>(outcome).rows;
+  ASSERT_EQ(rows.size(), 1U);
+  EXPECT_EQ(std::get<std::int64_t>(rows.front().front()), 2);
+}
+
+TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
+  FakeQesRdbServicePort port;
+  using namespace unidb::sql;
+  const std::vector<ColumnDefinition> peopleSchema{{"id", SqlType::Int}};
+  const std::vector<ColumnDefinition> ordersSchema{
+      {"person_id", SqlType::Int}, {"status", SqlType::Text}};
+  port.schemasByTable["people"] = peopleSchema;
+  port.schemasByTable["orders"] = ordersSchema;
+  port.rowsByTable["people"] = {
+      SqlTupleCodec::encode(peopleSchema, {std::int64_t{1}})};
+  port.rowsByTable["orders"] = {
+      SqlTupleCodec::encode(ordersSchema,
+                            {std::int64_t{1}, std::string("paid")})};
+  SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto multiColumn = action.execute(
+      "SELECT id FROM people WHERE id IN (SELECT person_id, status FROM orders)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(multiColumn));
+  EXPECT_NE(std::get<QueryExecutionError>(multiColumn).message.find(
+                "exactly one column"),
+            std::string::npos);
+
+  const auto mismatch = action.execute(
+      "SELECT id FROM people WHERE id IN (SELECT status FROM orders)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(mismatch));
+  EXPECT_NE(std::get<QueryExecutionError>(mismatch).message.find(
+                "type does not match"),
+            std::string::npos);
+}
+
+TEST(ExecuteQueryActionTest, RejectsInSubqueriesForOuterJoinQueries) {
+  FakeQesRdbServicePort port;
+  SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome = action.execute(
+      "SELECT people.id FROM people INNER JOIN orders ON people.id = "
+      "orders.person_id WHERE people.id IN (SELECT person_id FROM orders)");
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(outcome));
+  EXPECT_NE(std::get<QueryExecutionError>(outcome).message.find(
+                "single-table SELECT"),
+            std::string::npos);
+}

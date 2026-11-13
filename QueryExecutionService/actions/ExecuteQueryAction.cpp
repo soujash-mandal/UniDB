@@ -8,6 +8,9 @@
 #include "../domain/planning/SqlStatementRules.h"
 #include "../domain/schema/SqlSchemaResolver.h"
 
+#include <algorithm>
+#include <functional>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
@@ -134,6 +137,105 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
+    SelectStatement executableSelect = *select;
+    std::optional<std::vector<ColumnDefinition>> subqueryOuterSchema;
+    if (auto *where = std::get_if<unidb::sql::WhereExpression>(
+            &executableSelect.where)) {
+      std::function<bool(const unidb::sql::WhereExpression &)> containsSubquery =
+          [&](const auto &expression) {
+            if (expression.kind ==
+                    unidb::sql::WhereExpression::Kind::Predicate &&
+                expression.predicate.subquery != nullptr) {
+              return true;
+            }
+            return std::any_of(expression.children.begin(),
+                               expression.children.end(), containsSubquery);
+          };
+      if (containsSubquery(*where)) {
+        if (!select->innerJoins.empty() || select->leftJoin.has_value() ||
+            select->rightJoin.has_value() || select->fullJoin.has_value() ||
+            select->crossJoin.has_value()) {
+          throw std::invalid_argument(
+              "IN subqueries are supported only in single-table SELECT queries");
+        }
+        subqueryOuterSchema =
+            rdbServicePort.getTableDefinition(select->tableName);
+        const auto qualifier = select->tableAlias.value_or(select->tableName);
+        std::function<void(unidb::sql::WhereExpression &)> materialize =
+            [&](auto &expression) {
+              if (expression.kind !=
+                  unidb::sql::WhereExpression::Kind::Predicate) {
+                for (auto &child : expression.children) {
+                  materialize(child);
+                }
+                return;
+              }
+              auto &predicate = expression.predicate;
+              if (predicate.subquery == nullptr) {
+                return;
+              }
+              std::string outerColumnName = predicate.columnName;
+              const auto separator = outerColumnName.find('.');
+              if (separator != std::string::npos) {
+                if (outerColumnName.find('.', separator + 1) !=
+                        std::string::npos ||
+                    outerColumnName.substr(0, separator) != qualifier) {
+                  throw std::invalid_argument(
+                      "Unknown WHERE table reference in IN subquery: " +
+                      outerColumnName.substr(0, separator));
+                }
+                outerColumnName = outerColumnName.substr(separator + 1);
+              }
+              const auto outerColumn = std::find_if(
+                  subqueryOuterSchema->begin(), subqueryOuterSchema->end(),
+                  [&](const auto &column) {
+                    return column.name == outerColumnName;
+                  });
+              if (outerColumn == subqueryOuterSchema->end()) {
+                throw std::invalid_argument("Unknown WHERE column: " +
+                                            outerColumnName);
+              }
+              const auto subqueryOutcome =
+                  executeStatement(SqlStatement{*predicate.subquery});
+              if (const auto *error =
+                      std::get_if<QueryExecutionError>(&subqueryOutcome)) {
+                throw std::invalid_argument("IN subquery failed: " +
+                                            error->message);
+              }
+              const auto &subqueryResult =
+                  std::get<QueryExecutionResult>(subqueryOutcome);
+              if (subqueryResult.kind != QueryExecutionResultKind::Rows) {
+                throw std::invalid_argument("IN subquery must return rows");
+              }
+              if (subqueryResult.columns.size() != 1U) {
+                throw std::invalid_argument(
+                    "IN subquery must return exactly one column");
+              }
+              const auto &innerColumn = subqueryResult.columns.front();
+              if (outerColumn->type != innerColumn.type ||
+                  (outerColumn->declaredType.has_value() !=
+                   innerColumn.declaredType.has_value()) ||
+                  (outerColumn->declaredType.has_value() &&
+                   outerColumn->declaredType->id !=
+                       innerColumn.declaredType->id)) {
+                throw std::invalid_argument(
+                    "IN subquery column type does not match WHERE column: " +
+                    outerColumnName);
+              }
+              predicate.values.clear();
+              predicate.values.reserve(subqueryResult.rows.size());
+              for (const auto &row : subqueryResult.rows) {
+                if (row.size() != 1U) {
+                  throw std::invalid_argument(
+                      "IN subquery returned a row with an invalid column count");
+                }
+                predicate.values.push_back(row.front());
+              }
+              predicate.subquery.reset();
+            };
+        materialize(*where);
+      }
+    }
 
     if (select->fullJoin.has_value()) {
       if (!select->innerJoins.empty() || select->leftJoin.has_value() ||
@@ -229,12 +331,16 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
       }
       return domain::executeMultipleInnerJoins(*select, schemas, rowsByTable);
     }
-    const auto schema = rdbServicePort.getTableDefinition(select->tableName);
-    const auto plan = domain::buildSelectPlan(*select, schema);
+    const auto schema =
+        subqueryOuterSchema.has_value()
+            ? *subqueryOuterSchema
+            : rdbServicePort.getTableDefinition(select->tableName);
+    const auto plan = domain::buildSelectPlan(executableSelect, schema);
     const auto encodedRows = rdbServicePort.selectAllRows(select->tableName);
     auto matchedRows = domain::decodeAndFilterRows(encodedRows, plan.schema,
                                                    plan.compiledWhere);
-    return domain::processSelectRows(*select, plan, std::move(matchedRows));
+    return domain::processSelectRows(executableSelect, plan,
+                                     std::move(matchedRows));
   }
 
   return QueryExecutionError{QueryExecutionErrorCode::UnsupportedStatement,
