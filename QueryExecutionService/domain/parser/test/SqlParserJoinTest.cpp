@@ -156,5 +156,45 @@ TEST(SqlParserJoinTest, RejectsMalformedOrMixedCrossJoins) {
   }
 }
 
+TEST(SqlParserJoinTest, ParsesLeftJoinAndLeftOuterJoin) {
+  SqlParserImpl parser;
+  for (const auto *sql : {
+           "SELECT u.id FROM users u LEFT JOIN orders o ON u.id = o.user_id",
+           "SELECT u.id FROM users u LEFT OUTER JOIN orders o ON u.id = o.user_id"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(select.leftJoin.has_value());
+    EXPECT_EQ(select.leftJoin->tableName, "orders");
+    ASSERT_TRUE(select.leftJoin->tableAlias.has_value());
+    EXPECT_EQ(*select.leftJoin->tableAlias, "o");
+    EXPECT_EQ(select.leftJoin->left.tableName.value(), "u");
+    EXPECT_EQ(select.leftJoin->left.columnName, "id");
+    EXPECT_EQ(select.leftJoin->right.tableName.value(), "o");
+    EXPECT_EQ(select.leftJoin->right.columnName, "user_id");
+    EXPECT_TRUE(select.innerJoins.empty());
+    EXPECT_FALSE(select.crossJoin.has_value());
+  }
+}
+
+TEST(SqlParserJoinTest, RejectsMalformedOrMixedLeftJoinClauses) {
+  SqlParserImpl parser;
+  const std::vector<std::string> invalidQueries{
+      "SELECT * FROM users LEFT",
+      "SELECT * FROM users LEFT OUTER orders ON users.id = orders.id",
+      "SELECT * FROM users LEFT JOIN ON users.id = orders.id",
+      "SELECT * FROM users LEFT JOIN orders users.id = orders.id",
+      "SELECT * FROM users LEFT JOIN orders ON users.id =",
+      "SELECT * FROM users INNER JOIN orders ON users.id = orders.id "
+      "LEFT JOIN products ON orders.id = products.order_id",
+      "SELECT * FROM users LEFT JOIN orders ON users.id = orders.id "
+      "CROSS JOIN products"};
+  for (const auto &sql : invalidQueries) {
+    EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
+        << sql;
+  }
+}
+
 } // namespace
 } // namespace unidb::sql
