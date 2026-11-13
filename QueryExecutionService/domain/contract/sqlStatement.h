@@ -51,6 +51,8 @@ enum class ComparisonOperator {
   IsNotNull
 };
 
+struct SelectStatement;
+
 struct WhereEquals {
   std::string columnName;
   SqlValue value;
@@ -60,6 +62,8 @@ struct WhereEquals {
   std::optional<SqlTypedLiteral> typedLiteral = std::nullopt;
   std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt;
   std::vector<std::optional<SqlTypedLiteral>> typedValues = {};
+  bool isSubquery{false};
+  std::shared_ptr<SelectStatement> subquery;
 };
 
 struct WhereExpression {
