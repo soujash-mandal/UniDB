@@ -875,9 +875,9 @@ TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
                 "type does not match"),
             std::string::npos);
 
-  const auto mismatchWithEmptyResult = action.execute(
-      "SELECT id FROM people WHERE id IN "
-      "(SELECT status FROM orders WHERE person_id = 999)");
+  const auto mismatchWithEmptyResult =
+      action.execute("SELECT id FROM people WHERE id IN "
+                     "(SELECT status FROM orders WHERE person_id = 999)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionError>(mismatchWithEmptyResult));
   EXPECT_NE(std::get<QueryExecutionError>(mismatchWithEmptyResult)
@@ -898,7 +898,6 @@ TEST(ExecuteQueryActionTest, RejectsInSubqueriesForOuterJoinQueries) {
             std::string::npos);
 }
 
-
 TEST(ExecuteQueryActionTest, RejectsCorrelatedSubqueryColumnReferences) {
   FakeQesRdbServicePort port;
   using namespace unidb::sql;
@@ -909,9 +908,9 @@ TEST(ExecuteQueryActionTest, RejectsCorrelatedSubqueryColumnReferences) {
   SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome = action.execute(
-      "SELECT id FROM people p WHERE id IN "
-      "(SELECT person_id FROM orders o WHERE p.id = 1)");
+  const auto outcome =
+      action.execute("SELECT id FROM people p WHERE id IN "
+                     "(SELECT person_id FROM orders o WHERE p.id = 1)");
   ASSERT_TRUE(std::holds_alternative<QueryExecutionError>(outcome));
   EXPECT_NE(std::get<QueryExecutionError>(outcome).message.find(
                 "Unknown WHERE table reference"),
