@@ -155,11 +155,11 @@ private:
 
   bool isReservedTableAliasKeyword() const {
     return isKeyword("AS") || isKeyword("INNER") || isKeyword("LEFT") ||
-           isKeyword("RIGHT") || isKeyword("OUTER") || isKeyword("JOIN") || isKeyword("ON") ||
-           isKeyword("WHERE") || isKeyword("GROUP") || isKeyword("HAVING") ||
-           isKeyword("ORDER") || isKeyword("LIMIT") || isKeyword("OFFSET") ||
-           isKeyword("ASC") || isKeyword("DESC") || isKeyword("UNION") ||
-           isKeyword("CROSS");
+           isKeyword("RIGHT") || isKeyword("OUTER") || isKeyword("JOIN") ||
+           isKeyword("ON") || isKeyword("WHERE") || isKeyword("GROUP") ||
+           isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
+           isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
+           isKeyword("UNION") || isKeyword("CROSS");
   }
 
   std::variant<SqlTypeDescriptor, SqlParseError> parseDeclaredType() {
@@ -998,7 +998,8 @@ private:
     }
     if (matchKeyword("RIGHT")) {
       if (!statement.innerJoins.empty() || statement.leftJoin.has_value()) {
-        return unsupported("Mixing RIGHT JOIN with other JOIN types is not supported");
+        return unsupported(
+            "Mixing RIGHT JOIN with other JOIN types is not supported");
       }
       (void)matchKeyword("OUTER");
       if (!expectKeyword("JOIN")) {

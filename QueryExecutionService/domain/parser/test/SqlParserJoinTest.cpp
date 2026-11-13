@@ -179,7 +179,6 @@ TEST(SqlParserJoinTest, ParsesLeftJoinAndLeftOuterJoin) {
   }
 }
 
-
 TEST(SqlParserJoinTest, ParsesRightJoinAndRightOuterJoin) {
   SqlParserImpl parser;
   for (const auto *sql :
