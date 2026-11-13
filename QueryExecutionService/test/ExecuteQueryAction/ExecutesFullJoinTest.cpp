@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -108,6 +109,26 @@ TEST(ExecuteQueryActionFullJoinTest, EmitsEveryDuplicateMatch) {
             (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
   EXPECT_EQ(rows[1],
             (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{300}}));
+}
+
+
+TEST(ExecuteQueryActionFullJoinTest, SupportsNonEqualityJoinComparisons) {
+  FullJoinFixture fixture;
+  fixture.addUser(std::int64_t{1}, "Ada");
+  fixture.addOrder(10, std::int64_t{2}, 250);
+
+  const auto outcome = fixture.execute(
+      "SELECT users.name, orders.amount FROM users FULL JOIN orders "
+      "ON users.id != orders.user_id");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &rows =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
+  ASSERT_EQ(rows.size(), 1U);
+  EXPECT_EQ(rows[0],
+            (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{250}}));
 }
 
 TEST(ExecuteQueryActionFullJoinTest, NullJoinKeysNeverMatch) {
