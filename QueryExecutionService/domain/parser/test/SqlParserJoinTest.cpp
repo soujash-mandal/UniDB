@@ -158,9 +158,10 @@ TEST(SqlParserJoinTest, RejectsMalformedOrMixedCrossJoins) {
 
 TEST(SqlParserJoinTest, ParsesLeftJoinAndLeftOuterJoin) {
   SqlParserImpl parser;
-  for (const auto *sql : {
-           "SELECT u.id FROM users u LEFT JOIN orders o ON u.id = o.user_id",
-           "SELECT u.id FROM users u LEFT OUTER JOIN orders o ON u.id = o.user_id"}) {
+  for (const auto *sql :
+       {"SELECT u.id FROM users u LEFT JOIN orders o ON u.id = o.user_id",
+        "SELECT u.id FROM users u LEFT OUTER JOIN orders o ON u.id = "
+        "o.user_id"}) {
     const auto result = parser.parse(sql);
     ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
     const auto &select =

@@ -155,10 +155,11 @@ private:
 
   bool isReservedTableAliasKeyword() const {
     return isKeyword("AS") || isKeyword("INNER") || isKeyword("LEFT") ||
-           isKeyword("OUTER") || isKeyword("JOIN") || isKeyword("ON") || isKeyword("WHERE") || isKeyword("GROUP") ||
-           isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
-           isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
-           isKeyword("UNION") || isKeyword("CROSS");
+           isKeyword("OUTER") || isKeyword("JOIN") || isKeyword("ON") ||
+           isKeyword("WHERE") || isKeyword("GROUP") || isKeyword("HAVING") ||
+           isKeyword("ORDER") || isKeyword("LIMIT") || isKeyword("OFFSET") ||
+           isKeyword("ASC") || isKeyword("DESC") || isKeyword("UNION") ||
+           isKeyword("CROSS");
   }
 
   std::variant<SqlTypeDescriptor, SqlParseError> parseDeclaredType() {
@@ -997,7 +998,8 @@ private:
     }
     if (matchKeyword("CROSS")) {
       if (!statement.innerJoins.empty() || statement.leftJoin.has_value()) {
-        return unsupported("Mixing CROSS JOIN with other JOIN types is not supported");
+        return unsupported(
+            "Mixing CROSS JOIN with other JOIN types is not supported");
       }
       if (!expectKeyword("JOIN")) {
         return syntaxError("Expected JOIN after CROSS");
@@ -1026,8 +1028,8 @@ private:
       }
     }
     if (isKeyword("JOIN")) {
-      return unsupported(
-          "Only explicit INNER JOIN, LEFT JOIN, or CROSS JOIN syntax is supported");
+      return unsupported("Only explicit INNER JOIN, LEFT JOIN, or CROSS JOIN "
+                         "syntax is supported");
     }
 
     if (matchKeyword("WHERE")) {

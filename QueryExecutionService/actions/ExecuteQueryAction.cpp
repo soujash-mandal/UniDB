@@ -135,8 +135,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
     if (select->leftJoin.has_value()) {
-      throw std::invalid_argument(
-          "LEFT JOIN parsing is available, but execution is not implemented yet");
+      throw std::invalid_argument("LEFT JOIN parsing is available, but "
+                                  "execution is not implemented yet");
     }
     if (select->crossJoin.has_value()) {
       if (!select->innerJoins.empty()) {
