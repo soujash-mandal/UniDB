@@ -242,4 +242,47 @@ TEST(SqlParserJoinTest, RejectsMalformedOrMixedLeftJoinClauses) {
 }
 
 } // namespace
+
+TEST(SqlParserJoinTest, ParsesFullJoinAndFullOuterJoin) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT u.id FROM users u FULL JOIN orders o ON u.id = o.user_id",
+        "SELECT u.id FROM users u FULL OUTER JOIN orders o ON u.id = "
+        "o.user_id"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(select.fullJoin.has_value());
+    EXPECT_EQ(select.fullJoin->tableName, "orders");
+    EXPECT_EQ(select.fullJoin->tableAlias.value(), "o");
+    EXPECT_EQ(select.fullJoin->left.tableName.value(), "u");
+    EXPECT_EQ(select.fullJoin->left.columnName, "id");
+    EXPECT_EQ(select.fullJoin->right.tableName.value(), "o");
+    EXPECT_EQ(select.fullJoin->right.columnName, "user_id");
+  }
+}
+
+TEST(SqlParserJoinTest, RejectsMalformedOrMixedFullJoinClauses) {
+  SqlParserImpl parser;
+  const std::vector<std::string> invalidQueries{
+      "SELECT * FROM users FULL",
+      "SELECT * FROM users FULL OUTER orders ON users.id = orders.id",
+      "SELECT * FROM users FULL JOIN ON users.id = orders.id",
+      "SELECT * FROM users FULL JOIN orders users.id = orders.id",
+      "SELECT * FROM users FULL JOIN orders ON users.id =",
+      "SELECT * FROM users INNER JOIN orders ON users.id = orders.id "
+      "FULL JOIN products ON orders.id = products.order_id",
+      "SELECT * FROM users LEFT JOIN orders ON users.id = orders.id "
+      "FULL JOIN products ON orders.id = products.order_id",
+      "SELECT * FROM users RIGHT JOIN orders ON users.id = orders.id "
+      "FULL JOIN products ON orders.id = products.order_id",
+      "SELECT * FROM users FULL JOIN orders ON users.id = orders.id "
+      "CROSS JOIN products"};
+  for (const auto &sql : invalidQueries) {
+    EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
+        << sql;
+  }
+}
+
 } // namespace unidb::sql
