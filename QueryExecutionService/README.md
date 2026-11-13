@@ -1,6 +1,8 @@
 # QueryExecutionService
 
-QueryExecutionService parses SQL, executes the supported UQL statement subset, and accesses relational data only through RDBService's public Actions.
+QueryExecutionService is the current implementation of UniDB's developer-facing SQL/UQL interface. It parses SQL text, executes the supported statement subset, and accesses relational data only through RDBService's public Actions.
+
+**Architectural boundary:** QES is not the database core or the future RPC/API execution layer. Applications using the structured RPC/API must not depend on QES, submit SQL strings as their required protocol, or route API requests through the SQL parser. Reusable database capabilities belong to their owning service/domain boundaries and should be callable through public operations independently of SQL. See [SQL Is a Developer Interface, Not the Database Core](../architecture/SQL_IS_A_DEVELOPER_INTERFACE.md).
 
 ## Actions
 
