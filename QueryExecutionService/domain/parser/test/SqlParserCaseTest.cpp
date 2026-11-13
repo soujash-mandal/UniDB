@@ -80,12 +80,11 @@ TEST(SqlParserCaseTest, RejectsMalformedCaseConditionsAndResults) {
 } // namespace
 } // namespace unidb::sql
 
-
 TEST(SqlParserCaseTest, RejectsSubqueriesInsideCaseConditions) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "SELECT CASE WHEN id IN (SELECT person_id FROM orders) "
-      "THEN 1 ELSE 0 END FROM people");
+  const auto result =
+      parser.parse("SELECT CASE WHEN id IN (SELECT person_id FROM orders) "
+                   "THEN 1 ELSE 0 END FROM people");
   ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
   EXPECT_EQ(std::get<SqlParseError>(result).code,
             SqlParseErrorCode::UnsupportedStatement);
