@@ -111,6 +111,14 @@ struct LeftJoinClause {
   ComparisonOperator comparison{ComparisonOperator::Equal};
 };
 
+struct RightJoinClause {
+  std::string tableName;
+  std::optional<std::string> tableAlias;
+  ColumnReference left;
+  ColumnReference right;
+  ComparisonOperator comparison{ComparisonOperator::Equal};
+};
+
 struct CrossJoinClause {
   std::string tableName;
   std::optional<std::string> tableAlias;
@@ -171,6 +179,7 @@ struct SelectStatement {
   std::optional<std::string> tableAlias;
   std::vector<InnerJoinClause> innerJoins;
   std::optional<LeftJoinClause> leftJoin;
+  std::optional<RightJoinClause> rightJoin;
   std::optional<CrossJoinClause> crossJoin;
   // Expression tree preserves parentheses and SQL boolean precedence.
   std::variant<std::monostate, WhereExpression> where;

@@ -179,6 +179,50 @@ TEST(SqlParserJoinTest, ParsesLeftJoinAndLeftOuterJoin) {
   }
 }
 
+TEST(SqlParserJoinTest, ParsesRightJoinAndRightOuterJoin) {
+  SqlParserImpl parser;
+  for (const auto *sql :
+       {"SELECT u.id FROM users u RIGHT JOIN orders o ON u.id = o.user_id",
+        "SELECT u.id FROM users u RIGHT OUTER JOIN orders o ON u.id = "
+        "o.user_id"}) {
+    const auto result = parser.parse(sql);
+    ASSERT_TRUE(std::holds_alternative<SqlStatement>(result)) << sql;
+    const auto &select =
+        std::get<SelectStatement>(std::get<SqlStatement>(result));
+    ASSERT_TRUE(select.rightJoin.has_value());
+    EXPECT_EQ(select.rightJoin->tableName, "orders");
+    ASSERT_TRUE(select.rightJoin->tableAlias.has_value());
+    EXPECT_EQ(*select.rightJoin->tableAlias, "o");
+    EXPECT_EQ(select.rightJoin->left.tableName.value(), "u");
+    EXPECT_EQ(select.rightJoin->left.columnName, "id");
+    EXPECT_EQ(select.rightJoin->right.tableName.value(), "o");
+    EXPECT_EQ(select.rightJoin->right.columnName, "user_id");
+    EXPECT_TRUE(select.innerJoins.empty());
+    EXPECT_FALSE(select.leftJoin.has_value());
+    EXPECT_FALSE(select.crossJoin.has_value());
+  }
+}
+
+TEST(SqlParserJoinTest, RejectsMalformedOrMixedRightJoinClauses) {
+  SqlParserImpl parser;
+  const std::vector<std::string> invalidQueries{
+      "SELECT * FROM users RIGHT",
+      "SELECT * FROM users RIGHT OUTER orders ON users.id = orders.id",
+      "SELECT * FROM users RIGHT JOIN ON users.id = orders.id",
+      "SELECT * FROM users RIGHT JOIN orders users.id = orders.id",
+      "SELECT * FROM users RIGHT JOIN orders ON users.id =",
+      "SELECT * FROM users INNER JOIN orders ON users.id = orders.id "
+      "RIGHT JOIN products ON orders.id = products.order_id",
+      "SELECT * FROM users LEFT JOIN orders ON users.id = orders.id "
+      "RIGHT JOIN products ON orders.id = products.order_id",
+      "SELECT * FROM users RIGHT JOIN orders ON users.id = orders.id "
+      "CROSS JOIN products"};
+  for (const auto &sql : invalidQueries) {
+    EXPECT_TRUE(std::holds_alternative<SqlParseError>(parser.parse(sql)))
+        << sql;
+  }
+}
+
 TEST(SqlParserJoinTest, RejectsMalformedOrMixedLeftJoinClauses) {
   SqlParserImpl parser;
   const std::vector<std::string> invalidQueries{
