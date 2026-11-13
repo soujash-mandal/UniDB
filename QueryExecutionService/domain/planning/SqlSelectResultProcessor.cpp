@@ -29,9 +29,9 @@ int compareValuesForOrder(
   return compareSqlValues(left, right);
 }
 
-bool comesBeforeForOrder(
-    const SqlValue &left, const SqlValue &right, bool ascending,
-    const std::optional<SqlTypeDescriptor> &declaredType) {
+bool comesBeforeForOrder(const SqlValue &left, const SqlValue &right,
+                         bool ascending,
+                         const std::optional<SqlTypeDescriptor> &declaredType) {
   const bool leftIsNull = std::holds_alternative<SqlNullValue>(left);
   const bool rightIsNull = std::holds_alternative<SqlNullValue>(right);
   if (leftIsNull || rightIsNull) {
@@ -391,27 +391,28 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     for (std::size_t index = 0; index < rowOrder.size(); ++index) {
       rowOrder[index] = index;
     }
-    std::stable_sort(
-        rowOrder.begin(), rowOrder.end(),
-        [&](std::size_t leftIndex, std::size_t rightIndex) {
-          for (const auto &order : plan.orderIndexes) {
-            const auto &left = order.projected
-                                   ? projectedRows[leftIndex][order.index]
-                                   : matchedRows[leftIndex][order.index];
-            const auto &right = order.projected
-                                    ? projectedRows[rightIndex][order.index]
-                                    : matchedRows[rightIndex][order.index];
-            if (comesBeforeForOrder(left, right, order.ascending,
-                                    order.declaredType)) {
-              return true;
-            }
-            if (comesBeforeForOrder(right, left, order.ascending,
-                                    order.declaredType)) {
-              return false;
-            }
-          }
-          return false;
-        });
+    std::stable_sort(rowOrder.begin(), rowOrder.end(),
+                     [&](std::size_t leftIndex, std::size_t rightIndex) {
+                       for (const auto &order : plan.orderIndexes) {
+                         const auto &left =
+                             order.projected
+                                 ? projectedRows[leftIndex][order.index]
+                                 : matchedRows[leftIndex][order.index];
+                         const auto &right =
+                             order.projected
+                                 ? projectedRows[rightIndex][order.index]
+                                 : matchedRows[rightIndex][order.index];
+                         if (comesBeforeForOrder(left, right, order.ascending,
+                                                 order.declaredType)) {
+                           return true;
+                         }
+                         if (comesBeforeForOrder(right, left, order.ascending,
+                                                 order.declaredType)) {
+                           return false;
+                         }
+                       }
+                       return false;
+                     });
 
     std::vector<std::vector<SqlValue>> sortedRows;
     std::vector<std::vector<SqlValue>> sortedProjections;

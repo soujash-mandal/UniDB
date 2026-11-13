@@ -20,15 +20,14 @@ FakeQesRdbServicePort makeNullableOrderPort() {
   port.rows = {
       SqlTupleCodec::encode(port.schema,
                             {std::int64_t{1}, unidb::sql::SqlNullValue{}}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{2}, std::string("b")}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{3}, std::string("a")})};
+      SqlTupleCodec::encode(port.schema, {std::int64_t{2}, std::string("b")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{3}, std::string("a")})};
   return port;
 }
 
 template <typename Outcome>
-const QueryExecutionService::QueryExecutionResult &expectRows(const Outcome &outcome) {
+const QueryExecutionService::QueryExecutionResult &
+expectRows(const Outcome &outcome) {
   EXPECT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
@@ -49,8 +48,8 @@ TEST(ExecuteQueryActionNullOrderingTest, AscendingPlacesNullsLast) {
   ASSERT_EQ(result.rows.size(), 3U);
   EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "a");
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "b");
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[2][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][0]));
 }
 
 TEST(ExecuteQueryActionNullOrderingTest, DescendingPlacesNullsFirst) {
@@ -63,8 +62,8 @@ TEST(ExecuteQueryActionNullOrderingTest, DescendingPlacesNullsFirst) {
   const auto &result = expectRows(outcome);
 
   ASSERT_EQ(result.rows.size(), 3U);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[0][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[0][0]));
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "b");
   EXPECT_EQ(std::get<std::string>(result.rows[2][0]), "a");
 }
@@ -74,14 +73,13 @@ TEST(ExecuteQueryActionNullOrderingTest, AppliesDefaultsToGroupedOrdering) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto outcome =
-      action.execute("SELECT label, COUNT(*) FROM people "
-                     "GROUP BY label ORDER BY label ASC;");
+  const auto outcome = action.execute("SELECT label, COUNT(*) FROM people "
+                                      "GROUP BY label ORDER BY label ASC;");
   const auto &result = expectRows(outcome);
 
   ASSERT_EQ(result.rows.size(), 3U);
   EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "a");
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "b");
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[2][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][0]));
 }
