@@ -1068,7 +1068,7 @@ private:
     }
     if (matchKeyword("FULL")) {
       if (!statement.innerJoins.empty() || statement.leftJoin.has_value() ||
-          statement.rightJoin.has_value()) {
+          statement.rightJoin.has_value() || statement.crossJoin.has_value()) {
         return unsupported(
             "Mixing FULL JOIN with other JOIN types is not supported");
       }
@@ -1131,8 +1131,8 @@ private:
       }
       join.right = std::get<ColumnReference>(std::move(right));
       statement.fullJoin = std::move(join);
-      if (isKeyword("FULL") || isKeyword("LEFT") || isKeyword("INNER") ||
-          isKeyword("CROSS")) {
+      if (isKeyword("FULL") || isKeyword("RIGHT") || isKeyword("LEFT") ||
+          isKeyword("INNER") || isKeyword("CROSS")) {
         return unsupported("Only one join clause is supported in this SELECT");
       }
     }
