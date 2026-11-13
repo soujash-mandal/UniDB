@@ -775,6 +775,7 @@ TEST(ExecuteQueryActionTest, FiltersNullRowsUsingIsNullAndIsNotNull) {
 TEST(ExecuteQueryActionTest, ExecutesInAndNotInSubqueriesWithSqlNullSemantics) {
   FakeQesRdbServicePort port;
   using namespace unidb::sql;
+  using namespace unidb::sql;
   const std::vector<ColumnDefinition> peopleSchema{
       {"id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::BigInt, {}}},
       {"name", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
@@ -908,7 +909,7 @@ TEST(ExecuteQueryActionTest, RejectsMultiColumnAndIncompatibleSubqueryResults) {
 
 TEST(ExecuteQueryActionTest, RejectsInSubqueriesForOuterJoinQueries) {
   FakeQesRdbServicePort port;
-  SqlParserImpl parser;
+  unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
   const auto outcome = action.execute(
       "SELECT people.id FROM people INNER JOIN orders ON people.id = "
