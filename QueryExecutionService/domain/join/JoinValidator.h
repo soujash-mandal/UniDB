@@ -16,4 +16,9 @@ void validateLeftJoinColumns(
     const std::vector<unidb::sql::ColumnDefinition> &leftSchema,
     const std::vector<unidb::sql::ColumnDefinition> &rightSchema);
 
+void validateRightJoinColumns(
+    const unidb::sql::SelectStatement &select,
+    const std::vector<unidb::sql::ColumnDefinition> &leftSchema,
+    const std::vector<unidb::sql::ColumnDefinition> &rightSchema);
+
 } // namespace QueryExecutionService::domain
