@@ -56,16 +56,15 @@ struct SelectStatement;
 
 struct WhereEquals {
   WhereEquals() = default;
-  WhereEquals(
-      std::string columnName, SqlValue value,
-      std::optional<SqlValue> upperBound = std::nullopt,
-      std::vector<SqlValue> values = {},
-      ComparisonOperator comparison = ComparisonOperator::Equal,
-      std::optional<SqlTypedLiteral> typedLiteral = std::nullopt,
-      std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt,
-      std::vector<std::optional<SqlTypedLiteral>> typedValues = {},
-      bool isSubquery = false,
-      std::shared_ptr<SelectStatement> subquery = nullptr)
+  WhereEquals(std::string columnName, SqlValue value,
+              std::optional<SqlValue> upperBound = std::nullopt,
+              std::vector<SqlValue> values = {},
+              ComparisonOperator comparison = ComparisonOperator::Equal,
+              std::optional<SqlTypedLiteral> typedLiteral = std::nullopt,
+              std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt,
+              std::vector<std::optional<SqlTypedLiteral>> typedValues = {},
+              bool isSubquery = false,
+              std::shared_ptr<SelectStatement> subquery = nullptr)
       : columnName(std::move(columnName)), value(std::move(value)),
         upperBound(std::move(upperBound)), values(std::move(values)),
         comparison(comparison), typedLiteral(std::move(typedLiteral)),
