@@ -54,8 +54,10 @@ TEST(ExecuteQueryActionRightJoinIntegrationTest,
     EXPECT_EQ(result.rows[1][0], std::int64_t{1});
     EXPECT_EQ(result.rows[1][1], std::string{"Ada"});
     EXPECT_EQ(result.rows[1][2], std::int64_t{300});
-    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][0]));
-    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][1]));
+    EXPECT_TRUE(
+        std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][0]));
+    EXPECT_TRUE(
+        std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][1]));
     EXPECT_EQ(result.rows[2][2], std::int64_t{400});
 
     const auto unmatched = container.executeQueryAction().execute(
@@ -65,7 +67,8 @@ TEST(ExecuteQueryActionRightJoinIntegrationTest,
         << std::get<QueryError>(unmatched).message;
     const auto &unmatchedRows = std::get<QueryResult>(unmatched).rows;
     ASSERT_EQ(unmatchedRows.size(), 1U);
-    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(unmatchedRows[0][0]));
+    EXPECT_TRUE(
+        std::holds_alternative<unidb::sql::SqlNullValue>(unmatchedRows[0][0]));
 
     container.flushDirtyPages();
   }
