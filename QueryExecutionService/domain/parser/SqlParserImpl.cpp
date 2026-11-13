@@ -155,11 +155,11 @@ private:
 
   bool isReservedTableAliasKeyword() const {
     return isKeyword("AS") || isKeyword("INNER") || isKeyword("LEFT") ||
-           isKeyword("RIGHT") || isKeyword("OUTER") || isKeyword("JOIN") ||
-           isKeyword("ON") || isKeyword("WHERE") || isKeyword("GROUP") ||
-           isKeyword("HAVING") || isKeyword("ORDER") || isKeyword("LIMIT") ||
-           isKeyword("OFFSET") || isKeyword("ASC") || isKeyword("DESC") ||
-           isKeyword("UNION") || isKeyword("CROSS");
+           isKeyword("RIGHT") || isKeyword("FULL") || isKeyword("OUTER") ||
+           isKeyword("JOIN") || isKeyword("ON") || isKeyword("WHERE") ||
+           isKeyword("GROUP") || isKeyword("HAVING") || isKeyword("ORDER") ||
+           isKeyword("LIMIT") || isKeyword("OFFSET") || isKeyword("ASC") ||
+           isKeyword("DESC") || isKeyword("UNION") || isKeyword("CROSS");
   }
 
   std::variant<SqlTypeDescriptor, SqlParseError> parseDeclaredType() {
@@ -992,7 +992,8 @@ private:
       }
       join.right = std::get<ColumnReference>(std::move(right));
       statement.leftJoin = std::move(join);
-      if (isKeyword("LEFT") || isKeyword("INNER") || isKeyword("CROSS")) {
+      if (isKeyword("LEFT") || isKeyword("INNER") || isKeyword("CROSS") ||
+          isKeyword("FULL")) {
         return unsupported("Only one join clause is supported in this SELECT");
       }
     }
@@ -1061,7 +1062,77 @@ private:
       join.right = std::get<ColumnReference>(std::move(right));
       statement.rightJoin = std::move(join);
       if (isKeyword("RIGHT") || isKeyword("LEFT") || isKeyword("INNER") ||
-          isKeyword("CROSS")) {
+          isKeyword("CROSS") || isKeyword("FULL")) {
+        return unsupported("Only one join clause is supported in this SELECT");
+      }
+    }
+    if (matchKeyword("FULL")) {
+      if (!statement.innerJoins.empty() || statement.leftJoin.has_value() ||
+          statement.rightJoin.has_value() || statement.crossJoin.has_value()) {
+        return unsupported(
+            "Mixing FULL JOIN with other JOIN types is not supported");
+      }
+      (void)matchKeyword("OUTER");
+      if (!expectKeyword("JOIN")) {
+        return syntaxError("Expected JOIN after FULL or FULL OUTER");
+      }
+      if (current().kind != TokenKind::Identifier) {
+        return syntaxError("Expected joined table name after FULL JOIN");
+      }
+      FullJoinClause join;
+      join.tableName = current().text;
+      ++position_;
+      if (matchKeyword("AS")) {
+        if (current().kind != TokenKind::Identifier ||
+            isReservedTableAliasKeyword()) {
+          return syntaxError("Expected table alias after AS");
+        }
+        join.tableAlias = current().text;
+        ++position_;
+      } else if (current().kind == TokenKind::Identifier &&
+                 !isReservedTableAliasKeyword()) {
+        join.tableAlias = current().text;
+        ++position_;
+      }
+      if (!expectKeyword("ON")) {
+        return syntaxError("Expected ON after joined table name");
+      }
+      auto left = parseColumnReference(true);
+      if (std::holds_alternative<SqlParseError>(left)) {
+        return std::get<SqlParseError>(std::move(left));
+      }
+      join.left = std::get<ColumnReference>(std::move(left));
+      switch (current().kind) {
+      case TokenKind::Equals:
+        join.comparison = ComparisonOperator::Equal;
+        break;
+      case TokenKind::NotEquals:
+        join.comparison = ComparisonOperator::NotEqual;
+        break;
+      case TokenKind::GreaterThan:
+        join.comparison = ComparisonOperator::GreaterThan;
+        break;
+      case TokenKind::LessThan:
+        join.comparison = ComparisonOperator::LessThan;
+        break;
+      case TokenKind::GreaterThanOrEqual:
+        join.comparison = ComparisonOperator::GreaterThanOrEqual;
+        break;
+      case TokenKind::LessThanOrEqual:
+        join.comparison = ComparisonOperator::LessThanOrEqual;
+        break;
+      default:
+        return syntaxError("Expected comparison operator in FULL JOIN ON");
+      }
+      ++position_;
+      auto right = parseColumnReference(true);
+      if (std::holds_alternative<SqlParseError>(right)) {
+        return std::get<SqlParseError>(std::move(right));
+      }
+      join.right = std::get<ColumnReference>(std::move(right));
+      statement.fullJoin = std::move(join);
+      if (isKeyword("FULL") || isKeyword("RIGHT") || isKeyword("LEFT") ||
+          isKeyword("INNER") || isKeyword("CROSS")) {
         return unsupported("Only one join clause is supported in this SELECT");
       }
     }
@@ -1093,13 +1164,13 @@ private:
         ++position_;
       }
       statement.crossJoin = std::move(join);
-      if (isKeyword("CROSS") || isKeyword("INNER")) {
+      if (isKeyword("CROSS") || isKeyword("INNER") || isKeyword("FULL")) {
         return unsupported("Only one CROSS JOIN is supported per SELECT");
       }
     }
     if (isKeyword("JOIN")) {
       return unsupported("Only explicit INNER JOIN, LEFT JOIN, RIGHT JOIN, or "
-                         "CROSS JOIN syntax is supported");
+                         "CROSS JOIN, or FULL OUTER JOIN syntax is supported");
     }
 
     if (matchKeyword("WHERE")) {
