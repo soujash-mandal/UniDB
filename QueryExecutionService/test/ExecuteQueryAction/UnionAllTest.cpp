@@ -95,8 +95,8 @@ TEST(ExecuteQueryActionUnionAllTest, PreservesDuplicateNullRows) {
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[0][0]));
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[1][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[0][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[1][0]));
 }

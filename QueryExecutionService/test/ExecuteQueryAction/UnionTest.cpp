@@ -200,8 +200,7 @@ TEST(ExecuteQueryActionUnionTest, TreatsNullRowsAsDuplicates) {
                             {std::int64_t{7}, unidb::sql::SqlNullValue{}}),
       SqlTupleCodec::encode(port.schema,
                             {std::int64_t{8}, unidb::sql::SqlNullValue{}}),
-      SqlTupleCodec::encode(port.schema,
-                            {std::int64_t{9}, std::string("Ada")}),
+      SqlTupleCodec::encode(port.schema, {std::int64_t{9}, std::string("Ada")}),
   };
 
   unidb::sql::SqlParserImpl parser;
@@ -217,7 +216,7 @@ TEST(ExecuteQueryActionUnionTest, TreatsNullRowsAsDuplicates) {
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[0][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[0][0]));
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "Ada");
 }
