@@ -27,8 +27,8 @@ FakeQesRdbServicePort makeNullableOrderPort() {
   return port;
 }
 
-const QueryExecutionService::QueryExecutionResult &
-expectRows(const QueryExecutionService::QueryExecutionOutcome &outcome) {
+template <typename Outcome>
+const QueryExecutionService::QueryExecutionResult &expectRows(const Outcome &outcome) {
   EXPECT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           outcome));
