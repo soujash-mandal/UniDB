@@ -36,8 +36,7 @@ struct SqlValueVectorLess {
                   const std::vector<SqlValue> &right) const {
     const auto commonSize = std::min(left.size(), right.size());
     for (std::size_t index = 0; index < commonSize; ++index) {
-      const bool leftIsNull =
-          std::holds_alternative<SqlNullValue>(left[index]);
+      const bool leftIsNull = std::holds_alternative<SqlNullValue>(left[index]);
       const bool rightIsNull =
           std::holds_alternative<SqlNullValue>(right[index]);
       if (leftIsNull || rightIsNull) {

@@ -168,12 +168,11 @@ TEST(ExecuteQueryActionTest, GroupsAllNullKeysIntoOneGroup) {
       {"salary", unidb::sql::SqlType::Int,
        unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}}};
   port.rows = {
-      SqlTupleCodec::encode(
-          port.schema, {unidb::sql::SqlNullValue{}, std::int64_t{10}}),
-      SqlTupleCodec::encode(
-          port.schema, {unidb::sql::SqlNullValue{}, std::int64_t{20}}),
-      SqlTupleCodec::encode(
-          port.schema, {std::string("eng"), std::int64_t{5}}),
+      SqlTupleCodec::encode(port.schema,
+                            {unidb::sql::SqlNullValue{}, std::int64_t{10}}),
+      SqlTupleCodec::encode(port.schema,
+                            {unidb::sql::SqlNullValue{}, std::int64_t{20}}),
+      SqlTupleCodec::encode(port.schema, {std::string("eng"), std::int64_t{5}}),
   };
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
@@ -186,8 +185,8 @@ TEST(ExecuteQueryActionTest, GroupsAllNullKeysIntoOneGroup) {
   const auto &result =
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
-  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-      result.rows[0][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[0][0]));
   EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 30);
   EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "eng");
   EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 5);
