@@ -128,12 +128,12 @@ executeInnerJoin(const SelectStatement &select,
 }
 
 QueryExecutionResult
-executeLeftJoin(const SelectStatement &select,
+executeRightJoin(const SelectStatement &select,
                 const std::vector<ColumnDefinition> &leftSchema,
                 const std::vector<ColumnDefinition> &rightSchema,
                 const std::vector<std::vector<SqlValue>> &leftRows,
                 const std::vector<std::vector<SqlValue>> &rightRows) {
-  const auto &join = *select.leftJoin;
+  const auto &join = *select.rightJoin;
   const auto leftTypes = schemaTypes(leftSchema);
   const auto rightTypes = schemaTypes(rightSchema);
   const std::string leftQualifier =
@@ -145,7 +145,7 @@ executeLeftJoin(const SelectStatement &select,
                                           rightQualifier, rightSchema);
   if (leftKey.tableName == rightKey.tableName) {
     throw std::invalid_argument(
-        "LEFT JOIN ON must compare columns from both tables");
+        "RIGHT JOIN ON must compare columns from both tables");
   }
   const std::size_t leftKeyIndex =
       leftKey.tableName == leftQualifier ? leftKey.index : rightKey.index;
@@ -182,11 +182,11 @@ executeLeftJoin(const SelectStatement &select,
   result.kind = QueryExecutionResultKind::Rows;
   result.message = "Rows selected";
   result.columns = projection.columns;
-  const std::vector<SqlValue> nullRightRow(rightSchema.size(),
+  const std::vector<SqlValue> nullLeftRow(leftSchema.size(),
                                            unidb::sql::SqlNullValue{});
-  for (const auto &leftRow : leftRows) {
+  for (const auto &rightRow : rightRows) {
     bool matched = false;
-    for (const auto &rightRow : rightRows) {
+    for (const auto &leftRow : leftRows) {
       // SQL comparisons involving NULL are UNKNOWN, never a JOIN match.
       if (std::holds_alternative<unidb::sql::SqlNullValue>(
               leftRow[leftKeyIndex]) ||
@@ -218,7 +218,7 @@ executeLeftJoin(const SelectStatement &select,
         break;
       default:
         throw std::invalid_argument(
-            "LEFT JOIN supports only basic comparisons");
+            "RIGHT JOIN supports only basic comparisons");
       }
       if (!matches) {
         continue;
@@ -241,10 +241,9 @@ executeLeftJoin(const SelectStatement &select,
     }
     if (!matched) {
       std::vector<SqlValue> joinedRow;
-      joinedRow.reserve(leftRow.size() + nullRightRow.size());
-      joinedRow.insert(joinedRow.end(), leftRow.begin(), leftRow.end());
-      joinedRow.insert(joinedRow.end(), nullRightRow.begin(),
-                       nullRightRow.end());
+      joinedRow.reserve(nullLeftRow.size() + rightRow.size());
+      joinedRow.insert(joinedRow.end(), nullLeftRow.begin(), nullLeftRow.end());
+      joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
       if (compiledWhere.has_value() &&
           !matchesWhereExpression(joinedRow, *compiledWhere)) {
         continue;
