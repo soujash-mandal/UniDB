@@ -135,6 +135,21 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
     if (select->leftJoin.has_value()) {
+      if (!select->innerJoins.empty() || select->crossJoin.has_value()) {
+        throw std::invalid_argument("Mixing LEFT JOIN with other JOIN types is not supported");
+      }
+      const auto leftSchema =
+          rdbServicePort.getTableDefinition(select->tableName);
+      const auto rightSchema =
+          rdbServicePort.getTableDefinition(select->leftJoin->tableName);
+      domain::validateLeftJoinColumns(*select, leftSchema, rightSchema);
+      const auto leftRows =
+          readRows(rdbServicePort, select->tableName, leftSchema);
+      const auto rightRows =
+          readRows(rdbServicePort, select->leftJoin->tableName, rightSchema);
+      return domain::executeLeftJoin(*select, leftSchema, rightSchema,
+                                     leftRows, rightRows);
+    }    if (select->leftJoin.has_value()) {
       throw std::invalid_argument("LEFT JOIN parsing is available, but "
                                   "execution is not implemented yet");
     }
