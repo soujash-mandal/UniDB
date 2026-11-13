@@ -96,10 +96,10 @@ void validateLeftJoinColumns(const SelectStatement &select,
                                 {leftQualifier, rightQualifier});
 }
 
-
-void validateRightJoinColumns(const SelectStatement &select,
-                             const std::vector<ColumnDefinition> &leftSchema,
-                             const std::vector<ColumnDefinition> &rightSchema) {
+void validateRightJoinColumns(
+    const SelectStatement &select,
+    const std::vector<ColumnDefinition> &leftSchema,
+    const std::vector<ColumnDefinition> &rightSchema) {
   const auto &join = *select.rightJoin;
   const std::string leftQualifier =
       select.tableAlias.value_or(select.tableName);

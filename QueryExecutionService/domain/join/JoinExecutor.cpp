@@ -129,10 +129,10 @@ executeInnerJoin(const SelectStatement &select,
 
 QueryExecutionResult
 executeRightJoin(const SelectStatement &select,
-                const std::vector<ColumnDefinition> &leftSchema,
-                const std::vector<ColumnDefinition> &rightSchema,
-                const std::vector<std::vector<SqlValue>> &leftRows,
-                const std::vector<std::vector<SqlValue>> &rightRows) {
+                 const std::vector<ColumnDefinition> &leftSchema,
+                 const std::vector<ColumnDefinition> &rightSchema,
+                 const std::vector<std::vector<SqlValue>> &leftRows,
+                 const std::vector<std::vector<SqlValue>> &rightRows) {
   const auto &join = *select.rightJoin;
   const auto leftTypes = schemaTypes(leftSchema);
   const auto rightTypes = schemaTypes(rightSchema);
@@ -183,7 +183,7 @@ executeRightJoin(const SelectStatement &select,
   result.message = "Rows selected";
   result.columns = projection.columns;
   const std::vector<SqlValue> nullLeftRow(leftSchema.size(),
-                                           unidb::sql::SqlNullValue{});
+                                          unidb::sql::SqlNullValue{});
   for (const auto &rightRow : rightRows) {
     bool matched = false;
     for (const auto &leftRow : leftRows) {

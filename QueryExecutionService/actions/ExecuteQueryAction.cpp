@@ -149,8 +149,8 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
           readRows(rdbServicePort, select->tableName, leftSchema);
       const auto rightRows =
           readRows(rdbServicePort, select->rightJoin->tableName, rightSchema);
-      return domain::executeRightJoin(*select, leftSchema, rightSchema, leftRows,
-                                      rightRows);
+      return domain::executeRightJoin(*select, leftSchema, rightSchema,
+                                      leftRows, rightRows);
     }
     if (select->leftJoin.has_value()) {
       if (!select->innerJoins.empty() || select->crossJoin.has_value()) {
