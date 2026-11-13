@@ -56,8 +56,8 @@ TEST(ExecuteQueryActionLeftJoinIntegrationTest,
     EXPECT_EQ(result.rows[1][2], std::int64_t{300});
     EXPECT_EQ(result.rows[2][0], std::int64_t{2});
     EXPECT_EQ(result.rows[2][1], std::string{"Lin"});
-    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-        result.rows[2][2]));
+    EXPECT_TRUE(
+        std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][2]));
 
     const auto unmatched = container.executeQueryAction().execute(
         "SELECT users.name FROM users LEFT JOIN orders "
@@ -83,8 +83,7 @@ TEST(ExecuteQueryActionLeftJoinIntegrationTest,
 
     const auto &rows = std::get<QueryResult>(selected).rows;
     ASSERT_EQ(rows.size(), 3U);
-    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
-        rows[2][1]));
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(rows[2][1]));
   }
 
   std::filesystem::remove(databaseFile);
