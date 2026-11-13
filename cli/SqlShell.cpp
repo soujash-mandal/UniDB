@@ -1,4 +1,5 @@
 #include "SqlShell.h"
+#include "SqlAutocomplete.h"
 
 #include "../QueryExecutionService/domain/types/SqlNumericSemantics.h"
 
@@ -479,6 +480,32 @@ bool readInteractiveLine(std::string &line,
         redraw();
       } else if (direction == 'D' && cursor > 0) {
         cursor = previousCharacter(cursor);
+        redraw();
+      }
+      continue;
+    }
+    if (key == '\t') {
+      if (SqlAutocomplete::isInsideStringLiteral(line, cursor)) {
+        continue;
+      }
+      const auto prefix = SqlAutocomplete::prefixAtCursor(line, cursor);
+      const auto matches = SqlAutocomplete::suggestionsFor(prefix);
+      if (matches.size() == 1) {
+        if (SqlAutocomplete::replaceToken(line, cursor, matches.front())) {
+          redraw();
+        }
+      } else if (matches.size() > 1) {
+        output << "\r\n";
+        if (useColors)
+          output << kCyan;
+        for (std::size_t index = 0; index < matches.size(); ++index) {
+          if (index != 0)
+            output << "  ";
+          output << matches[index];
+        }
+        if (useColors)
+          output << kResetColor;
+        output << '\n';
         redraw();
       }
       continue;

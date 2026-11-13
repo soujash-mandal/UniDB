@@ -297,6 +297,7 @@ add_executable(tests
     QueryExecutionService/test/ExecuteQueryAction/NullInsertTest.cpp
     QueryExecutionService/test/ExecuteQueryAction/BooleanQueryExecutionTest.cpp
     cli/test/SqlShellCommandTest.cpp
+    cli/test/SqlShellAutocompleteTest.cpp
     cli/test/SqlShellResultTableTest.cpp
     cli/SqlShell.cpp
     QueryExecutionService/domain/parser/test/SqlParserStatementTest.cpp
