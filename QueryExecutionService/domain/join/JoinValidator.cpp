@@ -1,5 +1,7 @@
 #include "JoinValidator.h"
 
+#include <algorithm>
+
 #include "JoinProjectionPlanner.h"
 
 #include "../schema/SqlSchemaResolver.h"
