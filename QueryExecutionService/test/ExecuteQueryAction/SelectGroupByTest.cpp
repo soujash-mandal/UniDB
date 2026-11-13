@@ -159,3 +159,36 @@ TEST(ExecuteQueryActionTest, GroupByKeepsVarcharTrailingSpacesSignificant) {
       std::get<QueryExecutionService::QueryExecutionResult>(outcome);
   ASSERT_EQ(result.rows.size(), 2U);
 }
+
+TEST(ExecuteQueryActionTest, GroupsAllNullKeysIntoOneGroup) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"department", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}},
+      {"salary", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}}};
+  port.rows = {
+      SqlTupleCodec::encode(
+          port.schema, {unidb::sql::SqlNullValue{}, std::int64_t{10}}),
+      SqlTupleCodec::encode(
+          port.schema, {unidb::sql::SqlNullValue{}, std::int64_t{20}}),
+      SqlTupleCodec::encode(
+          port.schema, {std::string("eng"), std::int64_t{5}}),
+  };
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto outcome = action.execute(
+      "SELECT department, SUM(salary) FROM employees GROUP BY department;");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(
+      result.rows[0][0]));
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[0][1]), 30);
+  EXPECT_EQ(std::get<std::string>(result.rows[1][0]), "eng");
+  EXPECT_EQ(std::get<std::int64_t>(result.rows[1][1]), 5);
+}
