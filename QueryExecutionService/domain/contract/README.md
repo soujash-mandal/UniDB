@@ -260,3 +260,14 @@ equal. Sorting remains in memory after filtering and projection evaluation.
 ### INNER JOIN predicates
 
 INNER JOIN ON supports equality and the basic comparison operators `!=`, `>`, `<`, `>=`, and `<=`. Both operands must be qualified columns from the two joined tables and must have matching SQL types. Execution remains a nested-loop join with O(N × M) comparisons.
+
+
+## LEFT, RIGHT, and FULL OUTER JOIN
+
+The query executor supports LEFT OUTER JOIN, RIGHT OUTER JOIN, and FULL OUTER JOIN. FULL OUTER JOIN accepts both `FULL JOIN` and `FULL OUTER JOIN` syntax. The ON condition must compare one column from each input table, and the two columns must have matching SQL types. The supported comparison operators are `=`, `!=`, `>`, `<`, `>=`, and `<=`. Table aliases and qualified or unambiguous unqualified column projections are supported.
+
+For an unmatched row, the columns from the missing side contain a real `SqlNullValue` in the result. A NULL join key never matches another NULL join key. Duplicate matching pairs are preserved. For FULL OUTER JOIN, ON-match tracking happens before WHERE filtering so a matched row filtered by WHERE is not emitted again as an unmatched row.
+
+The current FULL OUTER JOIN implementation supports one FULL OUTER JOIN per SELECT, simple column projections, and an optional WHERE clause. It cannot be mixed with another JOIN type or combined with DISTINCT, aggregates, GROUP BY, ORDER BY, LIMIT, OFFSET, or computed projections. LEFT and RIGHT OUTER JOIN retain their existing restricted query shapes; do not assume all JOIN forms can be chained together.
+
+All outer-join inputs are read through the existing public RDB Action-backed port and joined in QES memory. FULL OUTER JOIN uses a nested-loop comparison (O(N × M)) and holds both decoded inputs, right-side match tracking, and output rows in memory. It is a full-scan implementation, not an index-backed join. The generated NULLs are result-level values; this does not introduce general NULL literals or nullable-column storage.
