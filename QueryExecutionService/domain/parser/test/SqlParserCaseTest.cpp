@@ -80,6 +80,9 @@ TEST(SqlParserCaseTest, RejectsMalformedCaseConditionsAndResults) {
 } // namespace
 } // namespace unidb::sql
 
+namespace unidb::sql {
+namespace {
+
 TEST(SqlParserCaseTest, RejectsSubqueriesInsideCaseConditions) {
   SqlParserImpl parser;
   const auto result =
@@ -89,3 +92,6 @@ TEST(SqlParserCaseTest, RejectsSubqueriesInsideCaseConditions) {
   EXPECT_EQ(std::get<SqlParseError>(result).code,
             SqlParseErrorCode::UnsupportedStatement);
 }
+
+} // namespace
+} // namespace unidb::sql
