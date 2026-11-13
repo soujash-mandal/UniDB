@@ -16,7 +16,7 @@ using QueryError = QueryExecutionService::QueryExecutionError;
 TEST(ExecuteQueryActionRightJoinIntegrationTest,
      ExecutesRightJoinThroughContainerAndNullExtendsUnmatchedRows) {
   const auto databaseFile = std::filesystem::temp_directory_path() /
-                            "unidb_left_join_container_integration_test.db";
+                            "unidb_right_join_container_integration_test.db";
   std::filesystem::remove(databaseFile);
 
   {
@@ -48,17 +48,17 @@ TEST(ExecuteQueryActionRightJoinIntegrationTest,
 
     const auto &result = std::get<QueryResult>(selected);
     ASSERT_EQ(result.rows.size(), 3U);
-    EXPECT_EQ(result.rows[0][0], std::int64_t{1});
-    EXPECT_EQ(result.rows[0][1], std::string{"Ada"});
-    EXPECT_EQ(result.rows[0][2], std::int64_t{250});
-    EXPECT_EQ(result.rows[1][0], std::int64_t{1});
-    EXPECT_EQ(result.rows[1][1], std::string{"Ada"});
-    EXPECT_EQ(result.rows[1][2], std::int64_t{300});
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[0][0]), 1);
+    EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "Ada");
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[0][2]), 250);
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[1][0]), 1);
+    EXPECT_EQ(std::get<std::string>(result.rows[1][1]), "Ada");
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[1][2]), 300);
     EXPECT_TRUE(
         std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][0]));
     EXPECT_TRUE(
         std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[2][1]));
-    EXPECT_EQ(result.rows[2][2], std::int64_t{400});
+    EXPECT_EQ(std::get<std::int64_t>(result.rows[2][2]), 400);
 
     const auto unmatched = container.executeQueryAction().execute(
         "SELECT users.name FROM users RIGHT JOIN orders "
