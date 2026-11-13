@@ -51,12 +51,12 @@ struct RightJoinFixture {
 
   void addUser(std::int64_t id, std::string name) {
     port.rows["users"].push_back(SqlTupleCodec::encode(
-        {SqlType::Int, SqlType::Text}, {SqlValue{id}, std::move(name)}));
+        port.schemas["users"], {SqlValue{id}, std::move(name)}));
   }
 
   void addOrder(std::int64_t id, SqlValue userId, std::int64_t amount) {
     port.rows["orders"].push_back(SqlTupleCodec::encode(
-        {SqlType::Int, SqlType::Int, SqlType::Int},
+        port.schemas["orders"],
         {SqlValue{id}, std::move(userId), SqlValue{amount}}));
   }
 
