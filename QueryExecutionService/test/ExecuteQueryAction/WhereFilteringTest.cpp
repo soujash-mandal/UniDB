@@ -794,21 +794,21 @@ TEST(ExecuteQueryActionTest, ExecutesInAndNotInSubqueriesWithSqlNullSemantics) {
 
   const auto in = action.execute(
       "SELECT id FROM people WHERE id IN (SELECT person_id FROM orders)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(in));
-  const auto &inRows = std::get<QueryExecutionResult>(in).rows;
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(in));
+  const auto &inRows = std::get<QueryExecutionService::QueryExecutionResult>(in).rows;
   ASSERT_EQ(inRows.size(), 1U);
   EXPECT_EQ(std::get<std::int64_t>(inRows.front().front()), 2);
 
   const auto notIn = action.execute(
       "SELECT id FROM people WHERE id NOT IN (SELECT person_id FROM orders)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(notIn));
-  EXPECT_TRUE(std::get<QueryExecutionResult>(notIn).rows.empty());
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(notIn));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(notIn).rows.empty());
 
   const auto emptyNotIn =
       action.execute("SELECT id FROM people WHERE id NOT IN "
                      "(SELECT person_id FROM orders WHERE person_id = 999)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(emptyNotIn));
-  const auto &emptyNotInRows = std::get<QueryExecutionResult>(emptyNotIn).rows;
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(emptyNotIn));
+  const auto &emptyNotInRows = std::get<QueryExecutionService::QueryExecutionResult>(emptyNotIn).rows;
   ASSERT_EQ(emptyNotInRows.size(), 3U);
   EXPECT_TRUE(
       std::holds_alternative<SqlNullValue>(emptyNotInRows.back().front()));
@@ -816,8 +816,8 @@ TEST(ExecuteQueryActionTest, ExecutesInAndNotInSubqueriesWithSqlNullSemantics) {
   const auto emptyIn =
       action.execute("SELECT id FROM people WHERE id IN "
                      "(SELECT person_id FROM orders WHERE person_id = 999)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(emptyIn));
-  EXPECT_TRUE(std::get<QueryExecutionResult>(emptyIn).rows.empty());
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(emptyIn));
+  EXPECT_TRUE(std::get<QueryExecutionService::QueryExecutionResult>(emptyIn).rows.empty());
 }
 
 TEST(ExecuteQueryActionTest, ExecutesEachSubqueryPredicateOncePerStatement) {
@@ -838,9 +838,9 @@ TEST(ExecuteQueryActionTest, ExecutesEachSubqueryPredicateOncePerStatement) {
   const auto outcome = action.execute(
       "SELECT id FROM people WHERE id IN (SELECT person_id FROM orders) "
       "OR id NOT IN (SELECT person_id FROM orders)");
-  ASSERT_TRUE(std::holds_alternative<QueryExecutionResult>(outcome));
+  ASSERT_TRUE(std::holds_alternative<QueryExecutionService::QueryExecutionResult>(outcome));
   EXPECT_EQ(port.selectCalls, 3U);
-  const auto &rows = std::get<QueryExecutionResult>(outcome).rows;
+  const auto &rows = std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
   ASSERT_EQ(rows.size(), 2U);
   EXPECT_EQ(std::get<std::int64_t>(rows[0].front()), 1);
   EXPECT_EQ(std::get<std::int64_t>(rows[1].front()), 2);
