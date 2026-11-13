@@ -41,12 +41,25 @@ struct RightJoinFixture {
   unidb::sql::SqlParserImpl parser;
 
   RightJoinFixture() {
-    port.schemas["users"] = {{"id", SqlType::Int}, {"name", SqlType::Text}};
-    port.schemas["orders"] = {{"id", SqlType::Int},
-                              {"user_id", SqlType::Int},
-                              {"amount", SqlType::Int}};
+    port.schemas["users"] = {
+        makeColumn("id", SqlType::Int, unidb::sql::SqlTypeId::Integer),
+        makeColumn("name", SqlType::Text, unidb::sql::SqlTypeId::Text)};
+    port.schemas["orders"] = {
+        makeColumn("id", SqlType::Int, unidb::sql::SqlTypeId::Integer),
+        makeColumn("user_id", SqlType::Int, unidb::sql::SqlTypeId::Integer),
+        makeColumn("amount", SqlType::Int, unidb::sql::SqlTypeId::Integer)};
     port.rows["users"] = {};
     port.rows["orders"] = {};
+  }
+
+  static ColumnDefinition makeColumn(const std::string &name, SqlType type,
+                                     unidb::sql::SqlTypeId declaredType) {
+    ColumnDefinition column;
+    column.name = name;
+    column.type = type;
+    column.declaredType = unidb::sql::SqlTypeDescriptor{declaredType, {}};
+    column.nullable = true;
+    return column;
   }
 
   void addUser(std::int64_t id, std::string name) {
