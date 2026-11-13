@@ -134,6 +134,24 @@ ExecuteQueryAction::executeStatement(const SqlStatement &statement) const {
   }
 
   if (const auto *select = std::get_if<SelectStatement>(&statement)) {
+    if (select->rightJoin.has_value()) {
+      if (!select->innerJoins.empty() || select->leftJoin.has_value() ||
+          select->crossJoin.has_value()) {
+        throw std::invalid_argument(
+            "Mixing RIGHT JOIN with other JOIN types is not supported");
+      }
+      const auto leftSchema =
+          rdbServicePort.getTableDefinition(select->tableName);
+      const auto rightSchema =
+          rdbServicePort.getTableDefinition(select->rightJoin->tableName);
+      domain::validateRightJoinColumns(*select, leftSchema, rightSchema);
+      const auto leftRows =
+          readRows(rdbServicePort, select->tableName, leftSchema);
+      const auto rightRows =
+          readRows(rdbServicePort, select->rightJoin->tableName, rightSchema);
+      return domain::executeRightJoin(*select, leftSchema, rightSchema,
+                                      leftRows, rightRows);
+    }
     if (select->leftJoin.has_value()) {
       if (!select->innerJoins.empty() || select->crossJoin.has_value()) {
         throw std::invalid_argument(

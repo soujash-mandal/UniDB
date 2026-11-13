@@ -261,6 +261,138 @@ executeLeftJoin(const SelectStatement &select,
 }
 
 QueryExecutionResult
+executeRightJoin(const SelectStatement &select,
+                 const std::vector<ColumnDefinition> &leftSchema,
+                 const std::vector<ColumnDefinition> &rightSchema,
+                 const std::vector<std::vector<SqlValue>> &leftRows,
+                 const std::vector<std::vector<SqlValue>> &rightRows) {
+  const auto &join = *select.rightJoin;
+  const auto leftTypes = schemaTypes(leftSchema);
+  const auto rightTypes = schemaTypes(rightSchema);
+  const std::string leftQualifier =
+      select.tableAlias.value_or(select.tableName);
+  const std::string rightQualifier = join.tableAlias.value_or(join.tableName);
+  const auto leftKey = resolveJoinColumn(join.left, leftQualifier, leftSchema,
+                                         rightQualifier, rightSchema);
+  const auto rightKey = resolveJoinColumn(join.right, leftQualifier, leftSchema,
+                                          rightQualifier, rightSchema);
+  if (leftKey.tableName == rightKey.tableName) {
+    throw std::invalid_argument(
+        "RIGHT JOIN ON must compare columns from both tables");
+  }
+  const std::size_t leftKeyIndex =
+      leftKey.tableName == leftQualifier ? leftKey.index : rightKey.index;
+  const std::size_t rightKeyIndex =
+      leftKey.tableName == rightQualifier ? leftKey.index : rightKey.index;
+
+  std::vector<ColumnDefinition> joinedSchema;
+  std::vector<SqlType> joinedTypes;
+  joinedSchema.reserve(leftSchema.size() + rightSchema.size());
+  joinedTypes.reserve(leftTypes.size() + rightTypes.size());
+  for (const auto &column : leftSchema) {
+    joinedSchema.push_back(
+        {leftQualifier + "." + column.name, column.type, column.declaredType});
+    joinedTypes.push_back(column.type);
+  }
+  for (const auto &column : rightSchema) {
+    joinedSchema.push_back(
+        {rightQualifier + "." + column.name, column.type, column.declaredType});
+    joinedTypes.push_back(column.type);
+  }
+
+  std::optional<CompiledWhereExpression> compiledWhere;
+  if (const auto *where = std::get_if<WhereExpression>(&select.where)) {
+    const auto qualified = qualifyJoinWhereColumns(
+        *where, leftQualifier, leftSchema, rightQualifier, rightSchema);
+    compiledWhere =
+        compileWhereExpression(qualified, joinedSchema, joinedTypes);
+  }
+
+  const auto projection = buildJoinProjectionPlan(
+      select, {leftSchema, rightSchema}, {leftQualifier, rightQualifier});
+
+  QueryExecutionResult result;
+  result.kind = QueryExecutionResultKind::Rows;
+  result.message = "Rows selected";
+  result.columns = projection.columns;
+  const std::vector<SqlValue> nullLeftRow(leftSchema.size(),
+                                          unidb::sql::SqlNullValue{});
+  for (const auto &rightRow : rightRows) {
+    bool matched = false;
+    for (const auto &leftRow : leftRows) {
+      // SQL comparisons involving NULL are UNKNOWN, never a JOIN match.
+      if (std::holds_alternative<unidb::sql::SqlNullValue>(
+              leftRow[leftKeyIndex]) ||
+          std::holds_alternative<unidb::sql::SqlNullValue>(
+              rightRow[rightKeyIndex])) {
+        continue;
+      }
+      const int comparison =
+          compareSqlValues(leftRow[leftKeyIndex], rightRow[rightKeyIndex]);
+      bool matches = false;
+      switch (join.comparison) {
+      case ComparisonOperator::Equal:
+        matches = comparison == 0;
+        break;
+      case ComparisonOperator::NotEqual:
+        matches = comparison != 0;
+        break;
+      case ComparisonOperator::GreaterThan:
+        matches = comparison > 0;
+        break;
+      case ComparisonOperator::LessThan:
+        matches = comparison < 0;
+        break;
+      case ComparisonOperator::GreaterThanOrEqual:
+        matches = comparison >= 0;
+        break;
+      case ComparisonOperator::LessThanOrEqual:
+        matches = comparison <= 0;
+        break;
+      default:
+        throw std::invalid_argument(
+            "RIGHT JOIN supports only basic comparisons");
+      }
+      if (!matches) {
+        continue;
+      }
+      matched = true;
+      std::vector<SqlValue> joinedRow;
+      joinedRow.reserve(leftRow.size() + rightRow.size());
+      joinedRow.insert(joinedRow.end(), leftRow.begin(), leftRow.end());
+      joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
+      if (compiledWhere.has_value() &&
+          !matchesWhereExpression(joinedRow, *compiledWhere)) {
+        continue;
+      }
+      std::vector<SqlValue> projectedRow;
+      projectedRow.reserve(projection.indexes.size());
+      for (const auto index : projection.indexes) {
+        projectedRow.push_back(joinedRow[index]);
+      }
+      result.rows.push_back(std::move(projectedRow));
+    }
+    if (!matched) {
+      std::vector<SqlValue> joinedRow;
+      joinedRow.reserve(nullLeftRow.size() + rightRow.size());
+      joinedRow.insert(joinedRow.end(), nullLeftRow.begin(), nullLeftRow.end());
+      joinedRow.insert(joinedRow.end(), rightRow.begin(), rightRow.end());
+      if (compiledWhere.has_value() &&
+          !matchesWhereExpression(joinedRow, *compiledWhere)) {
+        continue;
+      }
+      std::vector<SqlValue> projectedRow;
+      projectedRow.reserve(projection.indexes.size());
+      for (const auto index : projection.indexes) {
+        projectedRow.push_back(joinedRow[index]);
+      }
+      result.rows.push_back(std::move(projectedRow));
+    }
+  }
+  return result;
+}
+
+QueryExecutionResult
 executeCrossJoin(const SelectStatement &select,
                  const std::vector<ColumnDefinition> &leftSchema,
                  const std::vector<ColumnDefinition> &rightSchema,
