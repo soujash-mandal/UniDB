@@ -111,7 +111,6 @@ TEST(ExecuteQueryActionFullJoinTest, EmitsEveryDuplicateMatch) {
             (std::vector<SqlValue>{std::string{"Ada"}, std::int64_t{300}}));
 }
 
-
 TEST(ExecuteQueryActionFullJoinTest, SupportsNonEqualityJoinComparisons) {
   FullJoinFixture fixture;
   fixture.addUser(std::int64_t{1}, "Ada");
