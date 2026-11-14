@@ -1,5 +1,6 @@
 #include "SqlParserImpl.h"
 
+#include "../types/SqlCharacterSemantics.h"
 #include "../types/SqlDateTimeSemantics.h"
 #include "../types/SqlNumericSemantics.h"
 #include "../types/SqlTypeRegistry.h"
@@ -1641,6 +1642,11 @@ private:
     }
     if (current().kind == TokenKind::String) {
       std::string value = current().text;
+      try {
+        (void)QueryExecutionService::domain::countSqlCharacters(value);
+      } catch (const std::exception &error) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
+      }
       ++position_;
       return ParsedSqlLiteral{SqlValue{std::move(value)}, std::nullopt};
     }
