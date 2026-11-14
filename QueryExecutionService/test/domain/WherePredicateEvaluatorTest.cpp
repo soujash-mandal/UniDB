@@ -202,10 +202,10 @@ TEST(WherePredicateEvaluatorTest, LikeRejectsMalformedUtf8ValuesAndPatterns) {
                                      ComparisonOperator::Like};
   const auto compiled = compileWhereExpression(expression, schema, types);
   EXPECT_THROW(matchesWhereExpression(
-                   {std::string("\\xc0", 1)}, compiled),
+                   {std::string("\xc0", 1)}, compiled),
                std::invalid_argument);
 
-  expression.predicate.value = std::string("\\xe2\\x82", 2);
+  expression.predicate.value = std::string("\xe2\x82", 2);
   const auto malformedPattern =
       compileWhereExpression(expression, schema, types);
   EXPECT_THROW(matchesWhereExpression({std::string("value")},
