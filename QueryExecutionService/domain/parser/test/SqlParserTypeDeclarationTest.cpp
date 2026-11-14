@@ -52,9 +52,9 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
 
 TEST(SqlParserTypeDeclarationTest, ParsesBpcharAsUnboundedOrBoundedCharacter) {
   SqlParserImpl parser;
-  const auto result = parser.parse(
-      "CREATE TABLE labels (legacy BPCHAR, bounded BPCHAR(6), "
-      "defaulted CHAR)");
+  const auto result =
+      parser.parse("CREATE TABLE labels (legacy BPCHAR, bounded BPCHAR(6), "
+                   "defaulted CHAR)");
   ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
   const auto &columns =
       std::get<CreateTableStatement>(std::get<SqlStatement>(result)).columns;

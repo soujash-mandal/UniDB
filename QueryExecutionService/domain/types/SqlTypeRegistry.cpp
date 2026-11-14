@@ -174,8 +174,8 @@ resolveSqlType(std::string_view name, unidb::sql::SqlTypeModifier modifier) {
   }
 
   const auto id = resolveTypeId(normalized);
-  const bool unboundedBpchar = normalized == "bpchar" &&
-                               !modifier.length.has_value();
+  const bool unboundedBpchar =
+      normalized == "bpchar" && !modifier.length.has_value();
   validateModifiers(id, modifier, unboundedBpchar);
   return SqlTypeDescriptor{id, modifier};
 }
