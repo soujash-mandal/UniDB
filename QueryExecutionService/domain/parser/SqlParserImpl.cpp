@@ -229,7 +229,7 @@ private:
         }
         modifier.precision = *first;
         modifier.scale = *second;
-      } else if (name == "CHAR" || name == "CHARACTER" ||
+      } else if (name == "CHAR" || name == "CHARACTER" || name == "BPCHAR" ||
                  name == "CHARACTER VARYING" || name == "VARCHAR") {
         modifier.length = *first;
       } else if (name == "NUMERIC" || name == "DECIMAL") {
