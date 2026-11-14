@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include <variant>
 
 namespace unidb::sql {
@@ -96,6 +98,16 @@ TEST(SqlParserTypeDeclarationTest, RejectsInvalidTypeModifiers) {
               SqlParseErrorCode::SyntaxError)
         << sql;
   }
+}
+
+TEST(SqlParserTypeDeclarationTest, RejectsNulInStringLiterals) {
+  SqlParserImpl parser;
+  std::string sql = "INSERT INTO labels (value) VALUES ('ab')";
+  sql.insert(sql.find("ab") + 1, 1, '\0');
+  const auto result = parser.parse(sql);
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
 }
 
 TEST(SqlParserTypeDeclarationTest, RejectsUnknownTypeNames) {
