@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include <variant>
 
 namespace unidb::sql {
@@ -50,6 +52,22 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
   EXPECT_EQ(columns[7].declaredType->modifier.temporalPrecision, 3U);
 }
 
+TEST(SqlParserTypeDeclarationTest, ParsesBpcharAsUnboundedOrBoundedCharacter) {
+  SqlParserImpl parser;
+  const auto result =
+      parser.parse("CREATE TABLE labels (legacy BPCHAR, bounded BPCHAR(6), "
+                   "defaulted CHAR)");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &columns =
+      std::get<CreateTableStatement>(std::get<SqlStatement>(result)).columns;
+  ASSERT_EQ(columns.size(), 3U);
+  EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Char);
+  EXPECT_FALSE(columns[0].declaredType->modifier.length.has_value());
+  EXPECT_EQ(columns[1].declaredType->id, SqlTypeId::Char);
+  EXPECT_EQ(columns[1].declaredType->modifier.length, 6U);
+  EXPECT_EQ(columns[2].declaredType->modifier.length, 1U);
+}
+
 TEST(SqlParserTypeDeclarationTest, PreservesTransitionalIntAndTextTags) {
   SqlParserImpl parser;
   const auto result = parser.parse("CREATE TABLE legacy (id INT, name TEXT)");
@@ -69,6 +87,7 @@ TEST(SqlParserTypeDeclarationTest, RejectsInvalidTypeModifiers) {
   for (const auto *sql : {
            "CREATE TABLE t (a SMALLINT(2))",
            "CREATE TABLE t (a VARCHAR(0))",
+           "CREATE TABLE t (a BPCHAR(10485761))",
            "CREATE TABLE t (a NUMERIC(10, 1001))",
            "CREATE TABLE t (a TIMESTAMP(7))",
            "CREATE TABLE t (a NUMERIC(10, 2, 1))",
@@ -79,6 +98,16 @@ TEST(SqlParserTypeDeclarationTest, RejectsInvalidTypeModifiers) {
               SqlParseErrorCode::SyntaxError)
         << sql;
   }
+}
+
+TEST(SqlParserTypeDeclarationTest, RejectsNulInStringLiterals) {
+  SqlParserImpl parser;
+  std::string sql = "INSERT INTO labels (value) VALUES ('ab')";
+  sql.insert(sql.find("ab") + 1, 1, '\0');
+  const auto result = parser.parse(sql);
+  ASSERT_TRUE(std::holds_alternative<SqlParseError>(result));
+  EXPECT_EQ(std::get<SqlParseError>(result).code,
+            SqlParseErrorCode::SyntaxError);
 }
 
 TEST(SqlParserTypeDeclarationTest, RejectsUnknownTypeNames) {
