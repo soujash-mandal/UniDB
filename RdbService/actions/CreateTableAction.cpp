@@ -26,14 +26,14 @@ void validateTableDefinition(const RdbTableDefinition &table) {
         column.characterLength.has_value() && *column.characterLength == 0) {
       throw std::invalid_argument("Character length must be positive");
     }
-    if (column.type == RdbDataType::CHAR &&
-        !column.characterLength.has_value()) {
-      throw std::invalid_argument("CHAR columns require a declared length");
-    }
     if (column.type != RdbDataType::CHAR &&
         column.type != RdbDataType::VARCHAR &&
         column.characterLength.has_value()) {
       throw std::invalid_argument("Character length requires CHAR or VARCHAR");
+    }
+    if (column.characterLength.has_value() &&
+        *column.characterLength > 10'485'760U) {
+      throw std::invalid_argument("Character length cannot exceed 10485760");
     }
     if ((column.type == RdbDataType::VARCHAR ||
          column.type == RdbDataType::CHAR ||
