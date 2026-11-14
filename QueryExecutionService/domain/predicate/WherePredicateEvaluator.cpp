@@ -164,8 +164,7 @@ bool valueMatchesColumn(const ColumnDefinition &column, const SqlValue &value) {
              : std::holds_alternative<std::string>(value);
 }
 
-std::size_t utf8SequenceLengthAt(const std::string &value,
-                                   std::size_t offset) {
+std::size_t utf8SequenceLengthAt(const std::string &value, std::size_t offset) {
   const auto first = static_cast<unsigned char>(value[offset]);
   if (first <= 0x7fU) {
     return 1;

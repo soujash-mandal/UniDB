@@ -177,8 +177,8 @@ TEST(WherePredicateEvaluatorTest,
 
   const auto matches = [&](const std::string &pattern) {
     WhereExpression expression;
-    expression.predicate = WhereEquals{"name", pattern, std::nullopt, {},
-                                       ComparisonOperator::Like};
+    expression.predicate = WhereEquals{
+        "name", pattern, std::nullopt, {}, ComparisonOperator::Like};
     return matchesWhereExpression(
         row, compileWhereExpression(expression, schema, types));
   };
@@ -197,19 +197,16 @@ TEST(WherePredicateEvaluatorTest, LikeRejectsMalformedUtf8ValuesAndPatterns) {
   const std::vector<SqlType> types{SqlType::Text};
 
   WhereExpression expression;
-  expression.predicate = WhereEquals{"name", std::string("a%"),
-                                     std::nullopt, {},
-                                     ComparisonOperator::Like};
+  expression.predicate = WhereEquals{
+      "name", std::string("a%"), std::nullopt, {}, ComparisonOperator::Like};
   const auto compiled = compileWhereExpression(expression, schema, types);
-  EXPECT_THROW(matchesWhereExpression(
-                   {std::string("\xc0", 1)}, compiled),
+  EXPECT_THROW(matchesWhereExpression({std::string("\xc0", 1)}, compiled),
                std::invalid_argument);
 
   expression.predicate.value = std::string("\xe2\x82", 2);
   const auto malformedPattern =
       compileWhereExpression(expression, schema, types);
-  EXPECT_THROW(matchesWhereExpression({std::string("value")},
-                                      malformedPattern),
+  EXPECT_THROW(matchesWhereExpression({std::string("value")}, malformedPattern),
                std::invalid_argument);
 }
 
