@@ -224,12 +224,13 @@ TEST(WherePredicateEvaluatorTest,
   EXPECT_THROW(matchesWhereExpression(
                    {std::string("東\0京", 7)},
                    compileWhereExpression(
-                       WhereExpression{
-                           .predicate = WhereEquals{"name",
-                                                    std::string("%"),
-                                                    std::nullopt,
-                                                    {},
-                                                    ComparisonOperator::Like}},
+                       [] {
+                         WhereExpression expression;
+                         expression.predicate =
+                             WhereEquals{"name", std::string("%"), std::nullopt,
+                                         {}, ComparisonOperator::Like};
+                         return expression;
+                       }(),
                        schema, types)),
                std::invalid_argument);
 }
