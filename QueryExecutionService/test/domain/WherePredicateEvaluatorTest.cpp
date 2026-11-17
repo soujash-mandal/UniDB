@@ -221,19 +221,16 @@ TEST(WherePredicateEvaluatorTest,
   const auto nulPattern = compileWhereExpression(like, schema, types);
   EXPECT_THROW(matchesWhereExpression(row, nulPattern), std::invalid_argument);
 
+  WhereExpression valueLike;
+  valueLike.predicate = WhereEquals{"name",
+                                    std::string("%"),
+                                    std::nullopt,
+                                    {},
+                                    ComparisonOperator::Like};
+  const auto compiledValueLike =
+      compileWhereExpression(valueLike, schema, types);
   EXPECT_THROW(matchesWhereExpression({std::string("東\0京", 7)},
-                                      compileWhereExpression(
-                                          [] {
-                                            WhereExpression expression;
-                                            expression.predicate = WhereEquals{
-                                                "name",
-                                                std::string("%"),
-                                                std::nullopt,
-                                                {},
-                                                ComparisonOperator::Like};
-                                            return expression;
-                                          }(),
-                                          schema, types)),
+                                      compiledValueLike),
                std::invalid_argument);
 }
 
