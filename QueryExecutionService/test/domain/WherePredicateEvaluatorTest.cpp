@@ -222,16 +222,13 @@ TEST(WherePredicateEvaluatorTest,
   EXPECT_THROW(matchesWhereExpression(row, nulPattern), std::invalid_argument);
 
   WhereExpression valueLike;
-  valueLike.predicate = WhereEquals{"name",
-                                    std::string("%"),
-                                    std::nullopt,
-                                    {},
-                                    ComparisonOperator::Like};
+  valueLike.predicate = WhereEquals{
+      "name", std::string("%"), std::nullopt, {}, ComparisonOperator::Like};
   const auto compiledValueLike =
       compileWhereExpression(valueLike, schema, types);
-  EXPECT_THROW(matchesWhereExpression({std::string("東\0京", 7)},
-                                      compiledValueLike),
-               std::invalid_argument);
+  EXPECT_THROW(
+      matchesWhereExpression({std::string("東\0京", 7)}, compiledValueLike),
+      std::invalid_argument);
 }
 
 TEST(WherePredicateEvaluatorTest, LikeRejectsMalformedUtf8ValuesAndPatterns) {
