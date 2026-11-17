@@ -210,17 +210,17 @@ TEST(WherePredicateEvaluatorTest,
   EXPECT_TRUE(matchesNotLike("__"));
   EXPECT_FALSE(matchesNotLike("東_%"));
   EXPECT_TRUE(matchesNotLike("東京"));
-  EXPECT_THROW(matchesNotLike(std::string("a\\0b", 3)),
+  EXPECT_THROW(matchesNotLike(std::string("a\0b", 3)),
                std::invalid_argument);
 
   WhereExpression like;
-  like.predicate = WhereEquals{"name", std::string("東京\\0", 7), std::nullopt,
+  like.predicate = WhereEquals{"name", std::string("東京\0", 7), std::nullopt,
                                {}, ComparisonOperator::Like};
   const auto nulPattern = compileWhereExpression(like, schema, types);
   EXPECT_THROW(matchesWhereExpression(row, nulPattern), std::invalid_argument);
 
   EXPECT_THROW(
-      matchesWhereExpression({std::string("東\\0京", 8)},
+      matchesWhereExpression({std::string("東\0京", 7)},
                              compileWhereExpression(
                                  WhereExpression{.predicate = WhereEquals{
                                      "name", std::string("%"), std::nullopt, {},
