@@ -11,6 +11,17 @@ using QueryExecutionService::domain::countSqlCharacters;
 using QueryExecutionService::domain::normalizeSqlCharacterValue;
 using QueryExecutionService::domain::resolveSqlType;
 
+TEST(SqlCharacterSemanticsTest, HandlesEmptyCharacterValues) {
+  EXPECT_EQ(countSqlCharacters(""), 0U);
+  EXPECT_EQ(
+      normalizeSqlCharacterValue(
+          resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 2}),
+          ""),
+      "  ");
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), ""), "");
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("TEXT"), ""), "");
+}
+
 TEST(SqlCharacterSemanticsTest, CountsUtf8CharactersRatherThanBytes) {
   EXPECT_EQ(countSqlCharacters("hello"), 5U);
   EXPECT_EQ(countSqlCharacters("café"), 4U);
