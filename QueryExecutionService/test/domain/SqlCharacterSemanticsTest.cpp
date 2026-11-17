@@ -15,8 +15,7 @@ TEST(SqlCharacterSemanticsTest, HandlesEmptyCharacterValues) {
   EXPECT_EQ(countSqlCharacters(""), 0U);
   EXPECT_EQ(
       normalizeSqlCharacterValue(
-          resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 2}),
-          ""),
+          resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 2}), ""),
       "  ");
   EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), ""), "");
   EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("TEXT"), ""), "");
