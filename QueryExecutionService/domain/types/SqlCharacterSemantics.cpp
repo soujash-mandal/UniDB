@@ -10,6 +10,9 @@ bool isContinuation(unsigned char value) { return (value & 0xc0U) == 0x80U; }
 
 std::size_t utf8SequenceLength(std::string_view value, std::size_t offset) {
   const auto first = static_cast<unsigned char>(value[offset]);
+  if (first == 0U) {
+    throw std::invalid_argument("Character value cannot contain NUL");
+  }
   if (first <= 0x7fU) {
     return 1;
   }
@@ -116,9 +119,10 @@ normalizeSqlCharacterValue(const unidb::sql::SqlTypeDescriptor &type,
     throw std::invalid_argument("SQL type is not a character type");
   }
 
-  const auto maximumLength = type.id == SqlTypeId::Char
-                                 ? type.modifier.length.value_or(1U)
-                                 : type.modifier.length.value_or(0U);
+  // CHAR without a length is reserved for PostgreSQL's unbounded BPCHAR
+  // alias. Ordinary CHAR declarations are normalized to CHAR(1) by the
+  // type registry before reaching this function.
+  const auto maximumLength = type.modifier.length.value_or(0U);
   if (maximumLength == 0U) {
     return std::string(value);
   }

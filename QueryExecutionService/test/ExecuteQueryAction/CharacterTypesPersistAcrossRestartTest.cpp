@@ -20,14 +20,14 @@ TEST(ExecuteQueryActionCharacterIntegrationTest,
 
     const auto created = container.executeQueryAction().execute(
         "CREATE TABLE labels (fixed CHAR(5), bounded VARCHAR(8), "
-        "unbounded VARCHAR, description TEXT)");
+        "unbounded VARCHAR, description TEXT, legacy BPCHAR)");
     ASSERT_TRUE(std::holds_alternative<Result>(created))
         << std::get<QueryExecutionService::QueryExecutionError>(created)
                .message;
 
     const auto inserted = container.executeQueryAction().execute(
-        "INSERT INTO labels (fixed, bounded, unbounded, description) "
-        "VALUES ('cat', 'éclair', '  keep  ', 'hello 🌍')");
+        "INSERT INTO labels (fixed, bounded, unbounded, description, legacy) "
+        "VALUES ('cat', 'éclair', '  keep  ', 'hello 🌍', 'word   ')");
     ASSERT_TRUE(std::holds_alternative<Result>(inserted))
         << std::get<QueryExecutionService::QueryExecutionError>(inserted)
                .message;
@@ -46,16 +46,18 @@ TEST(ExecuteQueryActionCharacterIntegrationTest,
     const auto &result =
         std::get<QueryExecutionService::QueryExecutionResult>(selected);
     ASSERT_EQ(result.rows.size(), 1U);
-    ASSERT_EQ(result.rows[0].size(), 4U);
+    ASSERT_EQ(result.rows[0].size(), 5U);
     EXPECT_EQ(std::get<std::string>(result.rows[0][0]), "cat  ");
     EXPECT_EQ(std::get<std::string>(result.rows[0][1]), "éclair");
     EXPECT_EQ(std::get<std::string>(result.rows[0][2]), "  keep  ");
     EXPECT_EQ(std::get<std::string>(result.rows[0][3]), "hello 🌍");
+    EXPECT_EQ(std::get<std::string>(result.rows[0][4]), "word   ");
 
     ASSERT_TRUE(result.columns[0].declaredType.has_value());
     ASSERT_TRUE(result.columns[1].declaredType.has_value());
     ASSERT_TRUE(result.columns[2].declaredType.has_value());
     ASSERT_TRUE(result.columns[3].declaredType.has_value());
+    ASSERT_TRUE(result.columns[4].declaredType.has_value());
     EXPECT_EQ(result.columns[0].declaredType->id, unidb::sql::SqlTypeId::Char);
     EXPECT_EQ(result.columns[0].declaredType->modifier.length, 5U);
     EXPECT_EQ(result.columns[1].declaredType->id,
@@ -65,6 +67,15 @@ TEST(ExecuteQueryActionCharacterIntegrationTest,
               unidb::sql::SqlTypeId::Varchar);
     EXPECT_FALSE(result.columns[2].declaredType->modifier.length.has_value());
     EXPECT_EQ(result.columns[3].declaredType->id, unidb::sql::SqlTypeId::Text);
+    EXPECT_EQ(result.columns[4].declaredType->id, unidb::sql::SqlTypeId::Char);
+    EXPECT_FALSE(result.columns[4].declaredType->modifier.length.has_value());
+
+    const auto blankTrimmed = reopened.executeQueryAction().execute(
+        "SELECT * FROM labels WHERE legacy = 'word'");
+    ASSERT_TRUE(std::holds_alternative<Result>(blankTrimmed))
+        << std::get<QueryExecutionService::QueryExecutionError>(blankTrimmed)
+               .message;
+    EXPECT_EQ(std::get<Result>(blankTrimmed).rows.size(), 1U);
   }
 
   std::filesystem::remove(databaseFile);

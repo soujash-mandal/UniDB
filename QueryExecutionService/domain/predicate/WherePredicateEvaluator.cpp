@@ -164,24 +164,60 @@ bool valueMatchesColumn(const ColumnDefinition &column, const SqlValue &value) {
              : std::holds_alternative<std::string>(value);
 }
 
+std::size_t utf8SequenceLengthAt(const std::string &value, std::size_t offset) {
+  const auto first = static_cast<unsigned char>(value[offset]);
+  if (first <= 0x7fU) {
+    return 1;
+  }
+  if (first <= 0xdfU) {
+    return 2;
+  }
+  if (first <= 0xefU) {
+    return 3;
+  }
+  return 4;
+}
+
 bool matchesLikePattern(const std::string &value, const std::string &pattern) {
+  // LIKE's '_' wildcard represents one character, not one UTF-8 byte.
+  // Validate both inputs before using their leading bytes to advance.
+  countSqlCharacters(value);
+  countSqlCharacters(pattern);
+
   std::size_t valueIndex = 0;
   std::size_t patternIndex = 0;
   std::size_t lastPercent = std::string::npos;
   std::size_t retryValueIndex = 0;
 
   while (valueIndex < value.size()) {
-    if (patternIndex < pattern.size() &&
-        (pattern[patternIndex] == '_' ||
-         pattern[patternIndex] == value[valueIndex])) {
-      ++valueIndex;
-      ++patternIndex;
-    } else if (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
+    if (patternIndex < pattern.size() && pattern[patternIndex] == '%') {
       lastPercent = patternIndex++;
       retryValueIndex = valueIndex;
-    } else if (lastPercent != std::string::npos) {
+      continue;
+    }
+
+    if (patternIndex < pattern.size() && pattern[patternIndex] == '_') {
+      valueIndex += utf8SequenceLengthAt(value, valueIndex);
+      ++patternIndex;
+      continue;
+    }
+
+    if (patternIndex < pattern.size()) {
+      const auto valueLength = utf8SequenceLengthAt(value, valueIndex);
+      const auto patternLength = utf8SequenceLengthAt(pattern, patternIndex);
+      if (valueLength == patternLength &&
+          value.compare(valueIndex, valueLength, pattern, patternIndex,
+                        patternLength) == 0) {
+        valueIndex += valueLength;
+        patternIndex += patternLength;
+        continue;
+      }
+    }
+
+    if (lastPercent != std::string::npos) {
       patternIndex = lastPercent + 1;
-      valueIndex = ++retryValueIndex;
+      retryValueIndex += utf8SequenceLengthAt(value, retryValueIndex);
+      valueIndex = retryValueIndex;
     } else {
       return false;
     }

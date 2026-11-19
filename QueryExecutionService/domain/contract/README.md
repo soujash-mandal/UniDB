@@ -30,11 +30,34 @@ semicolon is optional.
 - WHERE expressions support parentheses, AND, and OR (AND has higher
   precedence than OR).
 
-Supported column types are INT and TEXT. Supported literals are signed
-integer values and single-quoted text values. V1 does not define NULL, floating
-point values, boolean values, or subqueries. A single equality-based INNER JOIN
-is supported. Table aliases may be written with or without AS in FROM and INNER
-JOIN clauses; when an alias is present, qualified references use that alias.
+The SQL type system has expanded beyond the original INT/TEXT subset. The
+currently integrated scalar type families include:
+
+- Integers: SMALLINT, INTEGER (including INT), and BIGINT.
+- BOOLEAN.
+- Floating point: REAL and DOUBLE PRECISION.
+- Exact decimal: NUMERIC and DECIMAL.
+- Character strings: CHAR(n), CHARACTER(n), BPCHAR, VARCHAR(n),
+  CHARACTER VARYING(n), and TEXT.
+- Date/time groundwork: DATE, TIME, TIMETZ, TIMESTAMP, TIMESTAMPTZ, and
+  INTERVAL.
+
+Character types use UTF-8 validation and Unicode code-point counting for
+length limits. CHAR values are blank-padded and compare without significance
+for trailing spaces; VARCHAR and TEXT preserve trailing spaces as significant.
+Bounded character types enforce their declared length, including PostgreSQL's
+exception for excess trailing spaces.
+
+The date/time type family has value, validation, and arithmetic support, but
+its persisted row-encoding integration and complete session-timezone behavior
+are still tracked separately. BYTEA, UUID, JSON, and JSONB may be recognized
+by the type registry; registry recognition alone does not mean their complete
+CREATE/INSERT/SELECT storage and execution behavior is supported.
+
+NULL values are represented by the SQL value model and nullable row storage.
+The supported SQL grammar and execution combinations remain deliberately
+limited; see the sections below for the currently supported statement and
+expression forms.
 
 The parser describes statement syntax; table existence, column existence, type
 compatibility, and other execution-time validation belong to query execution and
@@ -260,3 +283,14 @@ equal. Sorting remains in memory after filtering and projection evaluation.
 ### INNER JOIN predicates
 
 INNER JOIN ON supports equality and the basic comparison operators `!=`, `>`, `<`, `>=`, and `<=`. Both operands must be qualified columns from the two joined tables and must have matching SQL types. Execution remains a nested-loop join with O(N × M) comparisons.
+
+
+## LEFT, RIGHT, and FULL OUTER JOIN
+
+The query executor supports LEFT OUTER JOIN, RIGHT OUTER JOIN, and FULL OUTER JOIN. FULL OUTER JOIN accepts both `FULL JOIN` and `FULL OUTER JOIN` syntax. The ON condition must compare one column from each input table, and the two columns must have matching SQL types. The supported comparison operators are `=`, `!=`, `>`, `<`, `>=`, and `<=`. Table aliases and qualified or unambiguous unqualified column projections are supported.
+
+For an unmatched row, the columns from the missing side contain a real `SqlNullValue` in the result. A NULL join key never matches another NULL join key. Duplicate matching pairs are preserved. For FULL OUTER JOIN, ON-match tracking happens before WHERE filtering so a matched row filtered by WHERE is not emitted again as an unmatched row.
+
+The current FULL OUTER JOIN implementation supports one FULL OUTER JOIN per SELECT, simple column projections, and an optional WHERE clause. It cannot be mixed with another JOIN type or combined with DISTINCT, aggregates, GROUP BY, ORDER BY, LIMIT, OFFSET, or computed projections. LEFT and RIGHT OUTER JOIN retain their existing restricted query shapes; do not assume all JOIN forms can be chained together.
+
+All outer-join inputs are read through the existing public RDB Action-backed port and joined in QES memory. FULL OUTER JOIN uses a nested-loop comparison (O(N × M)) and holds both decoded inputs, right-side match tracking, and output rows in memory. It is a full-scan implementation, not an index-backed join. The generated NULLs are result-level values; this does not introduce general NULL literals or nullable-column storage.

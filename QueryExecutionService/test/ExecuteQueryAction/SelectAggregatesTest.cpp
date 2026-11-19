@@ -103,27 +103,36 @@ TEST(ExecuteQueryActionTest,
 }
 
 TEST(ExecuteQueryActionTest,
-     CountReturnsZeroForEmptyInputAndOtherAggregatesFail) {
+     ReturnsZeroCountsAndNullOtherAggregatesForEmptyInput) {
   FakeQesRdbServicePort port;
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto count = action.execute("SELECT COUNT(*) FROM people;");
-  ASSERT_TRUE(
-      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
-          count));
-  EXPECT_EQ(std::get<std::int64_t>(
-                std::get<QueryExecutionService::QueryExecutionResult>(count)
-                    .rows[0][0]),
-            0);
+  for (const auto *sql :
+       {"SELECT COUNT(*) FROM people;", "SELECT COUNT(id) FROM people;"}) {
+    const auto outcome = action.execute(sql);
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+            outcome))
+        << sql;
+    EXPECT_EQ(std::get<std::int64_t>(
+                  std::get<QueryExecutionService::QueryExecutionResult>(outcome)
+                      .rows[0][0]),
+              0);
+  }
 
   for (const auto *sql :
        {"SELECT MIN(id) FROM people;", "SELECT MAX(id) FROM people;",
         "SELECT SUM(id) FROM people;", "SELECT AVG(id) FROM people;"}) {
     const auto outcome = action.execute(sql);
-    EXPECT_TRUE(
-        std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+    ASSERT_TRUE(
+        std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
             outcome))
+        << sql;
+    const auto &rows =
+        std::get<QueryExecutionService::QueryExecutionResult>(outcome).rows;
+    ASSERT_EQ(rows.size(), 1U) << sql;
+    EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlNullValue>(rows[0][0]))
         << sql;
   }
 }

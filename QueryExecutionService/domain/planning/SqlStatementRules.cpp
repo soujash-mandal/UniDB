@@ -109,6 +109,14 @@ struct SqlValueRowLess {
     for (std::size_t index = 0; index < commonSize; ++index) {
       const auto &leftValue = left[index];
       const auto &rightValue = right[index];
+      const bool leftIsNull = std::holds_alternative<SqlNullValue>(leftValue);
+      const bool rightIsNull = std::holds_alternative<SqlNullValue>(rightValue);
+      if (leftIsNull || rightIsNull) {
+        if (leftIsNull != rightIsNull) {
+          return leftIsNull;
+        }
+        continue;
+      }
       if (leftValue.index() != rightValue.index()) {
         return leftValue.index() < rightValue.index();
       }

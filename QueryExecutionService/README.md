@@ -30,7 +30,7 @@ The implementation keeps SQL type descriptors and runtime values distinct from s
 
 - `AND` has higher precedence than `OR`; parentheses group and nest predicates. Nesting is limited to 128 levels.
 - `IN` / `NOT IN` accept non-empty INT, TEXT, or exact NUMERIC literal lists; inclusive `BETWEEN` / `NOT BETWEEN` accept INT, TEXT, or exact NUMERIC bounds. Integer literals are normalized to exact NUMERIC values when compared with NUMERIC columns. Values must otherwise match the target column type.
-- SQL `NULL`, three-valued logic, and nullable row values are not supported by this feature set.
+- SQL `NULL` literals and nullable-column persistence are not supported as general SQL features. LEFT, RIGHT, and FULL OUTER JOIN do produce real SQL NULL values in result columns for the missing side of an unmatched row. These are result-level values created by the join; this does not add NULL literals, nullable-column DDL, or general nullable storage.
 - Explicit SQL casts and general PostgreSQL implicit-coercion rules are not implemented. NUMERIC values use a canonical representation that removes insignificant trailing zeroes, so PostgreSQL's original display scale for operands is not retained.
 - `ORDER BY` supports source columns and SELECT output aliases with `ASC` / `DESC`. Output aliases take precedence over source-column names when both match.
 - Filtering, grouping, aggregate evaluation, and sorting operate in memory on rows returned by the RDB Action.
@@ -65,3 +65,22 @@ The parser owns SQL syntax; domain components own pure query/value semantics. Do
 ## Compatibility policy
 
 NUMERIC compatibility is defined per operation and tested independently. The table above is the implemented subset, not a promise that all PostgreSQL 18 NUMERIC syntax, coercions, error messages, or result-scale rules are reproduced. Any additional behaviour must have an explicit rule and regression coverage before it is described as supported.
+
+
+## FULL OUTER JOIN
+
+A SELECT may contain one `FULL JOIN` or `FULL OUTER JOIN` between two tables:
+
+```sql
+SELECT u.id, u.name, o.id, o.amount
+FROM users AS u
+FULL OUTER JOIN orders AS o ON u.id = o.user_id
+```
+
+The join returns every matching pair, every left-side row with no match, and every right-side row with no match. Columns belonging to the missing side are returned as real SQL NULL values. NULL join keys do not match. Duplicate matches are preserved. The ON condition determines whether rows matched; WHERE filters the completed joined rows afterward. A matched pair filtered out by WHERE is not reclassified as an unmatched row.
+
+The ON clause compares one column from each table. Both columns must have the same SQL type. Equality and the basic comparison operators `!=`, `>`, `<`, `>=`, and `<=` are supported. Table aliases may be used, and qualified or unambiguous unqualified projection references are resolved using the existing JOIN name-resolution rules.
+
+The current FULL OUTER JOIN implementation is intentionally restricted to one outer join in a SELECT, with simple column projections and an optional WHERE clause. It cannot currently be mixed with INNER, LEFT, RIGHT, or CROSS JOIN, or combined with DISTINCT, aggregates, GROUP BY, ORDER BY, LIMIT, OFFSET, or computed projections. Those combinations require a separate query-model/execution design.
+
+Execution fetches both complete inputs through the existing public RDB Action-backed port and performs an in-memory nested-loop comparison. For N left rows and M right rows, the join performs O(N × M) comparisons and retains the decoded inputs, right-side match tracking, and result rows in memory. It does not use indexes and does not change RDBService interfaces or persisted row formats.

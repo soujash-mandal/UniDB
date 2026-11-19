@@ -29,6 +29,22 @@ int compareValuesForOrder(
   return compareSqlValues(left, right);
 }
 
+bool comesBeforeForOrder(const SqlValue &left, const SqlValue &right,
+                         bool ascending,
+                         const std::optional<SqlTypeDescriptor> &declaredType) {
+  const bool leftIsNull = std::holds_alternative<SqlNullValue>(left);
+  const bool rightIsNull = std::holds_alternative<SqlNullValue>(right);
+  if (leftIsNull || rightIsNull) {
+    if (leftIsNull == rightIsNull) {
+      return false;
+    }
+    // Match PostgreSQL's default: NULLS LAST for ASC, NULLS FIRST for DESC.
+    return ascending ? !leftIsNull : leftIsNull;
+  }
+  const int comparison = compareValuesForOrder(left, right, declaredType);
+  return ascending ? comparison < 0 : comparison > 0;
+}
+
 struct SqlValueVectorLess {
   std::vector<std::optional<SqlTypeDescriptor>> declaredTypes;
 
@@ -36,6 +52,16 @@ struct SqlValueVectorLess {
                   const std::vector<SqlValue> &right) const {
     const auto commonSize = std::min(left.size(), right.size());
     for (std::size_t index = 0; index < commonSize; ++index) {
+      const bool leftIsNull = std::holds_alternative<SqlNullValue>(left[index]);
+      const bool rightIsNull =
+          std::holds_alternative<SqlNullValue>(right[index]);
+      if (leftIsNull || rightIsNull) {
+        if (leftIsNull != rightIsNull) {
+          return leftIsNull;
+        }
+        continue;
+      }
+
       int comparison = 0;
       if (index < declaredTypes.size() && declaredTypes[index].has_value() &&
           (declaredTypes[index]->id == SqlTypeId::Char ||
@@ -167,16 +193,20 @@ processSelectRows(const unidb::sql::SelectStatement &select,
         SqlValueVectorLess{groupedOutputTypes}};
     for (const auto &[key, rows] : groups) {
       std::vector<SqlValue> aggregateValues;
-      if (aggregate.function != AggregateFunction::Count) {
+      if (aggregate.columnName.has_value()) {
         aggregateValues.reserve(rows.size());
         for (const auto *row : rows) {
           aggregateValues.push_back((*row)[*plan.aggregateIndex]);
         }
       }
       SqlValue aggregateValue =
-          calculateAggregate(aggregate.function, aggregateValues, rows.size());
+          calculateAggregate(aggregate.function, aggregateValues, rows.size(),
+                             !aggregate.columnName.has_value());
 
       if (select.having.has_value()) {
+        if (std::holds_alternative<SqlNullValue>(aggregateValue)) {
+          continue;
+        }
         if (!plan.havingValue.has_value()) {
           throw std::logic_error("HAVING value was not planned");
         }
@@ -223,10 +253,13 @@ processSelectRows(const unidb::sql::SelectStatement &select,
           result.rows.begin(), result.rows.end(),
           [&](const auto &left, const auto &right) {
             for (const auto &order : plan.groupedOrderIndexes) {
-              const int comparison = compareValuesForOrder(
-                  left[order.index], right[order.index], order.declaredType);
-              if (comparison != 0) {
-                return order.ascending ? comparison < 0 : comparison > 0;
+              if (comesBeforeForOrder(left[order.index], right[order.index],
+                                      order.ascending, order.declaredType)) {
+                return true;
+              }
+              if (comesBeforeForOrder(right[order.index], left[order.index],
+                                      order.ascending, order.declaredType)) {
+                return false;
               }
             }
             return false;
@@ -272,14 +305,15 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     result.columns.push_back({outputName, outputType, aggregateDescriptor});
 
     std::vector<SqlValue> aggregateValues;
-    if (aggregate.function != AggregateFunction::Count) {
+    if (aggregate.columnName.has_value()) {
       aggregateValues.reserve(matchedRows.size());
       for (const auto &row : matchedRows) {
         aggregateValues.push_back(row[*plan.aggregateIndex]);
       }
     }
     result.rows.push_back({calculateAggregate(
-        aggregate.function, aggregateValues, matchedRows.size())});
+        aggregate.function, aggregateValues, matchedRows.size(),
+        !aggregate.columnName.has_value())});
     return result;
   }
 
@@ -357,24 +391,28 @@ processSelectRows(const unidb::sql::SelectStatement &select,
     for (std::size_t index = 0; index < rowOrder.size(); ++index) {
       rowOrder[index] = index;
     }
-    std::stable_sort(
-        rowOrder.begin(), rowOrder.end(),
-        [&](std::size_t leftIndex, std::size_t rightIndex) {
-          for (const auto &order : plan.orderIndexes) {
-            const auto &left = order.projected
-                                   ? projectedRows[leftIndex][order.index]
-                                   : matchedRows[leftIndex][order.index];
-            const auto &right = order.projected
-                                    ? projectedRows[rightIndex][order.index]
-                                    : matchedRows[rightIndex][order.index];
-            const int comparison =
-                compareValuesForOrder(left, right, order.declaredType);
-            if (comparison != 0) {
-              return order.ascending ? comparison < 0 : comparison > 0;
-            }
-          }
-          return false;
-        });
+    std::stable_sort(rowOrder.begin(), rowOrder.end(),
+                     [&](std::size_t leftIndex, std::size_t rightIndex) {
+                       for (const auto &order : plan.orderIndexes) {
+                         const auto &left =
+                             order.projected
+                                 ? projectedRows[leftIndex][order.index]
+                                 : matchedRows[leftIndex][order.index];
+                         const auto &right =
+                             order.projected
+                                 ? projectedRows[rightIndex][order.index]
+                                 : matchedRows[rightIndex][order.index];
+                         if (comesBeforeForOrder(left, right, order.ascending,
+                                                 order.declaredType)) {
+                           return true;
+                         }
+                         if (comesBeforeForOrder(right, left, order.ascending,
+                                                 order.declaredType)) {
+                           return false;
+                         }
+                       }
+                       return false;
+                     });
 
     std::vector<std::vector<SqlValue>> sortedRows;
     std::vector<std::vector<SqlValue>> sortedProjections;

@@ -51,12 +51,10 @@ std::vector<char> serializeTable(Table table) {
     }
     const bool characterType =
         column.type == DataType::CHAR || column.type == DataType::VARCHAR;
-    if (column.type == DataType::CHAR &&
-        (!column.characterLength || *column.characterLength == 0))
-      throw std::invalid_argument("CHAR requires a positive length");
-    if (column.type == DataType::VARCHAR && column.characterLength &&
-        *column.characterLength == 0)
-      throw std::invalid_argument("VARCHAR length must be positive");
+    if (column.characterLength && *column.characterLength == 0)
+      throw std::invalid_argument("Character length must be positive");
+    if (column.characterLength && *column.characterLength > 10'485'760U)
+      throw std::invalid_argument("Character length cannot exceed 10485760");
     if (!characterType && column.characterLength)
       throw std::invalid_argument("Character length requires CHAR or VARCHAR");
     const bool temporalType = column.type == DataType::TIME ||
@@ -216,14 +214,10 @@ Table deserializeTable(std::vector<char> data) {
           (*column.numericScale < -1000 || *column.numericScale > 1000)) {
         throw std::runtime_error("Invalid catalog NUMERIC scale");
       }
-      if (column.type == DataType::CHAR &&
-          (!column.characterLength.has_value() ||
-           *column.characterLength == 0)) {
-        throw std::runtime_error("Invalid catalog CHAR length");
-      }
-      if (column.type == DataType::VARCHAR &&
-          column.characterLength.has_value() && *column.characterLength == 0) {
-        throw std::runtime_error("Invalid catalog VARCHAR length");
+      if (column.characterLength.has_value() &&
+          (*column.characterLength == 0 ||
+           *column.characterLength > 10'485'760U)) {
+        throw std::runtime_error("Invalid catalog character length");
       }
       if (column.type != DataType::CHAR && column.type != DataType::VARCHAR &&
           column.characterLength.has_value()) {

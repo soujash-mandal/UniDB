@@ -67,3 +67,36 @@ TEST(ExecuteQueryActionUnionAllTest, RejectsDifferentColumnTypes) {
                 .message.find("matching types"),
             std::string::npos);
 }
+
+TEST(ExecuteQueryActionUnionAllTest, PreservesDuplicateNullRows) {
+  FakeQesRdbServicePort port;
+  port.schema = {
+      {"id", unidb::sql::SqlType::Int,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Integer, {}}},
+      {"name", unidb::sql::SqlType::Text,
+       unidb::sql::SqlTypeDescriptor{unidb::sql::SqlTypeId::Text, {}}}};
+  port.schema[1].nullable = true;
+  port.rows = {
+      SqlTupleCodec::encode(port.schema,
+                            {std::int64_t{7}, unidb::sql::SqlNullValue{}}),
+      SqlTupleCodec::encode(port.schema,
+                            {std::int64_t{8}, unidb::sql::SqlNullValue{}}),
+  };
+
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+  const auto outcome =
+      action.execute("SELECT name FROM people WHERE id = 7 "
+                     "UNION ALL SELECT name FROM people WHERE id = 8;");
+
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          outcome));
+  const auto &result =
+      std::get<QueryExecutionService::QueryExecutionResult>(outcome);
+  ASSERT_EQ(result.rows.size(), 2U);
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[0][0]));
+  EXPECT_TRUE(
+      std::holds_alternative<unidb::sql::SqlNullValue>(result.rows[1][0]));
+}
