@@ -107,21 +107,28 @@ void rejectUnexpectedModifiers(const SqlTypeModifier &modifier,
   }
 }
 
-void validateModifiers(SqlTypeId type, SqlTypeModifier &modifier) {
+void validateModifiers(SqlTypeId type, SqlTypeModifier &modifier,
+                       bool unboundedBpchar) {
   switch (type) {
   case SqlTypeId::Char:
     rejectUnexpectedModifiers(modifier, true, false, false);
-    if (!modifier.length.has_value()) {
+    if (!modifier.length.has_value() && !unboundedBpchar) {
       modifier.length = 1;
     }
-    if (*modifier.length == 0) {
+    if (modifier.length.has_value() && *modifier.length == 0) {
       throw std::invalid_argument("CHAR length must be greater than zero");
+    }
+    if (modifier.length.has_value() && *modifier.length > 10'485'760U) {
+      throw std::invalid_argument("Character length cannot exceed 10485760");
     }
     return;
   case SqlTypeId::Varchar:
     rejectUnexpectedModifiers(modifier, true, false, false);
     if (modifier.length.has_value() && *modifier.length == 0) {
       throw std::invalid_argument("VARCHAR length must be greater than zero");
+    }
+    if (modifier.length.has_value() && *modifier.length > 10'485'760U) {
+      throw std::invalid_argument("Character length cannot exceed 10485760");
     }
     return;
   case SqlTypeId::Numeric:
@@ -167,7 +174,9 @@ resolveSqlType(std::string_view name, unidb::sql::SqlTypeModifier modifier) {
   }
 
   const auto id = resolveTypeId(normalized);
-  validateModifiers(id, modifier);
+  const bool unboundedBpchar =
+      normalized == "bpchar" && !modifier.length.has_value();
+  validateModifiers(id, modifier, unboundedBpchar);
   return SqlTypeDescriptor{id, modifier};
 }
 

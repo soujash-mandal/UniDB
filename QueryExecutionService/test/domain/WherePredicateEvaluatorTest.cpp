@@ -168,6 +168,88 @@ TEST(WherePredicateEvaluatorTest,
       matchesWhereExpression(row, compileWhereExpression(like, schema, types)));
 }
 
+TEST(WherePredicateEvaluatorTest,
+     LikeWildcardsMatchUtf8CharactersRatherThanIndividualBytes) {
+  const std::vector<ColumnDefinition> schema{
+      {"name", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Varchar, {16}}}};
+  const std::vector<SqlType> types{SqlType::Text};
+  const std::vector<SqlValue> row{std::string("東京🙂")};
+
+  const auto matches = [&](const std::string &pattern) {
+    WhereExpression expression;
+    expression.predicate = WhereEquals{
+        "name", pattern, std::nullopt, {}, ComparisonOperator::Like};
+    return matchesWhereExpression(
+        row, compileWhereExpression(expression, schema, types));
+  };
+
+  EXPECT_TRUE(matches("___"));
+  EXPECT_FALSE(matches("__"));
+  EXPECT_TRUE(matches("東_%"));
+  EXPECT_TRUE(matches("_京🙂"));
+  EXPECT_TRUE(matches("%🙂"));
+  EXPECT_FALSE(matches("東_"));
+}
+
+TEST(WherePredicateEvaluatorTest,
+     NotLikeUsesUtf8CharacterWildcardsAndRejectsNul) {
+  const std::vector<ColumnDefinition> schema{
+      {"name", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
+  const std::vector<SqlType> types{SqlType::Text};
+  const std::vector<SqlValue> row{std::string("東京🙂")};
+
+  const auto matchesNotLike = [&](const std::string &pattern) {
+    WhereExpression expression;
+    expression.predicate = WhereEquals{
+        "name", pattern, std::nullopt, {}, ComparisonOperator::NotLike};
+    return matchesWhereExpression(
+        row, compileWhereExpression(expression, schema, types));
+  };
+
+  EXPECT_FALSE(matchesNotLike("___"));
+  EXPECT_TRUE(matchesNotLike("__"));
+  EXPECT_FALSE(matchesNotLike("東_%"));
+  EXPECT_TRUE(matchesNotLike("東京"));
+  EXPECT_THROW(matchesNotLike(std::string("a\0b", 3)), std::invalid_argument);
+
+  WhereExpression like;
+  like.predicate = WhereEquals{"name",
+                               std::string("東京\0", 7),
+                               std::nullopt,
+                               {},
+                               ComparisonOperator::Like};
+  const auto nulPattern = compileWhereExpression(like, schema, types);
+  EXPECT_THROW(matchesWhereExpression(row, nulPattern), std::invalid_argument);
+
+  WhereExpression valueLike;
+  valueLike.predicate = WhereEquals{
+      "name", std::string("%"), std::nullopt, {}, ComparisonOperator::Like};
+  const auto compiledValueLike =
+      compileWhereExpression(valueLike, schema, types);
+  EXPECT_THROW(
+      matchesWhereExpression({std::string("東\0京", 7)}, compiledValueLike),
+      std::invalid_argument);
+}
+
+TEST(WherePredicateEvaluatorTest, LikeRejectsMalformedUtf8ValuesAndPatterns) {
+  const std::vector<ColumnDefinition> schema{
+      {"name", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
+  const std::vector<SqlType> types{SqlType::Text};
+
+  WhereExpression expression;
+  expression.predicate = WhereEquals{
+      "name", std::string("a%"), std::nullopt, {}, ComparisonOperator::Like};
+  const auto compiled = compileWhereExpression(expression, schema, types);
+  EXPECT_THROW(matchesWhereExpression({std::string("\xc0", 1)}, compiled),
+               std::invalid_argument);
+
+  expression.predicate.value = std::string("\xe2\x82", 2);
+  const auto malformedPattern =
+      compileWhereExpression(expression, schema, types);
+  EXPECT_THROW(matchesWhereExpression({std::string("value")}, malformedPattern),
+               std::invalid_argument);
+}
+
 TEST(WherePredicateEvaluatorTest, EvaluatesNestedAndOrExpressions) {
   const std::vector<ColumnDefinition> schema{{"id", SqlType::Int},
                                              {"name", SqlType::Text}};

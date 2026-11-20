@@ -6,15 +6,34 @@
 #include <stdexcept>
 #include <string>
 
+using QueryExecutionService::domain::compareSqlCharacterValues;
 using QueryExecutionService::domain::countSqlCharacters;
 using QueryExecutionService::domain::normalizeSqlCharacterValue;
 using QueryExecutionService::domain::resolveSqlType;
+
+TEST(SqlCharacterSemanticsTest, HandlesEmptyCharacterValues) {
+  EXPECT_EQ(countSqlCharacters(""), 0U);
+  EXPECT_EQ(
+      normalizeSqlCharacterValue(
+          resolveSqlType("CHAR", unidb::sql::SqlTypeModifier{.length = 2}), ""),
+      "  ");
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("VARCHAR"), ""), "");
+  EXPECT_EQ(normalizeSqlCharacterValue(resolveSqlType("TEXT"), ""), "");
+}
 
 TEST(SqlCharacterSemanticsTest, CountsUtf8CharactersRatherThanBytes) {
   EXPECT_EQ(countSqlCharacters("hello"), 5U);
   EXPECT_EQ(countSqlCharacters("café"), 4U);
   EXPECT_EQ(countSqlCharacters("東京"), 2U);
   EXPECT_EQ(countSqlCharacters("🙂"), 1U);
+}
+
+TEST(SqlCharacterSemanticsTest, RejectsNulCharacters) {
+  EXPECT_THROW(countSqlCharacters(std::string("a\0b", 3)),
+               std::invalid_argument);
+  EXPECT_THROW(
+      normalizeSqlCharacterValue(resolveSqlType("TEXT"), std::string("\0", 1)),
+      std::invalid_argument);
 }
 
 TEST(SqlCharacterSemanticsTest, RejectsMalformedUtf8) {
@@ -47,6 +66,15 @@ TEST(SqlCharacterSemanticsTest,
   EXPECT_EQ(normalizeSqlCharacterValue(charType, "cat  "), "cat");
   EXPECT_THROW(normalizeSqlCharacterValue(charType, "cats"),
                std::invalid_argument);
+}
+
+TEST(SqlCharacterSemanticsTest,
+     UnboundedBpcharPreservesValuesAndIgnoresTrailingSpaces) {
+  const auto bpchar = resolveSqlType("BPCHAR");
+  EXPECT_FALSE(bpchar.modifier.length.has_value());
+  EXPECT_EQ(normalizeSqlCharacterValue(bpchar, "a value with no fixed limit  "),
+            "a value with no fixed limit  ");
+  EXPECT_EQ(compareSqlCharacterValues(bpchar, "value", "value   "), 0);
 }
 
 TEST(SqlCharacterSemanticsTest, EnforcesVarcharLengthInCharacters) {

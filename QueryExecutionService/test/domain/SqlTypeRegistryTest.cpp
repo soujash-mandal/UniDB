@@ -31,6 +31,9 @@ TEST(SqlTypeRegistryTest, ResolvesFloatingPointAndBooleanAliases) {
 TEST(SqlTypeRegistryTest, ResolvesCharacterAndTemporalAliases) {
   EXPECT_EQ(resolveSqlType("char").id, SqlTypeId::Char);
   EXPECT_EQ(resolveSqlType("character").id, SqlTypeId::Char);
+  EXPECT_EQ(resolveSqlType("bpchar").id, SqlTypeId::Char);
+  EXPECT_FALSE(resolveSqlType("bpchar").modifier.length.has_value());
+  EXPECT_EQ(resolveSqlType("bpchar", {.length = 12}).modifier.length, 12U);
   EXPECT_EQ(resolveSqlType("varchar").id, SqlTypeId::Varchar);
   EXPECT_EQ(resolveSqlType("character varying").id, SqlTypeId::Varchar);
   EXPECT_EQ(resolveSqlType("time").id, SqlTypeId::Time);
@@ -72,12 +75,27 @@ TEST(SqlTypeRegistryTest, ValidatesTypeModifiers) {
   EXPECT_EQ(timestamp.modifier.temporalPrecision, 3U);
 }
 
+TEST(SqlTypeRegistryTest, AcceptsPostgresMaximumCharacterDeclarationLength) {
+  EXPECT_EQ(resolveSqlType("char", {.length = 10'485'760}).modifier.length,
+            10'485'760U);
+  EXPECT_EQ(resolveSqlType("varchar", {.length = 10'485'760}).modifier.length,
+            10'485'760U);
+  EXPECT_EQ(resolveSqlType("bpchar", {.length = 10'485'760}).modifier.length,
+            10'485'760U);
+}
+
 TEST(SqlTypeRegistryTest, RejectsUnknownNamesAndInvalidModifiers) {
   EXPECT_THROW(resolveSqlType("money"), std::invalid_argument);
   EXPECT_THROW(resolveSqlType(""), std::invalid_argument);
   EXPECT_THROW(resolveSqlType("integer", {.length = 4}), std::invalid_argument);
   EXPECT_THROW(resolveSqlType("char", {.length = 0}), std::invalid_argument);
   EXPECT_THROW(resolveSqlType("varchar", {.length = 0}), std::invalid_argument);
+  EXPECT_THROW(resolveSqlType("char", {.length = 10'485'761}),
+               std::invalid_argument);
+  EXPECT_THROW(resolveSqlType("varchar", {.length = 10'485'761}),
+               std::invalid_argument);
+  EXPECT_THROW(resolveSqlType("bpchar", {.length = 10'485'761}),
+               std::invalid_argument);
   EXPECT_THROW(resolveSqlType("numeric", {.precision = 1001}),
                std::invalid_argument);
   EXPECT_THROW(resolveSqlType("numeric", {.scale = 2}), std::invalid_argument);
