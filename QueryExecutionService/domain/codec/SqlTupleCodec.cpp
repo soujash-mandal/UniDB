@@ -3,6 +3,7 @@
 
 #include "../types/SqlCharacterSemantics.h"
 #include "../types/SqlIntegerSemantics.h"
+#include "../types/SqlDateTimeSemantics.h"
 
 #include <bit>
 #include <limits>
@@ -116,6 +117,108 @@ bool usesDeclaredRowFormat(
         "Tuple schema cannot mix declared and transitional column types");
   }
   return everyColumnHasDeclaredType;
+}
+
+void appendTemporal(std::vector<char> &out,
+                    unidb::sql::SqlTypeId type,
+                    const unidb::sql::SqlValue &value) {
+  using unidb::sql::SqlTypeId;
+  using QueryExecutionService::domain::validateSqlTime;
+  using QueryExecutionService::domain::validateSqlTimeZoneOffset;
+  switch (type) {
+  case SqlTypeId::Date:
+    if (!std::holds_alternative<unidb::sql::SqlDate>(value))
+      throw std::invalid_argument("Expected DATE value");
+    appendLittleEndian(out, std::get<unidb::sql::SqlDate>(value).daysSinceEpoch);
+    return;
+  case SqlTypeId::Time: {
+    if (!std::holds_alternative<unidb::sql::SqlTime>(value))
+      throw std::invalid_argument("Expected TIME value");
+    const auto time = std::get<unidb::sql::SqlTime>(value);
+    validateSqlTime(time);
+    appendLittleEndian(out, time.microsecondsSinceMidnight);
+    return;
+  }
+  case SqlTypeId::TimeWithTimeZone: {
+    if (!std::holds_alternative<unidb::sql::SqlTimeWithTimeZone>(value))
+      throw std::invalid_argument("Expected TIMETZ value");
+    const auto temporal = std::get<unidb::sql::SqlTimeWithTimeZone>(value);
+    validateSqlTime(temporal.time);
+    validateSqlTimeZoneOffset(temporal.offsetSecondsEastOfUtc);
+    appendLittleEndian(out, temporal.time.microsecondsSinceMidnight);
+    appendLittleEndian(out, temporal.offsetSecondsEastOfUtc);
+    return;
+  }
+  case SqlTypeId::Timestamp: {
+    if (!std::holds_alternative<unidb::sql::SqlTimestamp>(value))
+      throw std::invalid_argument("Expected TIMESTAMP value");
+    const auto temporal = std::get<unidb::sql::SqlTimestamp>(value);
+    validateSqlTime(temporal.time);
+    appendLittleEndian(out, temporal.date.daysSinceEpoch);
+    appendLittleEndian(out, temporal.time.microsecondsSinceMidnight);
+    return;
+  }
+  case SqlTypeId::TimestampWithTimeZone:
+    if (!std::holds_alternative<unidb::sql::SqlTimestampWithTimeZone>(value))
+      throw std::invalid_argument("Expected TIMESTAMPTZ value");
+    appendLittleEndian(
+        out, std::get<unidb::sql::SqlTimestampWithTimeZone>(value)
+                 .microsecondsSinceEpoch);
+    return;
+  case SqlTypeId::Interval: {
+    if (!std::holds_alternative<unidb::sql::SqlInterval>(value))
+      throw std::invalid_argument("Expected INTERVAL value");
+    const auto temporal = std::get<unidb::sql::SqlInterval>(value);
+    appendLittleEndian(out, temporal.months);
+    appendLittleEndian(out, temporal.days);
+    appendLittleEndian(out, temporal.microseconds);
+    return;
+  }
+  default:
+    throw std::invalid_argument("SQL type is not a temporal type");
+  }
+}
+
+unidb::sql::SqlValue readTemporal(unidb::sql::SqlTypeId type,
+                                  const std::vector<char> &bytes,
+                                  std::size_t &offset) {
+  using unidb::sql::SqlTypeId;
+  using QueryExecutionService::domain::validateSqlTime;
+  using QueryExecutionService::domain::validateSqlTimeZoneOffset;
+  switch (type) {
+  case SqlTypeId::Date:
+    return unidb::sql::SqlDate{readLittleEndian<std::int32_t>(bytes, offset)};
+  case SqlTypeId::Time: {
+    unidb::sql::SqlTime value{readLittleEndian<std::int64_t>(bytes, offset)};
+    validateSqlTime(value);
+    return value;
+  }
+  case SqlTypeId::TimeWithTimeZone: {
+    unidb::sql::SqlTimeWithTimeZone value{
+        {readLittleEndian<std::int64_t>(bytes, offset)},
+        readLittleEndian<std::int32_t>(bytes, offset)};
+    validateSqlTime(value.time);
+    validateSqlTimeZoneOffset(value.offsetSecondsEastOfUtc);
+    return value;
+  }
+  case SqlTypeId::Timestamp: {
+    unidb::sql::SqlTimestamp value{
+        {readLittleEndian<std::int32_t>(bytes, offset)},
+        {readLittleEndian<std::int64_t>(bytes, offset)}};
+    validateSqlTime(value.time);
+    return value;
+  }
+  case SqlTypeId::TimestampWithTimeZone:
+    return unidb::sql::SqlTimestampWithTimeZone{
+        readLittleEndian<std::int64_t>(bytes, offset)};
+  case SqlTypeId::Interval:
+    return unidb::sql::SqlInterval{
+        readLittleEndian<std::int32_t>(bytes, offset),
+        readLittleEndian<std::int32_t>(bytes, offset),
+        readLittleEndian<std::int64_t>(bytes, offset)};
+  default:
+    throw std::invalid_argument("SQL type is not a temporal type");
+  }
 }
 
 void appendDeclaredInteger(std::vector<char> &out, unidb::sql::SqlTypeId type,
@@ -263,6 +366,14 @@ SqlTupleCodec::encode(const std::vector<unidb::sql::ColumnDefinition> &schema,
           encoded,
           std::get<unidb::sql::SqlDoublePrecisionValue>(values[index]));
       break;
+    case SqlTypeId::Date:
+    case SqlTypeId::Time:
+    case SqlTypeId::TimeWithTimeZone:
+    case SqlTypeId::Timestamp:
+    case SqlTypeId::TimestampWithTimeZone:
+    case SqlTypeId::Interval:
+      appendTemporal(encoded, column.declaredType->id, values[index]);
+      break;
     case SqlTypeId::Numeric:
       if (!std::holds_alternative<unidb::sql::SqlNumericValue>(values[index])) {
         throw std::invalid_argument("Expected NUMERIC value");
@@ -367,6 +478,14 @@ SqlTupleCodec::decode(const std::vector<unidb::sql::ColumnDefinition> &schema,
     case SqlTypeId::DoublePrecision:
       values.emplace_back(
           readFloatingPoint<double, std::uint64_t>(bytes, offset));
+      break;
+    case SqlTypeId::Date:
+    case SqlTypeId::Time:
+    case SqlTypeId::TimeWithTimeZone:
+    case SqlTypeId::Timestamp:
+    case SqlTypeId::TimestampWithTimeZone:
+    case SqlTypeId::Interval:
+      values.emplace_back(readTemporal(column.declaredType->id, bytes, offset));
       break;
     case SqlTypeId::Numeric:
       values.emplace_back(readNumeric(bytes, offset));

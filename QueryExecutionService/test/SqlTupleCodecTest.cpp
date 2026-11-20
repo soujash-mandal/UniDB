@@ -338,3 +338,108 @@ TEST(SqlTupleCodecTest, SupportsAllNullDeclaredRows) {
   EXPECT_EQ(static_cast<unsigned char>(bytes[8]), 0x03U);
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
+
+
+TEST(SqlTupleCodecTest, RoundTripsAllPostgreSqlTemporalTypesInDeclaredRows) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlDate;
+  using unidb::sql::SqlInterval;
+  using unidb::sql::SqlTime;
+  using unidb::sql::SqlTimeWithTimeZone;
+  using unidb::sql::SqlTimestamp;
+  using unidb::sql::SqlTimestampWithTimeZone;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+
+  const std::vector<ColumnDefinition> schema{
+      {"date_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Date, {}}},
+      {"time_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Time, {}}},
+      {"timetz_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::TimeWithTimeZone, {}}},
+      {"timestamp_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Timestamp, {}}},
+      {"timestamptz_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::TimestampWithTimeZone, {}}},
+      {"interval_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Interval, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{
+      SqlDate{-1}, SqlTime{45'123'456},
+      SqlTimeWithTimeZone{SqlTime{45'123'456}, 19'800},
+      SqlTimestamp{SqlDate{9'000}, SqlTime{45'123'456}},
+      SqlTimestampWithTimeZone{123'456'789},
+      SqlInterval{14, -3, 987'654'321}};
+
+  const auto encoded = SqlTupleCodec::encode(schema, values);
+  EXPECT_EQ(SqlTupleCodec::decode(schema, encoded), values);
+}
+
+TEST(SqlTupleCodecTest, RejectsTemporalRuntimeTypeMismatches) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  const std::vector<ColumnDefinition> schema{
+      {"date_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Date, {}}}};
+
+  EXPECT_THROW(SqlTupleCodec::encode(schema, {std::int64_t{1}}),
+               std::invalid_argument);
+  EXPECT_THROW(SqlTupleCodec::encode(schema, {std::string{"2000-01-01"}}),
+               std::invalid_argument);
+  EXPECT_THROW(SqlTupleCodec::encode(schema, {unidb::sql::SqlTime{1}}),
+               std::invalid_argument);
+}
+
+TEST(SqlTupleCodecTest, RejectsInvalidTemporalValuesAndOffsets) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlTime;
+  using unidb::sql::SqlTimeWithTimeZone;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  const std::vector<ColumnDefinition> timeSchema{
+      {"time_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Time, {}}}};
+  const std::vector<ColumnDefinition> timetzSchema{
+      {"timetz_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::TimeWithTimeZone, {}}}};
+
+  EXPECT_THROW(SqlTupleCodec::encode(timeSchema, {SqlTime{-1}}),
+               std::out_of_range);
+  EXPECT_THROW(SqlTupleCodec::encode(
+                   timetzSchema,
+                   {SqlTimeWithTimeZone{SqlTime{0}, 16 * 60 * 60}}),
+               std::out_of_range);
+}
+
+TEST(SqlTupleCodecTest, RejectsTruncatedTemporalPayloads) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  const std::vector<ColumnDefinition> schema{
+      {"timestamp_value", SqlType::Int,
+       SqlTypeDescriptor{SqlTypeId::Timestamp, {}}}};
+  const std::vector<char> truncated{'U', 'D', 'B', 'R', 1, 0, 1, 0,
+                                    0,   1,   2,   3,   4};
+  EXPECT_THROW(SqlTupleCodec::decode(schema, truncated), std::runtime_error);
+}
+
+TEST(SqlTupleCodecTest, TemporalValuesRespectExistingNullBitmapAndMixedRows) {
+  using unidb::sql::ColumnDefinition;
+  using unidb::sql::SqlNullValue;
+  using unidb::sql::SqlTime;
+  using unidb::sql::SqlType;
+  using unidb::sql::SqlTypeDescriptor;
+  using unidb::sql::SqlTypeId;
+  const std::vector<ColumnDefinition> schema{
+      {"id", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Integer, {}}},
+      {"date_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Date, {}}},
+      {"time_value", SqlType::Int, SqlTypeDescriptor{SqlTypeId::Time, {}}},
+      {"label", SqlType::Text, SqlTypeDescriptor{SqlTypeId::Text, {}}}};
+  const std::vector<unidb::sql::SqlValue> values{
+      std::int64_t{7}, SqlNullValue{}, SqlTime{1234}, std::string{"row"}};
+  const auto encoded = SqlTupleCodec::encode(schema, values);
+  ASSERT_EQ(std::string(encoded.begin(), encoded.begin() + 4), "UDBR");
+  EXPECT_EQ(static_cast<unsigned char>(encoded[8]), 0x02U);
+  EXPECT_EQ(SqlTupleCodec::decode(schema, encoded), values);
+}
