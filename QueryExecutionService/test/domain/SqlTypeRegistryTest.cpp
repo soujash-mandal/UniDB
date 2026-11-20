@@ -75,6 +75,15 @@ TEST(SqlTypeRegistryTest, ValidatesTypeModifiers) {
   EXPECT_EQ(timestamp.modifier.temporalPrecision, 3U);
 }
 
+TEST(SqlTypeRegistryTest, AcceptsPostgresMaximumCharacterDeclarationLength) {
+  EXPECT_EQ(resolveSqlType("char", {.length = 10'485'760}).modifier.length,
+            10'485'760U);
+  EXPECT_EQ(resolveSqlType("varchar", {.length = 10'485'760}).modifier.length,
+            10'485'760U);
+  EXPECT_EQ(resolveSqlType("bpchar", {.length = 10'485'760}).modifier.length,
+            10'485'760U);
+}
+
 TEST(SqlTypeRegistryTest, RejectsUnknownNamesAndInvalidModifiers) {
   EXPECT_THROW(resolveSqlType("money"), std::invalid_argument);
   EXPECT_THROW(resolveSqlType(""), std::invalid_argument);

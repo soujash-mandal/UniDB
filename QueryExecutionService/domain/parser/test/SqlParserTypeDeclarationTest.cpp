@@ -52,6 +52,22 @@ TEST(SqlParserTypeDeclarationTest, ParsesCoreNamesAliasesAndModifiers) {
   EXPECT_EQ(columns[7].declaredType->modifier.temporalPrecision, 3U);
 }
 
+TEST(SqlParserTypeDeclarationTest, ParsesCharacterAliasesToCanonicalTypes) {
+  SqlParserImpl parser;
+  const auto result = parser.parse(
+      "CREATE TABLE labels (fixed CHARACTER(4), bounded VARCHAR(7), "
+      "description TEXT)");
+  ASSERT_TRUE(std::holds_alternative<SqlStatement>(result));
+  const auto &columns =
+      std::get<CreateTableStatement>(std::get<SqlStatement>(result)).columns;
+  ASSERT_EQ(columns.size(), 3U);
+  EXPECT_EQ(columns[0].declaredType->id, SqlTypeId::Char);
+  EXPECT_EQ(columns[0].declaredType->modifier.length, 4U);
+  EXPECT_EQ(columns[1].declaredType->id, SqlTypeId::Varchar);
+  EXPECT_EQ(columns[1].declaredType->modifier.length, 7U);
+  EXPECT_EQ(columns[2].declaredType->id, SqlTypeId::Text);
+}
+
 TEST(SqlParserTypeDeclarationTest, ParsesBpcharAsUnboundedOrBoundedCharacter) {
   SqlParserImpl parser;
   const auto result =
