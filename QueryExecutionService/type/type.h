@@ -126,8 +126,8 @@ struct SqlNullValue {
 using SqlValue =
     std::variant<std::int64_t, std::string, SqlBooleanValue, SqlRealValue,
                  SqlDoublePrecisionValue, SqlNumericValue, SqlDate, SqlTime,
-                 SqlTimeWithTimeZone, SqlTimestamp,
-                 SqlTimestampWithTimeZone, SqlInterval, SqlNullValue>;
+                 SqlTimeWithTimeZone, SqlTimestamp, SqlTimestampWithTimeZone,
+                 SqlInterval, SqlNullValue>;
 
 struct ColumnDefinition {
   std::string name;

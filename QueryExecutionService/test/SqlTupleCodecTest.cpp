@@ -339,15 +339,14 @@ TEST(SqlTupleCodecTest, SupportsAllNullDeclaredRows) {
   EXPECT_EQ(SqlTupleCodec::decode(schema, bytes), values);
 }
 
-
 TEST(SqlTupleCodecTest, RoundTripsAllPostgreSqlTemporalTypesInDeclaredRows) {
   using unidb::sql::ColumnDefinition;
   using unidb::sql::SqlDate;
   using unidb::sql::SqlInterval;
   using unidb::sql::SqlTime;
-  using unidb::sql::SqlTimeWithTimeZone;
   using unidb::sql::SqlTimestamp;
   using unidb::sql::SqlTimestampWithTimeZone;
+  using unidb::sql::SqlTimeWithTimeZone;
   using unidb::sql::SqlType;
   using unidb::sql::SqlTypeDescriptor;
   using unidb::sql::SqlTypeId;
@@ -364,7 +363,8 @@ TEST(SqlTupleCodecTest, RoundTripsAllPostgreSqlTemporalTypesInDeclaredRows) {
       {"interval_value", SqlType::Int,
        SqlTypeDescriptor{SqlTypeId::Interval, {}}}};
   const std::vector<unidb::sql::SqlValue> values{
-      SqlDate{-1}, SqlTime{45'123'456},
+      SqlDate{-1},
+      SqlTime{45'123'456},
       SqlTimeWithTimeZone{SqlTime{45'123'456}, 19'800},
       SqlTimestamp{SqlDate{9'000}, SqlTime{45'123'456}},
       SqlTimestampWithTimeZone{123'456'789},
@@ -405,10 +405,10 @@ TEST(SqlTupleCodecTest, RejectsInvalidTemporalValuesAndOffsets) {
 
   EXPECT_THROW(SqlTupleCodec::encode(timeSchema, {SqlTime{-1}}),
                std::out_of_range);
-  EXPECT_THROW(SqlTupleCodec::encode(
-                   timetzSchema,
-                   {SqlTimeWithTimeZone{SqlTime{0}, 16 * 60 * 60}}),
-               std::out_of_range);
+  EXPECT_THROW(
+      SqlTupleCodec::encode(timetzSchema,
+                            {SqlTimeWithTimeZone{SqlTime{0}, 16 * 60 * 60}}),
+      std::out_of_range);
 }
 
 TEST(SqlTupleCodecTest, RejectsTruncatedTemporalPayloads) {
@@ -419,8 +419,8 @@ TEST(SqlTupleCodecTest, RejectsTruncatedTemporalPayloads) {
   const std::vector<ColumnDefinition> schema{
       {"timestamp_value", SqlType::Int,
        SqlTypeDescriptor{SqlTypeId::Timestamp, {}}}};
-  const std::vector<char> truncated{'U', 'D', 'B', 'R', 1, 0, 1, 0,
-                                    0,   1,   2,   3,   4};
+  const std::vector<char> truncated{'U', 'D', 'B', 'R', 1, 0, 1,
+                                    0,   0,   1,   2,   3, 4};
   EXPECT_THROW(SqlTupleCodec::decode(schema, truncated), std::runtime_error);
 }
 

@@ -2,8 +2,8 @@
 #include "SqlNumericRowCodec.h"
 
 #include "../types/SqlCharacterSemantics.h"
-#include "../types/SqlIntegerSemantics.h"
 #include "../types/SqlDateTimeSemantics.h"
+#include "../types/SqlIntegerSemantics.h"
 
 #include <bit>
 #include <limits>
@@ -119,17 +119,17 @@ bool usesDeclaredRowFormat(
   return everyColumnHasDeclaredType;
 }
 
-void appendTemporal(std::vector<char> &out,
-                    unidb::sql::SqlTypeId type,
+void appendTemporal(std::vector<char> &out, unidb::sql::SqlTypeId type,
                     const unidb::sql::SqlValue &value) {
-  using unidb::sql::SqlTypeId;
   using QueryExecutionService::domain::validateSqlTime;
   using QueryExecutionService::domain::validateSqlTimeZoneOffset;
+  using unidb::sql::SqlTypeId;
   switch (type) {
   case SqlTypeId::Date:
     if (!std::holds_alternative<unidb::sql::SqlDate>(value))
       throw std::invalid_argument("Expected DATE value");
-    appendLittleEndian(out, std::get<unidb::sql::SqlDate>(value).daysSinceEpoch);
+    appendLittleEndian(out,
+                       std::get<unidb::sql::SqlDate>(value).daysSinceEpoch);
     return;
   case SqlTypeId::Time: {
     if (!std::holds_alternative<unidb::sql::SqlTime>(value))
@@ -161,9 +161,9 @@ void appendTemporal(std::vector<char> &out,
   case SqlTypeId::TimestampWithTimeZone:
     if (!std::holds_alternative<unidb::sql::SqlTimestampWithTimeZone>(value))
       throw std::invalid_argument("Expected TIMESTAMPTZ value");
-    appendLittleEndian(
-        out, std::get<unidb::sql::SqlTimestampWithTimeZone>(value)
-                 .microsecondsSinceEpoch);
+    appendLittleEndian(out,
+                       std::get<unidb::sql::SqlTimestampWithTimeZone>(value)
+                           .microsecondsSinceEpoch);
     return;
   case SqlTypeId::Interval: {
     if (!std::holds_alternative<unidb::sql::SqlInterval>(value))
@@ -182,9 +182,9 @@ void appendTemporal(std::vector<char> &out,
 unidb::sql::SqlValue readTemporal(unidb::sql::SqlTypeId type,
                                   const std::vector<char> &bytes,
                                   std::size_t &offset) {
-  using unidb::sql::SqlTypeId;
   using QueryExecutionService::domain::validateSqlTime;
   using QueryExecutionService::domain::validateSqlTimeZoneOffset;
+  using unidb::sql::SqlTypeId;
   switch (type) {
   case SqlTypeId::Date:
     return unidb::sql::SqlDate{readLittleEndian<std::int32_t>(bytes, offset)};
