@@ -1,5 +1,6 @@
 #include "SqlParserImpl.h"
 
+#include "../types/SqlCharacterSemantics.h"
 #include "../types/SqlDateTimeSemantics.h"
 #include "../types/SqlNumericSemantics.h"
 #include "../types/SqlTypeRegistry.h"
@@ -229,7 +230,7 @@ private:
         }
         modifier.precision = *first;
         modifier.scale = *second;
-      } else if (name == "CHAR" || name == "CHARACTER" ||
+      } else if (name == "CHAR" || name == "CHARACTER" || name == "BPCHAR" ||
                  name == "CHARACTER VARYING" || name == "VARCHAR") {
         modifier.length = *first;
       } else if (name == "NUMERIC" || name == "DECIMAL") {
@@ -1673,6 +1674,11 @@ private:
     }
     if (current().kind == TokenKind::String) {
       std::string value = current().text;
+      try {
+        (void)QueryExecutionService::domain::countSqlCharacters(value);
+      } catch (const std::exception &error) {
+        return SqlParseError{SqlParseErrorCode::SyntaxError, error.what()};
+      }
       ++position_;
       return ParsedSqlLiteral{SqlValue{std::move(value)}, std::nullopt};
     }
