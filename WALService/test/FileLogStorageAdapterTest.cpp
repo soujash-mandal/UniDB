@@ -18,8 +18,8 @@ TEST(FileLogStorageAdapterTest, WritesAndReadsBinaryBytesAtAnOffset) {
 
   {
     FileLogStorageAdapter storage(path.string());
-    const std::vector<std::byte> expected = {
-        std::byte{0x00}, std::byte{0x7f}, std::byte{0x80}, std::byte{0xff}};
+    const std::vector<std::byte> expected = {std::byte{0x00}, std::byte{0x7f},
+                                             std::byte{0x80}, std::byte{0xff}};
     storage.writeAt(11, expected);
     storage.flush();
 

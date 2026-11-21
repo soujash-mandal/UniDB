@@ -41,8 +41,8 @@ FileLogStorageAdapter::FileLogStorageAdapter(std::string path)
   }
 }
 
-void FileLogStorageAdapter::writeAt(
-    std::uint64_t offset, const std::vector<std::byte> &bytes) {
+void FileLogStorageAdapter::writeAt(std::uint64_t offset,
+                                    const std::vector<std::byte> &bytes) {
   if (bytes.empty()) {
     return;
   }
