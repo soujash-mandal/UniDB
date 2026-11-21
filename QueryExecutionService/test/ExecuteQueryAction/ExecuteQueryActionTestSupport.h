@@ -4,6 +4,7 @@
 #include "../../domain/parser/SqlParserImpl.h"
 #include "../../port/RdbServicePort.h"
 
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -21,6 +22,9 @@ public:
   std::vector<unidb::sql::ColumnDefinition> createdColumns;
   std::vector<char> insertedBytes;
   std::vector<std::vector<char>> rows;
+  std::map<std::string, std::vector<unidb::sql::ColumnDefinition>>
+      schemasByTable;
+  std::map<std::string, std::vector<std::vector<char>>> rowsByTable;
   bool fail = false;
   uint32_t failOnInsertCall = 0;
   uint32_t commitThenFailOnInsertCall = 0;
@@ -44,7 +48,8 @@ public:
     if (fail) {
       throw std::runtime_error("fake RDB failure");
     }
-    return schema;
+    const auto found = schemasByTable.find(name);
+    return found == schemasByTable.end() ? schema : found->second;
   }
 
   void insertRow(const std::string &name,
@@ -70,7 +75,8 @@ public:
     if (fail) {
       throw std::runtime_error("fake RDB failure");
     }
-    return rows;
+    const auto found = rowsByTable.find(name);
+    return found == rowsByTable.end() ? rows : found->second;
   }
 };
 

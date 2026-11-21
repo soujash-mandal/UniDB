@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -51,7 +52,26 @@ enum class ComparisonOperator {
   IsNotNull
 };
 
+struct SelectStatement;
+
 struct WhereEquals {
+  WhereEquals() = default;
+  WhereEquals(std::string columnName, SqlValue value,
+              std::optional<SqlValue> upperBound = std::nullopt,
+              std::vector<SqlValue> values = {},
+              ComparisonOperator comparison = ComparisonOperator::Equal,
+              std::optional<SqlTypedLiteral> typedLiteral = std::nullopt,
+              std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt,
+              std::vector<std::optional<SqlTypedLiteral>> typedValues = {},
+              bool isSubquery = false,
+              std::shared_ptr<SelectStatement> subquery = nullptr)
+      : columnName(std::move(columnName)), value(std::move(value)),
+        upperBound(std::move(upperBound)), values(std::move(values)),
+        comparison(comparison), typedLiteral(std::move(typedLiteral)),
+        typedUpperBound(std::move(typedUpperBound)),
+        typedValues(std::move(typedValues)), isSubquery(isSubquery),
+        subquery(std::move(subquery)) {}
+
   std::string columnName;
   SqlValue value;
   std::optional<SqlValue> upperBound = std::nullopt;
@@ -60,6 +80,8 @@ struct WhereEquals {
   std::optional<SqlTypedLiteral> typedLiteral = std::nullopt;
   std::optional<SqlTypedLiteral> typedUpperBound = std::nullopt;
   std::vector<std::optional<SqlTypedLiteral>> typedValues = {};
+  bool isSubquery{false};
+  std::shared_ptr<SelectStatement> subquery;
 };
 
 struct WhereExpression {
