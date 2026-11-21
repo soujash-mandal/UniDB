@@ -50,3 +50,16 @@ TEST(SqlShellAutocompleteTest, HandlesEscapedQuotesInStringLiterals) {
   const std::string line = "SELECT 'it''s sel";
   EXPECT_TRUE(SqlAutocomplete::isInsideStringLiteral(line, line.size()));
 }
+
+TEST(SqlShellAutocompleteTest, ShowsUniqueCompletionInlineWhileTyping) {
+  EXPECT_EQ(SqlAutocomplete::inlineSuggestion("SELECT * fr", 11), "OM");
+}
+
+TEST(SqlShellAutocompleteTest, HidesInlineCompletionForAmbiguousOrQuotedInput) {
+  EXPECT_TRUE(SqlAutocomplete::inlineSuggestion("SELECT * s", 10).empty());
+  EXPECT_TRUE(SqlAutocomplete::inlineSuggestion("SELECT 'fr", 10).empty());
+}
+
+TEST(SqlShellAutocompleteTest, HidesInlineCompletionWhenCursorIsNotAtEnd) {
+  EXPECT_TRUE(SqlAutocomplete::inlineSuggestion("SELECT * fr", 10).empty());
+}
