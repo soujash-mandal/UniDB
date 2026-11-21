@@ -5,9 +5,9 @@
 #include <utility>
 
 namespace {
-std::streamoff ToStreamOffset(uint64_t offset) {
+std::streamoff ToStreamOffset(std::uint64_t offset) {
   if (offset >
-      static_cast<uint64_t>(std::numeric_limits<std::streamoff>::max())) {
+      static_cast<std::uint64_t>(std::numeric_limits<std::streamoff>::max())) {
     throw std::out_of_range("Log offset exceeds supported file range");
   }
   return static_cast<std::streamoff>(offset);
@@ -42,7 +42,7 @@ FileLogStorageAdapter::FileLogStorageAdapter(std::string path)
 }
 
 void FileLogStorageAdapter::writeAt(
-    uint64_t offset, const std::vector<std::byte> &bytes) {
+    std::uint64_t offset, const std::vector<std::byte> &bytes) {
   if (bytes.empty()) {
     return;
   }
@@ -60,7 +60,7 @@ void FileLogStorageAdapter::writeAt(
   }
 }
 
-std::vector<std::byte> FileLogStorageAdapter::readAt(uint64_t offset,
+std::vector<std::byte> FileLogStorageAdapter::readAt(std::uint64_t offset,
                                                      std::size_t byteCount) {
   std::vector<std::byte> bytes(byteCount);
   if (byteCount == 0) {
