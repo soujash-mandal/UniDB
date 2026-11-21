@@ -11,9 +11,9 @@ class LogStoragePort {
 public:
   virtual ~LogStoragePort() = default;
 
-  virtual void writeAt(uint64_t offset,
+  virtual void writeAt(std::uint64_t offset,
                        const std::vector<std::byte> &bytes) = 0;
-  virtual std::vector<std::byte> readAt(uint64_t offset,
+  virtual std::vector<std::byte> readAt(std::uint64_t offset,
                                         std::size_t byteCount) = 0;
   virtual void flush() = 0;
 };
