@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "../WALService/adapter/FileLogStorageAdapter.h"
+
 #include "../DiskManager/actions/ReadDiskPageAction.h"
 #include "../DiskManager/actions/WriteDiskPageAction.h"
 #include "../DiskManager/adapter/FileDiskManagerAdapter.h"
@@ -96,6 +98,7 @@ public:
                      EvictionPolicyType evictionPolicyType);
 
   const std::string &getDatabaseFileName() const { return databaseFileName; }
+  LogStoragePort &walLogStoragePort() { return walStorageAdapter; }
 
   FetchPageAction &fetchPageAction() { return fetchPage; }
   UnpinPageAction &unpinPageAction() { return unpinPage; }
@@ -129,6 +132,7 @@ public:
 
 private:
   std::string databaseFileName;
+  FileLogStorageAdapter walStorageAdapter;
   FileDiskManagerAdapter diskManager;
 
   ReadDiskPageAction readDiskPage;

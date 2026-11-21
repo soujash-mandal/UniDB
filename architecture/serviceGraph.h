@@ -13,6 +13,7 @@ inline const std::vector<ServiceNode> SERVICE_NODES = {
     "DiskManager",        "FreePageManager", "BufferPoolManager",
     "SpaceMapService",    "TupleService",    "CatalogService",
     "RdbMetadataService", "RdbService",      "QueryExecutionService",
+    "WALService",
 };
 
 // An edge A -> B means service A depends on/uses service B.

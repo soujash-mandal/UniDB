@@ -7,8 +7,8 @@
 
 Container::Container(std::string fileName, uint32_t bufferPoolSize,
                      EvictionPolicyType evictionPolicyType)
-    : readDiskPage(diskManager), writeDiskPage(diskManager),
-      readFreePageMetadataAdapter(readDiskPage),
+    : walStorageAdapter(fileName + ".wal"), readDiskPage(diskManager),
+      writeDiskPage(diskManager), readFreePageMetadataAdapter(readDiskPage),
       writeFreePageMetadataAdapter(writeDiskPage),
       allocatePage(readFreePageMetadataAdapter, writeFreePageMetadataAdapter),
       createFpmPage(writeFreePageMetadataAdapter),
