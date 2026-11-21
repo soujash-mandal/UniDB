@@ -13,13 +13,12 @@
 
 namespace unidb::sql {
 
-// A typed temporal literal is kept separate from SqlValue until the execution
-// and row-codec layers gain date/time support. The original literal text and
-// canonical type are retained without changing runtime values.
+// Typed literals retain their original spelling and declared type while also
+// carrying the parsed temporal runtime value.
 struct SqlTypedLiteral {
   SqlTypeDescriptor declaredType;
   std::string literal;
-  QueryExecutionService::domain::SqlTemporalValue value;
+  SqlTemporalValue value;
 };
 
 struct CreateTableStatement {

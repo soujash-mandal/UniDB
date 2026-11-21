@@ -10,9 +10,7 @@
 
 namespace QueryExecutionService::domain {
 
-using SqlTemporalValue =
-    std::variant<SqlDate, SqlTime, SqlTimeWithTimeZone, SqlTimestamp,
-                 SqlTimestampWithTimeZone, SqlInterval>;
+using SqlTemporalValue = unidb::sql::SqlTemporalValue;
 
 /**
  * Convert a SQL Gregorian date to days relative to the PostgreSQL epoch.
