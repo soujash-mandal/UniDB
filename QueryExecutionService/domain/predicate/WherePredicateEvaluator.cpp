@@ -1,6 +1,7 @@
 #include "WherePredicateEvaluator.h"
 
 #include "../types/SqlCharacterSemantics.h"
+#include "../types/SqlDateTimeComparison.h"
 #include "../types/SqlNumericSemantics.h"
 
 #include <algorithm>
@@ -126,6 +127,34 @@ int compareSqlValues(const SqlValue &left, const SqlValue &right) {
           std::get_if<unidb::sql::SqlNumericValue>(&left)) {
     return compareSqlNumericValues(
         *leftNumeric, std::get<unidb::sql::SqlNumericValue>(right));
+  }
+  const auto compareTemporal = [](const auto &leftValue,
+                                  const auto &rightValue) {
+    const auto ordering =
+        compareSqlTemporalValues(unidb::sql::SqlTemporalValue{leftValue},
+                                 unidb::sql::SqlTemporalValue{rightValue});
+    return ordering < 0 ? -1 : (ordering > 0 ? 1 : 0);
+  };
+  if (const auto *value = std::get_if<unidb::sql::SqlDate>(&left)) {
+    return compareTemporal(*value, std::get<unidb::sql::SqlDate>(right));
+  }
+  if (const auto *value = std::get_if<unidb::sql::SqlTime>(&left)) {
+    return compareTemporal(*value, std::get<unidb::sql::SqlTime>(right));
+  }
+  if (const auto *value = std::get_if<unidb::sql::SqlTimeWithTimeZone>(&left)) {
+    return compareTemporal(*value,
+                           std::get<unidb::sql::SqlTimeWithTimeZone>(right));
+  }
+  if (const auto *value = std::get_if<unidb::sql::SqlTimestamp>(&left)) {
+    return compareTemporal(*value, std::get<unidb::sql::SqlTimestamp>(right));
+  }
+  if (const auto *value =
+          std::get_if<unidb::sql::SqlTimestampWithTimeZone>(&left)) {
+    return compareTemporal(
+        *value, std::get<unidb::sql::SqlTimestampWithTimeZone>(right));
+  }
+  if (const auto *value = std::get_if<unidb::sql::SqlInterval>(&left)) {
+    return compareTemporal(*value, std::get<unidb::sql::SqlInterval>(right));
   }
   const auto &leftText = std::get<std::string>(left);
   const auto &rightText = std::get<std::string>(right);

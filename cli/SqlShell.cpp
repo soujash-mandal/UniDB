@@ -170,6 +170,29 @@ std::string formatValue(const unidb::sql::SqlValue &value) {
                                             unidb::sql::SqlNumericValue>) {
           formatted << QueryExecutionService::domain::formatSqlNumericValue(
               item);
+        } else if constexpr (std::is_same_v<ValueType, unidb::sql::SqlDate>) {
+          formatted << "DATE(" << item.daysSinceEpoch
+                    << " days since 2000-01-01)";
+        } else if constexpr (std::is_same_v<ValueType, unidb::sql::SqlTime>) {
+          formatted << "TIME(" << item.microsecondsSinceMidnight
+                    << "us since midnight)";
+        } else if constexpr (std::is_same_v<ValueType,
+                                            unidb::sql::SqlTimeWithTimeZone>) {
+          formatted << "TIMETZ(" << item.time.microsecondsSinceMidnight
+                    << "us, offset " << item.offsetSecondsEastOfUtc << "s)";
+        } else if constexpr (std::is_same_v<ValueType,
+                                            unidb::sql::SqlTimestamp>) {
+          formatted << "TIMESTAMP(" << item.date.daysSinceEpoch << " days, "
+                    << item.time.microsecondsSinceMidnight << "us)";
+        } else if constexpr (std::is_same_v<
+                                 ValueType,
+                                 unidb::sql::SqlTimestampWithTimeZone>) {
+          formatted << "TIMESTAMPTZ(" << item.microsecondsSinceEpoch
+                    << "us since 2000-01-01T00:00:00Z)";
+        } else if constexpr (std::is_same_v<ValueType,
+                                            unidb::sql::SqlInterval>) {
+          formatted << "INTERVAL(" << item.months << " months, " << item.days
+                    << " days, " << item.microseconds << "us)";
         } else {
           formatted << item;
         }

@@ -77,13 +77,57 @@ struct SqlNumericValue {
   bool operator==(const SqlNumericValue &) const = default;
 };
 
+// Temporal runtime values live in the shared SQL contract so storage and
+// execution code can exchange them without depending on QES domain headers.
+// All timestamps use the PostgreSQL epoch (2000-01-01); sub-day values use
+// microseconds. TIMESTAMPTZ is an absolute UTC instant.
+struct SqlDate {
+  std::int32_t daysSinceEpoch = 0;
+  bool operator==(const SqlDate &) const = default;
+};
+
+struct SqlTime {
+  std::int64_t microsecondsSinceMidnight = 0;
+  bool operator==(const SqlTime &) const = default;
+};
+
+struct SqlTimeWithTimeZone {
+  SqlTime time;
+  std::int32_t offsetSecondsEastOfUtc = 0;
+  bool operator==(const SqlTimeWithTimeZone &) const = default;
+};
+
+struct SqlTimestamp {
+  SqlDate date;
+  SqlTime time;
+  bool operator==(const SqlTimestamp &) const = default;
+};
+
+struct SqlTimestampWithTimeZone {
+  std::int64_t microsecondsSinceEpoch = 0;
+  bool operator==(const SqlTimestampWithTimeZone &) const = default;
+};
+
+struct SqlInterval {
+  std::int32_t months = 0;
+  std::int32_t days = 0;
+  std::int64_t microseconds = 0;
+  bool operator==(const SqlInterval &) const = default;
+};
+
+using SqlTemporalValue =
+    std::variant<SqlDate, SqlTime, SqlTimeWithTimeZone, SqlTimestamp,
+                 SqlTimestampWithTimeZone, SqlInterval>;
+
 struct SqlNullValue {
   bool operator==(const SqlNullValue &) const = default;
 };
 
 using SqlValue =
     std::variant<std::int64_t, std::string, SqlBooleanValue, SqlRealValue,
-                 SqlDoublePrecisionValue, SqlNumericValue, SqlNullValue>;
+                 SqlDoublePrecisionValue, SqlNumericValue, SqlDate, SqlTime,
+                 SqlTimeWithTimeZone, SqlTimestamp, SqlTimestampWithTimeZone,
+                 SqlInterval, SqlNullValue>;
 
 struct ColumnDefinition {
   std::string name;
