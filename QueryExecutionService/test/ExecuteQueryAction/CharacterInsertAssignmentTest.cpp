@@ -84,16 +84,16 @@ TEST(ExecuteQueryActionTemporalTest, InsertsParsedDateAndTimestampLiterals) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto created =
-      action.execute("CREATE TABLE events (event_date DATE, created_at TIMESTAMP)");
+  const auto created = action.execute(
+      "CREATE TABLE events (event_date DATE, created_at TIMESTAMP)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           created));
   port.schema = port.createdColumns;
 
-  const auto inserted =
-      action.execute("INSERT INTO events (event_date, created_at) "
-                     "VALUES (DATE '2026-11-24', TIMESTAMP '2026-11-24 01:02:03')");
+  const auto inserted = action.execute(
+      "INSERT INTO events (event_date, created_at) "
+      "VALUES (DATE '2026-11-24', TIMESTAMP '2026-11-24 01:02:03')");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           inserted))
