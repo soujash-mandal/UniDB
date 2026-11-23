@@ -78,3 +78,50 @@ TEST(ExecuteQueryActionCharacterTest, RejectsMalformedUtf8BeforeWriting) {
       QueryExecutionService::domain::prepareInsertRows(statement, port.schema),
       std::invalid_argument);
 }
+
+TEST(ExecuteQueryActionTemporalTest, InsertsParsedDateAndTimestampLiterals) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto created = action.execute(
+      "CREATE TABLE events (event_date DATE, created_at TIMESTAMP)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          created));
+  port.schema = port.createdColumns;
+
+  const auto inserted = action.execute(
+      "INSERT INTO events (event_date, created_at) "
+      "VALUES (DATE '2026-11-24', TIMESTAMP '2026-11-24 01:02:03')");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          inserted))
+      << std::get<QueryExecutionService::QueryExecutionError>(inserted).message;
+  ASSERT_EQ(port.insertedRows.size(), 1U);
+
+  const auto row = SqlTupleCodec::decode(port.schema, port.insertedRows[0]);
+  ASSERT_EQ(row.size(), 2U);
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlDate>(row[0]));
+  EXPECT_TRUE(std::holds_alternative<unidb::sql::SqlTimestamp>(row[1]));
+}
+
+TEST(ExecuteQueryActionTemporalTest, RejectsUntypedStringsForTemporalColumns) {
+  FakeQesRdbServicePort port;
+  unidb::sql::SqlParserImpl parser;
+  auto action = makeQesAction(port, parser);
+
+  const auto created =
+      action.execute("CREATE TABLE events (event_date DATE)");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
+          created));
+  port.schema = port.createdColumns;
+
+  const auto inserted = action.execute(
+      "INSERT INTO events (event_date) VALUES ('2026-11-24')");
+  ASSERT_TRUE(
+      std::holds_alternative<QueryExecutionService::QueryExecutionError>(
+          inserted));
+  EXPECT_EQ(port.insertCalls, 0U);
+}
