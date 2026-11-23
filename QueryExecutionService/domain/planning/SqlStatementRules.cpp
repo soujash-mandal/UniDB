@@ -5,6 +5,8 @@
 #include "../types/SqlCharacterSemantics.h"
 #include "../types/SqlNumericSemantics.h"
 
+#include <type_traits>
+
 #include <algorithm>
 #include <charconv>
 #include <limits>
@@ -178,7 +180,8 @@ prepareInsertRows(const InsertStatement &statement,
   }
   std::vector<std::vector<SqlValue>> orderedRows;
   orderedRows.reserve(statement.rows.size());
-  for (const auto &values : statement.rows) {
+  for (std::size_t rowIndex = 0; rowIndex < statement.rows.size(); ++rowIndex) {
+    const auto &values = statement.rows[rowIndex];
     if (statement.columnNames.size() != values.size()) {
       throw std::invalid_argument("INSERT column and value counts must match");
     }
@@ -310,6 +313,60 @@ prepareInsertRows(const InsertStatement &statement,
             valueMatchesColumn = true;
           }
           break;
+        case SqlTypeId::Date:
+        case SqlTypeId::Time:
+        case SqlTypeId::TimeWithTimeZone:
+        case SqlTypeId::Timestamp:
+        case SqlTypeId::TimestampWithTimeZone:
+        case SqlTypeId::Interval: {
+          if (rowIndex >= statement.typedLiterals.size() ||
+              inputIndex >= statement.typedLiterals[rowIndex].size() ||
+              !statement.typedLiterals[rowIndex][inputIndex].has_value()) {
+            break;
+          }
+          const auto &typedLiteral =
+              *statement.typedLiterals[rowIndex][inputIndex];
+          if (typedLiteral.declaredType.id != found->declaredType->id) {
+            break;
+          }
+          std::visit(
+              [&](const auto &temporalValue) {
+                using Temporal = std::decay_t<decltype(temporalValue)>;
+                bool matchesTemporalType = false;
+                switch (found->declaredType->id) {
+                case SqlTypeId::Date:
+                  matchesTemporalType = std::is_same_v<Temporal, SqlDate>;
+                  break;
+                case SqlTypeId::Time:
+                  matchesTemporalType = std::is_same_v<Temporal, SqlTime>;
+                  break;
+                case SqlTypeId::TimeWithTimeZone:
+                  matchesTemporalType =
+                      std::is_same_v<Temporal, SqlTimeWithTimeZone>;
+                  break;
+                case SqlTypeId::Timestamp:
+                  matchesTemporalType =
+                      std::is_same_v<Temporal, SqlTimestamp>;
+                  break;
+                case SqlTypeId::TimestampWithTimeZone:
+                  matchesTemporalType =
+                      std::is_same_v<Temporal, SqlTimestampWithTimeZone>;
+                  break;
+                case SqlTypeId::Interval:
+                  matchesTemporalType = std::is_same_v<Temporal, SqlInterval>;
+                  break;
+                default:
+                  break;
+                }
+                if (matchesTemporalType) {
+                  orderedValues[schemaIndex] = temporalValue;
+                  valueWasNormalized = true;
+                  valueMatchesColumn = true;
+                }
+              },
+              typedLiteral.value);
+          break;
+        }
         default:
           throw std::invalid_argument(
               "INSERT column type is recognized but not yet supported: " +
