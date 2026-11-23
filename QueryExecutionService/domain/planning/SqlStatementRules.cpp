@@ -345,8 +345,7 @@ prepareInsertRows(const InsertStatement &statement,
                       std::is_same_v<Temporal, SqlTimeWithTimeZone>;
                   break;
                 case SqlTypeId::Timestamp:
-                  matchesTemporalType =
-                      std::is_same_v<Temporal, SqlTimestamp>;
+                  matchesTemporalType = std::is_same_v<Temporal, SqlTimestamp>;
                   break;
                 case SqlTypeId::TimestampWithTimeZone:
                   matchesTemporalType =

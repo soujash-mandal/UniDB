@@ -126,32 +126,27 @@ TEST(WherePredicateEvaluatorTest,
       row, compileWhereExpression(varchar, schema, types)));
 }
 
-
 TEST(WherePredicateEvaluatorTest, ComparesAllTemporalSqlValueAlternatives) {
   using unidb::sql::SqlDate;
   using unidb::sql::SqlInterval;
   using unidb::sql::SqlTime;
-  using unidb::sql::SqlTimeWithTimeZone;
   using unidb::sql::SqlTimestamp;
   using unidb::sql::SqlTimestampWithTimeZone;
+  using unidb::sql::SqlTimeWithTimeZone;
 
   EXPECT_LT(compareSqlValues(SqlValue{SqlDate{1}}, SqlValue{SqlDate{2}}), 0);
   EXPECT_GT(compareSqlValues(SqlValue{SqlTime{2}}, SqlValue{SqlTime{1}}), 0);
-  EXPECT_LT(compareSqlValues(
-                SqlValue{SqlTimeWithTimeZone{SqlTime{3}, 0}},
-                SqlValue{SqlTimeWithTimeZone{SqlTime{4}, 0}}),
+  EXPECT_LT(compareSqlValues(SqlValue{SqlTimeWithTimeZone{SqlTime{3}, 0}},
+                             SqlValue{SqlTimeWithTimeZone{SqlTime{4}, 0}}),
             0);
-  EXPECT_LT(compareSqlValues(
-                SqlValue{SqlTimestamp{SqlDate{1}, SqlTime{2}}},
-                SqlValue{SqlTimestamp{SqlDate{1}, SqlTime{3}}}),
+  EXPECT_LT(compareSqlValues(SqlValue{SqlTimestamp{SqlDate{1}, SqlTime{2}}},
+                             SqlValue{SqlTimestamp{SqlDate{1}, SqlTime{3}}}),
             0);
-  EXPECT_LT(compareSqlValues(
-                SqlValue{SqlTimestampWithTimeZone{10}},
-                SqlValue{SqlTimestampWithTimeZone{11}}),
+  EXPECT_LT(compareSqlValues(SqlValue{SqlTimestampWithTimeZone{10}},
+                             SqlValue{SqlTimestampWithTimeZone{11}}),
             0);
-  EXPECT_LT(compareSqlValues(
-                SqlValue{SqlInterval{0, 1, 0}},
-                SqlValue{SqlInterval{0, 2, 0}}),
+  EXPECT_LT(compareSqlValues(SqlValue{SqlInterval{0, 1, 0}},
+                             SqlValue{SqlInterval{0, 2, 0}}),
             0);
 }
 

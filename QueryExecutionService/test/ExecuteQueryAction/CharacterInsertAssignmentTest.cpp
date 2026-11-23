@@ -111,15 +111,14 @@ TEST(ExecuteQueryActionTemporalTest, RejectsUntypedStringsForTemporalColumns) {
   unidb::sql::SqlParserImpl parser;
   auto action = makeQesAction(port, parser);
 
-  const auto created =
-      action.execute("CREATE TABLE events (event_date DATE)");
+  const auto created = action.execute("CREATE TABLE events (event_date DATE)");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionResult>(
           created));
   port.schema = port.createdColumns;
 
-  const auto inserted = action.execute(
-      "INSERT INTO events (event_date) VALUES ('2026-11-24')");
+  const auto inserted =
+      action.execute("INSERT INTO events (event_date) VALUES ('2026-11-24')");
   ASSERT_TRUE(
       std::holds_alternative<QueryExecutionService::QueryExecutionError>(
           inserted));
