@@ -36,6 +36,7 @@ set(UNIDB_SOURCES
     ConnectionProtocol/SqlConnectionServer.cpp
 
     DiskManager/adapter/FileDiskManagerAdapter.cpp
+    WALService/adapter/FileLogStorageAdapter.cpp
     DiskManager/actions/ReadDiskPageAction.cpp
     DiskManager/actions/WriteDiskPageAction.cpp
 
@@ -173,6 +174,7 @@ target_link_libraries(unidb PRIVATE unidb_core)
 add_executable(tests
 
     DiskManager/test/DiskManagerE2ETest.cpp
+    WALService/test/FileLogStorageAdapterTest.cpp
     FreePageManager/test/TestFreePageMetadataPage.cpp
     EvictionPolicy/test/FIFOEvictionPolicyTest.cpp
     BufferPoolManager/test/FetchPageActionTest.cpp
