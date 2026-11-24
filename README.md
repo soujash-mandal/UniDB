@@ -1,5 +1,7 @@
 # UniDB V1 Architecture
 
+> **Interface principle:** SQL is an optional developer-facing interface, not UniDB's database core or application protocol. See [SQL Is a Developer Interface, Not the Database Core](architecture/SQL_IS_A_DEVELOPER_INTERFACE.md) for the rules governing SQL, future RPC/API, and shared database capabilities.
+
 ## Architecture overview
 
 ```mermaid
